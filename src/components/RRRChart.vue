@@ -78,7 +78,7 @@ const chartOptions = computed(() => ({
       grid: { display: false },
     },
     y: {
-      title: { display: true, text: 'Breaths/min', color: '#6b7280', font: { size: 11 } },
+      title: { display: true, text: 'Breaths / min', color: '#6b7280', font: { size: 11 } },
       min: 0,
       suggestedMax: 80,
       ticks: { font: { size: 11 }, color: '#6b7280' },
