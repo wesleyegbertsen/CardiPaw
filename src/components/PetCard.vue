@@ -8,12 +8,13 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  Filler,
 } from 'chart.js';
 import type { Pet } from '../types';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useReadingsStore } from '../stores/readings';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
 const props = defineProps<{ pet: Pet }>();
 const router = useRouter();
