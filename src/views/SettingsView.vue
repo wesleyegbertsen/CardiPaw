@@ -59,7 +59,10 @@ async function onImportFileChange(event: Event) {
 async function confirmImport() {
   if (!pendingPayload.value) return;
   showImportConfirm.value = false;
-  await db.importAllData(pendingPayload.value);
+  // pendingPayload is a Vue ref, so its nested objects are Vue Proxy instances.
+  // IndexedDB's structured clone algorithm cannot clone Proxies, so we strip
+  // reactivity by round-tripping through JSON before passing to IndexedDB.
+  await db.importAllData(JSON.parse(JSON.stringify(pendingPayload.value)));
   // Reload all stores from scratch
   await petsStore.loadPets();
   Object.keys(readingsStore.readingsByPet).forEach((id) => {
