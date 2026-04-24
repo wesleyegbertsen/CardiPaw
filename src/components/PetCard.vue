@@ -1,14 +1,84 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { Line } from 'vue-chartjs';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+} from 'chart.js';
 import type { Pet } from '../types';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
+import { useReadingsStore } from '../stores/readings';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement);
 
 const props = defineProps<{ pet: Pet }>();
 const router = useRouter();
+const readingsStore = useReadingsStore();
 
 const birthdateRef = computed(() => props.pet.birthdate);
 const ageDisplay = useAgeCalculator(birthdateRef);
+
+onMounted(() => readingsStore.loadReadingsForPet(props.pet.id));
+
+const sparklineData = computed(() => {
+  const allReadings = readingsStore.getReadingsForPet(props.pet.id);
+  const now = new Date();
+  const labels: string[] = [];
+  const values: (number | null)[] = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dayStr = d.toISOString().slice(0, 10);
+    labels.push(dayStr);
+
+    const dayReadings = allReadings.filter((r) => r.date.slice(0, 10) === dayStr);
+    if (dayReadings.length === 0) {
+      values.push(null);
+    } else {
+      const avg = dayReadings.reduce((sum, r) => sum + r.rate, 0) / dayReadings.length;
+      values.push(Math.round(avg));
+    }
+  }
+
+  return { labels, values };
+});
+
+const hasSparklineData = computed(() => sparklineData.value.values.filter((v) => v !== null).length >= 2);
+
+const chartData = computed(() => ({
+  labels: sparklineData.value.labels,
+  datasets: [
+    {
+      data: sparklineData.value.values,
+      borderColor: '#e05c7a',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      tension: 0.3,
+      fill: true,
+      backgroundColor: 'rgba(224, 92, 122, 0.12)',
+      spanGaps: false,
+    },
+  ],
+}));
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: { duration: 0 },
+  plugins: {
+    legend: { display: false },
+    tooltip: { enabled: false },
+  },
+  scales: {
+    x: { display: false },
+    y: { display: false, min: 0, max: 40 },
+  },
+};
 
 function navigate() {
   router.push({ name: 'pet', params: { id: props.pet.id } });
@@ -35,6 +105,10 @@ function navigate() {
       <h3 class="name">{{ pet.name }}</h3>
       <span class="badge" :class="pet.species">{{ pet.species }}</span>
       <p class="age">{{ ageDisplay }}</p>
+    </div>
+
+    <div v-if="hasSparklineData" class="sparkline-wrap">
+      <Line :data="chartData" :options="(chartOptions as any)" />
     </div>
 
     <svg class="chevron" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -121,6 +195,12 @@ function navigate() {
 .age {
   font-size: 13px;
   color: var(--color-text-muted);
+}
+
+.sparkline-wrap {
+  width: 80px;
+  height: 44px;
+  flex-shrink: 0;
 }
 
 .chevron {
