@@ -115,7 +115,9 @@ onUnmounted(() => {
 
     <!-- Idle state -->
     <div v-if="phase === 'idle'" class="tracker-body">
-      <p class="instruction">Tap the heart each time you see your pet's chest rise and fall.</p>
+      <div class="body-top">
+        <p class="instruction">Tap the heart each time you see your pet's chest rise and fall.</p>
+      </div>
 
       <button class="heart-btn" :class="{ pulsing: isPulsing }" @click="handleHeartClick" aria-label="Tap to start">
         <svg class="heart-svg" viewBox="0 0 100 90" fill="currentColor">
@@ -123,36 +125,42 @@ onUnmounted(() => {
         </svg>
       </button>
 
-      <p class="tap-hint">Tap to start</p>
-      <p class="timer-note">30-second measurement</p>
+      <div class="body-bottom">
+        <p class="tap-hint">Tap to start</p>
+        <p class="timer-note">30-second measurement</p>
+      </div>
     </div>
 
     <!-- Running state -->
     <div v-else-if="phase === 'running'" class="tracker-body">
-      <div class="timer-ring">
-        <svg viewBox="0 0 120 120" class="ring-svg">
-          <circle cx="60" cy="60" r="54" class="ring-track" />
-          <circle
-            cx="60" cy="60" r="54"
-            class="ring-progress"
-            :stroke-dashoffset="339.3 - (339.3 * (30 - timeLeft) / 30)"
-          />
-        </svg>
-        <div class="timer-text">
-          <span class="timer-number">{{ timeLeft }}</span>
-          <span class="timer-unit">sec</span>
+      <div class="body-top">
+        <div class="timer-ring">
+          <svg viewBox="0 0 120 120" class="ring-svg">
+            <circle cx="60" cy="60" r="54" class="ring-track" />
+            <circle
+              cx="60" cy="60" r="54"
+              class="ring-progress"
+              :stroke-dashoffset="339.3 - (339.3 * (30 - timeLeft) / 30)"
+            />
+          </svg>
+          <div class="timer-text">
+            <span class="timer-number">{{ timeLeft }}</span>
+            <span class="timer-unit">sec</span>
+          </div>
         </div>
       </div>
 
-      <button class="heart-btn large" :class="{ pulsing: isPulsing }" @click="handleHeartClick" aria-label="Tap for each breath">
+      <button class="heart-btn" :class="{ pulsing: isPulsing }" @click="handleHeartClick" aria-label="Tap for each breath">
         <svg class="heart-svg" viewBox="0 0 100 90" fill="currentColor">
           <path d="M50 85 C50 85 5 55 5 28 C5 13 17 3 30 3 C39 3 47 8 50 15 C53 8 61 3 70 3 C83 3 95 13 95 28 C95 55 50 85 50 85Z"/>
         </svg>
       </button>
 
-      <div class="breath-count">
-        <span class="count-number">{{ clickCount }}</span>
-        <span class="count-label">breaths counted</span>
+      <div class="body-bottom">
+        <div class="breath-count">
+          <span class="count-number">{{ clickCount }}</span>
+          <span class="count-label">breaths counted</span>
+        </div>
       </div>
     </div>
 
@@ -213,12 +221,27 @@ onUnmounted(() => {
 
 .tracker-body {
   flex: 1;
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
+  justify-items: center;
+  padding: 32px 24px;
+}
+
+.body-top {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 32px 24px;
-  gap: 28px;
+  justify-content: flex-end;
+  padding-bottom: 32px;
+}
+
+.body-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding-top: 32px;
 }
 
 .instruction {
@@ -247,11 +270,6 @@ onUnmounted(() => {
   fill: var(--color-primary);
   filter: drop-shadow(0 8px 24px rgba(224, 92, 122, 0.35));
   transition: transform 0.15s ease, filter 0.15s;
-}
-
-.heart-btn.large .heart-svg {
-  width: 160px;
-  height: 145px;
 }
 
 .heart-btn.pulsing .heart-svg {
@@ -346,6 +364,10 @@ onUnmounted(() => {
 
 /* Done state */
 .done-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 20px;
 }
 
