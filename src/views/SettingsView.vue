@@ -18,7 +18,7 @@ const importSuccess = ref(false);
 
 async function exportData() {
   const payload = await db.exportAllData();
-  const json = JSON.stringify(payload, null, 2);
+  const json = JSON.stringify(payload);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
