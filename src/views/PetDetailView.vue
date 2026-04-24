@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import type { Reading } from '../types';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
@@ -52,12 +53,35 @@ const chartWindow = computed(() => {
   return { start, end };
 });
 
-const chartReadings = computed(() =>
-  readings.value.filter((r) => {
+const chartReadings = computed(() => {
+  const filtered = readings.value.filter((r) => {
     const d = new Date(r.date);
     return d >= chartWindow.value.start && d <= chartWindow.value.end;
-  })
-);
+  });
+
+  if (chartRange.value === 'week') return filtered;
+
+  const keyFn = chartRange.value === 'month'
+    ? (r: Reading) => r.date.slice(0, 10)
+    : (r: Reading) => r.date.slice(0, 7);
+
+  const groups = new Map<string, number[]>();
+  for (const r of filtered) {
+    const key = keyFn(r);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(r.rate);
+  }
+
+  return [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, rates]) => ({
+      id: key,
+      petId,
+      date: chartRange.value === 'month' ? `${key}T12:00:00` : `${key}-15T12:00:00`,
+      rate: Math.round(rates.reduce((s, r) => s + r, 0) / rates.length),
+      clickCount: 0,
+    }));
+});
 
 const chartLabel = computed(() => {
   const { start, end } = chartWindow.value;
