@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import type { Pet, Species } from '../types';
 import * as db from '../services/db';
 import { useReadingsStore } from './readings';
+import { v4 as generateId } from 'uuid';
 
 export const usePetsStore = defineStore('pets', () => {
   const pets = ref<Pet[]>([]);
@@ -21,7 +22,7 @@ export const usePetsStore = defineStore('pets', () => {
 
   async function addPet(data: { name: string; species: Species; photo: string | null; birthdate: string }) {
     const pet: Pet = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       createdAt: new Date().toISOString(),
       ...data,
     };

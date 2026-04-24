@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Reading } from '../types';
 import * as db from '../services/db';
+import { v4 as generateId } from 'uuid';
 
 export const useReadingsStore = defineStore('readings', () => {
   const readingsByPet = ref<Record<string, Reading[]>>({});
@@ -17,7 +18,7 @@ export const useReadingsStore = defineStore('readings', () => {
   }
 
   async function addReading(data: Omit<Reading, 'id'>) {
-    const reading: Reading = { id: crypto.randomUUID(), ...data };
+    const reading: Reading = { id: generateId(), ...data };
     await db.saveReading(reading);
     if (!readingsByPet.value[data.petId]) {
       readingsByPet.value[data.petId] = [];
