@@ -64,7 +64,7 @@ const chartOptions = computed(() => ({
     legend: { display: false },
     tooltip: {
       callbacks: {
-        label: (ctx: { parsed: { y: number } }) => `${ctx.parsed.y} breaths/min`,
+        label: (ctx: { parsed: { y: number | null } }) => `${ctx.parsed.y ?? ''} breaths/min`,
       },
     },
   },

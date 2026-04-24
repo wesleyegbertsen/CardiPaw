@@ -52,6 +52,30 @@ Export all pets and readings as a JSON file for backup or transfer. Import a pre
 
 These thresholds are based on general veterinary guidance. Always follow the specific advice of your own vet.
 
+## Docker
+
+The app is available as a pre-built image on Docker Hub: [wesleyegbertsen/cardipaw](https://hub.docker.com/r/wesleyegbertsen/cardipaw)
+
+### docker run
+
+```bash
+docker run -d -p 8080:80 --name cardipaw wesleyegbertsen/cardipaw:latest
+```
+
+Then open `http://localhost:8080`.
+
+### docker-compose
+
+```yaml
+services:
+  cardipaw:
+    image: wesleyegbertsen/cardipaw:latest
+    container_name: cardipaw
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+```
+
 ## Tech Stack
 
 - [Vue 3](https://vuejs.org/) + TypeScript
