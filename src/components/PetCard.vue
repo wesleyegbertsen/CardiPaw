@@ -90,14 +90,7 @@ function navigate() {
     <div class="photo-wrap">
       <img v-if="pet.photo" :src="pet.photo" :alt="pet.name" class="photo" />
       <div v-else class="photo-placeholder">
-        <!-- Cat silhouette -->
-        <svg v-if="pet.species === 'cat'" viewBox="0 0 64 64" fill="currentColor" width="40" height="40">
-          <path d="M8 4l8 12c-4 2-6 6-6 10v8c0 6 4 10 10 10h24c6 0 10-4 10-10v-8c0-4-2-8-6-10l8-12-10 6c-2-2-6-4-14-4s-12 2-14 4L8 4zm10 22a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm18 0a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm-10 8c4 0 7-2 8-4H18c1 2 4 4 8 4z"/>
-        </svg>
-        <!-- Dog silhouette -->
-        <svg v-else viewBox="0 0 64 64" fill="currentColor" width="40" height="40">
-          <path d="M52 12l-4 8c2 2 4 6 4 10v8c0 6-4 10-10 10H22c-6 0-10-4-10-10v-8c0-4 2-8 4-10l-4-8 8 4c2-2 6-4 12-4s10 2 12 4l8-4zm-28 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm18 0a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm-9 10c-3 0-6-1-8-3h16c-2 2-5 3-8 3z"/>
-        </svg>
+        <span class="placeholder-initial">{{ pet.name[0].toUpperCase() }}</span>
       </div>
     </div>
 
@@ -155,6 +148,11 @@ function navigate() {
   align-items: center;
   justify-content: center;
   color: var(--color-primary);
+}
+
+.placeholder-initial {
+  font-size: 24px;
+  font-weight: 700;
 }
 
 .info {
