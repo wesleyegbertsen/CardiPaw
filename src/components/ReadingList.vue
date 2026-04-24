@@ -1,7 +1,31 @@
 <script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { Reading } from '../types';
 
-defineProps<{ readings: Reading[] }>();
+const props = defineProps<{ readings: Reading[] }>();
+
+const PAGE = 20;
+const visibleCount = ref(PAGE);
+const sentinel = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
+
+const visibleReadings = computed(() => props.readings.slice(0, visibleCount.value));
+const hasMore = computed(() => visibleCount.value < props.readings.length);
+
+watch(() => props.readings.length, () => { visibleCount.value = PAGE; });
+
+watch(hasMore, (val) => {
+  if (!val) observer?.disconnect();
+});
+
+onMounted(() => {
+  observer = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting) visibleCount.value += PAGE;
+  });
+  if (sentinel.value) observer.observe(sentinel.value);
+});
+
+onUnmounted(() => observer?.disconnect());
 
 function getRateClass(rate: number) {
   if (rate <= 30) return 'normal';
@@ -33,7 +57,7 @@ function formatDate(iso: string) {
     </div>
 
     <div
-      v-for="reading in readings"
+      v-for="reading in visibleReadings"
       :key="reading.id"
       class="reading-item"
     >
@@ -45,6 +69,8 @@ function formatDate(iso: string) {
         </span>
       </div>
     </div>
+
+    <div v-if="hasMore" ref="sentinel" class="sentinel" />
   </div>
 </template>
 
@@ -115,5 +141,9 @@ function formatDate(iso: string) {
 .rate-badge.danger {
   background: var(--color-danger-bg);
   color: var(--color-danger);
+}
+
+.sentinel {
+  height: 1px;
 }
 </style>

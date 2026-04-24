@@ -16,7 +16,7 @@ import type { Reading } from '../types';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-const props = defineProps<{ readings: Reading[] }>();
+const props = defineProps<{ readings: Reading[]; maxTicks?: number }>();
 
 const sortedReadings = computed(() =>
   [...props.readings].sort((a, b) => a.date.localeCompare(b.date))
@@ -71,7 +71,7 @@ const chartOptions = computed(() => ({
   scales: {
     x: {
       ticks: {
-        maxTicksLimit: 8,
+        maxTicksLimit: props.maxTicks ?? 8,
         font: { size: 11 },
         color: '#6b7280',
       },

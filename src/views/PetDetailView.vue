@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
@@ -21,6 +21,54 @@ const ageDisplay = useAgeCalculator(birthdateRef);
 const readings = computed(() => readingsStore.getReadingsForPet(petId));
 const showDeleteDialog = ref(false);
 const activeTab = ref<'chart' | 'history'>('chart');
+
+const chartRange = ref<'week' | 'month' | 'year'>('week');
+const chartOffset = ref(0);
+
+watch(chartRange, () => { chartOffset.value = 0; });
+
+function fmt(date: Date, options: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat('en', options).format(date);
+}
+
+const chartWindow = computed(() => {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+
+  if (chartRange.value === 'week') {
+    end.setDate(now.getDate() + chartOffset.value * 7);
+    start.setTime(end.getTime() - 6 * 24 * 60 * 60 * 1000);
+  } else if (chartRange.value === 'month') {
+    start.setMonth(now.getMonth() + chartOffset.value, 1);
+    end.setMonth(now.getMonth() + chartOffset.value + 1, 0);
+  } else {
+    start.setFullYear(now.getFullYear() + chartOffset.value, 0, 1);
+    end.setFullYear(now.getFullYear() + chartOffset.value, 11, 31);
+  }
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+});
+
+const chartReadings = computed(() =>
+  readings.value.filter((r) => {
+    const d = new Date(r.date);
+    return d >= chartWindow.value.start && d <= chartWindow.value.end;
+  })
+);
+
+const chartLabel = computed(() => {
+  const { start, end } = chartWindow.value;
+  if (chartRange.value === 'week')
+    return `${fmt(start, { month: 'short', day: 'numeric' })} – ${fmt(end, { month: 'short', day: 'numeric' })}`;
+  if (chartRange.value === 'month')
+    return fmt(start, { month: 'long', year: 'numeric' });
+  return fmt(start, { year: 'numeric' });
+});
+
+const canGoNext = computed(() => chartOffset.value < 0);
 
 onMounted(() => {
   if (!pet.value) {
@@ -91,7 +139,29 @@ async function deletePet() {
     </div>
 
     <div class="tab-content">
-      <RRRChart v-if="activeTab === 'chart'" :readings="readings" />
+      <template v-if="activeTab === 'chart'">
+        <div class="chart-controls">
+          <div class="range-toggle">
+            <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">Week</button>
+            <button :class="{ active: chartRange === 'month' }" @click="chartRange = 'month'">Month</button>
+            <button :class="{ active: chartRange === 'year' }" @click="chartRange = 'year'">Year</button>
+          </div>
+          <div class="range-nav">
+            <button class="nav-btn" @click="chartOffset--" aria-label="Previous period">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+              </svg>
+            </button>
+            <span class="range-label">{{ chartLabel }}</span>
+            <button class="nav-btn" @click="chartOffset++" :disabled="!canGoNext" aria-label="Next period">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" />
+      </template>
       <ReadingList v-else :readings="readings" />
     </div>
 
@@ -275,5 +345,69 @@ async function deletePet() {
 .tab-content {
   padding: 16px;
   padding-bottom: 32px;
+}
+
+.chart-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.range-toggle {
+  display: flex;
+  background: var(--color-bg);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  gap: 2px;
+}
+
+.range-toggle button {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.range-toggle button.active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.range-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  transition: color 0.15s;
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.nav-btn:not(:disabled):active {
+  color: var(--color-primary);
+}
+
+.range-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
 }
 </style>
