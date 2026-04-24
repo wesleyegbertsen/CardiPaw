@@ -12,13 +12,11 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
-import type { Reading, Species } from '../types';
+import type { Reading } from '../types';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-const props = defineProps<{ readings: Reading[]; species: Species }>();
-
-const normalMax = computed(() => (props.species === 'cat' ? 40 : 30));
+const props = defineProps<{ readings: Reading[] }>();
 
 const sortedReadings = computed(() =>
   [...props.readings].sort((a, b) => a.date.localeCompare(b.date))
@@ -36,7 +34,7 @@ const chartData = computed(() => ({
   labels: labels.value,
   datasets: [
     {
-      label: 'Breaths / min',
+      label: 'Breaths/min',
       data: rates.value,
       borderColor: '#e05c7a',
       backgroundColor: 'rgba(224, 92, 122, 0.1)',
@@ -48,9 +46,9 @@ const chartData = computed(() => ({
       fill: true,
     },
     {
-      label: `Normal max (${normalMax.value})`,
-      data: labels.value.map(() => normalMax.value),
-      borderColor: 'rgba(22, 163, 74, 0.4)',
+      label: 'Normal max (30)',
+      data: labels.value.map(() => 30),
+      borderColor: 'rgba(22, 163, 74, 0.5)',
       borderWidth: 1.5,
       borderDash: [6, 4],
       pointRadius: 0,
@@ -66,7 +64,7 @@ const chartOptions = computed(() => ({
     legend: { display: false },
     tooltip: {
       callbacks: {
-        label: (ctx: { parsed: { y: number } }) => `${ctx.parsed.y} bpm`,
+        label: (ctx: { parsed: { y: number } }) => `${ctx.parsed.y} breaths/min`,
       },
     },
   },
@@ -80,7 +78,7 @@ const chartOptions = computed(() => ({
       grid: { display: false },
     },
     y: {
-      title: { display: true, text: 'Breaths / min', color: '#6b7280', font: { size: 11 } },
+      title: { display: true, text: 'Breaths/min', color: '#6b7280', font: { size: 11 } },
       min: 0,
       suggestedMax: 80,
       ticks: { font: { size: 11 }, color: '#6b7280' },
@@ -95,7 +93,7 @@ const chartOptions = computed(() => ({
     <template v-if="readings.length > 0">
       <div class="legend">
         <span class="legend-item primary">— Rate</span>
-        <span class="legend-item normal">- - Normal max ({{ normalMax }} bpm)</span>
+        <span class="legend-item normal">- - Normal max (30 breaths/min)</span>
       </div>
       <div class="chart-container">
         <Line :data="chartData" :options="chartOptions" />

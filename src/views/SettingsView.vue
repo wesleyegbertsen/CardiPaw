@@ -143,14 +143,18 @@ function cancelImport() {
           CardiPaw helps you track your pet's resting respiratory rate (RRR) —
           an important health indicator for pets with heart conditions like HCM.
         </p>
-        <div class="about-norms">
-          <div class="norm-row">
-            <span class="norm-animal">🐱 Cats</span>
-            <span class="norm-range">Normal: 20–40 bpm</span>
+        <div class="thresholds">
+          <div class="threshold-row">
+            <span class="threshold-label">Normal</span>
+            <span class="threshold-value">≤ 30 breaths/min</span>
           </div>
-          <div class="norm-row">
-            <span class="norm-animal">🐶 Dogs</span>
-            <span class="norm-range">Normal: 15–30 bpm</span>
+          <div class="threshold-row">
+            <span class="threshold-label">Elevated</span>
+            <span class="threshold-value">31–35 breaths/min</span>
+          </div>
+          <div class="threshold-row">
+            <span class="threshold-label">High</span>
+            <span class="threshold-value">&gt; 35 breaths/min</span>
           </div>
         </div>
       </section>
@@ -300,7 +304,7 @@ function cancelImport() {
   margin-bottom: 16px;
 }
 
-.about-norms {
+.thresholds {
   background: var(--color-surface);
   border-radius: var(--radius-md);
   padding: 12px 16px;
@@ -310,18 +314,18 @@ function cancelImport() {
   gap: 10px;
 }
 
-.norm-row {
+.threshold-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
 }
 
-.norm-animal {
+.threshold-label {
   font-weight: 500;
 }
 
-.norm-range {
+.threshold-value {
   color: var(--color-text-muted);
   font-size: 13px;
 }

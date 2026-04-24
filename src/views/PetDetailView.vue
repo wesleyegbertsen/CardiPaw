@@ -91,8 +91,8 @@ async function deletePet() {
     </div>
 
     <div class="tab-content">
-      <RRRChart v-if="activeTab === 'chart'" :readings="readings" :species="pet.species" />
-      <ReadingList v-else :readings="readings" :species="pet.species" />
+      <RRRChart v-if="activeTab === 'chart'" :readings="readings" />
+      <ReadingList v-else :readings="readings" />
     </div>
 
     <ConfirmDialog

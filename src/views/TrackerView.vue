@@ -166,7 +166,7 @@ onUnmounted(() => {
 
       <div class="result">
         <div class="result-number">{{ resultRate }}</div>
-        <div class="result-label">breaths per minute</div>
+        <div class="result-label">breaths/min</div>
       </div>
 
       <p class="result-note">Based on {{ clickCount }} breaths in 30 seconds</p>

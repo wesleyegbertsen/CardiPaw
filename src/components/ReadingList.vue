@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { Reading, Species } from '../types';
+import type { Reading } from '../types';
 
-const props = defineProps<{ readings: Reading[]; species: Species }>();
-
-const normalMax = computed(() => (props.species === 'cat' ? 40 : 30));
+defineProps<{ readings: Reading[] }>();
 
 function getRateClass(rate: number) {
-  if (rate <= normalMax.value) return 'normal';
-  if (rate <= 50) return 'warning';
+  if (rate <= 30) return 'normal';
+  if (rate <= 35) return 'warning';
   return 'danger';
 }
 
 function getRateLabel(rate: number) {
-  if (rate <= normalMax.value) return 'Normal';
-  if (rate <= 50) return 'Elevated';
+  if (rate <= 30) return 'Normal';
+  if (rate <= 35) return 'Elevated';
   return 'High';
 }
 
@@ -42,7 +39,7 @@ function formatDate(iso: string) {
     >
       <div class="reading-date">{{ formatDate(reading.date) }}</div>
       <div class="reading-right">
-        <span class="reading-rate">{{ reading.rate }} <span class="bpm-label">bpm</span></span>
+        <span class="reading-rate">{{ reading.rate }} <span class="rate-unit">breaths/min</span></span>
         <span class="rate-badge" :class="getRateClass(reading.rate)">
           {{ getRateLabel(reading.rate) }}
         </span>
@@ -92,7 +89,7 @@ function formatDate(iso: string) {
   color: var(--color-text);
 }
 
-.bpm-label {
+.rate-unit {
   font-size: 12px;
   font-weight: 400;
   color: var(--color-text-muted);
