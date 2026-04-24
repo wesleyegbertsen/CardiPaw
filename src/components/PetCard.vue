@@ -84,10 +84,14 @@ const chartOptions = {
 function navigate() {
   router.push({ name: 'pet', params: { id: props.pet.id } });
 }
+
+function startTracking() {
+  router.push({ name: 'tracker', params: { id: props.pet.id } });
+}
 </script>
 
 <template>
-  <button class="pet-card" @click="navigate" :aria-label="`View ${pet.name}'s profile`">
+  <div class="pet-card" @click="navigate" role="button" tabindex="0" @keydown.enter="navigate" @keydown.space.prevent="navigate" :aria-label="`View ${pet.name}'s profile`">
     <div class="photo-wrap">
       <img v-if="pet.photo" :src="pet.photo" :alt="pet.name" class="photo" />
       <div v-else class="photo-placeholder">
@@ -105,10 +109,16 @@ function navigate() {
       <Line :data="chartData" :options="(chartOptions as any)" />
     </div>
 
+    <button class="track-btn" @click.stop="startTracking" :aria-label="`Start tracking ${pet.name}`">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      </svg>
+    </button>
+
     <svg class="chevron" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
       <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>
     </svg>
-  </button>
+  </div>
 </template>
 
 <style scoped>
@@ -122,7 +132,16 @@ function navigate() {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   text-align: left;
+  cursor: pointer;
   transition: box-shadow 0.15s, transform 0.1s;
+}
+
+.pet-card:hover {
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.12));
+}
+
+.pet-card:hover .chevron {
+  color: var(--color-text-muted);
 }
 
 .pet-card:active {
@@ -200,6 +219,29 @@ function navigate() {
   width: 80px;
   height: 44px;
   flex-shrink: 0;
+}
+
+.track-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.track-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.track-btn:active {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .chevron {
