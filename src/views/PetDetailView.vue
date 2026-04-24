@@ -153,11 +153,16 @@ async function deletePet() {
               </svg>
             </button>
             <span class="range-label">{{ chartLabel }}</span>
-            <button class="nav-btn" @click="chartOffset++" :disabled="!canGoNext" aria-label="Next period">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-              </svg>
-            </button>
+            <div class="range-right">
+              <button class="today-btn" :style="{ visibility: chartOffset !== 0 ? 'visible' : 'hidden' }" @click="chartOffset = 0">
+                {{ chartRange === 'week' ? 'This week' : chartRange === 'month' ? 'This month' : 'This year' }}
+              </button>
+              <button class="nav-btn" @click="chartOffset++" :disabled="!canGoNext" aria-label="Next period">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
         <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" />
@@ -380,9 +385,16 @@ async function deletePet() {
 }
 
 .range-nav {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.range-right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
 .nav-btn {
@@ -409,5 +421,14 @@ async function deletePet() {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text);
+}
+
+.today-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-light);
 }
 </style>
