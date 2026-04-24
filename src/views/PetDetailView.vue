@@ -70,6 +70,16 @@ const chartLabel = computed(() => {
 
 const canGoNext = computed(() => chartOffset.value < 0);
 
+const oldestReadingDate = computed(() => {
+  if (readings.value.length === 0) return null;
+  return readings.value.reduce((min, r) => r.date < min ? r.date : min, readings.value[0].date);
+});
+
+const canGoPrev = computed(() => {
+  if (!oldestReadingDate.value) return false;
+  return new Date(oldestReadingDate.value) < chartWindow.value.start;
+});
+
 onMounted(() => {
   if (!pet.value) {
     router.push({ name: 'home' });
@@ -147,7 +157,7 @@ async function deletePet() {
             <button :class="{ active: chartRange === 'year' }" @click="chartRange = 'year'">Year</button>
           </div>
           <div class="range-nav">
-            <button class="nav-btn" @click="chartOffset--" aria-label="Previous period">
+            <button class="nav-btn" @click="chartOffset--" :disabled="!canGoPrev" aria-label="Previous period">
               <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
               </svg>
