@@ -68,11 +68,11 @@ const router = useRouter();
 }
 
 .paw-icon {
-  width: 28px;
-  height: 28px;
-  vertical-align: middle;
-  margin-left: 6px;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
   opacity: 0.9;
+  margin-top: 2px;
 }
 
 .subtitle {
