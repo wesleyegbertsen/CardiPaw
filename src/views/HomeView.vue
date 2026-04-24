@@ -10,7 +10,12 @@ const router = useRouter();
 <template>
   <div class="home">
     <header class="header">
-      <h1 class="title">CardiPaw</h1>
+      <h1 class="title">
+        CardiPaw
+        <svg class="paw-icon" viewBox="0 0 512 512" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M226.5 92.9c14.3 42.9-.3 86.2-32.6 96.8s-70.1-15.6-84.4-58.5 .3-86.2 32.6-96.8 70.1 15.6 84.4 58.5zm-133 106.8c18.9 32.4 14.3 70.1-10.2 84.1s-59.7-.9-78.5-33.3-14.3-70.1 10.2-84.1 59.7 .9 78.5 33.3zM256 224c-41.3 0-134.4 35.9-186.8 177.2-3.6 9.7-5.2 20.1-5.2 30.5v1.6C64 459.1 84.9 480 110.7 480c11.5 0 22.9-1.2 34-3.6 22.1-4.6 44.6-6.9 67.3-6.9s45.2 2.3 67.3 6.9c11.1 2.4 22.5 3.6 34 3.6 25.8 0 46.7-20.9 46.7-46.7v-1.6c0-10.4-1.6-20.8-5.2-30.5C402.4 259.9 309.3 224 256 224zm165.8 58.7c-24.5-14-29.1-51.7-10.2-84.1s54-47.3 78.5-33.3 29.1 51.7 10.2 84.1-54 47.3-78.5 33.3zM310.1 189.7c-32.3-10.6-46.9-53.9-32.6-96.8s52.1-69.1 84.4-58.5 46.9 53.9 32.6 96.8-52.1 69.1-84.4 58.5z"/>
+        </svg>
+      </h1>
       <p class="subtitle">Resting respiratory tracker</p>
     </header>
 
@@ -48,7 +53,7 @@ const router = useRouter();
 }
 
 .header {
-  padding: 48px 24px 24px;
+  padding: 24px 24px 24px;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: #fff;
 }
@@ -57,6 +62,17 @@ const router = useRouter();
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paw-icon {
+  width: 28px;
+  height: 28px;
+  vertical-align: middle;
+  margin-left: 6px;
+  opacity: 0.9;
 }
 
 .subtitle {
