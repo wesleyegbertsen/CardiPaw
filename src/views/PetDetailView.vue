@@ -106,7 +106,8 @@ const canGoPrev = computed(() => {
   return new Date(oldestReadingDate.value) < chartWindow.value.start;
 });
 
-onMounted(() => {
+onMounted(async () => {
+  await petsStore.loadPets();
   if (!pet.value) {
     router.push({ name: 'home' });
     return;

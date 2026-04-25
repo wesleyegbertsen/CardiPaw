@@ -8,16 +8,22 @@ import { v4 as generateId } from 'uuid';
 export const usePetsStore = defineStore('pets', () => {
   const pets = ref<Pet[]>([]);
   const loading = ref(false);
+  let _loadPromise: Promise<void> | null = null;
 
   const getPetById = computed(() => (id: string) => pets.value.find((p) => p.id === id));
 
   async function loadPets() {
-    loading.value = true;
-    try {
-      pets.value = await db.getAllPets();
-    } finally {
-      loading.value = false;
-    }
+    if (_loadPromise) return _loadPromise;
+    _loadPromise = (async () => {
+      loading.value = true;
+      try {
+        pets.value = await db.getAllPets();
+      } finally {
+        loading.value = false;
+        _loadPromise = null;
+      }
+    })();
+    return _loadPromise;
   }
 
   async function addPet(data: { name: string; species: Species; photo: string | null; birthdate: string }) {
