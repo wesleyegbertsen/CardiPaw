@@ -113,6 +113,12 @@ const canGoPrev = computed(() => {
   return new Date(oldestReadingDate.value) < chartWindow.value.start;
 });
 
+const monthsWithReadings = computed(() => {
+  const set = new Set<string>();
+  for (const r of readings.value) set.add(r.date.slice(0, 7));
+  return set;
+});
+
 const availableYears = computed(() => {
   const cur = new Date().getFullYear();
   const oldest = oldestReadingDate.value
@@ -162,6 +168,12 @@ function isFutureMonth(monthIndex: number, year: number): boolean {
 function isDisplayedMonth(monthIndex: number, year: number): boolean {
   const s = chartWindow.value.start;
   return year === s.getFullYear() && monthIndex === s.getMonth();
+}
+
+function hasNoReadingsInMonth(monthIndex: number, year: number): boolean {
+  // Build "YYYY-MM" key (monthIndex is 0-based, so +1 and zero-pad to match ISO date prefix)
+  const key = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+  return !monthsWithReadings.value.has(key);
 }
 
 onMounted(async () => {
@@ -289,7 +301,7 @@ async function confirmDeleteReading() {
                     <button v-for="(m, i) in MONTH_NAMES" :key="i"
                       class="jump-month-btn"
                       :class="{ active: isDisplayedMonth(i, pickerYear) }"
-                      :disabled="isFutureMonth(i, pickerYear)"
+                      :disabled="isFutureMonth(i, pickerYear) || hasNoReadingsInMonth(i, pickerYear)"
                       @click="jumpToMonth(i, pickerYear)">{{ m }}</button>
                   </div>
                 </template>
