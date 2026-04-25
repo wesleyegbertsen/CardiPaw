@@ -140,7 +140,7 @@ const availableYears = computed(() => {
     ? new Date(oldestReadingDate.value).getFullYear()
     : cur;
   const years: number[] = [];
-  for (let y = oldest; y <= cur; y++) years.push(y);
+  for (let y = cur; y >= oldest; y--) years.push(y);
   return years;
 });
 
