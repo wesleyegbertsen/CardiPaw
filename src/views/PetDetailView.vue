@@ -24,7 +24,12 @@ const readings = computed(() => readingsStore.getReadingsForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
 const pendingDeleteReading = ref<Reading | null>(null);
-const activeTab = ref<'chart' | 'history'>('chart');
+const activeTab = computed({
+  get: () => (route.query.tab === 'history' ? 'history' : 'chart') as 'chart' | 'history',
+  set: (val: 'chart' | 'history') => {
+    router.replace({ query: { ...route.query, tab: val } });
+  },
+});
 
 const chartRange = ref<'week' | 'month' | 'year'>('week');
 const chartOffset = ref(0);
