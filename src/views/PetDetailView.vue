@@ -339,7 +339,7 @@ async function confirmDeleteReading() {
                 </template>
                 <template v-else-if="chartRange === 'month'">
                   <div class="jump-month-nav">
-                    <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[0]" @click="pickerYear--">
+                    <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[availableYears.length - 1]" @click="pickerYear--">
                       <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
                         <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                       </svg>
