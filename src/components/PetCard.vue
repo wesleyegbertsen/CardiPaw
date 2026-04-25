@@ -51,6 +51,18 @@ const sparklineData = computed(() => {
 
 const hasSparklineData = computed(() => sparklineData.value.values.filter((v) => v !== null).length >= 2);
 
+const sparklineMin = computed(() => {
+  const nonNull = sparklineData.value.values.filter((v): v is number => v !== null);
+  if (nonNull.length === 0) return 0;
+  return Math.max(0, Math.min(...nonNull) - 5);
+});
+
+const sparklineMax = computed(() => {
+  const nonNull = sparklineData.value.values.filter((v): v is number => v !== null);
+  if (nonNull.length === 0) return 40;
+  return Math.max(...nonNull) + 5;
+});
+
 const chartData = computed(() => ({
   labels: sparklineData.value.labels,
   datasets: [
@@ -67,7 +79,7 @@ const chartData = computed(() => ({
   ],
 }));
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: { duration: 0 },
@@ -77,9 +89,9 @@ const chartOptions = {
   },
   scales: {
     x: { display: false },
-    y: { display: false, min: 0, max: 40 },
+    y: { display: false, min: sparklineMin.value, max: sparklineMax.value },
   },
-};
+}));
 
 function navigate() {
   router.push({ name: 'pet', params: { id: props.pet.id } });
