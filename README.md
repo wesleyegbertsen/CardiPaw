@@ -38,6 +38,10 @@ Navigate backwards and forwards through history with previous/next controls, or 
 
 Each pet on the home screen shows a compact 7-day sparkline so you can see at a glance whether the trend is stable, rising, or falling, without opening the detail view.
 
+### PDF Report
+
+Generate a PDF report for any pet directly from the detail view. Select one or more months from the full history, choose whether to order them newest or oldest first, and CardiPaw produces a report where each month gets its own chart and a complete reading list with timestamps and status labels. This makes it easy to hand your vet a clear, structured overview of your pet's RRR measurements.
+
 ### Data Export & Import
 
 Export all pets and readings as a JSON file for backup or transfer. Import a previously exported file to restore your data.
