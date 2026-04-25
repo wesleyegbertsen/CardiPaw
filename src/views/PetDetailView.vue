@@ -331,7 +331,8 @@ async function confirmDeleteReading() {
                   <path d="M7 10l5 5 5-5z"/>
                 </svg>
               </button>
-              <div v-if="showJumpPicker" class="jump-picker" ref="jumpPickerRef">
+              <div v-if="showJumpPicker" class="jump-picker" :class="`picker-${chartRange}`">
+                <div class="jump-picker-scroll" ref="jumpPickerRef">
                 <template v-if="chartRange === 'year'">
                   <button v-for="y in availableYears" :key="y"
                     class="jump-year-btn" :class="{ active: y === chartWindow.start.getFullYear() }"
@@ -367,6 +368,7 @@ async function confirmDeleteReading() {
                       @click="jumpToWeekOffset(item.offset)">{{ weekLabel(item.offset) }}</button>
                   </template>
                 </template>
+                </div>
               </div>
             </div>
             <div v-if="showJumpPicker" class="jump-backdrop" @click="showJumpPicker = false" />
@@ -703,15 +705,35 @@ async function confirmDeleteReading() {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  padding: 12px;
   z-index: 41;
   min-width: 200px;
   max-width: 280px;
+  overflow: hidden;
+}
+
+.jump-picker::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background: linear-gradient(to bottom, transparent, var(--color-surface));
+  pointer-events: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.jump-picker-scroll {
+  padding: 12px;
   max-height: 224px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.picker-year .jump-picker-scroll {
+  max-height: 200px;
 }
 
 .jump-week-year-header {
