@@ -41,6 +41,20 @@ function fmt(date: Date, options: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat('en', options).format(date);
 }
 
+function fmtWeekRange(start: Date, end: Date): string {
+  const currentYear = new Date().getFullYear();
+  const spansTwoYears = start.getFullYear() !== end.getFullYear();
+  const isCurrentYear = end.getFullYear() === currentYear;
+
+  if (spansTwoYears) {
+    return `${fmt(start, { month: 'short', day: 'numeric', year: 'numeric' })} – ${fmt(end, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }
+  if (!isCurrentYear) {
+    return `${fmt(start, { month: 'short', day: 'numeric' })} – ${fmt(end, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }
+  return `${fmt(start, { month: 'short', day: 'numeric' })} – ${fmt(end, { month: 'short', day: 'numeric' })}`;
+}
+
 const chartWindow = computed(() => {
   const now = new Date();
   const start = new Date(now);
@@ -95,7 +109,7 @@ const chartReadings = computed(() => {
 const chartLabel = computed(() => {
   const { start, end } = chartWindow.value;
   if (chartRange.value === 'week')
-    return `${fmt(start, { month: 'short', day: 'numeric' })} – ${fmt(end, { month: 'short', day: 'numeric' })}`;
+    return fmtWeekRange(start, end);
   if (chartRange.value === 'month')
     return fmt(start, { month: 'long', year: 'numeric' });
   return fmt(start, { year: 'numeric' });
@@ -638,6 +652,7 @@ async function confirmDeleteReading() {
   padding: 3px 10px;
   border-radius: var(--radius-full);
   background: var(--color-primary-light);
+  white-space: nowrap;
 }
 
 .range-label-wrap {
