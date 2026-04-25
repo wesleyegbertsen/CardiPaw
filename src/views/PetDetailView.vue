@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { Reading } from '../types';
 import { usePetsStore } from '../stores/pets';
@@ -30,6 +30,7 @@ const chartRange = ref<'week' | 'month' | 'year'>('week');
 const chartOffset = ref(0);
 const showJumpPicker = ref(false);
 const pickerYear = ref(new Date().getFullYear());
+const jumpPickerRef = ref<HTMLElement | null>(null);
 
 
 watch(chartRange, () => {
@@ -186,6 +187,15 @@ function openJumpPicker() {
     pickerYear.value = chartWindow.value.start.getFullYear();
   }
   showJumpPicker.value = !showJumpPicker.value;
+  if (showJumpPicker.value) {
+    nextTick(() => {
+      const picker = jumpPickerRef.value;
+      const active = picker?.querySelector<HTMLElement>('.active');
+      if (picker && active) {
+        picker.scrollTop = active.offsetTop - picker.clientHeight / 2 + active.offsetHeight / 2;
+      }
+    });
+  }
 }
 
 function jumpToYear(year: number) {
@@ -321,7 +331,7 @@ async function confirmDeleteReading() {
                   <path d="M7 10l5 5 5-5z"/>
                 </svg>
               </button>
-              <div v-if="showJumpPicker" class="jump-picker">
+              <div v-if="showJumpPicker" class="jump-picker" ref="jumpPickerRef">
                 <template v-if="chartRange === 'year'">
                   <button v-for="y in availableYears" :key="y"
                     class="jump-year-btn" :class="{ active: y === chartWindow.start.getFullYear() }"
