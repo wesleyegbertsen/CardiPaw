@@ -707,7 +707,7 @@ async function confirmDeleteReading() {
   z-index: 41;
   min-width: 200px;
   max-width: 280px;
-  max-height: 234px;
+  max-height: 224px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
