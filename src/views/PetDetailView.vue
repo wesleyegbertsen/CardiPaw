@@ -135,7 +135,8 @@ function openJumpPicker() {
   if (chartRange.value === 'month') {
     pickerYear.value = chartWindow.value.start.getFullYear();
   } else if (chartRange.value === 'week') {
-    pickerDate.value = chartWindow.value.start.toISOString().slice(0, 10);
+    const s = chartWindow.value.start;
+    pickerDate.value = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
   }
   showJumpPicker.value = !showJumpPicker.value;
 }
