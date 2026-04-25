@@ -30,7 +30,7 @@ const chartRange = ref<'week' | 'month' | 'year'>('week');
 const chartOffset = ref(0);
 const showJumpPicker = ref(false);
 const pickerYear = ref(new Date().getFullYear());
-const pickerDate = ref('');
+
 
 watch(chartRange, () => {
   chartOffset.value = 0;
@@ -129,14 +129,47 @@ const availableYears = computed(() => {
   return years;
 });
 
+const weeksWithReadings = computed(() => {
+  const now = new Date();
+  const offsets = new Set<number>();
+  for (const r of readings.value) {
+    const daysDiff = Math.floor((new Date(r.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    // Same offset formula used by chartWindow: ceil maps a day to the week whose end covers it
+    offsets.add(Math.ceil(daysDiff / 7));
+  }
+  return [...offsets].sort((a, b) => b - a);
+});
+
+const weeksWithReadingsSections = computed(() => {
+  const now = new Date();
+  const result: Array<{ type: 'header'; year: number } | { type: 'week'; offset: number }> = [];
+  let lastYear: number | null = null;
+  for (const offset of weeksWithReadings.value) {
+    const end = new Date(now);
+    end.setDate(now.getDate() + offset * 7);
+    const year = end.getFullYear();
+    if (year !== lastYear) {
+      result.push({ type: 'header', year });
+      lastYear = year;
+    }
+    result.push({ type: 'week', offset });
+  }
+  return result;
+});
+
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function weekLabel(offset: number): string {
+  const now = new Date();
+  const end = new Date(now);
+  end.setDate(now.getDate() + offset * 7);
+  const start = new Date(end.getTime() - 6 * 24 * 60 * 60 * 1000);
+  return `${fmt(start, { month: 'short', day: 'numeric' })} – ${fmt(end, { month: 'short', day: 'numeric' })}`;
+}
 
 function openJumpPicker() {
   if (chartRange.value === 'month') {
     pickerYear.value = chartWindow.value.start.getFullYear();
-  } else if (chartRange.value === 'week') {
-    const s = chartWindow.value.start;
-    pickerDate.value = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
   }
   showJumpPicker.value = !showJumpPicker.value;
 }
@@ -152,12 +185,8 @@ function jumpToMonth(monthIndex: number, year: number) {
   showJumpPicker.value = false;
 }
 
-function jumpToWeek() {
-  if (!pickerDate.value) return;
-  const date = new Date(pickerDate.value + 'T12:00:00');
-  const now = new Date();
-  const daysDiff = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  chartOffset.value = Math.ceil(daysDiff / 7);
+function jumpToWeekOffset(offset: number) {
+  chartOffset.value = offset;
   showJumpPicker.value = false;
 }
 
@@ -307,11 +336,12 @@ async function confirmDeleteReading() {
                   </div>
                 </template>
                 <template v-else>
-                  <div class="jump-week-row">
-                    <input type="date" class="jump-date-input" v-model="pickerDate"
-                      :max="new Date().toISOString().slice(0, 10)" />
-                    <button class="jump-go-btn" @click="jumpToWeek">Go</button>
-                  </div>
+                  <template v-for="item in weeksWithReadingsSections" :key="item.type === 'header' ? `h-${item.year}` : item.offset">
+                    <div v-if="item.type === 'header'" class="jump-week-year-header">{{ item.year }}</div>
+                    <button v-else
+                      class="jump-year-btn" :class="{ active: item.offset === chartOffset }"
+                      @click="jumpToWeekOffset(item.offset)">{{ weekLabel(item.offset) }}</button>
+                  </template>
                 </template>
               </div>
             </div>
@@ -652,9 +682,20 @@ async function confirmDeleteReading() {
   z-index: 41;
   min-width: 200px;
   max-width: 280px;
+  max-height: 234px;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.jump-week-year-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+  padding: 4px 12px 2px;
 }
 
 .jump-year-btn {
@@ -733,28 +774,4 @@ async function confirmDeleteReading() {
   cursor: default;
 }
 
-.jump-week-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.jump-date-input {
-  flex: 1;
-  padding: 6px 8px;
-  font-size: 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-.jump-go-btn {
-  padding: 6px 14px;
-  font-size: 14px;
-  font-weight: 600;
-  background: var(--color-primary);
-  color: #fff;
-  border-radius: var(--radius-sm);
-}
 </style>
