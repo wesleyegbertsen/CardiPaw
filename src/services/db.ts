@@ -70,6 +70,11 @@ export async function saveReading(reading: Reading): Promise<void> {
   await db.put('readings', reading);
 }
 
+export async function deleteReading(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete('readings', id);
+}
+
 export async function deleteReadingsForPet(petId: string): Promise<void> {
   const db = await getDb();
   const tx = db.transaction('readings', 'readwrite');
