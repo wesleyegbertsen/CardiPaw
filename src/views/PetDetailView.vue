@@ -28,8 +28,14 @@ const activeTab = ref<'chart' | 'history'>('chart');
 
 const chartRange = ref<'week' | 'month' | 'year'>('week');
 const chartOffset = ref(0);
+const showJumpPicker = ref(false);
+const pickerYear = ref(new Date().getFullYear());
+const pickerDate = ref('');
 
-watch(chartRange, () => { chartOffset.value = 0; });
+watch(chartRange, () => {
+  chartOffset.value = 0;
+  showJumpPicker.value = false;
+});
 
 function fmt(date: Date, options: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat('en', options).format(date);
@@ -106,6 +112,57 @@ const canGoPrev = computed(() => {
   if (!oldestReadingDate.value) return false;
   return new Date(oldestReadingDate.value) < chartWindow.value.start;
 });
+
+const availableYears = computed(() => {
+  const cur = new Date().getFullYear();
+  const oldest = oldestReadingDate.value
+    ? new Date(oldestReadingDate.value).getFullYear()
+    : cur;
+  const years: number[] = [];
+  for (let y = oldest; y <= cur; y++) years.push(y);
+  return years;
+});
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function openJumpPicker() {
+  if (chartRange.value === 'month') {
+    pickerYear.value = chartWindow.value.start.getFullYear();
+  } else if (chartRange.value === 'week') {
+    pickerDate.value = chartWindow.value.start.toISOString().slice(0, 10);
+  }
+  showJumpPicker.value = !showJumpPicker.value;
+}
+
+function jumpToYear(year: number) {
+  chartOffset.value = year - new Date().getFullYear();
+  showJumpPicker.value = false;
+}
+
+function jumpToMonth(monthIndex: number, year: number) {
+  const now = new Date();
+  chartOffset.value = (year - now.getFullYear()) * 12 + (monthIndex - now.getMonth());
+  showJumpPicker.value = false;
+}
+
+function jumpToWeek() {
+  if (!pickerDate.value) return;
+  const date = new Date(pickerDate.value + 'T12:00:00');
+  const now = new Date();
+  const daysDiff = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  chartOffset.value = Math.ceil(daysDiff / 7);
+  showJumpPicker.value = false;
+}
+
+function isFutureMonth(monthIndex: number, year: number): boolean {
+  const now = new Date();
+  return year > now.getFullYear() || (year === now.getFullYear() && monthIndex > now.getMonth());
+}
+
+function isDisplayedMonth(monthIndex: number, year: number): boolean {
+  const s = chartWindow.value.start;
+  return year === s.getFullYear() && monthIndex === s.getMonth();
+}
 
 onMounted(async () => {
   await petsStore.loadPets();
@@ -201,7 +258,51 @@ async function confirmDeleteReading() {
                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
               </svg>
             </button>
-            <span class="range-label">{{ chartLabel }}</span>
+            <div class="range-label-wrap">
+              <button class="range-label-btn" @click="openJumpPicker">
+                {{ chartLabel }}
+                <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                  <path d="M7 10l5 5 5-5z"/>
+                </svg>
+              </button>
+              <div v-if="showJumpPicker" class="jump-picker">
+                <template v-if="chartRange === 'year'">
+                  <button v-for="y in availableYears" :key="y"
+                    class="jump-year-btn" :class="{ active: y === chartWindow.start.getFullYear() }"
+                    @click="jumpToYear(y)">{{ y }}</button>
+                </template>
+                <template v-else-if="chartRange === 'month'">
+                  <div class="jump-month-nav">
+                    <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[0]" @click="pickerYear--">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                    </button>
+                    <span class="jump-year-label">{{ pickerYear }}</span>
+                    <button class="jump-nav-arrow" :disabled="pickerYear >= new Date().getFullYear()" @click="pickerYear++">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="jump-month-grid">
+                    <button v-for="(m, i) in MONTH_NAMES" :key="i"
+                      class="jump-month-btn"
+                      :class="{ active: isDisplayedMonth(i, pickerYear) }"
+                      :disabled="isFutureMonth(i, pickerYear)"
+                      @click="jumpToMonth(i, pickerYear)">{{ m }}</button>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="jump-week-row">
+                    <input type="date" class="jump-date-input" v-model="pickerDate"
+                      :max="new Date().toISOString().slice(0, 10)" />
+                    <button class="jump-go-btn" @click="jumpToWeek">Go</button>
+                  </div>
+                </template>
+              </div>
+            </div>
+            <div v-if="showJumpPicker" class="jump-backdrop" @click="showJumpPicker = false" />
             <div class="range-right">
               <button class="today-btn" :style="{ visibility: chartOffset !== 0 ? 'visible' : 'hidden' }" @click="chartOffset = 0">
                 {{ chartRange === 'week' ? 'This week' : chartRange === 'month' ? 'This month' : 'This year' }}
@@ -420,6 +521,7 @@ async function confirmDeleteReading() {
   flex-direction: column;
   gap: 10px;
   margin-bottom: 16px;
+  position: relative;
 }
 
 .range-toggle {
@@ -493,5 +595,153 @@ async function confirmDeleteReading() {
   padding: 3px 10px;
   border-radius: var(--radius-full);
   background: var(--color-primary-light);
+}
+
+.range-label-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.range-label-btn {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.range-label-btn:active {
+  background: var(--color-bg);
+}
+
+.jump-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.jump-picker {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 12px;
+  z-index: 41;
+  min-width: 200px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jump-year-btn {
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 14px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  transition: background 0.1s;
+}
+
+.jump-year-btn:hover {
+  background: var(--color-bg);
+}
+
+.jump-year-btn.active {
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.jump-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.jump-year-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.jump-nav-arrow {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-full);
+}
+
+.jump-nav-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.jump-month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.jump-month-btn {
+  padding: 6px 0;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  transition: background 0.1s;
+}
+
+.jump-month-btn:hover:not(:disabled) {
+  background: var(--color-bg);
+}
+
+.jump-month-btn.active {
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.jump-month-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.jump-week-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.jump-date-input {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.jump-go-btn {
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-sm);
 }
 </style>
