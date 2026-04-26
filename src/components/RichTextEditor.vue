@@ -46,7 +46,7 @@ watch(
     const current = editor.value.getHTML();
     const normalized = current === '<p></p>' ? '' : current;
     if (newVal !== normalized) {
-      editor.value.commands.setContent(newVal || '', false);
+      editor.value.commands.setContent(newVal || '');
     }
   }
 );
