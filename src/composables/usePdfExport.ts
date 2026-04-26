@@ -12,6 +12,23 @@ import type { Pet, Reading } from '../types';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
+const RESTING_SVG_PATH = 'M21 9V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v2c-1.1 0-2 .9-2 2v5h1.33L3 18h1l.67-2h14.67l.66 2h1l-.33-2H23v-5c0-1.1-.9-2-2-2zm-8 0H5V7h8v2zm6 0h-4V7h4v2z';
+const SLEEPING_SVG_PATH = 'M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z';
+
+function svgPathToDataUrl(path: string, color: string): Promise<string> {
+  return new Promise(resolve => {
+    const size = 48;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}"><path d="${path}" fill="${color}"/></svg>`;
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img, 0, 0); resolve(canvas.toDataURL('image/png')); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+}
+
 const ML = 14;   // margin left
 const MR = 14;   // margin right
 const MT = 16;   // margin top
@@ -166,6 +183,11 @@ export function usePdfExport() {
   async function generatePdf(pet: Pet, readings: Reading[], selectedMonths: string[], newestFirst = true, includeNotes = false): Promise<void> {
     isGenerating.value = true;
     try {
+      const [restingIconUrl, sleepingIconUrl] = await Promise.all([
+        svgPathToDataUrl(RESTING_SVG_PATH, '#16a34a'),
+        svgPathToDataUrl(SLEEPING_SVG_PATH, '#d97706'),
+      ]);
+
       const doc = new jsPDF('p', 'mm', 'a4');
       let curY = MT;
 
@@ -308,11 +330,10 @@ export function usePdfExport() {
 
           if (r.restState) {
             const isResting = r.restState === 'resting';
-            doc.setFillColor(isResting ? '#16a34a' : '#d97706');
-            doc.circle(ML + 159, curY + 3.5, 1.5, 'F');
-            doc.setTextColor(isResting ? '#16a34a' : '#d97706');
+            doc.addImage(isResting ? restingIconUrl : sleepingIconUrl, 'PNG', ML + 157, curY + 1.5, 4, 4);
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
+            doc.setTextColor(isResting ? '#16a34a' : '#d97706');
             doc.text(isResting ? 'Resting' : 'Sleeping', ML + 162, curY + 5);
           }
 
