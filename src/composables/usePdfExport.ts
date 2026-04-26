@@ -118,6 +118,16 @@ function statusOf(rate: number): { text: string; color: string } {
   return { text: 'High', color: '#dc2626' };
 }
 
+function drawNotesHeader(doc: jsPDF, curY: number): void {
+  doc.setFillColor('#f3f4f6');
+  doc.rect(ML, curY, UW, 7, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor('#374151');
+  doc.text('Date / Time', ML + 2, curY + 5);
+  doc.text('Note', ML + 62, curY + 5);
+}
+
 function drawTableHeader(doc: jsPDF, curY: number): void {
   doc.setFillColor('#f3f4f6');
   doc.rect(ML, curY, UW, 7, 'F');
@@ -127,12 +137,33 @@ function drawTableHeader(doc: jsPDF, curY: number): void {
   doc.text('Date / Time', ML + 2, curY + 5);
   doc.text('Rate (breaths/min)', ML + 70 + 2, curY + 5);
   doc.text('Status', ML + 130 + 2, curY + 5);
+  doc.text('Rest', ML + 158, curY + 5);
+}
+
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/(<p>\s*<\/p>)+$/gi, '')          // strip trailing empty paragraphs
+    .replace(/<li[^>]*>\s*<p[^>]*>/gi, '- ')   // tiptap: <li><p> → dash prefix
+    .replace(/<\/p>\s*<\/li>/gi, '\n')          // tiptap: </p></li> → newline
+    .replace(/<li[^>]*>/gi, '- ')               // fallback bare <li>
+    .replace(/<\/li>/gi, '\n')                  // fallback bare </li>
+    .replace(/<\/p>/gi, '\n')                   // </p> → newline
+    .replace(/<\/h[1-6]>/gi, '\n')              // headings
+    .replace(/<br\s*\/?>/gi, '\n')              // line breaks
+    .replace(/<[^>]+>/g, '')                    // strip remaining tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/\n{3,}/g, '\n\n')                 // collapse excess blank lines
+    .trim();
 }
 
 export function usePdfExport() {
   const isGenerating = ref(false);
 
-  async function generatePdf(pet: Pet, readings: Reading[], selectedMonths: string[], newestFirst = true): Promise<void> {
+  async function generatePdf(pet: Pet, readings: Reading[], selectedMonths: string[], newestFirst = true, includeNotes = false): Promise<void> {
     isGenerating.value = true;
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
@@ -228,6 +259,15 @@ export function usePdfExport() {
         );
         curY += 7;
 
+        // Readings section label
+        doc.setFillColor('#f3f4f6');
+        doc.rect(ML, curY, UW, 7, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor('#374151');
+        doc.text('Readings', ML + 2, curY + 5);
+        curY += 7;
+
         // Table header
         drawTableHeader(doc, curY);
         curY += 7;
@@ -266,11 +306,71 @@ export function usePdfExport() {
           doc.setTextColor(status.color);
           doc.text(status.text, ML + 132, curY + 5);
 
+          if (r.restState) {
+            const isResting = r.restState === 'resting';
+            doc.setFillColor(isResting ? '#16a34a' : '#d97706');
+            doc.circle(ML + 159, curY + 3.5, 1.5, 'F');
+            doc.setTextColor(isResting ? '#16a34a' : '#d97706');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.text(isResting ? 'Resting' : 'Sleeping', ML + 162, curY + 5);
+          }
+
+          doc.setTextColor('#1a1a1a');
           curY += 7;
           rowAlt = !rowAlt;
         }
 
         curY += 10;
+
+        if (includeNotes) {
+          const notedReadings = monthReadings.filter(r => htmlToPlainText(r.notes ?? '').trim());
+          if (notedReadings.length > 0) {
+            doc.setFillColor('#f3f4f6');
+            doc.rect(ML, curY, UW, 7, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor('#374151');
+            doc.text('Reading Notes', ML + 2, curY + 5);
+            curY += 7;
+
+            drawNotesHeader(doc, curY);
+            curY += 7;
+
+            const noteColX = ML + 62;
+            const noteWidth = UW - 62;
+            let noteRowAlt = false;
+            for (const r of notedReadings) {
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(9);
+              const plainNote = htmlToPlainText(r.notes!);
+              const lines = doc.splitTextToSize(plainNote, noteWidth);
+              const lineH = doc.getFontSize() / 72 * 25.4 * doc.getLineHeightFactor();
+              const rowH = Math.max(7, (lines.length - 1) * lineH + 7);
+              if (curY + rowH > PH - MB) {
+                doc.addPage();
+                curY = MT;
+                drawNotesHeader(doc, curY);
+                curY += 7;
+                noteRowAlt = false;
+                doc.setFont('helvetica', 'normal');
+              }
+              if (noteRowAlt) {
+                doc.setFillColor('#f9fafb');
+                doc.rect(ML, curY, UW, rowH, 'F');
+              }
+              const d = new Date(r.date);
+              const noteDateStr = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
+              const noteTimeStr = new Intl.DateTimeFormat('en', { hour: 'numeric', minute: '2-digit', hour12: true }).format(d);
+              doc.setTextColor('#1a1a1a');
+              doc.text(`${noteDateStr}, ${noteTimeStr}`, ML + 2, curY + 5);
+              doc.text(lines, noteColX, curY + 5);
+              curY += rowH;
+              noteRowAlt = !noteRowAlt;
+            }
+            curY += 6;
+          }
+        }
       }
 
       // ── Page footers ──

@@ -15,6 +15,7 @@ const availableMonths = computed(() => {
 
 const selectedMonths = ref<string[]>([...availableMonths.value]);
 const newestFirst = ref(true);
+const includeNotes = ref(false);
 
 const allSelected = computed(
   () => selectedMonths.value.length === availableMonths.value.length
@@ -44,7 +45,7 @@ function countReadings(monthKey: string): number {
 }
 
 async function handleExport() {
-  await generatePdf(props.pet, props.readings, selectedMonths.value, newestFirst.value);
+  await generatePdf(props.pet, props.readings, selectedMonths.value, newestFirst.value, includeNotes.value);
   setTimeout(() => emit('close'), 200);
 }
 </script>
@@ -83,6 +84,13 @@ async function handleExport() {
               :disabled="isGenerating"
             >Oldest first</button>
           </div>
+        </div>
+
+        <div class="notes-toggle">
+          <label class="notes-toggle-label" :class="{ disabled: isGenerating }">
+            <input type="checkbox" v-model="includeNotes" :disabled="isGenerating" />
+            <span>Include reading notes</span>
+          </label>
         </div>
 
         <div class="month-list">
@@ -245,6 +253,36 @@ async function handleExport() {
 
 .sort-btn:disabled {
   opacity: 0.4;
+  cursor: default;
+}
+
+.notes-toggle {
+  display: flex;
+}
+
+.notes-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.notes-toggle-label.disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.notes-toggle-label input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.notes-toggle-label.disabled input[type='checkbox'] {
   cursor: default;
 }
 
