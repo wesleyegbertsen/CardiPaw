@@ -99,36 +99,36 @@ function formatDate(iso: string) {
       <div class="header-actions"></div>
     </header>
 
-    <div v-if="reading" class="reading-body">
-      <div class="reading-card">
-        <p class="reading-date">{{ formatDate(reading.date) }}</p>
+    <form v-if="reading" class="form" @submit.prevent="saveEdit">
+      <p class="reading-date">{{ formatDate(reading.date) }}</p>
 
+      <div class="field">
+        <label class="label">Rate (breaths/min)</label>
         <div class="rate-row">
-          <div class="rate-edit-wrap">
-            <label class="field-label">Rate (breaths/min)</label>
-            <input
-              class="rate-input"
-              type="number"
-              v-model.number="editRate"
-              min="1"
-              max="200"
-            />
-          </div>
+          <input
+            class="rate-input"
+            type="number"
+            v-model.number="editRate"
+            min="1"
+            max="200"
+          />
           <span class="rate-badge" :class="getRateClass(editRate)">
             {{ getRateLabel(editRate) }}
           </span>
         </div>
       </div>
 
-      <div class="detail-card">
-        <p class="section-label">Pet was</p>
+      <div class="field">
+        <label class="label">Pet was</label>
         <div class="rest-state-row">
           <button
+            type="button"
             class="rest-btn"
             :class="{ active: editRestState === 'resting' }"
             @click="editRestState = editRestState === 'resting' ? undefined : 'resting'"
           >Resting</button>
           <button
+            type="button"
             class="rest-btn"
             :class="{ active: editRestState === 'sleeping' }"
             @click="editRestState = editRestState === 'sleeping' ? undefined : 'sleeping'"
@@ -136,8 +136,8 @@ function formatDate(iso: string) {
         </div>
       </div>
 
-      <div class="detail-card">
-        <p class="section-label">Notes</p>
+      <div class="field">
+        <label class="label">Notes</label>
         <textarea
           class="notes-input"
           v-model="editNotes"
@@ -146,10 +146,10 @@ function formatDate(iso: string) {
         />
       </div>
 
-      <button class="submit-btn" @click="saveEdit" :disabled="saving">
+      <button type="submit" class="submit-btn" :disabled="saving">
         {{ saving ? 'Saving…' : 'Save changes' }}
       </button>
-    </div>
+    </form>
   </div>
 </template>
 
@@ -208,27 +208,31 @@ function formatDate(iso: string) {
   flex: 1;
 }
 
-.reading-body {
-  flex: 1;
+.form {
+  padding: 24px 16px 48px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-}
-
-.reading-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
 .reading-date {
   font-size: 13px;
   color: var(--color-text-muted);
+  margin-top: -8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .rate-row {
@@ -237,27 +241,13 @@ function formatDate(iso: string) {
   gap: 14px;
 }
 
-.rate-edit-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.field-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 .rate-input {
   width: 110px;
-  height: 44px;
+  height: 48px;
   padding: 0 12px;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-text);
   font-size: 22px;
   font-weight: 700;
@@ -290,24 +280,6 @@ function formatDate(iso: string) {
   color: var(--color-danger);
 }
 
-.detail-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.section-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 .rest-state-row {
   display: flex;
   gap: 8px;
@@ -315,13 +287,13 @@ function formatDate(iso: string) {
 
 .rest-btn {
   flex: 1;
-  height: 40px;
+  height: 48px;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-muted);
-  background: var(--color-bg);
+  background: var(--color-surface);
   transition: border-color 0.15s, color 0.15s, background 0.15s;
   max-width: 160px;
 }
@@ -337,7 +309,7 @@ function formatDate(iso: string) {
   padding: 10px 12px;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-text);
   font-size: 14px;
   font-family: inherit;
