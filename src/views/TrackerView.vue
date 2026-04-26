@@ -21,6 +21,8 @@ const clickCount = ref(0);
 const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
 const isPulsing = ref(false);
 const saving = ref(false);
+const restState = ref<'resting' | 'sleeping' | undefined>(undefined);
+const notes = ref('');
 
 const resultRate = computed(() => clickCount.value * 2);
 
@@ -74,6 +76,8 @@ async function saveReading() {
       date: new Date().toISOString(),
       rate: resultRate.value,
       clickCount: clickCount.value,
+      restState: restState.value,
+      notes: notes.value.trim() || undefined,
     });
     router.push({ name: 'pet', params: { id: petId } });
   } finally {
@@ -94,6 +98,8 @@ function reset() {
   timeLeft.value = 30;
   clickCount.value = 0;
   isPulsing.value = false;
+  restState.value = undefined;
+  notes.value = '';
 }
 
 onUnmounted(() => {
@@ -178,6 +184,27 @@ onUnmounted(() => {
       </div>
 
       <p class="result-note">Based on {{ clickCount }} breaths in 30 seconds</p>
+
+      <div class="rest-state-row">
+        <span class="rest-state-label">Pet was</span>
+        <button
+          class="rest-btn"
+          :class="{ active: restState === 'resting' }"
+          @click="restState = restState === 'resting' ? undefined : 'resting'"
+        >Resting</button>
+        <button
+          class="rest-btn"
+          :class="{ active: restState === 'sleeping' }"
+          @click="restState = restState === 'sleeping' ? undefined : 'sleeping'"
+        >Sleeping</button>
+      </div>
+
+      <textarea
+        class="notes-input"
+        v-model="notes"
+        placeholder="Add notes… (optional)"
+        rows="3"
+      />
 
       <div class="done-actions">
         <button class="btn-save" @click="saveReading" :disabled="saving">
@@ -396,6 +423,63 @@ onUnmounted(() => {
 
 .result-note {
   font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.rest-state-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.rest-state-label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.rest-btn {
+  flex: 1;
+  height: 38px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.rest-btn.active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.notes-input {
+  width: 100%;
+  max-width: 320px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.notes-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.notes-input::placeholder {
   color: var(--color-text-muted);
 }
 

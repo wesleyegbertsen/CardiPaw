@@ -4,6 +4,7 @@ import AddEditPetView from '../views/AddEditPetView.vue';
 import PetDetailView from '../views/PetDetailView.vue';
 import TrackerView from '../views/TrackerView.vue';
 import SettingsView from '../views/SettingsView.vue';
+import ReadingView from '../views/ReadingView.vue';
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -13,6 +14,7 @@ export const router = createRouter({
     { path: '/pets/:id', name: 'pet', component: PetDetailView },
     { path: '/pets/:id/edit', name: 'pet-edit', component: AddEditPetView },
     { path: '/pets/:id/track', name: 'tracker', component: TrackerView },
+    { path: '/pets/:id/readings/:readingId', name: 'reading', component: ReadingView },
     { path: '/settings', name: 'settings', component: SettingsView },
   ],
 });

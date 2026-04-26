@@ -15,6 +15,8 @@ export interface Reading {
   date: string; // ISO timestamp
   rate: number; // breaths per minute (clickCount × 2)
   clickCount: number; // raw clicks during 30s
+  restState?: 'resting' | 'sleeping';
+  notes?: string;
 }
 
 export interface ExportPayload {

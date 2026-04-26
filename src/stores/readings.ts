@@ -38,5 +38,13 @@ export const useReadingsStore = defineStore('readings', () => {
     }
   }
 
-  return { readingsByPet, getReadingsForPet, loadReadingsForPet, addReading, clearReadingsForPet, removeReading };
+  async function updateReading(reading: Reading) {
+    await db.saveReading(reading);
+    if (readingsByPet.value[reading.petId]) {
+      const idx = readingsByPet.value[reading.petId].findIndex(r => r.id === reading.id);
+      if (idx !== -1) readingsByPet.value[reading.petId][idx] = reading;
+    }
+  }
+
+  return { readingsByPet, getReadingsForPet, loadReadingsForPet, addReading, clearReadingsForPet, removeReading, updateReading };
 });

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import type { Reading } from '../types';
 
-const props = defineProps<{ readings: Reading[] }>();
-const emit = defineEmits<{ delete: [reading: Reading] }>();
+const props = defineProps<{ readings: Reading[]; petId: string }>();
+
+const router = useRouter();
 
 const PAGE = 20;
 const visibleCount = ref(PAGE);
@@ -49,6 +51,10 @@ function formatDate(iso: string) {
     minute: '2-digit',
   }).format(new Date(iso));
 }
+
+function openReading(reading: Reading) {
+  router.push({ name: 'reading', params: { id: props.petId, readingId: reading.id } });
+}
 </script>
 
 <template>
@@ -61,18 +67,36 @@ function formatDate(iso: string) {
       v-for="reading in visibleReadings"
       :key="reading.id"
       class="reading-item"
+      @click="openReading(reading)"
     >
-      <div class="reading-date">{{ formatDate(reading.date) }}</div>
+      <div class="reading-left">
+        <div class="reading-date">{{ formatDate(reading.date) }}</div>
+        <div class="reading-meta">
+          <span v-if="reading.restState === 'resting'" class="meta-tag resting" aria-label="Resting">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
+              <path d="M21 9V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v2c-1.1 0-2 .9-2 2v5h1.33L3 18h1l.67-2h14.67l.66 2h1l-.33-2H23v-5c0-1.1-.9-2-2-2zm-8 0H5V7h8v2zm6 0h-4V7h4v2z"/>
+            </svg>
+          </span>
+          <span v-if="reading.restState === 'sleeping'" class="meta-tag sleeping" aria-label="Sleeping">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
+              <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
+            </svg>
+          </span>
+          <span v-if="reading.notes" class="meta-tag notes" aria-label="Has notes">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
+              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+            </svg>
+          </span>
+        </div>
+      </div>
       <div class="reading-right">
         <span class="reading-rate">{{ reading.rate }} <span class="rate-unit">breaths/min</span></span>
         <span class="rate-badge" :class="getRateClass(reading.rate)">
           {{ getRateLabel(reading.rate) }}
         </span>
-        <button class="delete-btn" @click="emit('delete', reading)" aria-label="Delete reading">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-          </svg>
-        </button>
+        <svg class="chevron" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+          <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>
+        </svg>
       </div>
     </div>
 
@@ -95,18 +119,68 @@ function formatDate(iso: string) {
 }
 
 .reading-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  justify-content: space-between;
+  gap: 0 12px;
   padding: 14px 16px;
+  min-height: 70px;
   background: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: background 0.12s, box-shadow 0.15s, transform 0.1s;
+}
+
+.reading-item:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.reading-item:active {
+  transform: scale(0.98);
+}
+
+.reading-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
 }
 
 .reading-date {
   font-size: 13px;
   color: var(--color-text-muted);
+}
+
+.reading-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.meta-tag.resting {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.meta-tag.sleeping {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.meta-tag.notes {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .reading-right {
@@ -149,18 +223,13 @@ function formatDate(iso: string) {
   color: var(--color-danger);
 }
 
-.delete-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
-  transition: color 0.15s;
+.chevron {
+  flex-shrink: 0;
+  color: var(--color-border);
 }
 
-.delete-btn:hover {
-  color: var(--color-danger);
+.reading-item:hover .chevron {
+  color: var(--color-text-muted);
 }
 
 .sentinel {

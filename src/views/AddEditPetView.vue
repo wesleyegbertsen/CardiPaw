@@ -74,6 +74,7 @@ function goBack() {
         </svg>
       </button>
       <h1 class="page-title">{{ isEdit ? 'Edit pet' : 'Add pet' }}</h1>
+      <div class="header-spacer"></div>
     </header>
 
     <form class="form" @submit.prevent="submit">
@@ -142,13 +143,17 @@ function goBack() {
 .page-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   padding: 16px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+.header-spacer {
+  width: 32px;
 }
 
 .back-btn {

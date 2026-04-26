@@ -23,7 +23,6 @@ const ageDisplay = useAgeCalculator(birthdateRef);
 const readings = computed(() => readingsStore.getReadingsForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
-const pendingDeleteReading = ref<Reading | null>(null);
 const activeTab = computed({
   get: () => (route.query.tab === 'history' ? 'history' : 'chart') as 'chart' | 'history',
   set: (val: 'chart' | 'history') => {
@@ -249,11 +248,6 @@ async function deletePet() {
   router.push({ name: 'home' });
 }
 
-async function confirmDeleteReading() {
-  if (!pendingDeleteReading.value) return;
-  await readingsStore.removeReading(pendingDeleteReading.value.id, pendingDeleteReading.value.petId);
-  pendingDeleteReading.value = null;
-}
 </script>
 
 <template>
@@ -391,7 +385,7 @@ async function confirmDeleteReading() {
         </div>
         <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" />
       </template>
-      <ReadingList v-else :readings="readings" @delete="pendingDeleteReading = $event" />
+      <ReadingList v-else :readings="readings" :petId="petId" />
     </div>
 
     <PdfExportModal
@@ -408,12 +402,6 @@ async function confirmDeleteReading() {
       @cancel="showDeleteDialog = false"
     />
 
-    <ConfirmDialog
-      v-if="pendingDeleteReading"
-      message="Delete this reading? This cannot be undone."
-      @confirm="confirmDeleteReading"
-      @cancel="pendingDeleteReading = null"
-    />
   </div>
 </template>
 
