@@ -10,7 +10,7 @@ const route = useRoute();
 const router = useRouter();
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
-const { playDoneSound } = useAudioBeep();
+const { playBeep, playDoneSound } = useAudioBeep();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
@@ -24,6 +24,7 @@ const isPulsing = ref(false);
 const saving = ref(false);
 const restState = ref<'resting' | 'sleeping' | undefined>(undefined);
 const notes = ref('');
+const soundEnabled = ref(true);
 
 const resultRate = computed(() => clickCount.value * 2);
 
@@ -38,12 +39,14 @@ function handleHeartClick() {
 function startTracking() {
   phase.value = 'running';
   clickCount.value = 1; // first click counts as the first breath
+  if (soundEnabled.value) playBeep(880, 0.15, 0.3);
   triggerPulse();
   intervalId.value = setInterval(tick, 1000);
 }
 
 function registerBreath() {
   clickCount.value++;
+  if (soundEnabled.value) playBeep(880, 0.15, 0.3);
   triggerPulse();
 }
 
@@ -60,7 +63,7 @@ function stopTracking() {
     intervalId.value = null;
   }
   phase.value = 'done';
-  playDoneSound();
+  if (soundEnabled.value) playDoneSound();
 }
 
 function triggerPulse() {
@@ -135,6 +138,16 @@ onUnmounted(() => {
       <div class="body-bottom">
         <p class="tap-hint">Tap to start</p>
         <p class="timer-note">30-second measurement</p>
+        <div class="option-row">
+          <span class="toggle-label">Sound</span>
+          <button
+            class="slide-toggle"
+            :class="{ on: soundEnabled }"
+            role="switch"
+            :aria-checked="soundEnabled"
+            @click="soundEnabled = !soundEnabled"
+          />
+        </div>
       </div>
     </div>
 
@@ -497,5 +510,54 @@ onUnmounted(() => {
   height: 44px;
   font-size: 14px;
   color: var(--color-text-muted);
+}
+
+/* Sound toggle */
+.option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.toggle-label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.slide-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  transition: background 0.18s, border-color 0.18s;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.slide-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  transition: transform 0.18s, background 0.18s;
+  box-shadow: var(--shadow-sm);
+}
+
+.slide-toggle.on {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.slide-toggle.on::after {
+  transform: translateX(18px);
+  background: #fff;
 }
 </style>
