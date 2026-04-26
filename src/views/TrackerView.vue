@@ -448,7 +448,7 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-muted);
-  background: var(--color-bg);
+  background: var(--color-surface);
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 
@@ -464,7 +464,7 @@ onUnmounted(() => {
   padding: 10px 12px;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-text);
   font-size: 14px;
   font-family: inherit;
