@@ -68,29 +68,36 @@ async function handleExport() {
           </button>
         </div>
 
-        <div class="sort-toggle">
-          <span class="sort-label">Order</span>
-          <div class="sort-options">
-            <button
-              class="sort-btn"
-              :class="{ active: newestFirst }"
-              @click="newestFirst = true"
-              :disabled="isGenerating"
-            >Newest first</button>
-            <button
-              class="sort-btn"
-              :class="{ active: !newestFirst }"
-              @click="newestFirst = false"
-              :disabled="isGenerating"
-            >Oldest first</button>
+        <div class="export-options">
+          <div class="option-row">
+            <span class="export-option-label">Order</span>
+            <div class="sort-options">
+              <button
+                class="sort-btn"
+                :class="{ active: newestFirst }"
+                @click="newestFirst = true"
+                :disabled="isGenerating"
+              >Newest first</button>
+              <button
+                class="sort-btn"
+                :class="{ active: !newestFirst }"
+                @click="newestFirst = false"
+                :disabled="isGenerating"
+              >Oldest first</button>
+            </div>
           </div>
-        </div>
 
-        <div class="notes-toggle">
-          <label class="notes-toggle-label" :class="{ disabled: isGenerating }">
-            <input type="checkbox" v-model="includeNotes" :disabled="isGenerating" />
-            <span>Include reading notes</span>
-          </label>
+          <div class="option-row">
+            <span class="export-option-label">Include reading notes</span>
+            <button
+              class="slide-toggle"
+              :class="{ on: includeNotes, disabled: isGenerating }"
+              role="switch"
+              :aria-checked="includeNotes"
+              :disabled="isGenerating"
+              @click="includeNotes = !includeNotes"
+            />
+          </div>
         </div>
 
         <div class="month-list">
@@ -215,16 +222,21 @@ async function handleExport() {
   cursor: default;
 }
 
-.sort-toggle {
+.export-options {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.sort-label {
+.option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.export-option-label {
   font-size: 12px;
   color: var(--color-text-muted);
-  flex-shrink: 0;
 }
 
 .sort-options {
@@ -256,33 +268,43 @@ async function handleExport() {
   cursor: default;
 }
 
-.notes-toggle {
-  display: flex;
-}
-
-.notes-toggle-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.notes-toggle-label.disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.notes-toggle-label input[type='checkbox'] {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--color-primary);
+.slide-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  transition: background 0.18s, border-color 0.18s;
   flex-shrink: 0;
   cursor: pointer;
 }
 
-.notes-toggle-label.disabled input[type='checkbox'] {
+.slide-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  transition: transform 0.18s, background 0.18s;
+  box-shadow: var(--shadow-sm);
+}
+
+.slide-toggle.on {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.slide-toggle.on::after {
+  transform: translateX(18px);
+  background: #fff;
+}
+
+.slide-toggle.disabled {
+  opacity: 0.4;
   cursor: default;
 }
 
