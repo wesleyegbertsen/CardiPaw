@@ -18,8 +18,9 @@ const birthdate = ref('');
 const photo = ref<string | null>(null);
 const saving = ref(false);
 
-onMounted(() => {
+onMounted(async () => {
   if (isEdit) {
+    await petsStore.loadPets();
     const pet = petsStore.getPetById(petId);
     if (pet) {
       name.value = pet.name;
