@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
-import type { Reading } from '../types';
 
 const route = useRoute();
 const router = useRouter();
@@ -19,11 +18,6 @@ const reading = computed(() =>
   readingsStore.getReadingsForPet(petId).find(r => r.id === readingId) ?? null
 );
 
-const editing = ref(false);
-const editRate = ref(0);
-const editRestState = ref<'resting' | 'sleeping' | undefined>(undefined);
-const editNotes = ref('');
-const saving = ref(false);
 const showDeleteDialog = ref(false);
 
 onMounted(async () => {
@@ -31,37 +25,8 @@ onMounted(async () => {
   await readingsStore.loadReadingsForPet(petId);
 });
 
-function startEdit() {
-  if (!reading.value) return;
-  editRate.value = reading.value.rate;
-  editRestState.value = reading.value.restState;
-  editNotes.value = reading.value.notes ?? '';
-  editing.value = true;
-}
-
 function goBack() {
-  if (editing.value) {
-    editing.value = false;
-    return;
-  }
   router.push({ name: 'pet', params: { id: petId }, query: { tab: 'history' } });
-}
-
-async function saveEdit() {
-  if (!reading.value || saving.value) return;
-  saving.value = true;
-  try {
-    const updated: Reading = {
-      ...reading.value,
-      rate: editRate.value,
-      restState: editRestState.value,
-      notes: editNotes.value.trim() || undefined,
-    };
-    await readingsStore.updateReading(updated);
-    editing.value = false;
-  } finally {
-    saving.value = false;
-  }
 }
 
 async function confirmDelete() {
@@ -97,22 +62,22 @@ function getRateLabel(rate: number) {
 <template>
   <div class="reading-view">
     <header class="reading-header">
-      <button class="back-btn" @click="goBack" aria-label="Go back">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
-        </svg>
-      </button>
+      <div class="header-start">
+        <button class="back-btn" @click="goBack" aria-label="Go back">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+      </div>
 
       <div class="header-center">
-        <span class="header-title">{{ editing ? 'Edit reading' : pet?.name }}</span>
-        <span v-if="editing" class="header-subtitle">{{ pet?.name }}</span>
+        <span class="header-title">{{ pet?.name }}</span>
       </div>
 
       <div class="header-actions">
         <button
-          v-if="!editing"
           class="icon-btn"
-          @click="startEdit"
+          @click="router.replace({ name: 'reading-edit', params: { id: petId, readingId } })"
           aria-label="Edit reading"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -120,7 +85,6 @@ function getRateLabel(rate: number) {
           </svg>
         </button>
         <button
-          v-if="!editing"
           class="icon-btn danger"
           @click="showDeleteDialog = true"
           aria-label="Delete reading"
@@ -137,67 +101,31 @@ function getRateLabel(rate: number) {
         <p class="reading-date">{{ formatDate(reading.date) }}</p>
 
         <div class="rate-row">
-          <div v-if="!editing" class="rate-display">
+          <div class="rate-display">
             <span class="rate-number">{{ reading.rate }}</span>
             <span class="rate-unit">breaths/min</span>
           </div>
-          <div v-else class="rate-edit-wrap">
-            <label class="field-label">Rate (breaths/min)</label>
-            <input
-              class="rate-input"
-              type="number"
-              v-model.number="editRate"
-              min="1"
-              max="200"
-            />
-          </div>
-          <span class="rate-badge" :class="getRateClass(editing ? editRate : reading.rate)">
-            {{ getRateLabel(editing ? editRate : reading.rate) }}
+          <span class="rate-badge" :class="getRateClass(reading.rate)">
+            {{ getRateLabel(reading.rate) }}
           </span>
         </div>
       </div>
 
       <div class="detail-card">
         <p class="section-label">Pet was</p>
-        <div v-if="!editing" class="rest-state-view">
+        <div class="rest-state-view">
           <span v-if="reading.restState" class="rest-chip" :class="reading.restState">
             {{ reading.restState === 'resting' ? 'Resting' : 'Sleeping' }}
           </span>
           <span v-else class="no-value">Not recorded</span>
         </div>
-        <div v-else class="rest-state-row">
-          <button
-            class="rest-btn"
-            :class="{ active: editRestState === 'resting' }"
-            @click="editRestState = editRestState === 'resting' ? undefined : 'resting'"
-          >Resting</button>
-          <button
-            class="rest-btn"
-            :class="{ active: editRestState === 'sleeping' }"
-            @click="editRestState = editRestState === 'sleeping' ? undefined : 'sleeping'"
-          >Sleeping</button>
-        </div>
       </div>
 
       <div class="detail-card">
         <p class="section-label">Notes</p>
-        <p v-if="!editing && reading.notes" class="notes-text">{{ reading.notes }}</p>
-        <p v-else-if="!editing" class="no-value">No notes</p>
-        <textarea
-          v-else
-          class="notes-input"
-          v-model="editNotes"
-          placeholder="Add notes… (optional)"
-          rows="4"
-        />
+        <p v-if="reading.notes" class="notes-text">{{ reading.notes }}</p>
+        <p v-else class="no-value">No notes</p>
       </div>
-
-      <button
-        v-if="editing"
-        class="submit-btn"
-        @click="saveEdit"
-        :disabled="saving"
-      >{{ saving ? 'Saving…' : 'Save changes' }}</button>
     </div>
 
     <div v-else class="not-found">Reading not found.</div>
@@ -228,6 +156,11 @@ function getRateLabel(rate: number) {
   border-bottom: 1px solid var(--color-border);
 }
 
+.header-start {
+  flex: 1;
+  display: flex;
+}
+
 .back-btn {
   color: var(--color-text-muted);
   display: flex;
@@ -250,17 +183,12 @@ function getRateLabel(rate: number) {
   line-height: 1;
 }
 
-.header-subtitle {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  line-height: 1;
-  white-space: nowrap;
-}
-
 .header-actions {
+  flex: 1;
   display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .icon-btn {
@@ -276,20 +204,6 @@ function getRateLabel(rate: number) {
 
 .icon-btn.danger {
   color: var(--color-danger);
-}
-
-.submit-btn {
-  height: 52px;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  transition: opacity 0.15s;
-}
-
-.submit-btn:disabled {
-  opacity: 0.5;
 }
 
 .reading-body {
@@ -337,37 +251,6 @@ function getRateLabel(rate: number) {
 .rate-unit {
   font-size: 13px;
   color: var(--color-text-muted);
-}
-
-.rate-edit-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.field-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.rate-input {
-  width: 110px;
-  height: 44px;
-  padding: 0 12px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.rate-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
 }
 
 .rate-badge {
@@ -436,59 +319,11 @@ function getRateLabel(rate: number) {
   color: var(--color-text-muted);
 }
 
-.rest-state-row {
-  display: flex;
-  gap: 8px;
-}
-
-.rest-btn {
-  flex: 1;
-  height: 40px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: var(--color-bg);
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  max-width: 160px;
-}
-
-.rest-btn.active {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-}
-
 .notes-text {
   font-size: 15px;
   color: var(--color-text);
   line-height: 1.6;
   white-space: pre-wrap;
-}
-
-.notes-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  line-height: 1.5;
-  transition: border-color 0.15s;
-  box-sizing: border-box;
-}
-
-.notes-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.notes-input::placeholder {
-  color: var(--color-text-muted);
 }
 
 .not-found {
