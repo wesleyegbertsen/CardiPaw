@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import type { Reading } from '../types';
+import RichTextEditor from '../components/RichTextEditor.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -47,7 +48,7 @@ async function saveEdit() {
       ...reading.value,
       rate: editRate.value,
       restState: editRestState.value,
-      notes: editNotes.value.trim() || undefined,
+      notes: editNotes.value || undefined,
     };
     await readingsStore.updateReading(updated);
     router.replace({ name: 'reading', params: { id: petId, readingId } });
@@ -138,12 +139,7 @@ function formatDate(iso: string) {
 
       <div class="field">
         <label class="label">Notes</label>
-        <textarea
-          class="notes-input"
-          v-model="editNotes"
-          placeholder="Add notes… (optional)"
-          rows="4"
-        />
+        <RichTextEditor v-model="editNotes" />
       </div>
 
       <button type="submit" class="submit-btn" :disabled="saving">
@@ -302,30 +298,6 @@ function formatDate(iso: string) {
   border-color: var(--color-primary);
   color: var(--color-primary);
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-}
-
-.notes-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  line-height: 1.5;
-  transition: border-color 0.15s;
-  box-sizing: border-box;
-}
-
-.notes-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.notes-input::placeholder {
-  color: var(--color-text-muted);
 }
 
 .submit-btn {

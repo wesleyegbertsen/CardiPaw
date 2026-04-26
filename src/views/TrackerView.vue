@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAudioBeep } from '../composables/useAudioBeep';
+import RichTextEditor from '../components/RichTextEditor.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -77,7 +78,7 @@ async function saveReading() {
       rate: resultRate.value,
       clickCount: clickCount.value,
       restState: restState.value,
-      notes: notes.value.trim() || undefined,
+      notes: notes.value || undefined,
     });
     router.push({ name: 'pet', params: { id: petId } });
   } finally {
@@ -199,12 +200,9 @@ onUnmounted(() => {
         >Sleeping</button>
       </div>
 
-      <textarea
-        class="notes-input"
-        v-model="notes"
-        placeholder="Add notes… (optional)"
-        rows="3"
-      />
+      <div class="notes-wrapper">
+        <RichTextEditor v-model="notes" />
+      </div>
 
       <div class="done-actions">
         <button class="btn-save" @click="saveReading" :disabled="saving">
@@ -458,29 +456,9 @@ onUnmounted(() => {
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
-.notes-input {
+.notes-wrapper {
   width: 100%;
   max-width: 320px;
-  padding: 10px 12px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  line-height: 1.5;
-  transition: border-color 0.15s;
-  box-sizing: border-box;
-}
-
-.notes-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.notes-input::placeholder {
-  color: var(--color-text-muted);
 }
 
 .done-actions {

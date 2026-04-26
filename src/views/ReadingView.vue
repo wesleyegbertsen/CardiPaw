@@ -20,6 +20,12 @@ const reading = computed(() =>
 
 const showDeleteDialog = ref(false);
 
+const sanitizedNotes = computed(() => {
+  const raw = reading.value?.notes ?? '';
+  const isHtml = /^<[a-z]/i.test(raw.trimStart());
+  return isHtml ? raw : raw.replace(/\n/g, '<br>');
+});
+
 onMounted(async () => {
   await petsStore.loadPets();
   await readingsStore.loadReadingsForPet(petId);
@@ -123,7 +129,7 @@ function getRateLabel(rate: number) {
 
       <div class="detail-card">
         <p class="section-label">Notes</p>
-        <p v-if="reading.notes" class="notes-text">{{ reading.notes }}</p>
+        <div v-if="reading.notes" class="notes-text" v-html="sanitizedNotes" />
         <p v-else class="no-value">No notes</p>
       </div>
     </div>
@@ -323,7 +329,30 @@ function getRateLabel(rate: number) {
   font-size: 15px;
   color: var(--color-text);
   line-height: 1.6;
-  white-space: pre-wrap;
+}
+
+.notes-text :deep(p) {
+  margin-bottom: 0.4em;
+}
+
+.notes-text :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.notes-text :deep(ul) {
+  padding-left: 20px;
+}
+
+.notes-text :deep(li) {
+  margin-bottom: 2px;
+}
+
+.notes-text :deep(strong) {
+  font-weight: 600;
+}
+
+.notes-text :deep(em) {
+  font-style: italic;
 }
 
 .not-found {
