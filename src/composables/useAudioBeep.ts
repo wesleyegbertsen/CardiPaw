@@ -8,6 +8,10 @@ export function useAudioBeep() {
     return ctx;
   }
 
+  function init(): void {
+    getContext().resume();
+  }
+
   function playBeep(frequency = 880, duration = 0.5, volume = 0.3): void {
     const audioCtx = getContext();
     audioCtx.resume().then(() => {
@@ -49,5 +53,5 @@ export function useAudioBeep() {
     });
   }
 
-  return { playBeep, playDoneSound };
+  return { init, playBeep, playDoneSound };
 }

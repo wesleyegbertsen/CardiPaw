@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
@@ -10,7 +10,7 @@ const route = useRoute();
 const router = useRouter();
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
-const { playBeep, playDoneSound } = useAudioBeep();
+const { init: initAudio, playBeep, playDoneSound } = useAudioBeep();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
@@ -105,6 +105,8 @@ function reset() {
   restState.value = undefined;
   notes.value = '';
 }
+
+onMounted(() => { initAudio(); });
 
 onUnmounted(() => {
   if (intervalId.value !== null) clearInterval(intervalId.value);
