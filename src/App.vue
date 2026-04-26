@@ -18,7 +18,7 @@ onMounted(() => {
     </main>
 
     <nav class="bottom-nav">
-      <RouterLink :to="{ name: 'home' }" class="nav-item" :class="{ active: route.name === 'home' || String(route.name).startsWith('pet') }">
+      <RouterLink :to="{ name: 'home' }" class="nav-item" :class="{ active: route.name === 'home' }">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
           <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
         </svg>
