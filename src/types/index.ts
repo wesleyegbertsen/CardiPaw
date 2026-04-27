@@ -19,9 +19,20 @@ export interface Reading {
   notes?: string;
 }
 
+export interface Note {
+  id: string;
+  petId: string;
+  title: string;
+  content: string; // rich HTML from TipTap
+  createdAt: string; // ISO timestamp — set once on creation
+  modifiedAt?: string; // ISO timestamp — only set when title/content is edited
+  pinnedAt?: string; // ISO timestamp when pinned; absent = not pinned
+}
+
 export interface ExportPayload {
   version: 1;
   exportedAt: string;
   pets: Pet[];
   readings: Reading[];
+  notes: Note[];
 }

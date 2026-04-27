@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import type { Pet, Species } from '../types';
 import * as db from '../services/db';
 import { useReadingsStore } from './readings';
+import { useNotesStore } from './notes';
 import { v4 as generateId } from 'uuid';
 
 export const usePetsStore = defineStore('pets', () => {
@@ -48,10 +49,12 @@ export const usePetsStore = defineStore('pets', () => {
 
   async function removePet(id: string) {
     await db.deletePet(id);
-    await db.deleteReadingsForPet(id);
+    await Promise.all([db.deleteReadingsForPet(id), db.deleteNotesForPet(id)]);
     pets.value = pets.value.filter((p) => p.id !== id);
     const readingsStore = useReadingsStore();
     readingsStore.clearReadingsForPet(id);
+    const notesStore = useNotesStore();
+    notesStore.clearNotesForPet(id);
   }
 
   return { pets, loading, getPetById, loadPets, addPet, updatePet, removePet };

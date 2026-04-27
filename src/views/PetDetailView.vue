@@ -7,13 +7,16 @@ import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import RRRChart from '../components/RRRChart.vue';
 import ReadingList from '../components/ReadingList.vue';
+import NoteList from '../components/NoteList.vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import PdfExportModal from '../components/PdfExportModal.vue';
+import { useNotesStore } from '../stores/notes';
 
 const route = useRoute();
 const router = useRouter();
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
+const notesStore = useNotesStore();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
@@ -21,11 +24,16 @@ const birthdateRef = computed(() => pet.value?.birthdate ?? '');
 const ageDisplay = useAgeCalculator(birthdateRef);
 
 const readings = computed(() => readingsStore.getReadingsForPet(petId));
+const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
 const activeTab = computed({
-  get: () => (route.query.tab === 'history' ? 'history' : 'chart') as 'chart' | 'history',
-  set: (val: 'chart' | 'history') => {
+  get: () => {
+    if (route.query.tab === 'history') return 'history';
+    if (route.query.tab === 'notes') return 'notes';
+    return 'chart';
+  },
+  set: (val: 'chart' | 'history' | 'notes') => {
     router.replace({ query: { ...route.query, tab: val } });
   },
 });
@@ -241,6 +249,7 @@ onMounted(async () => {
     return;
   }
   readingsStore.loadReadingsForPet(petId);
+  notesStore.loadNotesForPet(petId);
 });
 
 async function deletePet() {
@@ -306,6 +315,10 @@ async function deletePet() {
       <button class="tab" :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">
         History
         <span v-if="readings.length > 0" class="tab-count">{{ readings.length }}</span>
+      </button>
+      <button class="tab" :class="{ active: activeTab === 'notes' }" @click="activeTab = 'notes'">
+        Notes
+        <span v-if="notes.length > 0" class="tab-count">{{ notes.length }}</span>
       </button>
     </div>
 
@@ -385,8 +398,22 @@ async function deletePet() {
         </div>
         <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" />
       </template>
-      <ReadingList v-else :readings="readings" :petId="petId" />
+      <ReadingList v-else-if="activeTab === 'history'" :readings="readings" :petId="petId" />
+      <NoteList v-else :notes="notes" :petId="petId" />
     </div>
+
+    <Transition name="fab">
+      <button
+        v-if="activeTab === 'notes'"
+        class="fab"
+        @click="router.push({ name: 'note-add', params: { id: petId } })"
+        aria-label="Add note"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+      </button>
+    </Transition>
 
     <PdfExportModal
       v-if="showPdfModal"
@@ -812,6 +839,39 @@ async function deletePet() {
 .jump-month-btn:disabled {
   opacity: 0.3;
   cursor: default;
+}
+
+.fab {
+  position: fixed;
+  bottom: calc(var(--nav-height) + 20px);
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  z-index: 20;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.fab:active {
+  opacity: 0.85;
+  transform: scale(0.94);
+}
+
+.fab-enter-active,
+.fab-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.fab-enter-from,
+.fab-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
 }
 
 </style>

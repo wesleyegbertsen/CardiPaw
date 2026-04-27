@@ -6,6 +6,8 @@ import TrackerView from '../views/TrackerView.vue';
 import SettingsView from '../views/SettingsView.vue';
 import ReadingView from '../views/ReadingView.vue';
 import EditReadingView from '../views/EditReadingView.vue';
+import NoteView from '../views/NoteView.vue';
+import AddEditNoteView from '../views/AddEditNoteView.vue';
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -17,6 +19,9 @@ export const router = createRouter({
     { path: '/pets/:id/track', name: 'tracker', component: TrackerView },
     { path: '/pets/:id/readings/:readingId', name: 'reading', component: ReadingView },
     { path: '/pets/:id/readings/:readingId/edit', name: 'reading-edit', component: EditReadingView },
+    { path: '/pets/:id/notes/add', name: 'note-add', component: AddEditNoteView },
+    { path: '/pets/:id/notes/:noteId', name: 'note', component: NoteView },
+    { path: '/pets/:id/notes/:noteId/edit', name: 'note-edit', component: AddEditNoteView },
     { path: '/settings', name: 'settings', component: SettingsView },
   ],
 });
