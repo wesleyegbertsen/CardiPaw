@@ -28,7 +28,7 @@ onMounted(async () => {
   await petsStore.loadPets();
   await readingsStore.loadReadingsForPet(petId);
   if (!reading.value) {
-    router.push({ name: 'pet', params: { id: petId }, query: { tab: 'history' } });
+    router.push({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
     return;
   }
   editRate.value = reading.value.rate;

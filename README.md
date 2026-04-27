@@ -20,9 +20,9 @@ Add as many pets as you need, each with a name, species, photo, and date of birt
 
 The built-in tracker walks you through a 30-second measurement. Tap the button each time your pet takes a breath, and CardiPaw calculates the rate automatically.
 
-### Rate History
+### Readings
 
-Every measurement is saved with a timestamp and labelled as **Normal** (≤ 30), **Elevated** (31-35), or **High** (> 35). The history list loads incrementally so it stays fast even with hundreds of entries.
+Every measurement is saved with a timestamp and labelled as **Normal** (≤ 30), **Elevated** (31-35), or **High** (> 35). The readings list loads incrementally so it stays fast even with hundreds of entries.
 
 ### Charts
 

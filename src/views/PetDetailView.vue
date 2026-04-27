@@ -29,11 +29,11 @@ const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
 const activeTab = computed({
   get: () => {
-    if (route.query.tab === 'history') return 'history';
+    if (route.query.tab === 'readings') return 'readings';
     if (route.query.tab === 'notes') return 'notes';
     return 'chart';
   },
-  set: (val: 'chart' | 'history' | 'notes') => {
+  set: (val: 'chart' | 'readings' | 'notes') => {
     router.replace({ query: { ...route.query, tab: val } });
   },
 });
@@ -312,8 +312,8 @@ async function deletePet() {
 
     <div class="tabs">
       <button class="tab" :class="{ active: activeTab === 'chart' }" @click="activeTab = 'chart'">Chart</button>
-      <button class="tab" :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">
-        History
+      <button class="tab" :class="{ active: activeTab === 'readings' }" @click="activeTab = 'readings'">
+        Readings
         <span v-if="readings.length > 0" class="tab-count">{{ readings.length }}</span>
       </button>
       <button class="tab" :class="{ active: activeTab === 'notes' }" @click="activeTab = 'notes'">
@@ -398,7 +398,7 @@ async function deletePet() {
         </div>
         <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" />
       </template>
-      <ReadingList v-else-if="activeTab === 'history'" :readings="readings" :petId="petId" />
+      <ReadingList v-else-if="activeTab === 'readings'" :readings="readings" :petId="petId" />
       <NoteList v-else :notes="notes" :petId="petId" />
     </div>
 

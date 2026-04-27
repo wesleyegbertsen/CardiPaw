@@ -32,13 +32,13 @@ onMounted(async () => {
 });
 
 function goBack() {
-  router.push({ name: 'pet', params: { id: petId }, query: { tab: 'history' } });
+  router.push({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
 }
 
 async function confirmDelete() {
   if (!reading.value) return;
   await readingsStore.removeReading(reading.value.id, petId);
-  router.push({ name: 'pet', params: { id: petId }, query: { tab: 'history' } });
+  router.push({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
 }
 
 function formatDate(iso: string) {
