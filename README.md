@@ -24,6 +24,8 @@ The built-in tracker walks you through a 30-second measurement. Tap the button e
 
 Every measurement is saved with a timestamp and labelled as **Normal** (≤ 30), **Elevated** (31-35), or **High** (> 35). The readings list loads incrementally so it stays fast even with hundreds of entries.
 
+When saving a reading you can optionally record your pet's **rest state** (resting or sleeping) and add a free-text **note** (for example, whether they had just eaten, were in an unusual position, or anything else worth remembering). Both fields appear alongside the reading in the list and in the exported PDF report.
+
 ### Charts
 
 Visualise trends over time with a line chart that supports three time ranges:
@@ -41,6 +43,10 @@ Each pet on the home screen shows a compact 7-day sparkline so you can see at a 
 ### PDF Report
 
 Generate a PDF report for any pet directly from the detail view. Select one or more months from the full history, choose whether to order them newest or oldest first, and CardiPaw produces a report where each month gets its own chart and a complete reading list with timestamps and status labels. This makes it easy to hand your vet a clear, structured overview of your pet's RRR measurements.
+
+### Pet Notes
+
+Each pet has a general-purpose **Notes** tab where you can write anything that does not fit neatly into a reading: medication changes, vet visit summaries, behavioural observations, or anything else you want to keep alongside the RRR data. Notes are stored locally with the rest of your pet's data and are included in the data export.
 
 ### Data Export & Import
 
