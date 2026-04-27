@@ -13,10 +13,12 @@ import {
   Filler,
 } from 'chart.js';
 import type { Reading } from '../types';
+import { useThemeStore } from '../stores/theme';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 const props = defineProps<{ readings: Reading[]; maxTicks?: number }>();
+const themeStore = useThemeStore();
 
 const sortedReadings = computed(() =>
   [...props.readings].sort((a, b) => a.date.localeCompare(b.date))
@@ -57,35 +59,39 @@ const chartData = computed(() => ({
   ],
 }));
 
-const chartOptions = computed(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      callbacks: {
-        label: (ctx: { parsed: { y: number | null } }) => `${ctx.parsed.y ?? ''} breaths/min`,
+const chartOptions = computed(() => {
+  const textMuted = themeStore.isDark ? '#9ca3af' : '#6b7280';
+  const gridColor = themeStore.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { parsed: { y: number | null } }) => `${ctx.parsed.y ?? ''} breaths/min`,
+        },
       },
     },
-  },
-  scales: {
-    x: {
-      ticks: {
-        maxTicksLimit: props.maxTicks ?? 8,
-        font: { size: 11 },
-        color: '#6b7280',
+    scales: {
+      x: {
+        ticks: {
+          maxTicksLimit: props.maxTicks ?? 8,
+          font: { size: 11 },
+          color: textMuted,
+        },
+        grid: { display: false },
       },
-      grid: { display: false },
+      y: {
+        title: { display: true, text: 'Breaths / min', color: textMuted, font: { size: 11 } },
+        min: 0,
+        suggestedMax: 80,
+        ticks: { font: { size: 11 }, color: textMuted },
+        grid: { color: gridColor },
+      },
     },
-    y: {
-      title: { display: true, text: 'Breaths / min', color: '#6b7280', font: { size: 11 } },
-      min: 0,
-      suggestedMax: 80,
-      ticks: { font: { size: 11 }, color: '#6b7280' },
-      grid: { color: 'rgba(0,0,0,0.05)' },
-    },
-  },
-}));
+  };
+});
 </script>
 
 <template>
@@ -133,7 +139,7 @@ const chartOptions = computed(() => ({
 }
 
 .legend-item.normal {
-  color: #16a34a;
+  color: var(--color-success);
   opacity: 0.7;
 }
 

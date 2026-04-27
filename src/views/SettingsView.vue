@@ -247,13 +247,13 @@ function cancelImport() {
 }
 
 .export-icon {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-icon-export-bg);
+  color: var(--color-icon-export-text);
 }
 
 .import-icon {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--color-icon-import-bg);
+  color: var(--color-icon-import-text);
 }
 
 .action-name {

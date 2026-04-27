@@ -535,8 +535,8 @@ async function deletePet() {
   border-radius: var(--radius-full);
 }
 
-.badge.cat { background: #fce7f3; color: #9d174d; }
-.badge.dog { background: #dbeafe; color: #1e40af; }
+.badge.cat { background: var(--color-badge-cat-bg); color: var(--color-badge-cat-text); }
+.badge.dog { background: var(--color-badge-dog-bg); color: var(--color-badge-dog-text); }
 
 .meta-dot { font-size: 18px; }
 

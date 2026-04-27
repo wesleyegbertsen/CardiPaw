@@ -213,13 +213,13 @@ function startTracking() {
 }
 
 .badge.cat {
-  background: #fce7f3;
-  color: #9d174d;
+  background: var(--color-badge-cat-bg);
+  color: var(--color-badge-cat-text);
 }
 
 .badge.dog {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-badge-dog-bg);
+  color: var(--color-badge-dog-text);
 }
 
 .age {

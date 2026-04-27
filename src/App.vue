@@ -2,9 +2,13 @@
 import { onMounted } from 'vue';
 import { RouterView, RouterLink, useRoute } from 'vue-router';
 import { usePetsStore } from './stores/pets';
+import { useThemeStore } from './stores/theme';
 
 const petsStore = usePetsStore();
+const themeStore = useThemeStore();
 const route = useRoute();
+
+themeStore.init();
 
 onMounted(() => {
   petsStore.loadPets();
