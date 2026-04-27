@@ -38,6 +38,10 @@ const activeTab = computed({
   },
 });
 
+const tabIndicatorIndex = computed(() =>
+  ({ chart: 0, readings: 1, notes: 2 }[activeTab.value] ?? 0)
+);
+
 const chartRange = ref<'week' | 'month' | 'year'>('week');
 const chartOffset = ref(0);
 const showJumpPicker = ref(false);
@@ -320,6 +324,7 @@ async function deletePet() {
         Notes
         <span v-if="notes.length > 0" class="tab-count">{{ notes.length }}</span>
       </button>
+      <div class="tab-indicator" :style="{ transform: `translateX(${tabIndicatorIndex * 100}%)` }"></div>
     </div>
 
     <div class="tab-content">
@@ -567,6 +572,7 @@ async function deletePet() {
 
 .tabs {
   display: flex;
+  position: relative;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   padding: 0 16px;
@@ -578,8 +584,7 @@ async function deletePet() {
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-muted);
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -588,7 +593,17 @@ async function deletePet() {
 
 .tab.active {
   color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+}
+
+.tab-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 16px;
+  width: calc((100% - 32px) / 3);
+  height: 2px;
+  background: var(--color-primary);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 1px 1px 0 0;
 }
 
 .tab-count {
