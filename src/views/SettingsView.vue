@@ -160,6 +160,10 @@ function cancelImport() {
             <span class="threshold-value">&gt; 35 breaths/min</span>
           </div>
         </div>
+        <p class="disclaimer-text">
+          The thresholds above are general guidelines. Always follow your veterinarian's specific
+          guidance on what values to monitor, what ranges are normal for your pet, and when to seek care.
+        </p>
       </section>
     </div>
 
@@ -331,5 +335,12 @@ function cancelImport() {
 .threshold-value {
   color: var(--color-text-muted);
   font-size: 13px;
+}
+
+.disclaimer-text {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
 }
 </style>
