@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePetsStore } from '../stores/pets';
 import PetPhotoUpload from '../components/PetPhotoUpload.vue';
 import type { Species } from '../types';
+import { DEFAULT_NORMAL_CEILING, DEFAULT_ELEVATED_CEILING } from '../utils/rateStatus';
 
 const route = useRoute();
 const router = useRouter();
@@ -16,7 +17,16 @@ const name = ref('');
 const species = ref<Species>('cat');
 const birthdate = ref('');
 const photo = ref<string | null>(null);
+const normalCeiling = ref<number | ''>('');
+const elevatedCeiling = ref<number | ''>('');
 const saving = ref(false);
+const thresholdError = computed(() => {
+  const effectiveNormal   = typeof normalCeiling.value   === 'number' ? normalCeiling.value   : DEFAULT_NORMAL_CEILING;
+  const effectiveElevated = typeof elevatedCeiling.value === 'number' ? elevatedCeiling.value : DEFAULT_ELEVATED_CEILING;
+  return effectiveElevated <= effectiveNormal
+    ? `Elevated ceiling must be higher than normal ceiling (${effectiveNormal}).`
+    : '';
+});
 
 onMounted(async () => {
   if (isEdit) {
@@ -27,12 +37,14 @@ onMounted(async () => {
       species.value = pet.species;
       birthdate.value = pet.birthdate;
       photo.value = pet.photo;
+      normalCeiling.value = pet.normalCeiling ?? '';
+      elevatedCeiling.value = pet.elevatedCeiling ?? '';
     }
   }
 });
 
 async function submit() {
-  if (!name.value.trim() || !birthdate.value) return;
+  if (!name.value.trim() || !birthdate.value || thresholdError.value) return;
   saving.value = true;
   try {
     if (isEdit) {
@@ -41,6 +53,8 @@ async function submit() {
         species: species.value,
         birthdate: birthdate.value,
         photo: photo.value,
+        normalCeiling:   typeof normalCeiling.value   === 'number' ? normalCeiling.value   : undefined,
+        elevatedCeiling: typeof elevatedCeiling.value === 'number' ? elevatedCeiling.value : undefined,
       });
       router.push({ name: 'pet', params: { id: petId } });
     } else {
@@ -49,6 +63,8 @@ async function submit() {
         species: species.value,
         birthdate: birthdate.value,
         photo: photo.value,
+        normalCeiling:   typeof normalCeiling.value   === 'number' ? normalCeiling.value   : undefined,
+        elevatedCeiling: typeof elevatedCeiling.value === 'number' ? elevatedCeiling.value : undefined,
       });
       router.push({ name: 'pet', params: { id: pet.id } });
     }
@@ -56,6 +72,7 @@ async function submit() {
     saving.value = false;
   }
 }
+
 
 function goBack() {
   if (isEdit) {
@@ -78,7 +95,7 @@ function goBack() {
       <div class="header-spacer"></div>
     </header>
 
-    <form class="form" @submit.prevent="submit">
+    <form class="form" novalidate @submit.prevent="submit">
       <div class="photo-row">
         <PetPhotoUpload v-model="photo" />
       </div>
@@ -124,10 +141,41 @@ function goBack() {
         />
       </div>
 
+      <div class="field">
+        <label class="label"><abbr title="Resting respiratory rate">RRR</abbr> thresholds (optional)</label>
+        <div class="threshold-inputs">
+          <div class="threshold-input-group">
+            <label class="threshold-sub-label" for="normal-ceiling">Normal ceiling</label>
+            <input
+              id="normal-ceiling"
+              v-model.number="normalCeiling"
+              class="input"
+              type="number"
+              min="1"
+              max="199"
+              :placeholder="String(DEFAULT_NORMAL_CEILING)"
+            />
+          </div>
+          <div class="threshold-input-group" :data-error="thresholdError || undefined">
+            <label class="threshold-sub-label" for="elevated-ceiling">Elevated ceiling</label>
+            <input
+              id="elevated-ceiling"
+              v-model.number="elevatedCeiling"
+              class="input"
+              type="number"
+              :min="typeof normalCeiling === 'number' ? normalCeiling + 1 : DEFAULT_NORMAL_CEILING + 1"
+              max="200"
+              :placeholder="String(DEFAULT_ELEVATED_CEILING)"
+            />
+          </div>
+        </div>
+        <p class="threshold-hint">Leave blank to use the defaults ({{ DEFAULT_NORMAL_CEILING }} / {{ DEFAULT_ELEVATED_CEILING }} breaths/min).</p>
+      </div>
+
       <button
         type="submit"
         class="submit-btn"
-        :disabled="saving || !name.trim() || !birthdate"
+        :disabled="saving || !name.trim() || !birthdate || !!thresholdError"
       >
         {{ saving ? 'Saving…' : (isEdit ? 'Save changes' : 'Add pet') }}
       </button>
@@ -267,5 +315,66 @@ function goBack() {
 
 .submit-btn:disabled {
   opacity: 0.5;
+}
+
+.threshold-inputs {
+  display: flex;
+  gap: 12px;
+}
+
+.threshold-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.threshold-input-group[data-error] .input {
+  border-color: var(--color-danger);
+  border-width: 2px;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23dc2626'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 18px;
+}
+
+.threshold-input-group[data-error]::after {
+  content: attr(data-error);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 5px 9px;
+  border-radius: var(--radius-sm);
+  max-width: min(360px, 90vw);
+  pointer-events: none;
+  display: none;
+  z-index: 10;
+}
+
+.threshold-input-group[data-error]:hover::after,
+.threshold-input-group[data-error]:focus-within::after {
+  display: block;
+}
+
+.threshold-sub-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.threshold-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+abbr[title] {
+  text-decoration: underline dotted;
+  cursor: help;
 }
 </style>

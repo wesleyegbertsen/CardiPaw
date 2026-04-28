@@ -401,9 +401,9 @@ async function deletePet() {
             </div>
           </div>
         </div>
-        <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" />
+        <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" :normal-ceiling="pet?.normalCeiling" />
       </template>
-      <ReadingList v-else-if="activeTab === 'readings'" :readings="readings" :petId="petId" />
+      <ReadingList v-else-if="activeTab === 'readings'" :readings="readings" :pet="pet" />
       <NoteList v-else :notes="notes" :petId="petId" />
     </div>
 

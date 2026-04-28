@@ -9,6 +9,7 @@ import {
   Filler,
 } from 'chart.js';
 import type { Pet, Reading } from '../types';
+import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
@@ -53,7 +54,7 @@ function aggregateByDay(readings: Reading[], monthKey: string): { date: string; 
     }));
 }
 
-function renderChartToDataUrl(dailyAverages: { date: string; rate: number }[]): string {
+function renderChartToDataUrl(dailyAverages: { date: string; rate: number }[], normalCeiling = DEFAULT_NORMAL_CEILING): string {
   const canvas = document.createElement('canvas');
   canvas.width = 800;
   canvas.height = 280;
@@ -80,8 +81,8 @@ function renderChartToDataUrl(dailyAverages: { date: string; rate: number }[]): 
           fill: true,
         },
         {
-          label: 'Normal max (30)',
-          data: labels.map(() => 30),
+          label: `Normal max (${normalCeiling})`,
+          data: labels.map(() => normalCeiling),
           borderColor: 'rgba(22, 163, 74, 0.5)',
           borderWidth: 1.5,
           borderDash: [6, 4],
@@ -127,12 +128,6 @@ function calcAge(birthdate: string): string {
   const m = totalMonths % 12;
   if (m === 0) return `${y} year${y !== 1 ? 's' : ''}`;
   return `${y}y ${m}mo`;
-}
-
-function statusOf(rate: number): { text: string; color: string } {
-  if (rate <= 30) return { text: 'Normal', color: '#16a34a' };
-  if (rate <= 35) return { text: 'Elevated', color: '#d97706' };
-  return { text: 'High', color: '#dc2626' };
 }
 
 function drawNotesHeader(doc: jsPDF, curY: number): void {
@@ -241,7 +236,7 @@ export function usePdfExport() {
         if (monthReadings.length === 0) continue;
 
         const dailyAverages = aggregateByDay(readings, monthKey);
-        const chartDataUrl = renderChartToDataUrl(dailyAverages);
+        const chartDataUrl = renderChartToDataUrl(dailyAverages, pet.normalCeiling ?? DEFAULT_NORMAL_CEILING);
 
         // Each month starts on its own page (skip addPage for the very first section)
         if (sortedMonths.indexOf(monthKey) > 0) {
@@ -318,7 +313,7 @@ export function usePdfExport() {
             hour: 'numeric', minute: '2-digit', hour12: true,
           }).format(d);
 
-          const status = statusOf(r.rate);
+          const status = getRateStatus(r.rate, pet);
 
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(9);
@@ -326,7 +321,7 @@ export function usePdfExport() {
           doc.text(`${dateStr}, ${timeStr}`, ML + 2, curY + 5);
           doc.text(String(r.rate), ML + 72, curY + 5);
           doc.setTextColor(status.color);
-          doc.text(status.text, ML + 132, curY + 5);
+          doc.text(status.label, ML + 132, curY + 5);
 
           if (r.restState) {
             const isResting = r.restState === 'resting';

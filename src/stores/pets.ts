@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Pet, Species } from '../types';
+import type { Pet } from '../types';
 import * as db from '../services/db';
 import { useReadingsStore } from './readings';
 import { useNotesStore } from './notes';
@@ -27,7 +27,7 @@ export const usePetsStore = defineStore('pets', () => {
     return _loadPromise;
   }
 
-  async function addPet(data: { name: string; species: Species; photo: string | null; birthdate: string }) {
+  async function addPet(data: Omit<Pet, 'id' | 'createdAt'>) {
     const pet: Pet = {
       id: generateId(),
       createdAt: new Date().toISOString(),

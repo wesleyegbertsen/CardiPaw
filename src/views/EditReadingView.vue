@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import type { Reading } from '../types';
+import { getRateStatus } from '../utils/rateStatus';
 import RichTextEditor from '../components/RichTextEditor.vue';
 
 const route = useRoute();
@@ -57,18 +58,6 @@ async function saveEdit() {
   }
 }
 
-function getRateClass(rate: number) {
-  if (rate <= 30) return 'normal';
-  if (rate <= 35) return 'warning';
-  return 'danger';
-}
-
-function getRateLabel(rate: number) {
-  if (rate <= 30) return 'Normal';
-  if (rate <= 35) return 'Elevated';
-  return 'High';
-}
-
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat('en', {
     weekday: 'long',
@@ -113,8 +102,8 @@ function formatDate(iso: string) {
             min="1"
             max="200"
           />
-          <span class="rate-badge" :class="getRateClass(editRate)">
-            {{ getRateLabel(editRate) }}
+          <span class="rate-badge" :class="getRateStatus(editRate, pet).cssClass">
+            {{ getRateStatus(editRate, pet).label }}
           </span>
         </div>
       </div>

@@ -7,6 +7,8 @@ export interface Pet {
   photo: string | null;
   birthdate: string; // "YYYY-MM-DD"
   createdAt: string; // ISO timestamp
+  normalCeiling?: number;   // breaths/min; absent = use default 30
+  elevatedCeiling?: number; // breaths/min; absent = use default 35
 }
 
 export interface Reading {

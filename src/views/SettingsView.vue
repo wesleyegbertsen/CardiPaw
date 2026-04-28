@@ -161,8 +161,9 @@ function cancelImport() {
           </div>
         </div>
         <p class="disclaimer-text">
-          The thresholds above are general guidelines. Always follow your veterinarian's specific
-          guidance on what values to monitor, what ranges are normal for your pet, and when to seek care.
+          These are the global default thresholds. You can configure custom ceilings per pet in each
+          pet's profile. Always follow your veterinarian's specific guidance on what values to monitor,
+          what ranges are normal for your pet, and when to seek care.
         </p>
       </section>
     </div>

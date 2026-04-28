@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import type { Reading } from '../types';
+import type { Pet, Reading } from '../types';
+import { getRateStatus } from '../utils/rateStatus';
 
-const props = defineProps<{ readings: Reading[]; petId: string }>();
+const props = defineProps<{ readings: Reading[]; pet: Pet }>();
 
 const router = useRouter();
 
@@ -30,18 +31,6 @@ onMounted(() => {
 
 onUnmounted(() => observer?.disconnect());
 
-function getRateClass(rate: number) {
-  if (rate <= 30) return 'normal';
-  if (rate <= 35) return 'warning';
-  return 'danger';
-}
-
-function getRateLabel(rate: number) {
-  if (rate <= 30) return 'Normal';
-  if (rate <= 35) return 'Elevated';
-  return 'High';
-}
-
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat('en', {
     year: 'numeric',
@@ -53,7 +42,7 @@ function formatDate(iso: string) {
 }
 
 function openReading(reading: Reading) {
-  router.push({ name: 'reading', params: { id: props.petId, readingId: reading.id } });
+  router.push({ name: 'reading', params: { id: props.pet.id, readingId: reading.id } });
 }
 </script>
 
@@ -91,8 +80,8 @@ function openReading(reading: Reading) {
       </div>
       <div class="reading-right">
         <span class="reading-rate">{{ reading.rate }} <span class="rate-unit">breaths/min</span></span>
-        <span class="rate-badge" :class="getRateClass(reading.rate)">
-          {{ getRateLabel(reading.rate) }}
+        <span class="rate-badge" :class="getRateStatus(reading.rate, props.pet).cssClass">
+          {{ getRateStatus(reading.rate, props.pet).label }}
         </span>
         <svg class="chevron" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
           <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>

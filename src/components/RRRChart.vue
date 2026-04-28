@@ -14,11 +14,14 @@ import {
 } from 'chart.js';
 import type { Reading } from '../types';
 import { useThemeStore } from '../stores/theme';
+import { DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-const props = defineProps<{ readings: Reading[]; maxTicks?: number }>();
+const props = defineProps<{ readings: Reading[]; maxTicks?: number; normalCeiling?: number }>();
 const themeStore = useThemeStore();
+
+const effectiveNormalCeiling = computed(() => props.normalCeiling ?? DEFAULT_NORMAL_CEILING);
 
 const sortedReadings = computed(() =>
   [...props.readings].sort((a, b) => a.date.localeCompare(b.date))
@@ -48,8 +51,8 @@ const chartData = computed(() => ({
       fill: true,
     },
     {
-      label: 'Normal max (30)',
-      data: labels.value.map(() => 30),
+      label: `Normal max (${effectiveNormalCeiling.value})`,
+      data: labels.value.map(() => effectiveNormalCeiling.value),
       borderColor: 'rgba(22, 163, 74, 0.5)',
       borderWidth: 1.5,
       borderDash: [6, 4],
@@ -99,7 +102,7 @@ const chartOptions = computed(() => {
     <template v-if="readings.length > 0">
       <div class="legend">
         <span class="legend-item primary">— Rate</span>
-        <span class="legend-item normal">- - Normal max (30 breaths/min)</span>
+        <span class="legend-item normal">- - Normal max ({{ effectiveNormalCeiling }} breaths/min)</span>
       </div>
       <div class="chart-container">
         <Line :data="chartData" :options="chartOptions" />

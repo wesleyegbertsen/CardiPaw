@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
+import { getRateStatus } from '../utils/rateStatus';
 
 const route = useRoute();
 const router = useRouter();
@@ -52,17 +53,6 @@ function formatDate(iso: string) {
   }).format(new Date(iso));
 }
 
-function getRateClass(rate: number) {
-  if (rate <= 30) return 'normal';
-  if (rate <= 35) return 'warning';
-  return 'danger';
-}
-
-function getRateLabel(rate: number) {
-  if (rate <= 30) return 'Normal';
-  if (rate <= 35) return 'Elevated';
-  return 'High';
-}
 </script>
 
 <template>
@@ -111,8 +101,8 @@ function getRateLabel(rate: number) {
             <span class="rate-number">{{ reading.rate }}</span>
             <span class="rate-unit">breaths/min</span>
           </div>
-          <span class="rate-badge" :class="getRateClass(reading.rate)">
-            {{ getRateLabel(reading.rate) }}
+          <span class="rate-badge" :class="getRateStatus(reading.rate, pet).cssClass">
+            {{ getRateStatus(reading.rate, pet).label }}
           </span>
         </div>
       </div>
