@@ -11,6 +11,7 @@ import NoteList from '../components/NoteList.vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import PdfExportModal from '../components/PdfExportModal.vue';
 import { useNotesStore } from '../stores/notes';
+import { useSwipe } from '../composables/useSwipe';
 
 const route = useRoute();
 const router = useRouter();
@@ -40,6 +41,16 @@ const activeTab = computed({
 
 const tabIndicatorIndex = computed(() =>
   ({ chart: 0, readings: 1, notes: 2 }[activeTab.value] ?? 0)
+);
+
+const tabContentRef = ref<HTMLElement | null>(null);
+const TAB_ORDER: Array<'chart' | 'readings' | 'notes'> = ['chart', 'readings', 'notes'];
+
+const { swipeDeltaX, isSwipeActive, sliderStyle, onTouchStart, onTouchMove, onTouchEnd } = useSwipe(
+  tabContentRef,
+  tabIndicatorIndex,
+  3,
+  (newIndex) => { activeTab.value = TAB_ORDER[newIndex]; },
 );
 
 const chartRange = ref<'week' | 'month' | 'year'>('week');
@@ -324,87 +335,104 @@ async function deletePet() {
         Notes
         <span v-if="notes.length > 0" class="tab-count">{{ notes.length }}</span>
       </button>
-      <div class="tab-indicator" :style="{ transform: `translateX(${tabIndicatorIndex * 100}%)` }"></div>
+      <div class="tab-indicator" :style="{
+        transform: `translateX(calc(${tabIndicatorIndex * 100}% + ${isSwipeActive ? -(swipeDeltaX / (tabContentRef?.clientWidth ?? 320)) * 100 : 0}%))`,
+        transition: isSwipeActive ? 'none' : undefined
+      }"></div>
     </div>
 
-    <div class="tab-content">
-      <template v-if="activeTab === 'chart'">
-        <div class="chart-controls">
-          <div class="range-toggle">
-            <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">Week</button>
-            <button :class="{ active: chartRange === 'month' }" @click="chartRange = 'month'">Month</button>
-            <button :class="{ active: chartRange === 'year' }" @click="chartRange = 'year'">Year</button>
-          </div>
-          <div class="range-nav">
-            <button class="nav-btn" @click="chartOffset--" :disabled="!canGoPrev" aria-label="Previous period">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-              </svg>
-            </button>
-            <div class="range-label-wrap">
-              <button class="range-label-btn" @click="openJumpPicker">
-                {{ chartLabel }}
-                <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
-                  <path d="M7 10l5 5 5-5z"/>
+    <div class="tab-content" ref="tabContentRef"
+         @touchstart="onTouchStart"
+         @touchmove="onTouchMove"
+         @touchend="onTouchEnd"
+         @touchcancel="onTouchEnd">
+      <div class="tab-slider" :style="sliderStyle">
+
+        <div class="tab-panel">
+          <div class="chart-controls">
+            <div class="range-toggle">
+              <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">Week</button>
+              <button :class="{ active: chartRange === 'month' }" @click="chartRange = 'month'">Month</button>
+              <button :class="{ active: chartRange === 'year' }" @click="chartRange = 'year'">Year</button>
+            </div>
+            <div class="range-nav">
+              <button class="nav-btn" @click="chartOffset--" :disabled="!canGoPrev" aria-label="Previous period">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                 </svg>
               </button>
-              <div v-if="showJumpPicker" class="jump-picker" :class="`picker-${chartRange}`">
-                <div class="jump-picker-scroll" ref="jumpPickerRef">
-                <template v-if="chartRange === 'year'">
-                  <button v-for="y in availableYears" :key="y"
-                    class="jump-year-btn" :class="{ active: y === chartWindow.start.getFullYear() }"
-                    @click="jumpToYear(y)">{{ y }}</button>
-                </template>
-                <template v-else-if="chartRange === 'month'">
-                  <div class="jump-month-nav">
-                    <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[availableYears.length - 1]" @click="pickerYear--">
-                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </button>
-                    <span class="jump-year-label">{{ pickerYear }}</span>
-                    <button class="jump-nav-arrow" :disabled="pickerYear >= new Date().getFullYear()" @click="pickerYear++">
-                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="jump-month-grid">
-                    <button v-for="(m, i) in MONTH_NAMES" :key="i"
-                      class="jump-month-btn"
-                      :class="{ active: isDisplayedMonth(i, pickerYear) }"
-                      :disabled="isFutureMonth(i, pickerYear) || hasNoReadingsInMonth(i, pickerYear)"
-                      @click="jumpToMonth(i, pickerYear)">{{ m }}</button>
-                  </div>
-                </template>
-                <template v-else>
-                  <template v-for="item in weeksWithReadingsSections" :key="item.type === 'header' ? `h-${item.year}` : item.offset">
-                    <div v-if="item.type === 'header'" class="jump-week-year-header">{{ item.year }}</div>
-                    <button v-else
-                      class="jump-year-btn" :class="{ active: item.offset === chartOffset }"
-                      @click="jumpToWeekOffset(item.offset)">{{ weekLabel(item.offset) }}</button>
+              <div class="range-label-wrap">
+                <button class="range-label-btn" @click="openJumpPicker">
+                  {{ chartLabel }}
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                    <path d="M7 10l5 5 5-5z"/>
+                  </svg>
+                </button>
+                <div v-if="showJumpPicker" class="jump-picker" :class="`picker-${chartRange}`">
+                  <div class="jump-picker-scroll" ref="jumpPickerRef">
+                  <template v-if="chartRange === 'year'">
+                    <button v-for="y in availableYears" :key="y"
+                      class="jump-year-btn" :class="{ active: y === chartWindow.start.getFullYear() }"
+                      @click="jumpToYear(y)">{{ y }}</button>
                   </template>
-                </template>
+                  <template v-else-if="chartRange === 'month'">
+                    <div class="jump-month-nav">
+                      <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[availableYears.length - 1]" @click="pickerYear--">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                        </svg>
+                      </button>
+                      <span class="jump-year-label">{{ pickerYear }}</span>
+                      <button class="jump-nav-arrow" :disabled="pickerYear >= new Date().getFullYear()" @click="pickerYear++">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="jump-month-grid">
+                      <button v-for="(m, i) in MONTH_NAMES" :key="i"
+                        class="jump-month-btn"
+                        :class="{ active: isDisplayedMonth(i, pickerYear) }"
+                        :disabled="isFutureMonth(i, pickerYear) || hasNoReadingsInMonth(i, pickerYear)"
+                        @click="jumpToMonth(i, pickerYear)">{{ m }}</button>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <template v-for="item in weeksWithReadingsSections" :key="item.type === 'header' ? `h-${item.year}` : item.offset">
+                      <div v-if="item.type === 'header'" class="jump-week-year-header">{{ item.year }}</div>
+                      <button v-else
+                        class="jump-year-btn" :class="{ active: item.offset === chartOffset }"
+                        @click="jumpToWeekOffset(item.offset)">{{ weekLabel(item.offset) }}</button>
+                    </template>
+                  </template>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div v-if="showJumpPicker" class="jump-backdrop" @click="showJumpPicker = false" />
-            <div class="range-right">
-              <button class="today-btn" :style="{ visibility: chartOffset !== 0 ? 'visible' : 'hidden' }" @click="chartOffset = 0">
-                {{ chartRange === 'week' ? 'This week' : chartRange === 'month' ? 'This month' : 'This year' }}
-              </button>
-              <button class="nav-btn" @click="chartOffset++" :disabled="!canGoNext" aria-label="Next period">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-                </svg>
-              </button>
+              <div v-if="showJumpPicker" class="jump-backdrop" @click="showJumpPicker = false" />
+              <div class="range-right">
+                <button class="today-btn" :style="{ visibility: chartOffset !== 0 ? 'visible' : 'hidden' }" @click="chartOffset = 0">
+                  {{ chartRange === 'week' ? 'This week' : chartRange === 'month' ? 'This month' : 'This year' }}
+                </button>
+                <button class="nav-btn" @click="chartOffset++" :disabled="!canGoNext" aria-label="Next period">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
+          <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" :normal-ceiling="pet?.normalCeiling" />
         </div>
-        <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" :normal-ceiling="pet?.normalCeiling" />
-      </template>
-      <ReadingList v-else-if="activeTab === 'readings'" :readings="readings" :pet="pet" />
-      <NoteList v-else :notes="notes" :petId="petId" />
+
+        <div class="tab-panel">
+          <ReadingList :readings="readings" :pet="pet" />
+        </div>
+
+        <div class="tab-panel">
+          <NoteList :notes="notes" :petId="petId" />
+        </div>
+
+      </div>
     </div>
 
     <Transition name="fab">
@@ -616,8 +644,23 @@ async function deletePet() {
 }
 
 .tab-content {
+  overflow: hidden;
+  position: relative;
+}
+
+.tab-slider {
+  display: flex;
+  width: 300%;
+  will-change: transform;
+}
+
+.tab-panel {
+  width: 33.333%;
+  flex-shrink: 0;
   padding: 16px;
   padding-bottom: 32px;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .chart-controls {
