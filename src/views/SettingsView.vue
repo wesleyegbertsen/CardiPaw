@@ -4,6 +4,7 @@ import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import * as db from '../services/db';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
+import InfoModal from '../components/InfoModal.vue';
 import type { ExportPayload } from '../types';
 
 const petsStore = usePetsStore();
@@ -11,6 +12,7 @@ const readingsStore = useReadingsStore();
 
 const importInput = ref<HTMLInputElement | null>(null);
 const showImportConfirm = ref(false);
+const activeModal = ref<'privacy' | 'terms' | null>(null);
 const pendingPayload = ref<ExportPayload | null>(null);
 const importError = ref('');
 const exportSuccess = ref(false);
@@ -166,7 +168,64 @@ function cancelImport() {
           what ranges are normal for your pet, and when to seek care.
         </p>
       </section>
+
+      <section class="section">
+        <h2 class="section-title">Legal</h2>
+        <div class="action-cards">
+          <div class="action-card">
+            <div class="action-info">
+              <div class="action-icon legal-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+                  <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 16h8v1.5H8V16zm0-3h8v1.5H8V13zm0-3h5v1.5H8V10z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="action-name">Privacy Policy</div>
+                <div class="action-desc">How your data is stored and used</div>
+              </div>
+            </div>
+            <button class="action-btn" @click="activeModal = 'privacy'">View</button>
+          </div>
+
+          <div class="action-card">
+            <div class="action-info">
+              <div class="action-icon legal-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5zm-1 4v4h2V9h-2zm0 6v2h2v-2h-2z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="action-name">Terms of Use</div>
+                <div class="action-desc">Conditions and disclaimers for using CardiPaw</div>
+              </div>
+            </div>
+            <button class="action-btn" @click="activeModal = 'terms'">View</button>
+          </div>
+        </div>
+      </section>
     </div>
+
+    <InfoModal
+      v-if="activeModal === 'privacy'"
+      title="Privacy Policy"
+      @close="activeModal = null"
+    >
+      <p><strong>Your data stays on your device.</strong> CardiPaw stores all information (pet profiles, readings, and notes) exclusively in your browser's IndexedDB. Nothing is ever transmitted to a server.</p>
+      <p><strong>No tracking or analytics.</strong> CardiPaw does not use cookies, analytics services, advertising trackers, or any third-party data collection. There are no user accounts and no login.</p>
+      <p><strong>You are in control.</strong> You can export your data at any time from the Settings page, and deleting the app or clearing your browser's site data will permanently remove everything.</p>
+      <p><strong>No data sharing.</strong> Because your data never leaves your device, it is never shared with or accessible by anyone else.</p>
+    </InfoModal>
+
+    <InfoModal
+      v-if="activeModal === 'terms'"
+      title="Terms of Use"
+      @close="activeModal = null"
+    >
+      <p><strong>Not medical advice.</strong> CardiPaw is an informational tool to help you log and track your pet's resting respiratory rate. It is not a substitute for professional veterinary diagnosis, advice, or treatment.</p>
+      <p><strong>Consult your veterinarian.</strong> Always follow your vet's specific guidance on what values to monitor, what ranges are normal for your individual pet, and when to seek care. Do not make medical decisions based solely on this app.</p>
+      <p><strong>No warranties.</strong> CardiPaw is provided free of charge, as-is, without any warranties of any kind (express or implied). The developer is not liable for any decisions made based on data logged in this app.</p>
+      <p><strong>Use at your own risk.</strong> By using CardiPaw you accept full responsibility for how you interpret and act on the data it presents.</p>
+    </InfoModal>
 
     <ConfirmDialog
       v-if="showImportConfirm"
@@ -259,6 +318,11 @@ function cancelImport() {
 .import-icon {
   background: var(--color-icon-import-bg);
   color: var(--color-icon-import-text);
+}
+
+.legal-icon {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .action-name {
