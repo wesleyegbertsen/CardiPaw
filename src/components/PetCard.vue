@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 import type { Pet } from '../types';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
+import { useLastMeasured } from '../composables/useLastMeasured';
 import { useReadingsStore } from '../stores/readings';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
@@ -25,8 +26,11 @@ const ageDisplay = useAgeCalculator(birthdateRef);
 
 onMounted(() => readingsStore.loadReadingsForPet(props.pet.id));
 
+const readings = computed(() => readingsStore.getReadingsForPet(props.pet.id));
+const lastMeasured = useLastMeasured(readings);
+
 const sparklineData = computed(() => {
-  const allReadings = readingsStore.getReadingsForPet(props.pet.id);
+  const allReadings = readings.value;
   const now = new Date();
   const labels: string[] = [];
   const values: (number | null)[] = [];
@@ -115,6 +119,7 @@ function startTracking() {
       <h3 class="name">{{ pet.name }}</h3>
       <span class="badge" :class="pet.species">{{ pet.species }}</span>
       <p class="age">{{ ageDisplay }}</p>
+      <p class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
     </div>
 
     <div v-if="hasSparklineData" class="sparkline-wrap">
@@ -225,6 +230,16 @@ function startTracking() {
 .age {
   font-size: 13px;
   color: var(--color-text-muted);
+}
+
+.last-measured {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.last-measured.stale {
+  color: #d97706;
 }
 
 .sparkline-wrap {

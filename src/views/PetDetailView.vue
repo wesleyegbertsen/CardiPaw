@@ -5,6 +5,7 @@ import type { Reading } from '../types';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
+import { useLastMeasured } from '../composables/useLastMeasured';
 import RRRChart from '../components/RRRChart.vue';
 import ReadingList from '../components/ReadingList.vue';
 import NoteList from '../components/NoteList.vue';
@@ -24,6 +25,7 @@ const birthdateRef = computed(() => pet.value?.birthdate ?? '');
 const ageDisplay = useAgeCalculator(birthdateRef);
 
 const readings = computed(() => readingsStore.getReadingsForPet(petId));
+const lastMeasured = useLastMeasured(readings);
 const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
@@ -303,6 +305,7 @@ async function deletePet() {
         <span class="meta-dot">·</span>
         <span class="pet-age">{{ ageDisplay }}</span>
       </div>
+      <p class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
     </div>
 
     <div class="track-cta">
@@ -544,6 +547,16 @@ async function deletePet() {
 .badge.dog { background: var(--color-badge-dog-bg); color: var(--color-badge-dog-text); }
 
 .meta-dot { font-size: 18px; }
+
+.last-measured {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+}
+
+.last-measured.stale {
+  color: #d97706;
+}
 
 .track-cta {
   padding: 16px;
