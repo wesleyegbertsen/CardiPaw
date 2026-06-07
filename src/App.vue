@@ -3,6 +3,7 @@ import { onMounted } from 'vue';
 import { RouterView, RouterLink, useRoute } from 'vue-router';
 import { usePetsStore } from './stores/pets';
 import { useThemeStore } from './stores/theme';
+import UpdateBanner from './components/UpdateBanner.vue';
 
 const petsStore = usePetsStore();
 const themeStore = useThemeStore();
@@ -17,6 +18,7 @@ onMounted(() => {
 
 <template>
   <div class="app-layout">
+    <UpdateBanner />
     <main class="app-main">
       <RouterView />
     </main>
