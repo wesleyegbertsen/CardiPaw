@@ -1,8 +1,25 @@
 import { onMounted, onUnmounted } from 'vue';
 import { getAllReminders } from '../services/db';
 
+const FIRED_KEY = 'cardipaw-fired-reminders';
+
+function loadFired(): Set<string> {
+  try {
+    const raw = sessionStorage.getItem(FIRED_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveFired(fired: Set<string>) {
+  try {
+    sessionStorage.setItem(FIRED_KEY, JSON.stringify([...fired]));
+  } catch {}
+}
+
 export function useReminderScheduler() {
-  const fired = new Set<string>();
+  const fired = loadFired();
   let timer: ReturnType<typeof setInterval> | null = null;
 
   async function tick() {
@@ -26,6 +43,7 @@ export function useReminderScheduler() {
       if (fired.has(key)) continue;
       fired.add(key);
       if (fired.size > 100) fired.clear();
+      saveFired(fired);
 
       try {
         const reg = await navigator.serviceWorker.ready;
