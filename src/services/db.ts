@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { Pet, Reading, Note, ExportPayload } from '../types';
+import type { Pet, Reading, Note, Reminder, ExportPayload } from '../types';
 
 interface CardiPawDB extends DBSchema {
   pets: {
@@ -17,10 +17,15 @@ interface CardiPawDB extends DBSchema {
     value: Note;
     indexes: { 'by-petId': string };
   };
+  reminders: {
+    key: string;
+    value: Reminder;
+    indexes: { 'by-petId': string };
+  };
 }
 
 const DB_NAME = 'cardipaw';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbPromise: Promise<IDBPDatabase<CardiPawDB>> | null = null;
 
@@ -39,6 +44,10 @@ function getDb(): Promise<IDBPDatabase<CardiPawDB>> {
         if (oldVersion < 2) {
           const noteStore = db.createObjectStore('notes', { keyPath: 'id' });
           noteStore.createIndex('by-petId', 'petId');
+        }
+        if (oldVersion < 3) {
+          const reminderStore = db.createObjectStore('reminders', { keyPath: 'id' });
+          reminderStore.createIndex('by-petId', 'petId');
         }
       },
     });
@@ -130,27 +139,65 @@ export async function deleteNotesForPet(petId: string): Promise<void> {
   await tx.done;
 }
 
+export async function getRemindersForPet(petId: string): Promise<Reminder[]> {
+  const db = await getDb();
+  return db.getAllFromIndex('reminders', 'by-petId', petId);
+}
+
+export async function getAllReminders(): Promise<Reminder[]> {
+  const db = await getDb();
+  return db.getAll('reminders');
+}
+
+export async function saveReminder(reminder: Reminder): Promise<void> {
+  const db = await getDb();
+  await db.put('reminders', reminder);
+}
+
+export async function deleteReminder(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete('reminders', id);
+}
+
+export async function deleteRemindersForPet(petId: string): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction('reminders', 'readwrite');
+  const index = tx.store.index('by-petId');
+  let cursor = await index.openCursor(IDBKeyRange.only(petId));
+  while (cursor) {
+    await cursor.delete();
+    cursor = await cursor.continue();
+  }
+  await tx.done;
+}
+
 export async function exportAllData(): Promise<ExportPayload> {
-  const [pets, readings, notes] = await Promise.all([getAllPets(), getAllReadings(), getAllNotes()]);
+  const [pets, readings, notes, reminders] = await Promise.all([
+    getAllPets(), getAllReadings(), getAllNotes(), getAllReminders(),
+  ]);
   return {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     pets,
     readings,
     notes,
+    reminders,
   };
 }
 
 export async function importAllData(payload: ExportPayload): Promise<void> {
   const db = await getDb();
-  const tx = db.transaction(['pets', 'readings', 'notes'], 'readwrite');
+  const reminders = payload.version === 2 ? payload.reminders : [];
+  const tx = db.transaction(['pets', 'readings', 'notes', 'reminders'], 'readwrite');
   await tx.objectStore('pets').clear();
   await tx.objectStore('readings').clear();
   await tx.objectStore('notes').clear();
+  await tx.objectStore('reminders').clear();
   await Promise.all([
     ...payload.pets.map((p) => tx.objectStore('pets').put(p)),
     ...payload.readings.map((r) => tx.objectStore('readings').put(r)),
     ...(payload.notes ?? []).map((n) => tx.objectStore('notes').put(n)),
+    ...reminders.map((r) => tx.objectStore('reminders').put(r)),
   ]);
   await tx.done;
 }

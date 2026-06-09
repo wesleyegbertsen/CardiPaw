@@ -4,15 +4,30 @@ import { RouterView, RouterLink, useRoute } from 'vue-router';
 import { usePetsStore } from './stores/pets';
 import { useThemeStore } from './stores/theme';
 import UpdateBanner from './components/UpdateBanner.vue';
+import { useReminderScheduler } from './composables/useReminderScheduler';
 
 const petsStore = usePetsStore();
 const themeStore = useThemeStore();
 const route = useRoute();
 
 themeStore.init();
+useReminderScheduler();
 
-onMounted(() => {
+onMounted(async () => {
   petsStore.loadPets();
+
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if ('periodicSync' in reg) {
+        await (reg as any).periodicSync.register('check-reminders', {
+          minInterval: 60 * 60 * 1000, // 1 hour
+        });
+      }
+    } catch {
+      // periodicSync not supported or permission denied — foreground scheduler covers this
+    }
+  }
 });
 </script>
 

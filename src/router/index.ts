@@ -8,6 +8,8 @@ import ReadingView from '../views/ReadingView.vue';
 import EditReadingView from '../views/EditReadingView.vue';
 import NoteView from '../views/NoteView.vue';
 import AddEditNoteView from '../views/AddEditNoteView.vue';
+import RemindersView from '../views/RemindersView.vue';
+import AddEditReminderView from '../views/AddEditReminderView.vue';
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -22,6 +24,9 @@ export const router = createRouter({
     { path: '/pets/:id/notes/add', name: 'note-add', component: AddEditNoteView },
     { path: '/pets/:id/notes/:noteId', name: 'note', component: NoteView },
     { path: '/pets/:id/notes/:noteId/edit', name: 'note-edit', component: AddEditNoteView },
+    { path: '/pets/:id/reminders', name: 'reminders', component: RemindersView },
+    { path: '/pets/:id/reminders/add', name: 'reminder-add', component: AddEditReminderView },
+    { path: '/pets/:id/reminders/:reminderId/edit', name: 'reminder-edit', component: AddEditReminderView },
     { path: '/settings', name: 'settings', component: SettingsView },
   ],
 });

@@ -12,12 +12,14 @@ import NoteList from '../components/NoteList.vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import PdfExportModal from '../components/PdfExportModal.vue';
 import { useNotesStore } from '../stores/notes';
+import { useRemindersStore } from '../stores/reminders';
 
 const route = useRoute();
 const router = useRouter();
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
 const notesStore = useNotesStore();
+const remindersStore = useRemindersStore();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
@@ -27,6 +29,8 @@ const ageDisplay = useAgeCalculator(birthdateRef);
 const readings = computed(() => readingsStore.getReadingsForPet(petId));
 const lastMeasured = useLastMeasured(readings);
 const notes = computed(() => notesStore.getNotesForPet(petId));
+const reminders = computed(() => remindersStore.getRemindersForPet(petId));
+const hasActiveReminders = computed(() => reminders.value.some(r => r.enabled));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
 const activeTab = computed({
@@ -256,6 +260,7 @@ onMounted(async () => {
   }
   readingsStore.loadReadingsForPet(petId);
   notesStore.loadNotesForPet(petId);
+  remindersStore.loadRemindersForPet(petId);
 });
 
 async function deletePet() {
@@ -274,6 +279,12 @@ async function deletePet() {
         </svg>
       </button>
       <div class="header-actions">
+        <button class="icon-btn reminder-btn" @click="router.push({ name: 'reminders', params: { id: petId } })" aria-label="Reminders">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+          </svg>
+          <span v-if="hasActiveReminders" class="reminder-badge" />
+        </button>
         <button class="icon-btn" @click="showPdfModal = true" aria-label="Export PDF">
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
@@ -483,6 +494,21 @@ async function deletePet() {
 
 .icon-btn.danger {
   color: var(--color-danger);
+}
+
+.reminder-btn {
+  position: relative;
+}
+
+.reminder-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 1.5px solid var(--color-surface);
 }
 
 .pet-hero {

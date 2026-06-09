@@ -4,6 +4,7 @@ import type { Pet } from '../types';
 import * as db from '../services/db';
 import { useReadingsStore } from './readings';
 import { useNotesStore } from './notes';
+import { useRemindersStore } from './reminders';
 import { v4 as generateId } from 'uuid';
 
 export const usePetsStore = defineStore('pets', () => {
@@ -49,12 +50,18 @@ export const usePetsStore = defineStore('pets', () => {
 
   async function removePet(id: string) {
     await db.deletePet(id);
-    await Promise.all([db.deleteReadingsForPet(id), db.deleteNotesForPet(id)]);
+    await Promise.all([
+      db.deleteReadingsForPet(id),
+      db.deleteNotesForPet(id),
+      db.deleteRemindersForPet(id),
+    ]);
     pets.value = pets.value.filter((p) => p.id !== id);
     const readingsStore = useReadingsStore();
     readingsStore.clearReadingsForPet(id);
     const notesStore = useNotesStore();
     notesStore.clearNotesForPet(id);
+    const remindersStore = useRemindersStore();
+    remindersStore.clearRemindersForPet(id);
   }
 
   return { pets, loading, getPetById, loadPets, addPet, updatePet, removePet };

@@ -31,10 +31,20 @@ export interface Note {
   pinnedAt?: string; // ISO timestamp when pinned; absent = not pinned
 }
 
-export interface ExportPayload {
-  version: 1;
-  exportedAt: string;
-  pets: Pet[];
-  readings: Reading[];
-  notes: Note[];
+export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export interface Reminder {
+  id: string;
+  petId: string;
+  petName: string;
+  title: string;
+  description?: string;
+  time: string; // "HH:MM" 24h local time
+  days: DayOfWeek[];
+  enabled: boolean;
+  createdAt: string;
 }
+
+export type ExportPayload =
+  | { version: 1; exportedAt: string; pets: Pet[]; readings: Reading[]; notes: Note[] }
+  | { version: 2; exportedAt: string; pets: Pet[]; readings: Reading[]; notes: Note[]; reminders: Reminder[] };
