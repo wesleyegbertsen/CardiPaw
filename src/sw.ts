@@ -7,8 +7,11 @@ declare const self: ServiceWorkerGlobalScope;
 // Preserve existing caching behavior exactly as the auto-generated SW did
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
-// SPA offline fallback — ensures deep links work without network
-registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
+// SPA offline fallback — only in production where index.html is precached;
+// in dev mode the manifest is empty so createHandlerBoundToURL would throw
+if (self.__WB_MANIFEST.length > 0) {
+  registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
+}
 
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
