@@ -397,7 +397,6 @@ function formatDateTime(date: string): string {
   color: var(--color-text-muted);
 }
 
-/* same min-width as .rate-badge so the two pills stack as an aligned column */
 .rest-tag {
   display: inline-flex;
   align-items: center;
@@ -407,7 +406,14 @@ function formatDateTime(date: string): string {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: var(--radius-full);
-  min-width: 72px;
+}
+
+/* one fixed width for both pill types, sized to the widest content
+   (icon + "Sleeping"), so they stack as an equal-width column and the
+   rate text aligns across rows */
+.rest-tag,
+.reading-row .rate-badge {
+  width: 88px;
 }
 
 .rest-tag.resting {
@@ -447,13 +453,11 @@ function formatDateTime(date: string): string {
   color: var(--color-text-muted);
 }
 
-/* min-width fits the longest label ("Elevated") so all pills are equal width */
 .rate-badge {
   font-size: 11px;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: var(--radius-full);
-  min-width: 72px;
   text-align: center;
 }
 
