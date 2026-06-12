@@ -179,12 +179,16 @@ function restStateLabel(reading: SharedReading): string {
         <RRRChart :readings="month.chartReadings" :max-ticks="6" :normal-ceiling="pet.normalCeiling" />
         <div class="reading-table">
           <div v-for="row in month.rows" :key="row.date" class="reading-row">
-            <span class="row-date">{{ formatDateTime(row.date) }}</span>
-            <span class="row-rest">{{ restStateLabel(row) }}</span>
-            <span class="row-rate">{{ row.rate }} <span class="rate-unit">breaths/min</span></span>
-            <span class="rate-badge" :class="getRateStatus(row.rate, pet).cssClass">
-              {{ getRateStatus(row.rate, pet).label }}
-            </span>
+            <div class="row-left">
+              <span class="row-date">{{ formatDateTime(row.date) }}</span>
+              <span v-if="restStateLabel(row)" class="row-rest">{{ restStateLabel(row) }}</span>
+            </div>
+            <div class="row-right">
+              <span class="row-rate">{{ row.rate }} <span class="rate-unit">breaths/min</span></span>
+              <span class="rate-badge" :class="getRateStatus(row.rate, pet).cssClass">
+                {{ getRateStatus(row.rate, pet).label }}
+              </span>
+            </div>
           </div>
         </div>
       </section>
@@ -366,14 +370,21 @@ function restStateLabel(reading: SharedReading): string {
 }
 
 .reading-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
   background: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+}
+
+.row-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .row-date {
@@ -386,10 +397,18 @@ function restStateLabel(reading: SharedReading): string {
   color: var(--color-text-muted);
 }
 
+.row-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .row-rate {
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text);
+  white-space: nowrap;
 }
 
 .rate-unit {
@@ -398,11 +417,14 @@ function restStateLabel(reading: SharedReading): string {
   color: var(--color-text-muted);
 }
 
+/* min-width fits the longest label ("Elevated") so all pills are equal width */
 .rate-badge {
   font-size: 11px;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: var(--radius-full);
+  min-width: 72px;
+  text-align: center;
 }
 
 .rate-badge.normal {
@@ -431,16 +453,6 @@ function restStateLabel(reading: SharedReading): string {
 .share-footer a {
   color: var(--color-primary);
   font-weight: 600;
-}
-
-@media (max-width: 420px) {
-  .reading-row {
-    grid-template-columns: 1fr auto;
-  }
-
-  .row-rest {
-    display: none;
-  }
 }
 
 @media print {
