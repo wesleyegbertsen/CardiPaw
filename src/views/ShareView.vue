@@ -178,24 +178,24 @@ function formatDateTime(date: string): string {
               <span class="row-date">{{ formatDateTime(row.date) }}</span>
             </div>
             <div class="row-right">
-              <div class="row-main">
-                <span class="row-rate">{{ row.rate }} <span class="rate-unit">breaths/min</span></span>
+              <span class="row-rate">{{ row.rate }} <span class="rate-unit">breaths/min</span></span>
+              <div class="pill-col">
                 <span class="rate-badge" :class="getRateStatus(row.rate, pet).cssClass">
                   {{ getRateStatus(row.rate, pet).label }}
                 </span>
+                <span v-if="row.restState === 'resting'" class="rest-tag resting">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                    <path d="M21 9V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v2c-1.1 0-2 .9-2 2v5h1.33L3 18h1l.67-2h14.67l.66 2h1l-.33-2H23v-5c0-1.1-.9-2-2-2zm-8 0H5V7h8v2zm6 0h-4V7h4v2z"/>
+                  </svg>
+                  Resting
+                </span>
+                <span v-else-if="row.restState === 'sleeping'" class="rest-tag sleeping">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                    <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
+                  </svg>
+                  Sleeping
+                </span>
               </div>
-              <span v-if="row.restState === 'resting'" class="rest-tag resting">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
-                  <path d="M21 9V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v2c-1.1 0-2 .9-2 2v5h1.33L3 18h1l.67-2h14.67l.66 2h1l-.33-2H23v-5c0-1.1-.9-2-2-2zm-8 0H5V7h8v2zm6 0h-4V7h4v2z"/>
-                </svg>
-                Resting
-              </span>
-              <span v-else-if="row.restState === 'sleeping'" class="rest-tag sleeping">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
-                  <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
-                </svg>
-                Sleeping
-              </span>
             </div>
           </div>
         </div>
@@ -428,16 +428,15 @@ function formatDateTime(date: string): string {
 
 .row-right {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  align-items: center;
+  gap: 10px;
   flex-shrink: 0;
 }
 
-.row-main {
+.pill-col {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .row-rate {
