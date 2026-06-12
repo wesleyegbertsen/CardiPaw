@@ -8,6 +8,7 @@ import ReadingView from '../views/ReadingView.vue';
 import EditReadingView from '../views/EditReadingView.vue';
 import NoteView from '../views/NoteView.vue';
 import AddEditNoteView from '../views/AddEditNoteView.vue';
+import ShareView from '../views/ShareView.vue';
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -23,5 +24,6 @@ export const router = createRouter({
     { path: '/pets/:id/notes/:noteId', name: 'note', component: NoteView },
     { path: '/pets/:id/notes/:noteId/edit', name: 'note-edit', component: AddEditNoteView },
     { path: '/settings', name: 'settings', component: SettingsView },
+    { path: '/share', name: 'share', component: ShareView },
   ],
 });

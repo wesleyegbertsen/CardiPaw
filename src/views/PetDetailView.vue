@@ -11,6 +11,7 @@ import ReadingList from '../components/ReadingList.vue';
 import NoteList from '../components/NoteList.vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import PdfExportModal from '../components/PdfExportModal.vue';
+import ShareLinkModal from '../components/ShareLinkModal.vue';
 import { useNotesStore } from '../stores/notes';
 
 const route = useRoute();
@@ -29,6 +30,7 @@ const lastMeasured = useLastMeasured(readings);
 const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
+const showShareModal = ref(false);
 const activeTab = computed({
   get: () => {
     if (route.query.tab === 'readings') return 'readings';
@@ -274,6 +276,11 @@ async function deletePet() {
         </svg>
       </button>
       <div class="header-actions">
+        <button class="icon-btn" @click="showShareModal = true" aria-label="Share with vet">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+          </svg>
+        </button>
         <button class="icon-btn" @click="showPdfModal = true" aria-label="Export PDF">
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
@@ -428,6 +435,13 @@ async function deletePet() {
       :pet="pet"
       :readings="readings"
       @close="showPdfModal = false"
+    />
+
+    <ShareLinkModal
+      v-if="showShareModal"
+      :pet="pet"
+      :readings="readings"
+      @close="showShareModal = false"
     />
 
     <ConfirmDialog
