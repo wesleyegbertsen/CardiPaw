@@ -100,7 +100,7 @@ async function nativeShare() {
     <div class="overlay" @click.self="emit('close')">
       <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
         <div class="dialog-header">
-          <h2 class="dialog-title" id="share-modal-title">Share with vet</h2>
+          <h2 class="dialog-title" id="share-modal-title">Share</h2>
           <p class="dialog-subtitle">{{ pet.name }}</p>
         </div>
 
