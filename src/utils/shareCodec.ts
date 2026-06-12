@@ -1,4 +1,4 @@
-import type { Pet, Reading, SharePayload, SharedReadingTuple } from '../types';
+import type { Pet, Reading, SharePayload } from '../types';
 
 // Encodes a SharePayload into a compact URL-safe string (and back) so a pet's
 // readings can be shared as a link. The data is deflate-compressed and
@@ -11,22 +11,16 @@ export class ShareDecodeError extends Error {
   }
 }
 
-const REST_STATE_TO_CODE = { resting: 1, sleeping: 2 } as const;
-
-export const CODE_TO_REST_STATE: Record<number, 'resting' | 'sleeping' | undefined> = {
-  1: 'resting',
-  2: 'sleeping',
-};
-
 export function buildSharePayload(pet: Pet, readings: Reading[], months: string[]): SharePayload {
   const monthSet = new Set(months);
   const shared = readings
     .filter((r) => monthSet.has(r.date.slice(0, 7)))
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((r): SharedReadingTuple => {
-      const date = r.date.slice(0, 16); // minute precision keeps the URL short
-      return r.restState ? [date, r.rate, REST_STATE_TO_CODE[r.restState]] : [date, r.rate];
-    });
+    .map((r) => ({
+      date: r.date.slice(0, 16), // minute precision keeps the URL short
+      rate: r.rate,
+      ...(r.restState && { restState: r.restState }),
+    }));
 
   return {
     v: 1,
@@ -93,7 +87,14 @@ function isSharePayload(value: unknown): value is SharePayload {
   if (typeof pet.name !== 'string' || typeof pet.birthdate !== 'string') return false;
   if (pet.species !== 'cat' && pet.species !== 'dog') return false;
   if (!Array.isArray(v.readings)) return false;
-  return v.readings.every(
-    (r) => Array.isArray(r) && typeof r[0] === 'string' && typeof r[1] === 'number'
-  );
+  return v.readings.every((r) => {
+    if (typeof r !== 'object' || r === null) return false;
+    const reading = r as Record<string, unknown>;
+    if (typeof reading.date !== 'string' || typeof reading.rate !== 'number') return false;
+    return (
+      reading.restState === undefined ||
+      reading.restState === 'resting' ||
+      reading.restState === 'sleeping'
+    );
+  });
 }

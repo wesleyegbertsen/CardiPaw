@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import type { Reading, SharePayload, SharedReadingTuple } from '../types';
-import { decodeShare, CODE_TO_REST_STATE } from '../utils/shareCodec';
+import type { Reading, SharePayload } from '../types';
+import { decodeShare } from '../utils/shareCodec';
 import { getRateStatus } from '../utils/rateStatus';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import RRRChart from '../components/RRRChart.vue';
@@ -52,7 +52,7 @@ const sharedAtLabel = computed(() => {
 const allReadings = computed(() => payload.value?.readings ?? []);
 
 const stats = computed(() => {
-  const rates = allReadings.value.map((r) => r[1]);
+  const rates = allReadings.value.map((r) => r.rate);
   if (rates.length === 0) return null;
   const counts = { normal: 0, warning: 0, danger: 0 };
   for (const rate of rates) {
@@ -67,31 +67,33 @@ const stats = computed(() => {
   };
 });
 
+type SharedReading = SharePayload['readings'][number];
+
 interface MonthSection {
   key: string;
   label: string;
   chartReadings: Reading[];
-  rows: SharedReadingTuple[];
+  rows: SharedReading[];
 }
 
 const monthSections = computed<MonthSection[]>(() => {
-  const groups = new Map<string, SharedReadingTuple[]>();
+  const groups = new Map<string, SharedReading[]>();
   for (const r of allReadings.value) {
-    const key = r[0].slice(0, 7);
+    const key = r.date.slice(0, 7);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(r);
   }
   return [...groups.entries()]
     .sort(([a], [b]) => b.localeCompare(a))
-    .map(([key, tuples]) => ({
+    .map(([key, readings]) => ({
       key,
       label: new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(
         new Date(key + '-15')
       ),
-      chartReadings: [...tuples]
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([date, rate]) => ({ id: date, petId: 'shared', date, rate, clickCount: 0 })),
-      rows: [...tuples].sort((a, b) => b[0].localeCompare(a[0])),
+      chartReadings: [...readings]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((r) => ({ id: r.date, petId: 'shared', date: r.date, rate: r.rate, clickCount: 0 })),
+      rows: [...readings].sort((a, b) => b.date.localeCompare(a.date)),
     }));
 });
 
@@ -105,10 +107,9 @@ function formatDateTime(date: string): string {
   }).format(new Date(date));
 }
 
-function restStateLabel(tuple: SharedReadingTuple): string {
-  const restState = tuple[2] !== undefined ? CODE_TO_REST_STATE[tuple[2]] : undefined;
-  if (restState === 'resting') return 'Resting';
-  if (restState === 'sleeping') return 'Sleeping';
+function restStateLabel(reading: SharedReading): string {
+  if (reading.restState === 'resting') return 'Resting';
+  if (reading.restState === 'sleeping') return 'Sleeping';
   return '';
 }
 </script>
@@ -177,12 +178,12 @@ function restStateLabel(tuple: SharedReadingTuple): string {
         <h2 class="month-title">{{ month.label }}</h2>
         <RRRChart :readings="month.chartReadings" :max-ticks="6" :normal-ceiling="pet.normalCeiling" />
         <div class="reading-table">
-          <div v-for="row in month.rows" :key="row[0]" class="reading-row">
-            <span class="row-date">{{ formatDateTime(row[0]) }}</span>
+          <div v-for="row in month.rows" :key="row.date" class="reading-row">
+            <span class="row-date">{{ formatDateTime(row.date) }}</span>
             <span class="row-rest">{{ restStateLabel(row) }}</span>
-            <span class="row-rate">{{ row[1] }} <span class="rate-unit">breaths/min</span></span>
-            <span class="rate-badge" :class="getRateStatus(row[1], pet).cssClass">
-              {{ getRateStatus(row[1], pet).label }}
+            <span class="row-rate">{{ row.rate }} <span class="rate-unit">breaths/min</span></span>
+            <span class="rate-badge" :class="getRateStatus(row.rate, pet).cssClass">
+              {{ getRateStatus(row.rate, pet).label }}
             </span>
           </div>
         </div>

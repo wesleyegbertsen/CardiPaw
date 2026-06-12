@@ -39,12 +39,10 @@ export interface ExportPayload {
   notes: Note[];
 }
 
-// Compact reading for share links: [date "YYYY-MM-DDTHH:mm", rate, restState? (1 = resting, 2 = sleeping)]
-export type SharedReadingTuple = [string, number] | [string, number, number];
-
 export interface SharePayload {
   v: 1;
   sharedAt: string; // "YYYY-MM-DD"
   pet: Pick<Pet, 'name' | 'species' | 'birthdate' | 'normalCeiling' | 'elevatedCeiling'>;
-  readings: SharedReadingTuple[];
+  // date is truncated to minute precision ("YYYY-MM-DDTHH:mm") to keep the URL short
+  readings: Pick<Reading, 'date' | 'rate' | 'restState'>[];
 }
