@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { RouterView, RouterLink, useRoute } from 'vue-router';
 import { usePetsStore } from './stores/pets';
 import { useThemeStore } from './stores/theme';
@@ -8,6 +8,9 @@ import UpdateBanner from './components/UpdateBanner.vue';
 const petsStore = usePetsStore();
 const themeStore = useThemeStore();
 const route = useRoute();
+
+// Shared snapshots render as a standalone page without the app navigation
+const isShareView = computed(() => route.name === 'share');
 
 themeStore.init();
 
@@ -19,11 +22,11 @@ onMounted(() => {
 <template>
   <div class="app-layout">
     <UpdateBanner />
-    <main class="app-main">
+    <main class="app-main" :class="{ 'no-nav': isShareView }">
       <RouterView />
     </main>
 
-    <nav class="bottom-nav">
+    <nav v-if="!isShareView" class="bottom-nav">
       <RouterLink :to="{ name: 'home' }" class="nav-item" :class="{ active: route.name === 'home' }">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
           <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
@@ -52,6 +55,10 @@ onMounted(() => {
   flex: 1;
   overflow-y: auto;
   padding-bottom: var(--nav-height);
+}
+
+.app-main.no-nav {
+  padding-bottom: 0;
 }
 
 .bottom-nav {
