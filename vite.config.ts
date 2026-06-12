@@ -11,7 +11,7 @@ export default defineConfig({
       manifest: {
         name: 'CardiPaw',
         short_name: 'CardiPaw',
-        description: "Track your pet's Resting Respiratory Rate",
+        description: "Free resting respiratory rate (RRR) tracker for cats and dogs with HCM or heart conditions. Count breaths, track trends, and export reports — no account needed, all data stays on your device.",
         theme_color: '#e05c7a',
         background_color: '#faf9f7',
         display: 'standalone',
