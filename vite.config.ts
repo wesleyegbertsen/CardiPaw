@@ -8,7 +8,7 @@ export default defineConfig({
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
-      filename: 'sw.ts',
+      filename: 'sw.ts', // The custom service worker we have, is really different then the generated one, see sw.js file on live for what I mean. Should we have 2 service workers?
       registerType: 'prompt',
       devOptions: {
         enabled: true,
