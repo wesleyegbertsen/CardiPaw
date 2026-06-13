@@ -140,8 +140,8 @@ onUnmounted(() => {
       <div style="width: 32px;"></div>
     </header>
 
-    <!-- Mode toggle: fixed below header, visible only before a measurement starts -->
-    <div v-if="phase === 'idle'" class="mode-toggle-bar">
+    <!-- Mode toggle: always in DOM to hold space; hidden during active measurement -->
+    <div class="mode-toggle-bar" :style="{ visibility: phase === 'idle' ? 'visible' : 'hidden' }">
       <div class="mode-toggle">
         <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }"></div>
         <button class="mode-pill" :class="{ active: !isManualMode }" @click="switchMode('guided')">Guided</button>
