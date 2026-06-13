@@ -16,9 +16,10 @@ export interface Reading {
   petId: string;
   date: string; // ISO timestamp
   rate: number; // breaths per minute (clickCount × 2)
-  clickCount: number; // raw clicks during 30s
+  clickCount: number; // raw clicks during 30s; 0 for manual entries
   restState?: 'resting' | 'sleeping';
   notes?: string;
+  source?: 'manual'; // absent = guided 30-second measurement
 }
 
 export interface Note {
@@ -44,5 +45,5 @@ export interface SharePayload {
   sharedAt: string; // "YYYY-MM-DD"
   pet: Pick<Pet, 'name' | 'species' | 'birthdate' | 'normalCeiling' | 'elevatedCeiling'>;
   // date is truncated to minute precision ("YYYY-MM-DDTHH:mm") to keep the URL short
-  readings: Pick<Reading, 'date' | 'rate' | 'restState'>[];
+  readings: Pick<Reading, 'date' | 'rate' | 'restState' | 'source'>[];
 }

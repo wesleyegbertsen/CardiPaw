@@ -60,14 +60,17 @@ function makeReadings(petId, profile, totalCount, daySpread) {
   return slots
     .sort((a, b) => a.day - b.day || a.hour - b.hour)
     .map(({ day, hour }) => {
-      const clickCount = clickCountFor(profile);
+      const isManual = Math.random() < 0.20;
+      const clickCount = isManual ? 0 : clickCountFor(profile);
+      const rate = isManual ? clickCountFor(profile) * 2 : clickCount * 2;
       return {
         id: crypto.randomUUID(),
         petId,
         date: isoAt(day, hour),
-        rate: clickCount * 2,
+        rate,
         clickCount,
         restState: Math.random() < 0.55 ? 'sleeping' : 'resting',
+        ...(isManual && { source: 'manual' }),
       };
     });
 }

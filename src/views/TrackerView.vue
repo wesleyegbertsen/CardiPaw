@@ -5,6 +5,7 @@ import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAudioBeep } from '../composables/useAudioBeep';
 import RichTextEditor from '../components/RichTextEditor.vue';
+import { getRateStatus } from '../utils/rateStatus';
 
 const route = useRoute();
 const router = useRouter();
@@ -16,7 +17,9 @@ const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
 
 type Phase = 'idle' | 'running' | 'done';
+type Mode = 'guided' | 'manual';
 const phase = ref<Phase>('idle');
+const mode = ref<Mode>('guided');
 const timeLeft = ref(30);
 const clickCount = ref(0);
 const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
@@ -25,6 +28,15 @@ const saving = ref(false);
 const restState = ref<'resting' | 'sleeping' | undefined>(undefined);
 const notes = ref('');
 const soundEnabled = ref(true);
+const manualRate = ref(0);
+const isManualMode = computed(() => mode.value === 'manual');
+
+function switchMode(next: Mode) {
+  mode.value = next;
+  restState.value = undefined;
+  notes.value = '';
+  manualRate.value = 0;
+}
 
 const resultRate = computed(() => clickCount.value * 2);
 
@@ -75,13 +87,15 @@ async function saveReading() {
   if (saving.value) return;
   saving.value = true;
   try {
+    const isManual = mode.value === 'manual';
     await readingsStore.addReading({
       petId,
       date: new Date().toISOString(),
-      rate: resultRate.value,
-      clickCount: clickCount.value,
+      rate: isManual ? manualRate.value : resultRate.value,
+      clickCount: isManual ? 0 : clickCount.value,
       restState: restState.value,
       notes: notes.value || undefined,
+      source: isManual ? 'manual' : undefined,
     });
     router.push({ name: 'pet', params: { id: petId } });
   } finally {
@@ -104,6 +118,7 @@ function reset() {
   isPulsing.value = false;
   restState.value = undefined;
   notes.value = '';
+  manualRate.value = 0;
 }
 
 onMounted(() => { initAudio(); });
@@ -125,8 +140,64 @@ onUnmounted(() => {
       <div style="width: 32px;"></div>
     </header>
 
-    <!-- Idle state -->
-    <div v-if="phase === 'idle'" class="tracker-body">
+    <!-- Mode toggle: fixed below header, visible only before a measurement starts -->
+    <div v-if="phase === 'idle'" class="mode-toggle-bar">
+      <div class="mode-toggle">
+        <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }"></div>
+        <button class="mode-pill" :class="{ active: !isManualMode }" @click="switchMode('guided')">Guided</button>
+        <button class="mode-pill" :class="{ active: isManualMode }" @click="switchMode('manual')">Manual</button>
+      </div>
+    </div>
+
+    <!-- Manual entry mode -->
+    <div v-if="isManualMode" class="tracker-body done-body">
+      <div class="manual-rate-field">
+        <input
+          class="manual-rate-input"
+          type="number"
+          v-model.number="manualRate"
+          min="1"
+          max="200"
+          placeholder="0"
+          inputmode="numeric"
+          autofocus
+        />
+        <span class="manual-rate-unit">breaths / min</span>
+        <span
+          class="rate-badge"
+          :class="getRateStatus(manualRate, pet).cssClass"
+          :style="{ visibility: manualRate > 0 ? 'visible' : 'hidden' }"
+        >{{ getRateStatus(manualRate, pet).label }}</span>
+      </div>
+
+      <div class="rest-state-row">
+        <span class="rest-state-label">Pet was</span>
+        <button
+          class="rest-btn"
+          :class="{ active: restState === 'resting' }"
+          @click="restState = restState === 'resting' ? undefined : 'resting'"
+        >Resting</button>
+        <button
+          class="rest-btn"
+          :class="{ active: restState === 'sleeping' }"
+          @click="restState = restState === 'sleeping' ? undefined : 'sleeping'"
+        >Sleeping</button>
+      </div>
+
+      <div class="notes-wrapper">
+        <RichTextEditor v-model="notes" />
+      </div>
+
+      <div class="done-actions">
+        <button class="btn-save" @click="saveReading" :disabled="saving || manualRate < 1">
+          {{ saving ? 'Saving…' : 'Save reading' }}
+        </button>
+        <button class="btn-discard" @click="discard">Discard</button>
+      </div>
+    </div>
+
+    <!-- Guided: Idle -->
+    <div v-else-if="phase === 'idle'" class="tracker-body">
       <div class="body-top">
         <p class="instruction">Tap the heart each time you see your pet's chest rise and fall.</p>
       </div>
@@ -561,5 +632,118 @@ onUnmounted(() => {
 .slide-toggle.on::after {
   transform: translateX(18px);
   background: #fff;
+}
+
+/* Mode toggle bar — fixed strip below header */
+.mode-toggle-bar {
+  display: flex;
+  justify-content: center;
+  padding: 12px 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Mode toggle pill */
+.mode-toggle {
+  position: relative;
+  display: flex;
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  gap: 0;
+}
+
+.mode-toggle-indicator {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.mode-toggle-indicator.is-manual {
+  transform: translateX(100%);
+}
+
+.mode-pill {
+  flex: 1;
+  height: 30px;
+  padding: 0 16px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  position: relative;
+  z-index: 1;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.mode-pill.active {
+  color: #fff;
+}
+
+/* Manual entry form */
+.manual-rate-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.manual-rate-input {
+  width: 120px;
+  height: 64px;
+  padding: 0 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 36px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.manual-rate-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.manual-rate-input::-webkit-inner-spin-button,
+.manual-rate-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+.manual-rate-unit {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.rate-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+}
+
+.rate-badge.normal {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.rate-badge.warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.rate-badge.danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 </style>
