@@ -16,9 +16,10 @@ export interface Reading {
   petId: string;
   date: string; // ISO timestamp
   rate: number; // breaths per minute (clickCount × 2)
-  clickCount: number; // raw clicks during 30s
+  clickCount: number; // raw clicks during 30s; 0 for manual entries
   restState?: 'resting' | 'sleeping';
   notes?: string;
+  source?: 'manual'; // absent = guided 30-second measurement
 }
 
 export interface Note {
