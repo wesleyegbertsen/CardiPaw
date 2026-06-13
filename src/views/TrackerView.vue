@@ -143,6 +143,7 @@ onUnmounted(() => {
     <!-- Mode toggle: fixed below header, visible only before a measurement starts -->
     <div v-if="phase === 'idle'" class="mode-toggle-bar">
       <div class="mode-toggle">
+        <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }"></div>
         <button class="mode-pill" :class="{ active: !isManualMode }" @click="switchMode('guided')">Guided</button>
         <button class="mode-pill" :class="{ active: isManualMode }" @click="switchMode('manual')">Manual</button>
       </div>
@@ -644,12 +645,29 @@ onUnmounted(() => {
 
 /* Mode toggle pill */
 .mode-toggle {
+  position: relative;
   display: flex;
   background: var(--color-bg);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-full);
   padding: 3px;
-  gap: 2px;
+  gap: 0;
+}
+
+.mode-toggle-indicator {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.mode-toggle-indicator.is-manual {
+  transform: translateX(100%);
 }
 
 .mode-pill {
@@ -661,12 +679,13 @@ onUnmounted(() => {
   font-weight: 500;
   color: var(--color-text-muted);
   background: transparent;
-  transition: background 0.15s, color 0.15s;
+  position: relative;
+  z-index: 1;
+  transition: color 0.2s;
   white-space: nowrap;
 }
 
 .mode-pill.active {
-  background: var(--color-primary);
   color: #fff;
 }
 
