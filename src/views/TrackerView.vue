@@ -140,8 +140,9 @@ onUnmounted(() => {
       <div style="width: 32px;"></div>
     </header>
 
-    <!-- Mode toggle: always in DOM to hold space; hidden during active measurement -->
-    <div class="mode-toggle-bar" :style="{ visibility: phase === 'idle' ? 'visible' : 'hidden' }">
+    <div class="tracker-main">
+    <!-- Mode toggle: absolutely positioned so it overlays the body without affecting its height -->
+    <div v-if="phase === 'idle'" class="mode-toggle-bar">
       <div class="mode-toggle">
         <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }"></div>
         <button class="mode-pill" :class="{ active: !isManualMode }" @click="switchMode('guided')">Guided</button>
@@ -150,7 +151,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Manual entry mode -->
-    <div v-if="isManualMode" class="tracker-body done-body">
+    <div v-if="isManualMode" class="tracker-body done-body manual-body">
       <div class="manual-rate-field">
         <input
           class="manual-rate-input"
@@ -297,6 +298,7 @@ onUnmounted(() => {
         <button class="btn-retry" @click="reset">Try again</button>
         <button class="btn-discard" @click="discard">Discard</button>
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -634,8 +636,20 @@ onUnmounted(() => {
   background: #fff;
 }
 
-/* Mode toggle bar — fixed strip below header */
+/* tracker-main fills remaining height; mode-toggle-bar floats above it */
+.tracker-main {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
 .mode-toggle-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
   display: flex;
   justify-content: center;
   padding: 12px 24px;
@@ -687,6 +701,12 @@ onUnmounted(() => {
 
 .mode-pill.active {
   color: #fff;
+}
+
+/* Manual body: centered in the space below the bar, scrollable on short screens */
+.manual-body {
+  padding-top: 88px; /* bar height + breathing room — centers content in remaining space */
+  overflow-y: auto;
 }
 
 /* Manual entry form */
