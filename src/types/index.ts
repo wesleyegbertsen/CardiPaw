@@ -45,5 +45,5 @@ export interface SharePayload {
   sharedAt: string; // "YYYY-MM-DD"
   pet: Pick<Pet, 'name' | 'species' | 'birthdate' | 'normalCeiling' | 'elevatedCeiling'>;
   // date is truncated to minute precision ("YYYY-MM-DDTHH:mm") to keep the URL short
-  readings: Pick<Reading, 'date' | 'rate' | 'restState'>[];
+  readings: Pick<Reading, 'date' | 'rate' | 'restState' | 'source'>[];
 }

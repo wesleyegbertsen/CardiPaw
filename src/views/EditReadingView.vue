@@ -90,7 +90,12 @@ function formatDate(iso: string) {
     </header>
 
     <form v-if="reading" class="form" @submit.prevent="saveEdit">
-      <p class="reading-date">{{ formatDate(reading.date) }}</p>
+      <div class="reading-meta-row">
+        <p class="reading-date">{{ formatDate(reading.date) }}</p>
+        <span class="source-chip" :class="reading.source === 'manual' ? 'manual' : 'guided'">
+          {{ reading.source === 'manual' ? 'Manual entry' : 'Guided (30 s)' }}
+        </span>
+      </div>
 
       <div class="field">
         <label class="label">Rate (breaths/min)</label>
@@ -200,10 +205,37 @@ function formatDate(iso: string) {
   gap: 24px;
 }
 
+.reading-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: -8px;
+  flex-wrap: wrap;
+}
+
 .reading-date {
   font-size: 13px;
   color: var(--color-text-muted);
-  margin-top: -8px;
+}
+
+.source-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.source-chip.manual {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.source-chip.guided {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .field {

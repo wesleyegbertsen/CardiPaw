@@ -147,9 +147,10 @@ function drawTableHeader(doc: jsPDF, curY: number): void {
   doc.setFontSize(9);
   doc.setTextColor('#374151');
   doc.text('Date / Time', ML + 2, curY + 5);
-  doc.text('Rate (breaths/min)', ML + 70 + 2, curY + 5);
-  doc.text('Status', ML + 130 + 2, curY + 5);
-  doc.text('Rest', ML + 158, curY + 5);
+  doc.text('Rate (breaths/min)', ML + 58, curY + 5);
+  doc.text('Status', ML + 100, curY + 5);
+  doc.text('Rest', ML + 130, curY + 5);
+  doc.text('Source', ML + 160, curY + 5);
 }
 
 function htmlToPlainText(html: string): string {
@@ -319,18 +320,23 @@ export function usePdfExport() {
           doc.setFontSize(9);
           doc.setTextColor('#1a1a1a');
           doc.text(`${dateStr}, ${timeStr}`, ML + 2, curY + 5);
-          doc.text(String(r.rate), ML + 72, curY + 5);
+          doc.text(String(r.rate), ML + 58, curY + 5);
           doc.setTextColor(status.color);
-          doc.text(status.label, ML + 132, curY + 5);
+          doc.text(status.label, ML + 100, curY + 5);
 
           if (r.restState) {
             const isResting = r.restState === 'resting';
-            doc.addImage(isResting ? restingIconUrl : sleepingIconUrl, 'PNG', ML + 157, curY + 1.5, 4, 4);
+            doc.addImage(isResting ? restingIconUrl : sleepingIconUrl, 'PNG', ML + 129, curY + 1.5, 4, 4);
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(isResting ? '#16a34a' : '#d97706');
-            doc.text(isResting ? 'Resting' : 'Sleeping', ML + 162, curY + 5);
+            doc.text(isResting ? 'Resting' : 'Sleeping', ML + 134, curY + 5);
           }
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor('#9ca3af');
+          doc.text(r.source === 'manual' ? 'Manual' : 'Guided', ML + 160, curY + 5);
 
           doc.setTextColor('#1a1a1a');
           curY += 7;

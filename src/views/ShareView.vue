@@ -195,6 +195,12 @@ function formatDateTime(date: string): string {
                   </svg>
                   Sleeping
                 </span>
+                <span v-if="row.source === 'manual'" class="source-tag">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                  </svg>
+                  Manual
+                </span>
               </div>
             </div>
           </div>
@@ -424,6 +430,21 @@ function formatDateTime(date: string): string {
 .rest-tag.sleeping {
   background: var(--color-warning-bg);
   color: var(--color-warning);
+}
+
+.source-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  width: 88px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
 }
 
 .row-right {

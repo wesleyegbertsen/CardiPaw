@@ -20,6 +20,7 @@ export function buildSharePayload(pet: Pet, readings: Reading[], months: string[
       date: r.date.slice(0, 16), // minute precision keeps the URL short
       rate: r.rate,
       ...(r.restState && { restState: r.restState }),
+      ...(r.source && { source: r.source }),
     }));
 
   return {
@@ -95,6 +96,9 @@ function isSharePayload(value: unknown): value is SharePayload {
       reading.restState === undefined ||
       reading.restState === 'resting' ||
       reading.restState === 'sleeping'
+    ) && (
+      reading.source === undefined ||
+      reading.source === 'manual'
     );
   });
 }
