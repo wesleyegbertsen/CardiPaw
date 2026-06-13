@@ -137,3 +137,6 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Generated seed data (run `npm run seed` to regenerate)
+public/seed-data.json

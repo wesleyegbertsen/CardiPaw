@@ -7,6 +7,8 @@ import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
 import type { ExportPayload } from '../types';
 
+const isDev = import.meta.env.DEV;
+
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
 
@@ -73,6 +75,46 @@ async function confirmImport() {
   pendingPayload.value = null;
   importSuccess.value = true;
   setTimeout(() => { importSuccess.value = false; }, 3000);
+}
+
+// Dev-only seed loader
+const seedStatus = ref<'idle' | 'loading' | 'done' | 'error'>('idle');
+const seedError = ref('');
+
+async function loadSeedData() {
+  seedStatus.value = 'loading';
+  seedError.value = '';
+  try {
+    const res = await fetch('/seed-data.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status} — run "npm run seed" first`);
+    const payload = await res.json() as ExportPayload;
+    if (payload.version !== 1 || !Array.isArray(payload.pets)) {
+      throw new Error('seed-data.json is not a valid CardiPaw export');
+    }
+    await db.importAllData(payload);
+    await petsStore.loadPets();
+    Object.keys(readingsStore.readingsByPet).forEach((id) => {
+      readingsStore.clearReadingsForPet(id);
+    });
+    seedStatus.value = 'done';
+    setTimeout(() => { seedStatus.value = 'idle'; }, 4000);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const isVersionError = msg.toLowerCase().includes('higher version') || msg.toLowerCase().includes('versionerror');
+    seedError.value = isVersionError
+      ? 'DB version mismatch — click "Reset DB" below, then try again.'
+      : msg;
+    seedStatus.value = 'error';
+  }
+}
+
+const resetStatus = ref<'idle' | 'working'>('idle');
+
+async function resetDatabase() {
+  if (!confirm('Delete the local cardipaw database and reload? All data will be lost.')) return;
+  resetStatus.value = 'working';
+  await db.closeAndDeleteDatabase();
+  window.location.reload();
 }
 
 function cancelImport() {
@@ -222,6 +264,57 @@ function cancelImport() {
             >View</a>
           </div>
         </div>
+      </section>
+
+      <section v-if="isDev" class="section dev-section">
+        <h2 class="section-title">Developer</h2>
+        <p class="section-desc">
+          Dev-mode only. Run <code>npm run seed</code> to generate seed data, then load it here.
+        </p>
+        <div class="action-cards">
+          <div class="action-card">
+            <div class="action-info">
+              <div class="action-icon dev-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+                  <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="action-name">Load seed data</div>
+                <div class="action-desc">Replaces all data with generated test pets and readings</div>
+              </div>
+            </div>
+            <button
+              class="action-btn dev-btn"
+              :disabled="seedStatus === 'loading'"
+              @click="loadSeedData"
+            >
+              {{ seedStatus === 'loading' ? 'Loading…' : seedStatus === 'done' ? '✓ Loaded' : 'Load' }}
+            </button>
+          </div>
+
+          <div class="action-card">
+            <div class="action-info">
+              <div class="action-icon dev-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="action-name">Reset database</div>
+                <div class="action-desc">Delete all local data and reload — fixes version mismatches</div>
+              </div>
+            </div>
+            <button
+              class="action-btn dev-btn"
+              :disabled="resetStatus === 'working'"
+              @click="resetDatabase"
+            >
+              {{ resetStatus === 'working' ? 'Resetting…' : 'Reset DB' }}
+            </button>
+          </div>
+        </div>
+        <p v-if="seedStatus === 'error'" class="error-msg">{{ seedError }}</p>
       </section>
     </div>
 
@@ -427,5 +520,29 @@ function cancelImport() {
   font-size: 13px;
   color: var(--color-text-muted);
   line-height: 1.6;
+}
+
+.dev-section {
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.dev-section .section-desc code {
+  font-family: monospace;
+  font-size: 12px;
+  background: var(--color-border);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.dev-icon {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.dev-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

@@ -141,6 +141,21 @@ export async function exportAllData(): Promise<ExportPayload> {
   };
 }
 
+export async function closeAndDeleteDatabase(): Promise<void> {
+  if (!import.meta.env.DEV) throw new Error('closeAndDeleteDatabase is only available in dev mode');
+  if (dbPromise) {
+    const db = await dbPromise;
+    db.close();
+    dbPromise = null;
+  }
+  await new Promise<void>((resolve, reject) => {
+    const req = indexedDB.deleteDatabase(DB_NAME);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+    req.onblocked = () => resolve(); // proceed anyway; page reload cleans up
+  });
+}
+
 export async function importAllData(payload: ExportPayload): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(['pets', 'readings', 'notes'], 'readwrite');
