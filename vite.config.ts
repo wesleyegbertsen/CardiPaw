@@ -7,6 +7,11 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'prompt',
+      workbox: {
+        // Hash routing doesn't need a navigation fallback — all Vue routes live under #.
+        // Without this, the SW intercepts e.g. /sitemap.xml and serves index.html instead.
+        navigateFallback: null,
+      },
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
         name: 'CardiPaw',
