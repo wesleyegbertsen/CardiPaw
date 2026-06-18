@@ -5,6 +5,9 @@ import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { getRateStatus } from '../utils/rateStatus';
+import { useI18n } from 'vue-i18n';
+
+const { locale } = useI18n();
 
 const route = useRoute();
 const router = useRouter();
@@ -43,7 +46,7 @@ async function confirmDelete() {
 }
 
 function formatDate(iso: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(locale.value, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -59,7 +62,7 @@ function formatDate(iso: string) {
   <div class="reading-view">
     <header class="reading-header">
       <div class="header-start">
-        <button class="back-btn" @click="goBack" aria-label="Go back">
+        <button class="back-btn" @click="goBack" :aria-label="$t('common.back')">
           <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
             <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
           </svg>
@@ -74,7 +77,7 @@ function formatDate(iso: string) {
         <button
           class="icon-btn"
           @click="router.replace({ name: 'reading-edit', params: { id: petId, readingId } })"
-          aria-label="Edit reading"
+          :aria-label="$t('reading.editAria')"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
@@ -83,7 +86,7 @@ function formatDate(iso: string) {
         <button
           class="icon-btn danger"
           @click="showDeleteDialog = true"
-          aria-label="Delete reading"
+          :aria-label="$t('reading.deleteAria')"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -99,10 +102,10 @@ function formatDate(iso: string) {
         <div class="rate-row">
           <div class="rate-display">
             <span class="rate-number">{{ reading.rate }}</span>
-            <span class="rate-unit">breaths/min</span>
+            <span class="rate-unit">{{ $t('common.breathsPerMin') }}</span>
           </div>
           <span class="rate-badge" :class="getRateStatus(reading.rate, pet).cssClass">
-            {{ getRateStatus(reading.rate, pet).label }}
+            {{ $t('status.' + getRateStatus(reading.rate, pet).cssClass) }}
           </span>
         </div>
         <div class="source-row">
@@ -110,39 +113,39 @@ function formatDate(iso: string) {
             <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
               <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
             </svg>
-            Manual entry
+            {{ $t('source.manualEntry') }}
           </span>
           <span v-else class="source-chip guided">
             <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
-            Guided (30 s)
+            {{ $t('source.guided30') }}
           </span>
         </div>
       </div>
 
       <div class="detail-card">
-        <p class="section-label">Pet was</p>
+        <p class="section-label">{{ $t('restState.petWas') }}</p>
         <div class="rest-state-view">
           <span v-if="reading.restState" class="rest-chip" :class="reading.restState">
-            {{ reading.restState === 'resting' ? 'Resting' : 'Sleeping' }}
+            {{ reading.restState === 'resting' ? $t('restState.resting') : $t('restState.sleeping') }}
           </span>
-          <span v-else class="no-value">Not recorded</span>
+          <span v-else class="no-value">{{ $t('restState.notRecorded') }}</span>
         </div>
       </div>
 
       <div class="detail-card">
-        <p class="section-label">Notes</p>
+        <p class="section-label">{{ $t('reading.notesLabel') }}</p>
         <div v-if="reading.notes" class="notes-text" v-html="sanitizedNotes" />
-        <p v-else class="no-value">No notes</p>
+        <p v-else class="no-value">{{ $t('reading.noNotes') }}</p>
       </div>
     </div>
 
-    <div v-else class="not-found">Reading not found.</div>
+    <div v-else class="not-found">{{ $t('reading.notFound') }}</div>
 
     <ConfirmDialog
       v-if="showDeleteDialog"
-      message="Delete this reading? This cannot be undone."
+      :message="$t('reading.deleteConfirm')"
       @confirm="confirmDelete"
       @cancel="showDeleteDialog = false"
     />

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
@@ -19,6 +20,7 @@ const router = useRouter();
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
 const notesStore = useNotesStore();
+const { locale } = useI18n();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
@@ -59,7 +61,7 @@ watch(chartRange, () => {
 });
 
 function fmt(date: Date, options: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat('en', options).format(date);
+  return new Intl.DateTimeFormat(locale.value, options).format(date);
 }
 
 function fmtWeekRange(start: Date, end: Date): string {
@@ -192,7 +194,7 @@ const weeksWithReadingsSections = computed(() => {
   return result;
 });
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAMES = computed(() => Array.from({ length: 12 }, (_, i) => new Intl.DateTimeFormat(locale.value, { month: 'short' }).format(new Date(2000, i, 1))));
 
 function weekLabel(offset: number): string {
   const now = new Date();
@@ -270,28 +272,28 @@ async function deletePet() {
 <template>
   <div v-if="pet" class="page">
     <header class="page-header">
-      <button class="back-btn" @click="router.push({ name: 'home' })" aria-label="Go back">
+      <button class="back-btn" @click="router.push({ name: 'home' })" :aria-label="$t('common.back')">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
         </svg>
       </button>
       <div class="header-actions">
-        <button class="icon-btn" @click="showShareModal = true" aria-label="Share">
+        <button class="icon-btn" @click="showShareModal = true" :aria-label="$t('petDetail.share')">
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
           </svg>
         </button>
-        <button class="icon-btn" @click="showPdfModal = true" aria-label="Export PDF">
+        <button class="icon-btn" @click="showPdfModal = true" :aria-label="$t('petDetail.exportPdf')">
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
           </svg>
         </button>
-        <button class="icon-btn" @click="router.push({ name: 'pet-edit', params: { id: petId } })" aria-label="Edit pet">
+        <button class="icon-btn" @click="router.push({ name: 'pet-edit', params: { id: petId } })" :aria-label="$t('petDetail.editPet')">
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
           </svg>
         </button>
-        <button class="icon-btn danger" @click="showDeleteDialog = true" aria-label="Delete pet">
+        <button class="icon-btn danger" @click="showDeleteDialog = true" :aria-label="$t('petDetail.deletePet')">
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
           </svg>
@@ -308,7 +310,7 @@ async function deletePet() {
       </div>
       <h1 class="pet-name">{{ pet.name }}</h1>
       <div class="pet-meta">
-        <span class="badge" :class="pet.species">{{ pet.species }}</span>
+        <span class="badge" :class="pet.species">{{ $t('species.' + pet.species) }}</span>
         <span class="meta-dot">·</span>
         <span class="pet-age">{{ ageDisplay }}</span>
       </div>
@@ -320,18 +322,18 @@ async function deletePet() {
         <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
         </svg>
-        Start tracking
+        {{ $t('petDetail.startTracking') }}
       </button>
     </div>
 
     <div class="tabs">
-      <button class="tab" :class="{ active: activeTab === 'chart' }" @click="activeTab = 'chart'">Chart</button>
+      <button class="tab" :class="{ active: activeTab === 'chart' }" @click="activeTab = 'chart'">{{ $t('petDetail.tabChart') }}</button>
       <button class="tab" :class="{ active: activeTab === 'readings' }" @click="activeTab = 'readings'">
-        Readings
+        {{ $t('petDetail.tabReadings') }}
         <span v-if="readings.length > 0" class="tab-count">{{ readings.length }}</span>
       </button>
       <button class="tab" :class="{ active: activeTab === 'notes' }" @click="activeTab = 'notes'">
-        Notes
+        {{ $t('petDetail.tabNotes') }}
         <span v-if="notes.length > 0" class="tab-count">{{ notes.length }}</span>
       </button>
       <div class="tab-indicator" :style="{ transform: `translateX(${tabIndicatorIndex * 100}%)` }"></div>
@@ -341,12 +343,12 @@ async function deletePet() {
       <template v-if="activeTab === 'chart'">
         <div class="chart-controls">
           <div class="range-toggle">
-            <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">Week</button>
-            <button :class="{ active: chartRange === 'month' }" @click="chartRange = 'month'">Month</button>
-            <button :class="{ active: chartRange === 'year' }" @click="chartRange = 'year'">Year</button>
+            <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
+            <button :class="{ active: chartRange === 'month' }" @click="chartRange = 'month'">{{ $t('petDetail.rangeMonth') }}</button>
+            <button :class="{ active: chartRange === 'year' }" @click="chartRange = 'year'">{{ $t('petDetail.rangeYear') }}</button>
           </div>
           <div class="range-nav">
-            <button class="nav-btn" @click="chartOffset--" :disabled="!canGoPrev" aria-label="Previous period">
+            <button class="nav-btn" @click="chartOffset--" :disabled="!canGoPrev" :aria-label="$t('petDetail.prevPeriod')">
               <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
               </svg>
@@ -401,9 +403,9 @@ async function deletePet() {
             <div v-if="showJumpPicker" class="jump-backdrop" @click="showJumpPicker = false" />
             <div class="range-right">
               <button class="today-btn" :style="{ visibility: chartOffset !== 0 ? 'visible' : 'hidden' }" @click="chartOffset = 0">
-                {{ chartRange === 'week' ? 'This week' : chartRange === 'month' ? 'This month' : 'This year' }}
+                {{ chartRange === 'week' ? $t('petDetail.thisWeek') : chartRange === 'month' ? $t('petDetail.thisMonth') : $t('petDetail.thisYear') }}
               </button>
-              <button class="nav-btn" @click="chartOffset++" :disabled="!canGoNext" aria-label="Next period">
+              <button class="nav-btn" @click="chartOffset++" :disabled="!canGoNext" :aria-label="$t('petDetail.nextPeriod')">
                 <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
                   <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
                 </svg>
@@ -422,7 +424,7 @@ async function deletePet() {
         v-if="activeTab === 'notes'"
         class="fab"
         @click="router.push({ name: 'note-add', params: { id: petId } })"
-        aria-label="Add note"
+        :aria-label="$t('petDetail.addNote')"
       >
         <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
           <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -446,7 +448,7 @@ async function deletePet() {
 
     <ConfirmDialog
       v-if="showDeleteDialog"
-      :message="`Delete ${pet.name}? This will permanently remove all their readings too.`"
+      :message="$t('petDetail.deleteConfirm', { name: pet.name })"
       @confirm="deletePet"
       @cancel="showDeleteDialog = false"
     />

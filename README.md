@@ -60,6 +60,10 @@ Each pet has a general-purpose **Notes** tab where you can write anything that d
 
 Export all pets and readings as a JSON file for backup or transfer. Import a previously exported file to restore your data.
 
+### Languages
+
+CardiPaw is available in **English**, **Dutch**, and **German**. On first launch the app picks a language from your browser settings (falling back to English), and you can switch it at any time from the Settings page — your choice is remembered locally. Dates and numbers are formatted according to the selected language.
+
 ## Status Thresholds
 
 | Label    | Rate              |

@@ -9,13 +9,13 @@ defineEmits<{ close: [] }>();
       <div class="dialog" role="dialog" aria-modal="true" :aria-label="title">
         <div class="dialog-header">
           <h2 class="dialog-title">{{ title }}</h2>
-          <button class="btn-close" @click="$emit('close')" aria-label="Close">✕</button>
+          <button class="btn-close" @click="$emit('close')" :aria-label="$t('common.close')">✕</button>
         </div>
         <div class="dialog-body">
           <slot />
         </div>
         <div class="dialog-footer">
-          <button class="btn-ok" @click="$emit('close')">Close</button>
+          <button class="btn-ok" @click="$emit('close')">{{ $t('common.close') }}</button>
         </div>
       </div>
     </div>

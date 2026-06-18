@@ -9,8 +9,8 @@ defineEmits<{ confirm: []; cancel: [] }>();
       <div class="dialog" role="alertdialog" aria-modal="true">
         <p class="message">{{ message }}</p>
         <div class="actions">
-          <button class="btn-cancel" @click="$emit('cancel')">Cancel</button>
-          <button class="btn-confirm" @click="$emit('confirm')">Confirm</button>
+          <button class="btn-cancel" @click="$emit('cancel')">{{ $t('common.cancel') }}</button>
+          <button class="btn-confirm" @click="$emit('confirm')">{{ $t('common.confirm') }}</button>
         </div>
       </div>
     </div>

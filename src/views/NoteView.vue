@@ -4,6 +4,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { useNotesStore } from '../stores/notes';
 import { usePetsStore } from '../stores/pets';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
+import { useI18n } from 'vue-i18n';
+
+const { locale } = useI18n();
 
 const route = useRoute();
 const router = useRouter();
@@ -45,7 +48,7 @@ async function confirmDelete() {
 }
 
 function formatDate(iso: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(locale.value, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -66,7 +69,7 @@ const sanitizedContent = computed(() => {
   <div class="note-view">
     <header class="note-header">
       <div class="header-start">
-        <button class="back-btn" @click="goBack" aria-label="Go back">
+        <button class="back-btn" @click="goBack" :aria-label="$t('common.back')">
           <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
             <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
           </svg>
@@ -82,7 +85,7 @@ const sanitizedContent = computed(() => {
           class="icon-btn"
           :class="{ pinned: note?.pinnedAt }"
           @click="togglePin"
-          :aria-label="note?.pinnedAt ? 'Unpin note' : 'Pin note'"
+          :aria-label="note?.pinnedAt ? $t('note.unpin') : $t('note.pin')"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
@@ -91,7 +94,7 @@ const sanitizedContent = computed(() => {
         <button
           class="icon-btn"
           @click="router.replace({ name: 'note-edit', params: { id: petId, noteId } })"
-          aria-label="Edit note"
+          :aria-label="$t('note.editAria')"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
@@ -100,7 +103,7 @@ const sanitizedContent = computed(() => {
         <button
           class="icon-btn danger"
           @click="showDeleteDialog = true"
-          aria-label="Delete note"
+          :aria-label="$t('note.deleteAria')"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -114,18 +117,18 @@ const sanitizedContent = computed(() => {
         <h1 class="note-title">{{ note.title }}</h1>
         <div class="note-dates">
           <span class="date-tag">
-            <span class="date-tag-label">Created</span>
+            <span class="date-tag-label">{{ $t('note.created') }}</span>
             {{ formatDate(note.createdAt) }}
           </span>
           <span v-if="note.modifiedAt" class="date-tag edited">
-            <span class="date-tag-label">Edited</span>
+            <span class="date-tag-label">{{ $t('note.edited') }}</span>
             {{ formatDate(note.modifiedAt) }}
           </span>
           <span v-if="note.pinnedAt" class="date-tag pinned">
             <span class="date-tag-label">
               <svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9" style="vertical-align: middle; margin-right: 2px;">
                 <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
-              </svg>Pinned
+              </svg>{{ $t('note.pinned') }}
             </span>
             {{ formatDate(note.pinnedAt) }}
           </span>
@@ -134,15 +137,15 @@ const sanitizedContent = computed(() => {
 
       <div class="detail-card">
         <div v-if="note.content" class="note-content" v-html="sanitizedContent" />
-        <p v-else class="no-value">No content</p>
+        <p v-else class="no-value">{{ $t('note.noContent') }}</p>
       </div>
     </div>
 
-    <div v-else class="not-found">Note not found.</div>
+    <div v-else class="not-found">{{ $t('note.notFound') }}</div>
 
     <ConfirmDialog
       v-if="showDeleteDialog"
-      message="Delete this note? This cannot be undone."
+      :message="$t('note.deleteConfirm')"
       @confirm="confirmDelete"
       @cancel="showDeleteDialog = false"
     />

@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { jsPDF } from 'jspdf';
 import {
   Chart as ChartJS,
@@ -10,6 +11,7 @@ import {
 } from 'chart.js';
 import type { Pet, Reading } from '../types';
 import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
+import { currentLocale } from '../i18n';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
@@ -54,13 +56,18 @@ function aggregateByDay(readings: Reading[], monthKey: string): { date: string; 
     }));
 }
 
-function renderChartToDataUrl(dailyAverages: { date: string; rate: number }[], normalCeiling = DEFAULT_NORMAL_CEILING): string {
+function renderChartToDataUrl(
+  dailyAverages: { date: string; rate: number }[],
+  normalCeiling = DEFAULT_NORMAL_CEILING,
+  locale = 'en',
+  yAxisTitle = 'Breaths / min',
+): string {
   const canvas = document.createElement('canvas');
   canvas.width = 800;
   canvas.height = 280;
 
   const labels = dailyAverages.map(r =>
-    new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(r.date))
+    new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(new Date(r.date))
   );
   const rates = dailyAverages.map(r => r.rate);
 
@@ -105,7 +112,7 @@ function renderChartToDataUrl(dailyAverages: { date: string; rate: number }[], n
         y: {
           min: 0,
           suggestedMax: 80,
-          title: { display: true, text: 'Breaths / min', color: '#6b7280', font: { size: 11 } },
+          title: { display: true, text: yAxisTitle, color: '#6b7280', font: { size: 11 } },
           ticks: { font: { size: 11 }, color: '#6b7280' },
           grid: { color: 'rgba(0,0,0,0.05)' },
         },
@@ -118,39 +125,41 @@ function renderChartToDataUrl(dailyAverages: { date: string; rate: number }[], n
   return dataUrl;
 }
 
-function calcAge(birthdate: string): string {
+type Translator = ReturnType<typeof useI18n>['t'];
+
+function calcAge(birthdate: string, t: Translator): string {
   const birth = new Date(birthdate);
   const now = new Date();
   const totalMonths =
     (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-  if (totalMonths < 12) return `${totalMonths} month${totalMonths !== 1 ? 's' : ''}`;
+  if (totalMonths < 12) return t('pdf.ageMonths', totalMonths);
   const y = Math.floor(totalMonths / 12);
   const m = totalMonths % 12;
-  if (m === 0) return `${y} year${y !== 1 ? 's' : ''}`;
-  return `${y}y ${m}mo`;
+  if (m === 0) return t('pdf.ageYears', y);
+  return t('pdf.ageYearMonth', { y, m });
 }
 
-function drawNotesHeader(doc: jsPDF, curY: number): void {
+function drawNotesHeader(doc: jsPDF, curY: number, t: Translator): void {
   doc.setFillColor('#f3f4f6');
   doc.rect(ML, curY, UW, 7, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor('#374151');
-  doc.text('Date / Time', ML + 2, curY + 5);
-  doc.text('Note', ML + 62, curY + 5);
+  doc.text(t('pdf.dateTime'), ML + 2, curY + 5);
+  doc.text(t('pdf.note'), ML + 62, curY + 5);
 }
 
-function drawTableHeader(doc: jsPDF, curY: number): void {
+function drawTableHeader(doc: jsPDF, curY: number, t: Translator): void {
   doc.setFillColor('#f3f4f6');
   doc.rect(ML, curY, UW, 7, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor('#374151');
-  doc.text('Date / Time', ML + 2, curY + 5);
-  doc.text('Rate (breaths/min)', ML + 58, curY + 5);
-  doc.text('Status', ML + 100, curY + 5);
-  doc.text('Rest', ML + 130, curY + 5);
-  doc.text('Source', ML + 160, curY + 5);
+  doc.text(t('pdf.dateTime'), ML + 2, curY + 5);
+  doc.text(t('pdf.rateHeader'), ML + 58, curY + 5);
+  doc.text(t('pdf.statusHeader'), ML + 100, curY + 5);
+  doc.text(t('pdf.restHeader'), ML + 130, curY + 5);
+  doc.text(t('pdf.sourceHeader'), ML + 160, curY + 5);
 }
 
 function htmlToPlainText(html: string): string {
@@ -175,9 +184,11 @@ function htmlToPlainText(html: string): string {
 
 export function usePdfExport() {
   const isGenerating = ref(false);
+  const { t } = useI18n();
 
   async function generatePdf(pet: Pet, readings: Reading[], selectedMonths: string[], newestFirst = true, includeNotes = false): Promise<void> {
     isGenerating.value = true;
+    const loc = currentLocale();
     try {
       const [restingIconUrl, sleepingIconUrl] = await Promise.all([
         svgPathToDataUrl(RESTING_SVG_PATH, '#16a34a'),
@@ -207,13 +218,13 @@ export function usePdfExport() {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.setTextColor('#6b7280');
-      const speciesAge = `${pet.species.charAt(0).toUpperCase() + pet.species.slice(1)} · ${calcAge(pet.birthdate)}`;
+      const speciesAge = `${t('species.' + pet.species)} · ${calcAge(pet.birthdate, t)}`;
       doc.text(speciesAge, textX, curY + 14);
 
       doc.setFontSize(9);
       doc.setTextColor('#9ca3af');
-      doc.text('CardiPaw Respiratory Rate Report', PW - MR, curY + 5, { align: 'right' });
-      const exportDate = new Date().toLocaleDateString('en', {
+      doc.text(t('pdf.reportTitle'), PW - MR, curY + 5, { align: 'right' });
+      const exportDate = new Date().toLocaleDateString(loc, {
         year: 'numeric', month: 'long', day: 'numeric',
       });
       doc.text(exportDate, PW - MR, curY + 11, { align: 'right' });
@@ -237,7 +248,7 @@ export function usePdfExport() {
         if (monthReadings.length === 0) continue;
 
         const dailyAverages = aggregateByDay(readings, monthKey);
-        const chartDataUrl = renderChartToDataUrl(dailyAverages, pet.normalCeiling ?? DEFAULT_NORMAL_CEILING);
+        const chartDataUrl = renderChartToDataUrl(dailyAverages, pet.normalCeiling ?? DEFAULT_NORMAL_CEILING, loc, t('chart.yAxis'));
 
         // Each month starts on its own page (skip addPage for the very first section)
         if (sortedMonths.indexOf(monthKey) > 0) {
@@ -246,7 +257,7 @@ export function usePdfExport() {
         }
 
         // Month heading bar
-        const monthLabel = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(
+        const monthLabel = new Intl.DateTimeFormat(loc, { month: 'long', year: 'numeric' }).format(
           new Date(monthKey + '-15')
         );
         doc.setFillColor('#fce4ec');
@@ -271,7 +282,7 @@ export function usePdfExport() {
         doc.setFontSize(9);
         doc.setTextColor('#6b7280');
         doc.text(
-          `${n} reading${n !== 1 ? 's' : ''} · Avg: ${avg} · Min: ${min} · Max: ${max} breaths/min`,
+          `${t('pdf.readingsCount', n)} · ${t('pdf.summaryStats', { avg, min, max })}`,
           ML,
           curY
         );
@@ -283,11 +294,11 @@ export function usePdfExport() {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor('#374151');
-        doc.text('Readings', ML + 2, curY + 5);
+        doc.text(t('pdf.readingsHeader'), ML + 2, curY + 5);
         curY += 7;
 
         // Table header
-        drawTableHeader(doc, curY);
+        drawTableHeader(doc, curY, t);
         curY += 7;
 
         // Table rows
@@ -296,7 +307,7 @@ export function usePdfExport() {
           if (curY + 7 > PH - MB) {
             doc.addPage();
             curY = MT;
-            drawTableHeader(doc, curY);
+            drawTableHeader(doc, curY, t);
             curY += 7;
             rowAlt = false;
           }
@@ -307,11 +318,11 @@ export function usePdfExport() {
           }
 
           const d = new Date(r.date);
-          const dateStr = new Intl.DateTimeFormat('en', {
+          const dateStr = new Intl.DateTimeFormat(loc, {
             month: 'short', day: 'numeric', year: 'numeric',
           }).format(d);
-          const timeStr = new Intl.DateTimeFormat('en', {
-            hour: 'numeric', minute: '2-digit', hour12: true,
+          const timeStr = new Intl.DateTimeFormat(loc, {
+            hour: 'numeric', minute: '2-digit',
           }).format(d);
 
           const status = getRateStatus(r.rate, pet);
@@ -322,7 +333,7 @@ export function usePdfExport() {
           doc.text(`${dateStr}, ${timeStr}`, ML + 2, curY + 5);
           doc.text(String(r.rate), ML + 58, curY + 5);
           doc.setTextColor(status.color);
-          doc.text(status.label, ML + 100, curY + 5);
+          doc.text(t('status.' + status.cssClass), ML + 100, curY + 5);
 
           if (r.restState) {
             const isResting = r.restState === 'resting';
@@ -330,13 +341,13 @@ export function usePdfExport() {
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(isResting ? '#16a34a' : '#d97706');
-            doc.text(isResting ? 'Resting' : 'Sleeping', ML + 134, curY + 5);
+            doc.text(isResting ? t('restState.resting') : t('restState.sleeping'), ML + 134, curY + 5);
           }
 
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(8);
           doc.setTextColor('#9ca3af');
-          doc.text(r.source === 'manual' ? 'Manual' : 'Guided', ML + 160, curY + 5);
+          doc.text(r.source === 'manual' ? t('source.manual') : t('source.guided'), ML + 160, curY + 5);
 
           doc.setTextColor('#1a1a1a');
           curY += 7;
@@ -353,10 +364,10 @@ export function usePdfExport() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor('#374151');
-            doc.text('Reading Notes', ML + 2, curY + 5);
+            doc.text(t('pdf.notesHeader'), ML + 2, curY + 5);
             curY += 7;
 
-            drawNotesHeader(doc, curY);
+            drawNotesHeader(doc, curY, t);
             curY += 7;
 
             const noteColX = ML + 62;
@@ -372,7 +383,7 @@ export function usePdfExport() {
               if (curY + rowH > PH - MB) {
                 doc.addPage();
                 curY = MT;
-                drawNotesHeader(doc, curY);
+                drawNotesHeader(doc, curY, t);
                 curY += 7;
                 noteRowAlt = false;
                 doc.setFont('helvetica', 'normal');
@@ -382,8 +393,8 @@ export function usePdfExport() {
                 doc.rect(ML, curY, UW, rowH, 'F');
               }
               const d = new Date(r.date);
-              const noteDateStr = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
-              const noteTimeStr = new Intl.DateTimeFormat('en', { hour: 'numeric', minute: '2-digit', hour12: true }).format(d);
+              const noteDateStr = new Intl.DateTimeFormat(loc, { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
+              const noteTimeStr = new Intl.DateTimeFormat(loc, { hour: 'numeric', minute: '2-digit' }).format(d);
               doc.setTextColor('#1a1a1a');
               doc.text(`${noteDateStr}, ${noteTimeStr}`, ML + 2, curY + 5);
               doc.text(lines, noteColX, curY + 5);
@@ -402,7 +413,7 @@ export function usePdfExport() {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor('#9ca3af');
-        doc.text(`Page ${i} of ${totalPages}`, PW / 2, PH - 8, { align: 'center' });
+        doc.text(t('pdf.pageOf', { i, total: totalPages }), PW / 2, PH - 8, { align: 'center' });
       }
 
       const dateSlug = new Date().toISOString().slice(0, 10);

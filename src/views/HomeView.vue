@@ -29,7 +29,7 @@ function toggleTheme() {
         class="theme-toggle"
         :class="{ 'is-light': !themeStore.isDark, 'has-toggled': hasToggledTheme }"
         @click="toggleTheme"
-        :aria-label="themeStore.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+        :aria-label="themeStore.isDark ? $t('home.switchToLight') : $t('home.switchToDark')"
       >
         <span class="theme-toggle-thumb">
           <svg v-if="themeStore.isDark" viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
@@ -47,9 +47,9 @@ function toggleTheme() {
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
           </svg>
         </span>
-        <span class="theme-toggle-label">{{ themeStore.isDark ? 'Dark' : 'Light' }}</span>
+        <span class="theme-toggle-label">{{ themeStore.isDark ? $t('home.themeDark') : $t('home.themeLight') }}</span>
       </button>
-      <p class="subtitle">Resting respiratory rate tracker</p>
+      <p class="subtitle">{{ $t('home.subtitle') }}</p>
     </header>
 
     <section class="content">
@@ -58,7 +58,7 @@ function toggleTheme() {
       </div>
 
       <template v-else-if="petsStore.pets.length > 0">
-        <h2 class="section-title">Your pets</h2>
+        <h2 class="section-title">{{ $t('home.yourPets') }}</h2>
         <div class="pet-list">
           <PetCard v-for="pet in petsStore.pets" :key="pet.id" :pet="pet" />
         </div>
@@ -66,12 +66,12 @@ function toggleTheme() {
 
       <div v-else class="empty-state">
         <div class="empty-icon">🐾</div>
-        <h2>No pets yet</h2>
-        <p>Add your first pet to start tracking their resting respiratory rate.</p>
+        <h2>{{ $t('home.noPetsTitle') }}</h2>
+        <p>{{ $t('home.noPetsBody') }}</p>
       </div>
     </section>
 
-    <button class="fab" @click="router.push({ name: 'pet-add' })" aria-label="Add pet">
+    <button class="fab" @click="router.push({ name: 'pet-add' })" :aria-label="$t('home.addPet')">
       <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
         <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
       </svg>

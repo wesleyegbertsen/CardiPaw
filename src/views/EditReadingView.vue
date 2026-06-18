@@ -6,6 +6,9 @@ import { usePetsStore } from '../stores/pets';
 import type { Reading } from '../types';
 import { getRateStatus } from '../utils/rateStatus';
 import RichTextEditor from '../components/RichTextEditor.vue';
+import { useI18n } from 'vue-i18n';
+
+const { locale } = useI18n();
 
 const route = useRoute();
 const router = useRouter();
@@ -59,7 +62,7 @@ async function saveEdit() {
 }
 
 function formatDate(iso: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(locale.value, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -74,7 +77,7 @@ function formatDate(iso: string) {
   <div class="reading-view">
     <header class="reading-header">
       <div class="header-start">
-        <button class="back-btn" @click="goBack" aria-label="Go back">
+        <button class="back-btn" @click="goBack" :aria-label="$t('common.back')">
           <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
             <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
           </svg>
@@ -82,7 +85,7 @@ function formatDate(iso: string) {
       </div>
 
       <div class="header-center">
-        <span class="header-title">Edit reading</span>
+        <span class="header-title">{{ $t('reading.title') }}</span>
         <span class="header-subtitle">{{ pet?.name }}</span>
       </div>
 
@@ -93,12 +96,12 @@ function formatDate(iso: string) {
       <div class="reading-meta-row">
         <p class="reading-date">{{ formatDate(reading.date) }}</p>
         <span class="source-chip" :class="reading.source === 'manual' ? 'manual' : 'guided'">
-          {{ reading.source === 'manual' ? 'Manual entry' : 'Guided (30 s)' }}
+          {{ reading.source === 'manual' ? $t('source.manualEntry') : $t('source.guided30') }}
         </span>
       </div>
 
       <div class="field">
-        <label class="label">Rate (breaths/min)</label>
+        <label class="label">{{ $t('reading.rateLabel') }}</label>
         <div class="rate-row">
           <input
             class="rate-input"
@@ -108,36 +111,36 @@ function formatDate(iso: string) {
             max="200"
           />
           <span class="rate-badge" :class="getRateStatus(editRate, pet).cssClass">
-            {{ getRateStatus(editRate, pet).label }}
+            {{ $t('status.' + getRateStatus(editRate, pet).cssClass) }}
           </span>
         </div>
       </div>
 
       <div class="field">
-        <label class="label">Pet was</label>
+        <label class="label">{{ $t('restState.petWas') }}</label>
         <div class="rest-state-row">
           <button
             type="button"
             class="rest-btn"
             :class="{ active: editRestState === 'resting' }"
             @click="editRestState = editRestState === 'resting' ? undefined : 'resting'"
-          >Resting</button>
+          >{{ $t('restState.resting') }}</button>
           <button
             type="button"
             class="rest-btn"
             :class="{ active: editRestState === 'sleeping' }"
             @click="editRestState = editRestState === 'sleeping' ? undefined : 'sleeping'"
-          >Sleeping</button>
+          >{{ $t('restState.sleeping') }}</button>
         </div>
       </div>
 
       <div class="field">
-        <label class="label">Notes</label>
+        <label class="label">{{ $t('reading.notesLabel') }}</label>
         <RichTextEditor v-model="editNotes" />
       </div>
 
       <button type="submit" class="submit-btn" :disabled="saving">
-        {{ saving ? 'Saving…' : 'Save changes' }}
+        {{ saving ? $t('common.saving') : $t('common.saveChanges') }}
       </button>
     </form>
   </div>

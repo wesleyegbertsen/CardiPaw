@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
 import { buildSharePayload, encodeShare } from '../utils/shareCodec';
 
@@ -8,6 +9,7 @@ const props = defineProps<{ pet: Pet; readings: Reading[] }>();
 const emit = defineEmits<{ close: [] }>();
 
 const router = useRouter();
+const { locale } = useI18n();
 
 const availableMonths = computed(() => {
   const set = new Set(props.readings.map(r => r.date.slice(0, 7)));
@@ -34,7 +36,7 @@ function toggleMonth(month: string) {
 }
 
 function formatMonth(key: string): string {
-  return new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(
+  return new Intl.DateTimeFormat(locale.value, { month: 'long', year: 'numeric' }).format(
     new Date(key + '-15')
   );
 }
@@ -100,21 +102,18 @@ async function nativeShare() {
     <div class="overlay" @click.self="emit('close')">
       <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
         <div class="dialog-header">
-          <h2 class="dialog-title" id="share-modal-title">Share</h2>
+          <h2 class="dialog-title" id="share-modal-title">{{ $t('shareModal.title') }}</h2>
           <p class="dialog-subtitle">{{ pet.name }}</p>
         </div>
 
-        <p class="privacy-note">
-          The selected data is embedded in the link itself — nothing is uploaded
-          to any server. Anyone you send the link to can view this data.
-        </p>
+        <p class="privacy-note">{{ $t('shareModal.privacyNote') }}</p>
 
         <div class="list-controls">
           <span class="list-info">
-            {{ availableMonths.length }} month{{ availableMonths.length !== 1 ? 's' : '' }} available
+            {{ $t('shareModal.monthsAvailable', availableMonths.length) }}
           </span>
           <button class="toggle-all-btn" @click="toggleAll">
-            {{ allSelected ? 'Clear all' : 'Select all' }}
+            {{ allSelected ? $t('shareModal.clearAll') : $t('shareModal.selectAll') }}
           </button>
         </div>
 
@@ -131,24 +130,23 @@ async function nativeShare() {
         </div>
 
         <p v-if="selectedMonths.length === 0" class="empty-hint">
-          Select at least one month to share.
+          {{ $t('shareModal.selectAtLeastOne') }}
         </p>
 
         <div v-else class="link-section">
           <input class="link-preview" :value="shareUrl" readonly @focus="($event.target as HTMLInputElement).select()" />
           <p v-if="isLongUrl" class="length-warning">
-            This link is very long and may be truncated by some email or chat
-            apps. Consider selecting fewer months.
+            {{ $t('shareModal.lengthWarning') }}
           </p>
         </div>
 
         <div class="dialog-footer">
-          <button class="btn-cancel" @click="emit('close')">Close</button>
+          <button class="btn-cancel" @click="emit('close')">{{ $t('common.close') }}</button>
           <button v-if="canNativeShare" class="btn-secondary" @click="nativeShare" :disabled="!shareUrl">
-            Share…
+            {{ $t('shareModal.shareNative') }}
           </button>
           <button class="btn-primary" @click="copyLink" :disabled="!shareUrl">
-            {{ copied ? 'Copied!' : 'Copy link' }}
+            {{ copied ? $t('shareModal.copied') : $t('shareModal.copyLink') }}
           </button>
         </div>
       </div>

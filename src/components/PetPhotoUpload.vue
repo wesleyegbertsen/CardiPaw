@@ -49,8 +49,8 @@ function resizeImage(dataUrl: string, maxSize = 400): Promise<string> {
     <input ref="fileInput" type="file" accept="image/*" class="hidden-input" @change="onFileChange" />
 
     <div v-if="props.modelValue" class="preview-wrap">
-      <img :src="props.modelValue" alt="Pet photo" class="preview-img" />
-      <button type="button" class="remove-btn" @click="removePhoto" aria-label="Remove photo">
+      <img :src="props.modelValue" :alt="$t('photo.alt')" class="preview-img" />
+      <button type="button" class="remove-btn" @click="removePhoto" :aria-label="$t('photo.remove')">
         <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
           <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
         </svg>
@@ -61,7 +61,7 @@ function resizeImage(dataUrl: string, maxSize = 400): Promise<string> {
       <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28" class="upload-icon">
         <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
       </svg>
-      <span>Add photo</span>
+      <span>{{ $t('photo.add') }}</span>
     </button>
   </div>
 </template>

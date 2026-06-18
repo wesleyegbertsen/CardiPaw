@@ -3,6 +3,9 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Pet, Reading } from '../types';
 import { getRateStatus } from '../utils/rateStatus';
+import { useI18n } from 'vue-i18n';
+
+const { locale } = useI18n();
 
 const props = defineProps<{ readings: Reading[]; pet: Pet }>();
 
@@ -32,7 +35,7 @@ onMounted(() => {
 onUnmounted(() => observer?.disconnect());
 
 function formatDate(iso: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(locale.value, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -49,7 +52,7 @@ function openReading(reading: Reading) {
 <template>
   <div class="reading-list">
     <div v-if="readings.length === 0" class="empty">
-      No readings yet. Tap "Start tracking" to record your first measurement.
+      {{ $t('readingList.empty') }}
     </div>
 
     <div
@@ -61,22 +64,22 @@ function openReading(reading: Reading) {
       <div class="reading-left">
         <div class="reading-date">{{ formatDate(reading.date) }}</div>
         <div class="reading-meta">
-          <span v-if="reading.restState === 'resting'" class="meta-tag resting" aria-label="Resting">
+          <span v-if="reading.restState === 'resting'" class="meta-tag resting" :aria-label="$t('restState.resting')">
             <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
               <path d="M21 9V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v2c-1.1 0-2 .9-2 2v5h1.33L3 18h1l.67-2h14.67l.66 2h1l-.33-2H23v-5c0-1.1-.9-2-2-2zm-8 0H5V7h8v2zm6 0h-4V7h4v2z"/>
             </svg>
           </span>
-          <span v-if="reading.restState === 'sleeping'" class="meta-tag sleeping" aria-label="Sleeping">
+          <span v-if="reading.restState === 'sleeping'" class="meta-tag sleeping" :aria-label="$t('restState.sleeping')">
             <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
               <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
             </svg>
           </span>
-          <span v-if="reading.notes" class="meta-tag notes" aria-label="Has notes">
+          <span v-if="reading.notes" class="meta-tag notes" :aria-label="$t('readingList.hasNotes')">
             <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
               <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
             </svg>
           </span>
-          <span v-if="reading.source === 'manual'" class="meta-tag manual" aria-label="Manually entered">
+          <span v-if="reading.source === 'manual'" class="meta-tag manual" :aria-label="$t('readingList.manuallyEntered')">
             <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
               <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
             </svg>
@@ -84,9 +87,9 @@ function openReading(reading: Reading) {
         </div>
       </div>
       <div class="reading-right">
-        <span class="reading-rate">{{ reading.rate }} <span class="rate-unit">breaths/min</span></span>
+        <span class="reading-rate">{{ reading.rate }} <span class="rate-unit">{{ $t('common.breathsPerMin') }}</span></span>
         <span class="rate-badge" :class="getRateStatus(reading.rate, props.pet).cssClass">
-          {{ getRateStatus(reading.rate, props.pet).label }}
+          {{ $t('status.' + getRateStatus(reading.rate, props.pet).cssClass) }}
         </span>
         <svg class="chevron" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
           <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>

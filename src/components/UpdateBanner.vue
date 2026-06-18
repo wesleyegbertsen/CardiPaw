@@ -17,11 +17,11 @@ function close() {
 <template>
   <Teleport to="body">
     <div v-if="offlineReady || needRefresh" class="update-banner" role="alert">
-      <span v-if="offlineReady" class="update-message">App ready to work offline.</span>
-      <span v-else class="update-message">A new version is available.</span>
+      <span v-if="offlineReady" class="update-message">{{ $t('update.offline') }}</span>
+      <span v-else class="update-message">{{ $t('update.newVersion') }}</span>
       <div class="update-actions">
-        <button v-if="needRefresh" class="btn-reload" @click="updateServiceWorker()">Reload</button>
-        <button class="btn-close" @click="close">Close</button>
+        <button v-if="needRefresh" class="btn-reload" @click="updateServiceWorker()">{{ $t('update.reload') }}</button>
+        <button class="btn-close" @click="close">{{ $t('common.close') }}</button>
       </div>
     </div>
   </Teleport>

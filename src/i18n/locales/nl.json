@@ -1,0 +1,281 @@
+{
+  "common": {
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen",
+    "close": "Sluiten",
+    "view": "Bekijken",
+    "discard": "Verwijderen",
+    "saving": "Opslaan…",
+    "saveChanges": "Wijzigingen opslaan",
+    "back": "Terug",
+    "breathsPerMin": "ademh./min"
+  },
+  "nav": {
+    "home": "Start",
+    "settings": "Instellingen"
+  },
+  "status": {
+    "normal": "Normaal",
+    "warning": "Verhoogd",
+    "danger": "Hoog"
+  },
+  "species": {
+    "cat": "Kat",
+    "dog": "Hond"
+  },
+  "restState": {
+    "petWas": "Huisdier was",
+    "resting": "Rustend",
+    "sleeping": "Slapend",
+    "notRecorded": "Niet vastgelegd"
+  },
+  "source": {
+    "manual": "Handmatig",
+    "guided": "Begeleid",
+    "manualEntry": "Handmatige invoer",
+    "guided30": "Begeleid (30 s)"
+  },
+  "age": {
+    "weeks": "1 week | {n} weken",
+    "months": "1 maand | {n} maanden",
+    "years": "1 jaar | {n} jaar",
+    "yearMonth": "{year}, {month}"
+  },
+  "lastMeasured": {
+    "none": "Nog geen metingen",
+    "today": "Vandaag gemeten",
+    "yesterday": "Gisteren gemeten",
+    "daysAgo": "{n} dag geleden gemeten | {n} dagen geleden gemeten",
+    "weeksAgo": "Laatst gemeten {n} week geleden | Laatst gemeten {n} weken geleden"
+  },
+  "home": {
+    "subtitle": "Rustademhalingsfrequentie-tracker",
+    "yourPets": "Jouw huisdieren",
+    "noPetsTitle": "Nog geen huisdieren",
+    "noPetsBody": "Voeg je eerste huisdier toe om de rustademhalingsfrequentie bij te houden.",
+    "addPet": "Huisdier toevoegen",
+    "themeDark": "Donker",
+    "themeLight": "Licht",
+    "switchToLight": "Naar lichte modus",
+    "switchToDark": "Naar donkere modus"
+  },
+  "petCard": {
+    "viewProfile": "Profiel van {name} bekijken",
+    "startTracking": "Meting starten voor {name}"
+  },
+  "petDetail": {
+    "share": "Delen",
+    "exportPdf": "Pdf exporteren",
+    "editPet": "Huisdier bewerken",
+    "deletePet": "Huisdier verwijderen",
+    "addNote": "Notitie toevoegen",
+    "startTracking": "Meting starten",
+    "tabChart": "Grafiek",
+    "tabReadings": "Metingen",
+    "tabNotes": "Notities",
+    "rangeWeek": "Week",
+    "rangeMonth": "Maand",
+    "rangeYear": "Jaar",
+    "prevPeriod": "Vorige periode",
+    "nextPeriod": "Volgende periode",
+    "thisWeek": "Deze week",
+    "thisMonth": "Deze maand",
+    "thisYear": "Dit jaar",
+    "deleteConfirm": "{name} verwijderen? Hiermee worden ook al hun metingen definitief verwijderd."
+  },
+  "tracker": {
+    "tapToStart": "Tik om te starten",
+    "tapForBreath": "Tik bij elke ademhaling",
+    "guided": "Begeleid",
+    "manual": "Handmatig",
+    "instruction": "Tik op het hart telkens als je de borstkas van je huisdier ziet op- en neergaan.",
+    "measurement30": "Meting van 30 seconden",
+    "sound": "Geluid",
+    "breathsCounted": "ademhalingen geteld",
+    "unitSpaced": "ademh. / min",
+    "basedOn": "Op basis van {n} ademhaling in 30 seconden | Op basis van {n} ademhalingen in 30 seconden",
+    "saveReading": "Meting opslaan",
+    "saveResult": "Resultaat opslaan",
+    "tryAgain": "Opnieuw proberen"
+  },
+  "addEditPet": {
+    "titleEdit": "Huisdier bewerken",
+    "titleAdd": "Huisdier toevoegen",
+    "name": "Naam",
+    "namePlaceholder": "bijv. Luna",
+    "species": "Diersoort",
+    "birthdate": "Geboortedatum",
+    "rrrAbbr": "RAF",
+    "rrrTitle": "Rustademhalingsfrequentie",
+    "thresholdsSuffix": "drempelwaarden (optioneel)",
+    "normalCeiling": "Bovengrens normaal",
+    "elevatedCeiling": "Bovengrens verhoogd",
+    "thresholdHint": "Laat leeg om de standaardwaarden te gebruiken ({normal} / {elevated} ademh./min).",
+    "thresholdError": "De bovengrens voor verhoogd moet hoger zijn dan de bovengrens voor normaal ({normal}).",
+    "submitAdd": "Huisdier toevoegen"
+  },
+  "reading": {
+    "editAria": "Meting bewerken",
+    "deleteAria": "Meting verwijderen",
+    "title": "Meting bewerken",
+    "notesLabel": "Notities",
+    "noNotes": "Geen notities",
+    "notFound": "Meting niet gevonden.",
+    "deleteConfirm": "Deze meting verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "rateLabel": "Frequentie (ademh./min)"
+  },
+  "note": {
+    "titleEdit": "Notitie bewerken",
+    "titleNew": "Nieuwe notitie",
+    "pin": "Notitie vastmaken",
+    "unpin": "Notitie losmaken",
+    "editAria": "Notitie bewerken",
+    "deleteAria": "Notitie verwijderen",
+    "created": "Gemaakt",
+    "edited": "Bewerkt",
+    "pinned": "Vastgemaakt",
+    "noContent": "Geen inhoud",
+    "notFound": "Notitie niet gevonden.",
+    "deleteConfirm": "Deze notitie verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "titleLabel": "Titel",
+    "titlePlaceholder": "Titel van notitie",
+    "contentLabel": "Inhoud",
+    "submitAdd": "Notitie toevoegen"
+  },
+  "readingList": {
+    "empty": "Nog geen metingen. Tik op \"Meting starten\" om je eerste meting vast te leggen.",
+    "hasNotes": "Heeft notities",
+    "manuallyEntered": "Handmatig ingevoerd"
+  },
+  "noteList": {
+    "empty": "Nog geen notities. Tik op '+' om je eerste te schrijven.",
+    "pinnedSection": "Vastgemaakt",
+    "notesSection": "Notities",
+    "edited": "Bewerkt"
+  },
+  "settings": {
+    "title": "Instellingen",
+    "languageSection": "Taal",
+    "languageDesc": "Kies de taal die in de hele app wordt gebruikt.",
+    "dataSection": "Gegevens",
+    "dataDesc": "Je huisdierprofielen en metingen worden lokaal op dit apparaat opgeslagen met IndexedDB. Exporteer ze om een back-up te maken of over te zetten naar een ander apparaat.",
+    "exportName": "Gegevens exporteren",
+    "exportDesc": "Download alle huisdieren en metingen als JSON",
+    "exported": "✓ Geëxporteerd",
+    "export": "Exporteren",
+    "importName": "Gegevens importeren",
+    "importDesc": "Herstel vanuit een CardiPaw-exportbestand",
+    "imported": "✓ Geïmporteerd",
+    "import": "Importeren",
+    "invalidFormat": "Ongeldig bestandsformaat. Selecteer een CardiPaw-exportbestand.",
+    "readError": "Het bestand kon niet worden gelezen. Zorg dat het een geldige JSON-export is.",
+    "importConfirm": "{pets} huisdier(en) en {readings} meting(en) importeren? Hiermee worden alle bestaande gegevens op dit apparaat overschreven.",
+    "aboutSection": "Over",
+    "aboutText": "CardiPaw helpt je de rustademhalingsfrequentie (RAF) van je huisdier bij te houden — een belangrijke gezondheidsindicator voor huisdieren met hartaandoeningen zoals HCM.",
+    "thresholdNormalValue": "≤ 30 ademh./min",
+    "thresholdElevatedValue": "31–35 ademh./min",
+    "thresholdHighValue": "> 35 ademh./min",
+    "disclaimer": "Dit zijn de algemene standaarddrempelwaarden. Je kunt per huisdier aangepaste grenzen instellen in het profiel van elk huisdier. Volg altijd het specifieke advies van je dierenarts over welke waarden je moet volgen, welke bereiken normaal zijn voor jouw huisdier en wanneer je hulp moet zoeken.",
+    "legalSection": "Juridisch",
+    "privacyTitle": "Privacybeleid",
+    "privacyDesc": "Hoe je gegevens worden opgeslagen en gebruikt",
+    "termsTitle": "Gebruiksvoorwaarden",
+    "termsDesc": "Voorwaarden en disclaimers voor het gebruik van CardiPaw",
+    "sourceTitle": "Broncode",
+    "sourceDesc": "CardiPaw is opensource op GitHub",
+    "privacy": {
+      "p1": "<strong>Je gegevens blijven op je apparaat.</strong> CardiPaw slaat alle informatie (huisdierprofielen, metingen en notities) uitsluitend op in de IndexedDB van je browser. Er wordt nooit iets naar een server verzonden.",
+      "p2": "<strong>Geen tracking of analyse.</strong> CardiPaw gebruikt geen cookies, analysediensten, advertentietrackers of enige vorm van gegevensverzameling door derden. Er zijn geen gebruikersaccounts en geen login.",
+      "p3": "<strong>Jij hebt de controle.</strong> Je kunt je gegevens op elk moment exporteren via de pagina Instellingen, en door de app te verwijderen of de sitegegevens van je browser te wissen verwijder je alles definitief.",
+      "p4": "<strong>Geen gegevens delen.</strong> Omdat je gegevens je apparaat nooit verlaten, worden ze nooit met iemand anders gedeeld of voor anderen toegankelijk."
+    },
+    "terms": {
+      "p1": "<strong>Geen medisch advies.</strong> CardiPaw is een informatief hulpmiddel om de rustademhalingsfrequentie van je huisdier vast te leggen en te volgen. Het is geen vervanging voor professionele diergeneeskundige diagnose, advies of behandeling.",
+      "p2": "<strong>Raadpleeg je dierenarts.</strong> Volg altijd het specifieke advies van je dierenarts over welke waarden je moet volgen, welke bereiken normaal zijn voor jouw huisdier en wanneer je hulp moet zoeken. Neem geen medische beslissingen uitsluitend op basis van deze app.",
+      "p3": "<strong>Geen garanties.</strong> CardiPaw wordt gratis aangeboden, zoals het is, zonder enige garantie (expliciet of impliciet). De ontwikkelaar is niet aansprakelijk voor beslissingen die worden genomen op basis van gegevens die in deze app zijn vastgelegd.",
+      "p4": "<strong>Gebruik op eigen risico.</strong> Door CardiPaw te gebruiken aanvaard je de volledige verantwoordelijkheid voor hoe je de gepresenteerde gegevens interpreteert en ernaar handelt."
+    }
+  },
+  "share": {
+    "bannerInfo": "Gedeelde momentopname · {date}",
+    "loading": "Momentopname laden…",
+    "errorTitle": "Deze link is ongeldig of onvolledig",
+    "errorBody": "De gedeelde gegevens konden niet worden gelezen. De link is mogelijk ingekort door de app waarmee hij is verstuurd — vraag de afzender om hem opnieuw te delen, met minder maanden geselecteerd als hij erg lang was.",
+    "reportTitle": "Rapport rustademhalingsfrequentie",
+    "readings": "Metingen",
+    "average": "Gemiddelde",
+    "lowest": "Laagste",
+    "highest": "Hoogste",
+    "countNormal": "{count} normaal",
+    "countElevated": "{count} verhoogd",
+    "countHigh": "{count} hoog",
+    "footer": "Gemaakt met <a href=\"https://cardipaw.com/\" target=\"_blank\" rel=\"noopener\">CardiPaw</a>. De gegevens zitten volledig in deze link — er is niets geüpload of opgeslagen door deze pagina te openen."
+  },
+  "pdfModal": {
+    "title": "Pdf exporteren",
+    "monthsAvailable": "{n} maand beschikbaar | {n} maanden beschikbaar",
+    "clearAll": "Alles wissen",
+    "selectAll": "Alles selecteren",
+    "order": "Volgorde",
+    "newestFirst": "Nieuwste eerst",
+    "oldestFirst": "Oudste eerst",
+    "includeNotes": "Notities bij metingen opnemen",
+    "selectAtLeastOne": "Selecteer minstens één maand om te exporteren.",
+    "generating": "Genereren…",
+    "export": "Pdf exporteren"
+  },
+  "shareModal": {
+    "title": "Delen",
+    "privacyNote": "De geselecteerde gegevens zitten in de link zelf — er wordt niets naar een server geüpload. Iedereen aan wie je de link stuurt, kan deze gegevens bekijken.",
+    "monthsAvailable": "{n} maand beschikbaar | {n} maanden beschikbaar",
+    "clearAll": "Alles wissen",
+    "selectAll": "Alles selecteren",
+    "selectAtLeastOne": "Selecteer minstens één maand om te delen.",
+    "lengthWarning": "Deze link is erg lang en wordt mogelijk ingekort door sommige e-mail- of chat-apps. Overweeg minder maanden te selecteren.",
+    "shareNative": "Delen…",
+    "copied": "Gekopieerd!",
+    "copyLink": "Link kopiëren"
+  },
+  "chart": {
+    "legendRate": "— Frequentie",
+    "legendNormalMax": "- - Normaal max ({n} ademh./min)",
+    "empty": "Nog geen metingen — start een meting om een grafiek te zien.",
+    "tooltip": "{n} ademh./min",
+    "yAxis": "Ademh. / min"
+  },
+  "photo": {
+    "add": "Foto toevoegen",
+    "remove": "Foto verwijderen",
+    "alt": "Foto van huisdier"
+  },
+  "update": {
+    "offline": "App is klaar om offline te werken.",
+    "newVersion": "Er is een nieuwe versie beschikbaar.",
+    "reload": "Herladen"
+  },
+  "editor": {
+    "placeholder": "Notities toevoegen… (optioneel)",
+    "bold": "Vet",
+    "italic": "Cursief",
+    "bulletList": "Opsommingslijst"
+  },
+  "pdf": {
+    "reportTitle": "CardiPaw-rapport ademhalingsfrequentie",
+    "dateTime": "Datum / tijd",
+    "note": "Notitie",
+    "rateHeader": "Frequentie (ademh./min)",
+    "statusHeader": "Status",
+    "restHeader": "Rust",
+    "sourceHeader": "Bron",
+    "readingsHeader": "Metingen",
+    "notesHeader": "Notities bij metingen",
+    "readingsCount": "{n} meting | {n} metingen",
+    "summaryStats": "Gem.: {avg} · Min.: {min} · Max.: {max} ademh./min",
+    "pageOf": "Pagina {i} van {total}",
+    "normalMax": "Normaal max ({n})",
+    "breathsPerMin": "Ademh./min",
+    "ageMonths": "{n} maand | {n} maanden",
+    "ageYears": "{n} jaar | {n} jaar",
+    "ageYearMonth": "{y}j {m}mnd"
+  }
+}

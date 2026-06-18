@@ -1,0 +1,281 @@
+{
+  "common": {
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "close": "Schließen",
+    "view": "Ansehen",
+    "discard": "Verwerfen",
+    "saving": "Wird gespeichert…",
+    "saveChanges": "Änderungen speichern",
+    "back": "Zurück",
+    "breathsPerMin": "Atemz./Min"
+  },
+  "nav": {
+    "home": "Start",
+    "settings": "Einstellungen"
+  },
+  "status": {
+    "normal": "Normal",
+    "warning": "Erhöht",
+    "danger": "Hoch"
+  },
+  "species": {
+    "cat": "Katze",
+    "dog": "Hund"
+  },
+  "restState": {
+    "petWas": "Tier war",
+    "resting": "Ruhend",
+    "sleeping": "Schlafend",
+    "notRecorded": "Nicht erfasst"
+  },
+  "source": {
+    "manual": "Manuell",
+    "guided": "Geführt",
+    "manualEntry": "Manuelle Eingabe",
+    "guided30": "Geführt (30 s)"
+  },
+  "age": {
+    "weeks": "1 Woche | {n} Wochen",
+    "months": "1 Monat | {n} Monate",
+    "years": "1 Jahr | {n} Jahre",
+    "yearMonth": "{year}, {month}"
+  },
+  "lastMeasured": {
+    "none": "Noch keine Messungen",
+    "today": "Heute gemessen",
+    "yesterday": "Gestern gemessen",
+    "daysAgo": "Vor {n} Tag gemessen | Vor {n} Tagen gemessen",
+    "weeksAgo": "Zuletzt vor {n} Woche gemessen | Zuletzt vor {n} Wochen gemessen"
+  },
+  "home": {
+    "subtitle": "Ruhe-Atemfrequenz-Tracker",
+    "yourPets": "Deine Tiere",
+    "noPetsTitle": "Noch keine Tiere",
+    "noPetsBody": "Füge dein erstes Tier hinzu, um die Ruhe-Atemfrequenz zu verfolgen.",
+    "addPet": "Tier hinzufügen",
+    "themeDark": "Dunkel",
+    "themeLight": "Hell",
+    "switchToLight": "Zum hellen Modus wechseln",
+    "switchToDark": "Zum dunklen Modus wechseln"
+  },
+  "petCard": {
+    "viewProfile": "Profil von {name} ansehen",
+    "startTracking": "Messung für {name} starten"
+  },
+  "petDetail": {
+    "share": "Teilen",
+    "exportPdf": "PDF exportieren",
+    "editPet": "Tier bearbeiten",
+    "deletePet": "Tier löschen",
+    "addNote": "Notiz hinzufügen",
+    "startTracking": "Messung starten",
+    "tabChart": "Diagramm",
+    "tabReadings": "Messungen",
+    "tabNotes": "Notizen",
+    "rangeWeek": "Woche",
+    "rangeMonth": "Monat",
+    "rangeYear": "Jahr",
+    "prevPeriod": "Vorheriger Zeitraum",
+    "nextPeriod": "Nächster Zeitraum",
+    "thisWeek": "Diese Woche",
+    "thisMonth": "Dieser Monat",
+    "thisYear": "Dieses Jahr",
+    "deleteConfirm": "{name} löschen? Dadurch werden auch alle Messungen dieses Tieres dauerhaft entfernt."
+  },
+  "tracker": {
+    "tapToStart": "Zum Starten tippen",
+    "tapForBreath": "Bei jedem Atemzug tippen",
+    "guided": "Geführt",
+    "manual": "Manuell",
+    "instruction": "Tippe jedes Mal auf das Herz, wenn sich der Brustkorb deines Tieres hebt und senkt.",
+    "measurement30": "30-Sekunden-Messung",
+    "sound": "Ton",
+    "breathsCounted": "Atemzüge gezählt",
+    "unitSpaced": "Atemz. / Min",
+    "basedOn": "Basierend auf {n} Atemzug in 30 Sekunden | Basierend auf {n} Atemzügen in 30 Sekunden",
+    "saveReading": "Messung speichern",
+    "saveResult": "Ergebnis speichern",
+    "tryAgain": "Erneut versuchen"
+  },
+  "addEditPet": {
+    "titleEdit": "Tier bearbeiten",
+    "titleAdd": "Tier hinzufügen",
+    "name": "Name",
+    "namePlaceholder": "z. B. Luna",
+    "species": "Tierart",
+    "birthdate": "Geburtsdatum",
+    "rrrAbbr": "RAF",
+    "rrrTitle": "Ruhe-Atemfrequenz",
+    "thresholdsSuffix": "Schwellenwerte (optional)",
+    "normalCeiling": "Obergrenze normal",
+    "elevatedCeiling": "Obergrenze erhöht",
+    "thresholdHint": "Leer lassen, um die Standardwerte zu verwenden ({normal} / {elevated} Atemz./Min).",
+    "thresholdError": "Die Obergrenze für „erhöht“ muss höher sein als die Obergrenze für „normal“ ({normal}).",
+    "submitAdd": "Tier hinzufügen"
+  },
+  "reading": {
+    "editAria": "Messung bearbeiten",
+    "deleteAria": "Messung löschen",
+    "title": "Messung bearbeiten",
+    "notesLabel": "Notizen",
+    "noNotes": "Keine Notizen",
+    "notFound": "Messung nicht gefunden.",
+    "deleteConfirm": "Diese Messung löschen? Dies kann nicht rückgängig gemacht werden.",
+    "rateLabel": "Frequenz (Atemz./Min)"
+  },
+  "note": {
+    "titleEdit": "Notiz bearbeiten",
+    "titleNew": "Neue Notiz",
+    "pin": "Notiz anheften",
+    "unpin": "Notiz lösen",
+    "editAria": "Notiz bearbeiten",
+    "deleteAria": "Notiz löschen",
+    "created": "Erstellt",
+    "edited": "Bearbeitet",
+    "pinned": "Angeheftet",
+    "noContent": "Kein Inhalt",
+    "notFound": "Notiz nicht gefunden.",
+    "deleteConfirm": "Diese Notiz löschen? Dies kann nicht rückgängig gemacht werden.",
+    "titleLabel": "Titel",
+    "titlePlaceholder": "Notiztitel",
+    "contentLabel": "Inhalt",
+    "submitAdd": "Notiz hinzufügen"
+  },
+  "readingList": {
+    "empty": "Noch keine Messungen. Tippe auf „Messung starten“, um deine erste Messung zu erfassen.",
+    "hasNotes": "Hat Notizen",
+    "manuallyEntered": "Manuell eingegeben"
+  },
+  "noteList": {
+    "empty": "Noch keine Notizen. Tippe auf „+“, um deine erste zu schreiben.",
+    "pinnedSection": "Angeheftet",
+    "notesSection": "Notizen",
+    "edited": "Bearbeitet"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "languageSection": "Sprache",
+    "languageDesc": "Wähle die Sprache, die in der gesamten App verwendet wird.",
+    "dataSection": "Daten",
+    "dataDesc": "Deine Tierprofile und Messungen werden lokal auf diesem Gerät mit IndexedDB gespeichert. Exportiere sie, um ein Backup zu erstellen oder auf ein anderes Gerät zu übertragen.",
+    "exportName": "Daten exportieren",
+    "exportDesc": "Alle Tiere und Messungen als JSON herunterladen",
+    "exported": "✓ Exportiert",
+    "export": "Exportieren",
+    "importName": "Daten importieren",
+    "importDesc": "Aus einer CardiPaw-Exportdatei wiederherstellen",
+    "imported": "✓ Importiert",
+    "import": "Importieren",
+    "invalidFormat": "Ungültiges Dateiformat. Bitte wähle eine CardiPaw-Exportdatei.",
+    "readError": "Die Datei konnte nicht gelesen werden. Stelle sicher, dass es sich um einen gültigen JSON-Export handelt.",
+    "importConfirm": "{pets} Tier(e) und {readings} Messung(en) importieren? Dadurch werden alle vorhandenen Daten auf diesem Gerät überschrieben.",
+    "aboutSection": "Über",
+    "aboutText": "CardiPaw hilft dir, die Ruhe-Atemfrequenz (RAF) deines Tieres zu verfolgen — ein wichtiger Gesundheitsindikator für Tiere mit Herzerkrankungen wie HCM.",
+    "thresholdNormalValue": "≤ 30 Atemz./Min",
+    "thresholdElevatedValue": "31–35 Atemz./Min",
+    "thresholdHighValue": "> 35 Atemz./Min",
+    "disclaimer": "Dies sind die globalen Standard-Schwellenwerte. Du kannst im Profil jedes Tieres individuelle Grenzwerte festlegen. Befolge stets die spezifischen Hinweise deines Tierarztes, welche Werte zu überwachen sind, welche Bereiche für dein Tier normal sind und wann du Hilfe suchen solltest.",
+    "legalSection": "Rechtliches",
+    "privacyTitle": "Datenschutzerklärung",
+    "privacyDesc": "Wie deine Daten gespeichert und verwendet werden",
+    "termsTitle": "Nutzungsbedingungen",
+    "termsDesc": "Bedingungen und Haftungsausschlüsse für die Nutzung von CardiPaw",
+    "sourceTitle": "Quellcode",
+    "sourceDesc": "CardiPaw ist Open Source auf GitHub",
+    "privacy": {
+      "p1": "<strong>Deine Daten bleiben auf deinem Gerät.</strong> CardiPaw speichert alle Informationen (Tierprofile, Messungen und Notizen) ausschließlich in der IndexedDB deines Browsers. Es wird niemals etwas an einen Server übertragen.",
+      "p2": "<strong>Kein Tracking, keine Analyse.</strong> CardiPaw verwendet keine Cookies, Analysedienste, Werbetracker oder sonstige Datenerfassung durch Dritte. Es gibt keine Benutzerkonten und kein Login.",
+      "p3": "<strong>Du hast die Kontrolle.</strong> Du kannst deine Daten jederzeit über die Seite „Einstellungen“ exportieren. Durch das Löschen der App oder das Leeren der Websitedaten deines Browsers wird alles dauerhaft entfernt.",
+      "p4": "<strong>Keine Datenweitergabe.</strong> Da deine Daten dein Gerät nie verlassen, werden sie niemals mit anderen geteilt oder für andere zugänglich gemacht."
+    },
+    "terms": {
+      "p1": "<strong>Keine medizinische Beratung.</strong> CardiPaw ist ein informatives Hilfsmittel, um die Ruhe-Atemfrequenz deines Tieres zu erfassen und zu verfolgen. Es ersetzt keine professionelle tierärztliche Diagnose, Beratung oder Behandlung.",
+      "p2": "<strong>Konsultiere deinen Tierarzt.</strong> Befolge stets die spezifischen Hinweise deines Tierarztes, welche Werte zu überwachen sind, welche Bereiche für dein Tier normal sind und wann du Hilfe suchen solltest. Triff keine medizinischen Entscheidungen allein auf Grundlage dieser App.",
+      "p3": "<strong>Keine Gewährleistung.</strong> CardiPaw wird kostenlos und „wie besehen“ ohne jegliche ausdrückliche oder stillschweigende Gewährleistung bereitgestellt. Der Entwickler haftet nicht für Entscheidungen, die auf Grundlage der in dieser App erfassten Daten getroffen werden.",
+      "p4": "<strong>Nutzung auf eigenes Risiko.</strong> Mit der Nutzung von CardiPaw übernimmst du die volle Verantwortung dafür, wie du die dargestellten Daten interpretierst und darauf reagierst."
+    }
+  },
+  "share": {
+    "bannerInfo": "Geteilte Momentaufnahme · {date}",
+    "loading": "Momentaufnahme wird geladen…",
+    "errorTitle": "Dieser Link ist ungültig oder unvollständig",
+    "errorBody": "Die geteilten Daten konnten nicht gelesen werden. Der Link wurde möglicherweise von der App gekürzt, über die er gesendet wurde — bitte den Absender, ihn erneut zu teilen, mit weniger ausgewählten Monaten, falls er sehr lang war.",
+    "reportTitle": "Bericht zur Ruhe-Atemfrequenz",
+    "readings": "Messungen",
+    "average": "Durchschnitt",
+    "lowest": "Niedrigster",
+    "highest": "Höchster",
+    "countNormal": "{count} normal",
+    "countElevated": "{count} erhöht",
+    "countHigh": "{count} hoch",
+    "footer": "Erstellt mit <a href=\"https://cardipaw.com/\" target=\"_blank\" rel=\"noopener\">CardiPaw</a>. Die Daten befinden sich vollständig in diesem Link — durch das Öffnen dieser Seite wurde nichts hochgeladen oder gespeichert."
+  },
+  "pdfModal": {
+    "title": "PDF exportieren",
+    "monthsAvailable": "{n} Monat verfügbar | {n} Monate verfügbar",
+    "clearAll": "Alle abwählen",
+    "selectAll": "Alle auswählen",
+    "order": "Reihenfolge",
+    "newestFirst": "Neueste zuerst",
+    "oldestFirst": "Älteste zuerst",
+    "includeNotes": "Notizen zu Messungen einbeziehen",
+    "selectAtLeastOne": "Wähle mindestens einen Monat zum Exportieren aus.",
+    "generating": "Wird erstellt…",
+    "export": "PDF exportieren"
+  },
+  "shareModal": {
+    "title": "Teilen",
+    "privacyNote": "Die ausgewählten Daten sind im Link selbst eingebettet — es wird nichts auf einen Server hochgeladen. Jeder, dem du den Link sendest, kann diese Daten ansehen.",
+    "monthsAvailable": "{n} Monat verfügbar | {n} Monate verfügbar",
+    "clearAll": "Alle abwählen",
+    "selectAll": "Alle auswählen",
+    "selectAtLeastOne": "Wähle mindestens einen Monat zum Teilen aus.",
+    "lengthWarning": "Dieser Link ist sehr lang und wird von manchen E-Mail- oder Chat-Apps möglicherweise gekürzt. Wähle ggf. weniger Monate aus.",
+    "shareNative": "Teilen…",
+    "copied": "Kopiert!",
+    "copyLink": "Link kopieren"
+  },
+  "chart": {
+    "legendRate": "— Frequenz",
+    "legendNormalMax": "- - Normal max. ({n} Atemz./Min)",
+    "empty": "Noch keine Messungen — starte eine Messung, um ein Diagramm zu sehen.",
+    "tooltip": "{n} Atemz./Min",
+    "yAxis": "Atemz. / Min"
+  },
+  "photo": {
+    "add": "Foto hinzufügen",
+    "remove": "Foto entfernen",
+    "alt": "Tierfoto"
+  },
+  "update": {
+    "offline": "App ist bereit für die Offline-Nutzung.",
+    "newVersion": "Eine neue Version ist verfügbar.",
+    "reload": "Neu laden"
+  },
+  "editor": {
+    "placeholder": "Notizen hinzufügen… (optional)",
+    "bold": "Fett",
+    "italic": "Kursiv",
+    "bulletList": "Aufzählung"
+  },
+  "pdf": {
+    "reportTitle": "CardiPaw-Bericht zur Atemfrequenz",
+    "dateTime": "Datum / Uhrzeit",
+    "note": "Notiz",
+    "rateHeader": "Frequenz (Atemz./Min)",
+    "statusHeader": "Status",
+    "restHeader": "Ruhe",
+    "sourceHeader": "Quelle",
+    "readingsHeader": "Messungen",
+    "notesHeader": "Notizen zu Messungen",
+    "readingsCount": "{n} Messung | {n} Messungen",
+    "summaryStats": "Durchschn.: {avg} · Min.: {min} · Max.: {max} Atemz./Min",
+    "pageOf": "Seite {i} von {total}",
+    "normalMax": "Normal max. ({n})",
+    "breathsPerMin": "Atemz./Min",
+    "ageMonths": "{n} Monat | {n} Monate",
+    "ageYears": "{n} Jahr | {n} Jahre",
+    "ageYearMonth": "{y}J {m}Mon"
+  }
+}

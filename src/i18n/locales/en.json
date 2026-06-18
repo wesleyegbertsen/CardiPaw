@@ -1,0 +1,281 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "view": "View",
+    "discard": "Discard",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "back": "Go back",
+    "breathsPerMin": "breaths/min"
+  },
+  "nav": {
+    "home": "Home",
+    "settings": "Settings"
+  },
+  "status": {
+    "normal": "Normal",
+    "warning": "Elevated",
+    "danger": "High"
+  },
+  "species": {
+    "cat": "Cat",
+    "dog": "Dog"
+  },
+  "restState": {
+    "petWas": "Pet was",
+    "resting": "Resting",
+    "sleeping": "Sleeping",
+    "notRecorded": "Not recorded"
+  },
+  "source": {
+    "manual": "Manual",
+    "guided": "Guided",
+    "manualEntry": "Manual entry",
+    "guided30": "Guided (30 s)"
+  },
+  "age": {
+    "weeks": "1 week | {n} weeks",
+    "months": "1 month | {n} months",
+    "years": "1 year | {n} years",
+    "yearMonth": "{year}, {month}"
+  },
+  "lastMeasured": {
+    "none": "No readings yet",
+    "today": "Measured today",
+    "yesterday": "Measured yesterday",
+    "daysAgo": "Measured {n} day ago | Measured {n} days ago",
+    "weeksAgo": "Last measured {n} week ago | Last measured {n} weeks ago"
+  },
+  "home": {
+    "subtitle": "Resting respiratory rate tracker",
+    "yourPets": "Your pets",
+    "noPetsTitle": "No pets yet",
+    "noPetsBody": "Add your first pet to start tracking their resting respiratory rate.",
+    "addPet": "Add pet",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
+  },
+  "petCard": {
+    "viewProfile": "View {name}'s profile",
+    "startTracking": "Start tracking {name}"
+  },
+  "petDetail": {
+    "share": "Share",
+    "exportPdf": "Export PDF",
+    "editPet": "Edit pet",
+    "deletePet": "Delete pet",
+    "addNote": "Add note",
+    "startTracking": "Start tracking",
+    "tabChart": "Chart",
+    "tabReadings": "Readings",
+    "tabNotes": "Notes",
+    "rangeWeek": "Week",
+    "rangeMonth": "Month",
+    "rangeYear": "Year",
+    "prevPeriod": "Previous period",
+    "nextPeriod": "Next period",
+    "thisWeek": "This week",
+    "thisMonth": "This month",
+    "thisYear": "This year",
+    "deleteConfirm": "Delete {name}? This will permanently remove all their readings too."
+  },
+  "tracker": {
+    "tapToStart": "Tap to start",
+    "tapForBreath": "Tap for each breath",
+    "guided": "Guided",
+    "manual": "Manual",
+    "instruction": "Tap the heart each time you see your pet's chest rise and fall.",
+    "measurement30": "30-second measurement",
+    "sound": "Sound",
+    "breathsCounted": "breaths counted",
+    "unitSpaced": "breaths / min",
+    "basedOn": "Based on {n} breath in 30 seconds | Based on {n} breaths in 30 seconds",
+    "saveReading": "Save reading",
+    "saveResult": "Save result",
+    "tryAgain": "Try again"
+  },
+  "addEditPet": {
+    "titleEdit": "Edit pet",
+    "titleAdd": "Add pet",
+    "name": "Name",
+    "namePlaceholder": "e.g. Luna",
+    "species": "Species",
+    "birthdate": "Birthdate",
+    "rrrAbbr": "RRR",
+    "rrrTitle": "Resting respiratory rate",
+    "thresholdsSuffix": "thresholds (optional)",
+    "normalCeiling": "Normal ceiling",
+    "elevatedCeiling": "Elevated ceiling",
+    "thresholdHint": "Leave blank to use the defaults ({normal} / {elevated} breaths/min).",
+    "thresholdError": "Elevated ceiling must be higher than normal ceiling ({normal}).",
+    "submitAdd": "Add pet"
+  },
+  "reading": {
+    "editAria": "Edit reading",
+    "deleteAria": "Delete reading",
+    "title": "Edit reading",
+    "notesLabel": "Notes",
+    "noNotes": "No notes",
+    "notFound": "Reading not found.",
+    "deleteConfirm": "Delete this reading? This cannot be undone.",
+    "rateLabel": "Rate (breaths/min)"
+  },
+  "note": {
+    "titleEdit": "Edit note",
+    "titleNew": "New note",
+    "pin": "Pin note",
+    "unpin": "Unpin note",
+    "editAria": "Edit note",
+    "deleteAria": "Delete note",
+    "created": "Created",
+    "edited": "Edited",
+    "pinned": "Pinned",
+    "noContent": "No content",
+    "notFound": "Note not found.",
+    "deleteConfirm": "Delete this note? This cannot be undone.",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Note title",
+    "contentLabel": "Content",
+    "submitAdd": "Add note"
+  },
+  "readingList": {
+    "empty": "No readings yet. Tap \"Start tracking\" to record your first measurement.",
+    "hasNotes": "Has notes",
+    "manuallyEntered": "Manually entered"
+  },
+  "noteList": {
+    "empty": "No notes yet. Tap '+' to write your first one.",
+    "pinnedSection": "Pinned",
+    "notesSection": "Notes",
+    "edited": "Edited"
+  },
+  "settings": {
+    "title": "Settings",
+    "languageSection": "Language",
+    "languageDesc": "Choose the language used throughout the app.",
+    "dataSection": "Data",
+    "dataDesc": "Your pet profiles and readings are stored locally on this device using IndexedDB. Export them to back up or transfer to another device.",
+    "exportName": "Export data",
+    "exportDesc": "Download all pets and readings as JSON",
+    "exported": "✓ Exported",
+    "export": "Export",
+    "importName": "Import data",
+    "importDesc": "Restore from a CardiPaw export file",
+    "imported": "✓ Imported",
+    "import": "Import",
+    "invalidFormat": "Invalid file format. Please select a CardiPaw export file.",
+    "readError": "Could not read the file. Make sure it is a valid JSON export.",
+    "importConfirm": "Import {pets} pet(s) and {readings} reading(s)? This will overwrite all existing data on this device.",
+    "aboutSection": "About",
+    "aboutText": "CardiPaw helps you track your pet's resting respiratory rate (RRR) — an important health indicator for pets with heart conditions like HCM.",
+    "thresholdNormalValue": "≤ 30 breaths/min",
+    "thresholdElevatedValue": "31–35 breaths/min",
+    "thresholdHighValue": "> 35 breaths/min",
+    "disclaimer": "These are the global default thresholds. You can configure custom ceilings per pet in each pet's profile. Always follow your veterinarian's specific guidance on what values to monitor, what ranges are normal for your pet, and when to seek care.",
+    "legalSection": "Legal",
+    "privacyTitle": "Privacy Policy",
+    "privacyDesc": "How your data is stored and used",
+    "termsTitle": "Terms of Use",
+    "termsDesc": "Conditions and disclaimers for using CardiPaw",
+    "sourceTitle": "Source Code",
+    "sourceDesc": "CardiPaw is open source on GitHub",
+    "privacy": {
+      "p1": "<strong>Your data stays on your device.</strong> CardiPaw stores all information (pet profiles, readings, and notes) exclusively in your browser's IndexedDB. Nothing is ever transmitted to a server.",
+      "p2": "<strong>No tracking or analytics.</strong> CardiPaw does not use cookies, analytics services, advertising trackers, or any third-party data collection. There are no user accounts and no login.",
+      "p3": "<strong>You are in control.</strong> You can export your data at any time from the Settings page, and deleting the app or clearing your browser's site data will permanently remove everything.",
+      "p4": "<strong>No data sharing.</strong> Because your data never leaves your device, it is never shared with or accessible by anyone else."
+    },
+    "terms": {
+      "p1": "<strong>Not medical advice.</strong> CardiPaw is an informational tool to help you log and track your pet's resting respiratory rate. It is not a substitute for professional veterinary diagnosis, advice, or treatment.",
+      "p2": "<strong>Consult your veterinarian.</strong> Always follow your vet's specific guidance on what values to monitor, what ranges are normal for your individual pet, and when to seek care. Do not make medical decisions based solely on this app.",
+      "p3": "<strong>No warranties.</strong> CardiPaw is provided free of charge, as-is, without any warranties of any kind (express or implied). The developer is not liable for any decisions made based on data logged in this app.",
+      "p4": "<strong>Use at your own risk.</strong> By using CardiPaw you accept full responsibility for how you interpret and act on the data it presents."
+    }
+  },
+  "share": {
+    "bannerInfo": "Shared snapshot · {date}",
+    "loading": "Loading snapshot…",
+    "errorTitle": "This link is invalid or incomplete",
+    "errorBody": "The shared data could not be read. The link may have been truncated by the app it was sent through — ask the sender to share it again, with fewer months selected if it was very long.",
+    "reportTitle": "Resting Respiratory Rate report",
+    "readings": "Readings",
+    "average": "Average",
+    "lowest": "Lowest",
+    "highest": "Highest",
+    "countNormal": "{count} Normal",
+    "countElevated": "{count} Elevated",
+    "countHigh": "{count} High",
+    "footer": "Created with <a href=\"https://cardipaw.com/\" target=\"_blank\" rel=\"noopener\">CardiPaw</a>. The data lives entirely in this link — nothing was uploaded or stored by opening this page."
+  },
+  "pdfModal": {
+    "title": "Export PDF",
+    "monthsAvailable": "{n} month available | {n} months available",
+    "clearAll": "Clear all",
+    "selectAll": "Select all",
+    "order": "Order",
+    "newestFirst": "Newest first",
+    "oldestFirst": "Oldest first",
+    "includeNotes": "Include reading notes",
+    "selectAtLeastOne": "Select at least one month to export.",
+    "generating": "Generating…",
+    "export": "Export PDF"
+  },
+  "shareModal": {
+    "title": "Share",
+    "privacyNote": "The selected data is embedded in the link itself — nothing is uploaded to any server. Anyone you send the link to can view this data.",
+    "monthsAvailable": "{n} month available | {n} months available",
+    "clearAll": "Clear all",
+    "selectAll": "Select all",
+    "selectAtLeastOne": "Select at least one month to share.",
+    "lengthWarning": "This link is very long and may be truncated by some email or chat apps. Consider selecting fewer months.",
+    "shareNative": "Share…",
+    "copied": "Copied!",
+    "copyLink": "Copy link"
+  },
+  "chart": {
+    "legendRate": "— Rate",
+    "legendNormalMax": "- - Normal max ({n} breaths/min)",
+    "empty": "No readings yet — start tracking to see a chart.",
+    "tooltip": "{n} breaths/min",
+    "yAxis": "Breaths / min"
+  },
+  "photo": {
+    "add": "Add photo",
+    "remove": "Remove photo",
+    "alt": "Pet photo"
+  },
+  "update": {
+    "offline": "App ready to work offline.",
+    "newVersion": "A new version is available.",
+    "reload": "Reload"
+  },
+  "editor": {
+    "placeholder": "Add notes… (optional)",
+    "bold": "Bold",
+    "italic": "Italic",
+    "bulletList": "Bullet list"
+  },
+  "pdf": {
+    "reportTitle": "CardiPaw Respiratory Rate Report",
+    "dateTime": "Date / Time",
+    "note": "Note",
+    "rateHeader": "Rate (breaths/min)",
+    "statusHeader": "Status",
+    "restHeader": "Rest",
+    "sourceHeader": "Source",
+    "readingsHeader": "Readings",
+    "notesHeader": "Reading Notes",
+    "readingsCount": "{n} reading | {n} readings",
+    "summaryStats": "Avg: {avg} · Min: {min} · Max: {max} breaths/min",
+    "pageOf": "Page {i} of {total}",
+    "normalMax": "Normal max ({n})",
+    "breathsPerMin": "Breaths/min",
+    "ageMonths": "{n} month | {n} months",
+    "ageYears": "{n} year | {n} years",
+    "ageYearMonth": "{y}y {m}mo"
+  }
+}
