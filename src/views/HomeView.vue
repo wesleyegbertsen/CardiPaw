@@ -169,26 +169,35 @@ function pickLocale(loc: Locale) {
   position: relative;
 }
 
+/*
+ * The trigger is a pill matching the theme toggle.
+ * padding-left: 6px  → flag SVG starts at 6px from the picker's left edge.
+ * flag width: 22px   → flag centre is at 6 + 11 = 17px from the picker's left edge.
+ * The dropdown uses `left: 0; transform: translateX(calc(17px - 50%))` so its
+ * own centre lands exactly at that 17px mark regardless of dropdown width.
+ */
 .lang-trigger {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: none;
-  border: none;
-  padding: 0;
+  gap: 5px;
+  height: 28px;
+  padding: 0 8px 0 6px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
   cursor: pointer;
-  opacity: 0.9;
-  transition: opacity 0.15s;
+  transition: background 0.25s, border-color 0.25s;
   flex-shrink: 0;
 }
 
 .lang-trigger:hover {
-  opacity: 1;
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.75);
 }
 
 .lang-flag :deep(svg) {
   display: block;
-  width: 24px;
+  width: 22px;
   height: auto;
   border-radius: 2px;
 }
@@ -212,8 +221,9 @@ function pickLocale(loc: Locale) {
 .lang-dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  /* Centre dropdown on the flag: flag centre = padding-left(6px) + flag-width/2(11px) = 17px */
+  transform: translateX(calc(17px - 50%));
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -225,7 +235,7 @@ function pickLocale(loc: Locale) {
 }
 
 .lang-option {
-  padding: 8px 16px;
+  padding: 7px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -234,7 +244,7 @@ function pickLocale(loc: Locale) {
 
 .lang-option :deep(svg) {
   display: block;
-  width: 28px;
+  width: 22px;
   height: auto;
   border-radius: 2px;
 }
