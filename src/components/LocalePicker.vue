@@ -131,6 +131,7 @@ function pick(loc: Locale) {
   width: 22px;
   height: auto;
   border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 
 .lang-option:hover {
