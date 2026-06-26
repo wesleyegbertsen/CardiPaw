@@ -76,6 +76,7 @@ function pickLocale(loc: Locale) {
         <!-- Language picker -->
         <div class="lang-picker">
           <button class="lang-trigger" @click="langOpen = !langOpen" :aria-label="$t('home.switchLanguage')">
+            <span class="lang-trigger-spacer" />
             <span class="lang-flag" v-html="flagSvg(locale as Locale)" />
             <svg class="lang-chevron" :class="{ open: langOpen }" viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
               <path d="M7 10l5 5 5-5z"/>
@@ -169,24 +170,24 @@ function pickLocale(loc: Locale) {
   position: relative;
 }
 
-/*
- * The trigger is a pill matching the theme toggle.
- * padding-left: 6px  → flag SVG starts at 6px from the picker's left edge.
- * flag width: 22px   → flag centre is at 6 + 11 = 17px from the picker's left edge.
- * The dropdown uses `left: 0; transform: translateX(calc(17px - 50%))` so its
- * own centre lands exactly at that 17px mark regardless of dropdown width.
- */
 .lang-trigger {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   height: 28px;
-  padding: 0 8px 0 6px;
+  padding: 0 6px;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.2);
   border: 1.5px solid rgba(255, 255, 255, 0.5);
   cursor: pointer;
   transition: background 0.25s, border-color 0.25s;
+  flex-shrink: 0;
+}
+
+/* Mirrors the chevron width so the flag sits visually centred in the pill */
+.lang-trigger-spacer {
+  width: 12px;
   flex-shrink: 0;
 }
 
@@ -222,8 +223,7 @@ function pickLocale(loc: Locale) {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  /* Centre dropdown on the flag: flag centre = padding-left(6px) + flag-width/2(11px) = 17px */
-  transform: translateX(calc(17px - 50%));
+  right: 0;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
