@@ -3,8 +3,9 @@ import en from './locales/en.json';
 import nl from './locales/nl.json';
 import de from './locales/de.json';
 import fr from './locales/fr.json';
+import ja from './locales/ja.json';
 
-export const SUPPORTED_LOCALES = ['en', 'nl', 'de', 'fr'] as const;
+export const SUPPORTED_LOCALES = ['en', 'nl', 'de', 'fr', 'ja'] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 // Native language names, shown in the language picker
@@ -13,6 +14,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   nl: 'Nederlands',
   de: 'Deutsch',
   fr: 'Français',
+  ja: '日本語',
 };
 
 const STORAGE_KEY = 'cardipaw-locale';
@@ -41,7 +43,7 @@ export const i18n = createI18n({
   globalInjection: true,
   locale: detectLocale(),
   fallbackLocale: 'en',
-  messages: { en, nl, de, fr },
+  messages: { en, nl, de, fr, ja },
 });
 
 document.documentElement.setAttribute('lang', i18n.global.locale.value);

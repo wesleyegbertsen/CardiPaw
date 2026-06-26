@@ -11,6 +11,18 @@ export default defineConfig({
         // Hash routing doesn't need a navigation fallback — all Vue routes live under #.
         // Without this, the SW intercepts e.g. /sitemap.xml and serves index.html instead.
         navigateFallback: null,
+        runtimeCaching: [
+          {
+            // Cache Japanese fonts on first use (only fetched when locale is ja + PDF is generated).
+            // CacheFirst means subsequent requests — including offline — are served from cache.
+            urlPattern: /\/fonts\/.*\.ttf$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'pdf-fonts',
+              expiration: { maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+        ],
       },
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {

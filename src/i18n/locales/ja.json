@@ -1,0 +1,282 @@
+{
+  "common": {
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "close": "閉じる",
+    "view": "表示",
+    "discard": "破棄",
+    "saving": "保存中…",
+    "saveChanges": "変更を保存",
+    "back": "戻る",
+    "breathsPerMin": "回/分"
+  },
+  "nav": {
+    "home": "ホーム",
+    "settings": "設定"
+  },
+  "status": {
+    "normal": "正常",
+    "warning": "高め",
+    "danger": "高い"
+  },
+  "species": {
+    "cat": "猫",
+    "dog": "犬"
+  },
+  "restState": {
+    "petWas": "ペットの状態",
+    "resting": "安静",
+    "sleeping": "睡眠中",
+    "notRecorded": "未記録"
+  },
+  "source": {
+    "manual": "手動",
+    "guided": "ガイド",
+    "manualEntry": "手動入力",
+    "guided30": "ガイド（30秒）"
+  },
+  "age": {
+    "weeks": "{n}週",
+    "months": "{n}ヶ月",
+    "years": "{n}年",
+    "yearMonth": "{year}、{month}"
+  },
+  "lastMeasured": {
+    "none": "測定なし",
+    "today": "本日測定",
+    "yesterday": "昨日測定",
+    "daysAgo": "{n}日前に測定",
+    "weeksAgo": "{n}週間前に測定"
+  },
+  "home": {
+    "subtitle": "安静時呼吸数の記録",
+    "yourPets": "あなたのペット",
+    "noPetsTitle": "ペットがいません",
+    "noPetsBody": "最初のペットを追加して安静時呼吸数の記録を始めましょう。",
+    "addPet": "ペットを追加",
+    "themeDark": "ダーク",
+    "themeLight": "ライト",
+    "switchToLight": "ライトモードに切り替え",
+    "switchToDark": "ダークモードに切り替え",
+    "switchLanguage": "言語を変更"
+  },
+  "petCard": {
+    "viewProfile": "{name}のプロフィールを見る",
+    "startTracking": "{name}の記録を開始"
+  },
+  "petDetail": {
+    "share": "共有",
+    "exportPdf": "PDFで書き出す",
+    "editPet": "ペットを編集",
+    "deletePet": "ペットを削除",
+    "addNote": "メモを追加",
+    "startTracking": "記録を開始",
+    "tabChart": "グラフ",
+    "tabReadings": "測定値",
+    "tabNotes": "メモ",
+    "rangeWeek": "週",
+    "rangeMonth": "月",
+    "rangeYear": "年",
+    "prevPeriod": "前の期間",
+    "nextPeriod": "次の期間",
+    "thisWeek": "今週",
+    "thisMonth": "今月",
+    "thisYear": "今年",
+    "deleteConfirm": "{name}を削除しますか？すべての測定値も完全に削除されます。"
+  },
+  "tracker": {
+    "tapToStart": "タップして開始",
+    "tapForBreath": "呼吸ごとにタップ",
+    "guided": "ガイド",
+    "manual": "手動",
+    "instruction": "ペットの胸が上がり下がりするたびにハートをタップしてください。",
+    "measurement30": "30秒間の測定",
+    "sound": "音",
+    "breathsCounted": "回カウント済み",
+    "unitSpaced": "回 / 分",
+    "basedOn": "30秒間で{n}回の呼吸に基づく",
+    "saveReading": "測定値を保存",
+    "saveResult": "結果を保存",
+    "tryAgain": "やり直す"
+  },
+  "addEditPet": {
+    "titleEdit": "ペットを編集",
+    "titleAdd": "ペットを追加",
+    "name": "名前",
+    "namePlaceholder": "例：ルナ",
+    "species": "種類",
+    "birthdate": "生年月日",
+    "rrrAbbr": "RRR",
+    "rrrTitle": "安静時呼吸数",
+    "thresholdsSuffix": "しきい値（任意）",
+    "normalCeiling": "正常上限",
+    "elevatedCeiling": "高め上限",
+    "thresholdHint": "空白のままにするとデフォルト値（{normal} / {elevated} 回/分）が使用されます。",
+    "thresholdError": "高め上限は正常上限（{normal}）より大きくする必要があります。",
+    "submitAdd": "ペットを追加"
+  },
+  "reading": {
+    "editAria": "測定値を編集",
+    "deleteAria": "測定値を削除",
+    "title": "測定値を編集",
+    "notesLabel": "メモ",
+    "noNotes": "メモなし",
+    "notFound": "測定値が見つかりません。",
+    "deleteConfirm": "この測定値を削除しますか？この操作は元に戻せません。",
+    "rateLabel": "呼吸数（回/分）"
+  },
+  "note": {
+    "titleEdit": "メモを編集",
+    "titleNew": "新しいメモ",
+    "pin": "メモをピン留め",
+    "unpin": "メモのピン留めを解除",
+    "editAria": "メモを編集",
+    "deleteAria": "メモを削除",
+    "created": "作成日",
+    "edited": "編集日",
+    "pinned": "ピン留め中",
+    "noContent": "内容なし",
+    "notFound": "メモが見つかりません。",
+    "deleteConfirm": "このメモを削除しますか？この操作は元に戻せません。",
+    "titleLabel": "タイトル",
+    "titlePlaceholder": "メモのタイトル",
+    "contentLabel": "内容",
+    "submitAdd": "メモを追加"
+  },
+  "readingList": {
+    "empty": "測定値がありません。「記録を開始」をタップして最初の測定値を記録してください。",
+    "hasNotes": "メモあり",
+    "manuallyEntered": "手動入力"
+  },
+  "noteList": {
+    "empty": "メモがありません。「＋」をタップして最初のメモを書いてください。",
+    "pinnedSection": "ピン留め",
+    "notesSection": "メモ",
+    "edited": "編集済み"
+  },
+  "settings": {
+    "title": "設定",
+    "languageSection": "言語",
+    "languageDesc": "アプリ全体で使用する言語を選択してください。",
+    "dataSection": "データ",
+    "dataDesc": "ペットのプロフィールと測定値はIndexedDBを使用してこのデバイスにローカル保存されています。バックアップや他のデバイスへの転送のためにエクスポートしてください。",
+    "exportName": "データをエクスポート",
+    "exportDesc": "すべてのペットと測定値をJSONでダウンロード",
+    "exported": "✓ エクスポート済み",
+    "export": "エクスポート",
+    "importName": "データをインポート",
+    "importDesc": "CardiPawのエクスポートファイルから復元",
+    "imported": "✓ インポート済み",
+    "import": "インポート",
+    "invalidFormat": "ファイル形式が無効です。CardiPawのエクスポートファイルを選択してください。",
+    "readError": "ファイルを読み込めません。有効なJSONエクスポートファイルであることを確認してください。",
+    "importConfirm": "{pets}匹のペットと{readings}件の測定値をインポートしますか？このデバイスの現在のデータはすべて上書きされます。",
+    "aboutSection": "アプリについて",
+    "aboutText": "CardiPawは、心筋症（HCM）などの心臓疾患を持つペットにとって重要な健康指標である安静時呼吸数（RRR）の追跡をサポートします。",
+    "thresholdNormalValue": "≤ 30 回/分",
+    "thresholdElevatedValue": "31〜35 回/分",
+    "thresholdHighValue": "> 35 回/分",
+    "disclaimer": "これらはデフォルトのグローバルしきい値です。各プロフィールでペットごとにカスタム上限を設定できます。監視すべき値、ペットの正常範囲、受診すべきタイミングについては、常に獣医師の具体的なアドバイスに従ってください。",
+    "legalSection": "法的情報",
+    "privacyTitle": "プライバシーポリシー",
+    "privacyDesc": "データの保存方法と使用方法",
+    "termsTitle": "利用規約",
+    "termsDesc": "CardiPaw使用に関する条件と注意事項",
+    "sourceTitle": "ソースコード",
+    "sourceDesc": "CardiPawはGitHubでオープンソース公開されています",
+    "privacy": {
+      "p1": "<strong>データはお使いのデバイス上に保存されます。</strong> CardiPawはすべての情報（ペットのプロフィール、測定値、メモ）をブラウザのIndexedDBにのみ保存します。サーバーへの送信は一切行いません。",
+      "p2": "<strong>トラッキングや分析は一切行いません。</strong> CardiPawはCookie、分析サービス、広告トラッカー、またはサードパーティのデータ収集を使用していません。ユーザーアカウントやログインは不要です。",
+      "p3": "<strong>管理はユーザーが行います。</strong> 設定ページからいつでもデータをエクスポートでき、アプリを削除またはブラウザのサイトデータを消去することですべてが完全に削除されます。",
+      "p4": "<strong>データの共有は行いません。</strong> データはデバイスの外に出ることがないため、他の誰かと共有されたりアクセスされたりすることはありません。"
+    },
+    "terms": {
+      "p1": "<strong>医療上のアドバイスではありません。</strong> CardiPawはペットの安静時呼吸数を記録・追跡するための情報ツールです。専門的な獣医師による診断、アドバイス、または治療の代替にはなりません。",
+      "p2": "<strong>獣医師にご相談ください。</strong> 監視すべき値、ペットの正常範囲、受診すべきタイミングについては、常に獣医師の具体的なアドバイスに従ってください。このアプリのデータのみに基づいて医療上の判断を行わないでください。",
+      "p3": "<strong>無保証。</strong> CardiPawは無料で、現状のまま提供されており、いかなる種類の保証（明示または黙示）もありません。開発者は、このアプリに記録されたデータに基づいて行われた判断に対して責任を負いません。",
+      "p4": "<strong>ご自身の責任でご使用ください。</strong> CardiPawを使用することにより、提示されたデータの解釈および行動に関するすべての責任を負うことに同意したものとみなされます。"
+    }
+  },
+  "share": {
+    "bannerInfo": "共有スナップショット · {date}",
+    "loading": "スナップショットを読み込み中…",
+    "errorTitle": "このリンクは無効または不完全です",
+    "errorBody": "共有データを読み込めませんでした。メッセージアプリによってリンクが切り詰められた可能性があります。送信者に再度共有を依頼し、リンクが長すぎる場合は月数を減らして試してください。",
+    "reportTitle": "安静時呼吸数レポート",
+    "readings": "測定値",
+    "average": "平均",
+    "lowest": "最小",
+    "highest": "最大",
+    "countNormal": "{count} 正常",
+    "countElevated": "{count} 高め",
+    "countHigh": "{count} 高い",
+    "footer": "<a href=\"https://cardipaw.com/\" target=\"_blank\" rel=\"noopener\">CardiPaw</a>で作成。データはこのリンクに完全に埋め込まれており、このページを開いてもアップロードや保存は行われません。"
+  },
+  "pdfModal": {
+    "title": "PDFで書き出す",
+    "monthsAvailable": "{n}ヶ月分",
+    "clearAll": "すべてクリア",
+    "selectAll": "すべて選択",
+    "order": "順序",
+    "newestFirst": "新しい順",
+    "oldestFirst": "古い順",
+    "includeNotes": "測定メモを含める",
+    "selectAtLeastOne": "エクスポートする月を少なくとも1つ選択してください。",
+    "generating": "生成中…",
+    "export": "PDFで書き出す"
+  },
+  "shareModal": {
+    "title": "共有",
+    "privacyNote": "選択したデータはリンク自体に埋め込まれており、サーバーへのアップロードは行われません。リンクを送信した相手はこのデータを閲覧できます。",
+    "monthsAvailable": "{n}ヶ月分",
+    "clearAll": "すべてクリア",
+    "selectAll": "すべて選択",
+    "selectAtLeastOne": "共有する月を少なくとも1つ選択してください。",
+    "lengthWarning": "このリンクは非常に長く、一部のメッセージアプリやチャットアプリで切り詰められる可能性があります。月数を減らすことをご検討ください。",
+    "shareNative": "共有…",
+    "copied": "コピーしました！",
+    "copyLink": "リンクをコピー"
+  },
+  "chart": {
+    "legendRate": "— 呼吸数",
+    "legendNormalMax": "- - 正常最大値（{n} 回/分）",
+    "empty": "測定値がありません。記録を開始するとグラフが表示されます。",
+    "tooltip": "{n} 回/分",
+    "yAxis": "回 / 分"
+  },
+  "photo": {
+    "add": "写真を追加",
+    "remove": "写真を削除",
+    "alt": "ペットの写真"
+  },
+  "update": {
+    "offline": "アプリはオフラインで使用できます。",
+    "newVersion": "新しいバージョンが利用可能です。",
+    "reload": "再読み込み"
+  },
+  "editor": {
+    "placeholder": "メモを追加…（任意）",
+    "bold": "太字",
+    "italic": "斜体",
+    "bulletList": "箇条書き"
+  },
+  "pdf": {
+    "reportTitle": "CardiPaw 呼吸数レポート",
+    "dateTime": "日時",
+    "note": "メモ",
+    "rateHeader": "呼吸数（回/分）",
+    "statusHeader": "ステータス",
+    "restHeader": "安静",
+    "sourceHeader": "入力方法",
+    "readingsHeader": "測定値",
+    "notesHeader": "測定メモ",
+    "readingsCount": "{n}件の測定値",
+    "summaryStats": "平均：{avg} · 最小：{min} · 最大：{max} 回/分",
+    "pageOf": "{i} / {total} ページ",
+    "normalMax": "正常最大値（{n}）",
+    "breathsPerMin": "回/分",
+    "ageMonths": "{n}ヶ月",
+    "ageYears": "{n}年",
+    "ageYearMonth": "{y}年{m}ヶ月"
+  }
+}

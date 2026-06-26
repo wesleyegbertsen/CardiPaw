@@ -139,20 +139,45 @@ function calcAge(birthdate: string, t: Translator): string {
   return t('pdf.ageYearMonth', { y, m });
 }
 
-function drawNotesHeader(doc: jsPDF, curY: number, t: Translator): void {
+let cachedJaFont: { regular: string; bold: string } | null = null;
+
+async function loadJaFont(): Promise<{ regular: string; bold: string }> {
+  if (cachedJaFont) return cachedJaFont;
+  const toBase64 = (buf: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buf);
+    let s = '';
+    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s);
+  };
+  const [r, b] = await Promise.all([
+    fetch('/fonts/NotoSansJP-Regular.ttf').then(res => res.arrayBuffer()),
+    fetch('/fonts/NotoSansJP-Bold.ttf').then(res => res.arrayBuffer()),
+  ]);
+  cachedJaFont = { regular: toBase64(r), bold: toBase64(b) };
+  return cachedJaFont;
+}
+
+function registerJaFont(doc: jsPDF, fonts: { regular: string; bold: string }): void {
+  doc.addFileToVFS('NotoSansJP-Regular.ttf', fonts.regular);
+  doc.addFont('NotoSansJP-Regular.ttf', 'NotoSansJP', 'normal');
+  doc.addFileToVFS('NotoSansJP-Bold.ttf', fonts.bold);
+  doc.addFont('NotoSansJP-Bold.ttf', 'NotoSansJP', 'bold');
+}
+
+function drawNotesHeader(doc: jsPDF, curY: number, t: Translator, fontFamily: string): void {
   doc.setFillColor('#f3f4f6');
   doc.rect(ML, curY, UW, 7, 'F');
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontFamily, 'bold');
   doc.setFontSize(9);
   doc.setTextColor('#374151');
   doc.text(t('pdf.dateTime'), ML + 2, curY + 5);
   doc.text(t('pdf.note'), ML + 62, curY + 5);
 }
 
-function drawTableHeader(doc: jsPDF, curY: number, t: Translator): void {
+function drawTableHeader(doc: jsPDF, curY: number, t: Translator, fontFamily: string): void {
   doc.setFillColor('#f3f4f6');
   doc.rect(ML, curY, UW, 7, 'F');
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontFamily, 'bold');
   doc.setFontSize(9);
   doc.setTextColor('#374151');
   doc.text(t('pdf.dateTime'), ML + 2, curY + 5);
@@ -196,6 +221,12 @@ export function usePdfExport() {
       ]);
 
       const doc = new jsPDF('p', 'mm', 'a4');
+
+      const fontFamily = loc === 'ja' ? 'NotoSansJP' : 'helvetica';
+      if (loc === 'ja') {
+        const jaFont = await loadJaFont();
+        registerJaFont(doc, jaFont);
+      }
       let curY = MT;
 
       // ── Cover header ──
@@ -210,12 +241,12 @@ export function usePdfExport() {
       }
       const textX = hasPhoto ? ML + 22 : ML;
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fontFamily, 'bold');
       doc.setFontSize(18);
       doc.setTextColor('#e05c7a');
       doc.text(pet.name, textX, curY + 7);
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(fontFamily, 'normal');
       doc.setFontSize(10);
       doc.setTextColor('#6b7280');
       const speciesAge = `${t('species.' + pet.species)} · ${calcAge(pet.birthdate, t)}`;
@@ -262,7 +293,7 @@ export function usePdfExport() {
         );
         doc.setFillColor('#fce4ec');
         doc.rect(ML, curY, UW, 9, 'F');
-        doc.setFont('helvetica', 'bold');
+        doc.setFont(fontFamily, 'bold');
         doc.setFontSize(12);
         doc.setTextColor('#c0405e');
         doc.text(monthLabel, ML + 3, curY + 6.5);
@@ -278,7 +309,7 @@ export function usePdfExport() {
         const min = Math.min(...rateValues);
         const max = Math.max(...rateValues);
         const n = monthReadings.length;
-        doc.setFont('helvetica', 'normal');
+        doc.setFont(fontFamily, 'normal');
         doc.setFontSize(9);
         doc.setTextColor('#6b7280');
         doc.text(
@@ -291,14 +322,14 @@ export function usePdfExport() {
         // Readings section label
         doc.setFillColor('#f3f4f6');
         doc.rect(ML, curY, UW, 7, 'F');
-        doc.setFont('helvetica', 'bold');
+        doc.setFont(fontFamily, 'bold');
         doc.setFontSize(9);
         doc.setTextColor('#374151');
         doc.text(t('pdf.readingsHeader'), ML + 2, curY + 5);
         curY += 7;
 
         // Table header
-        drawTableHeader(doc, curY, t);
+        drawTableHeader(doc, curY, t, fontFamily);
         curY += 7;
 
         // Table rows
@@ -307,7 +338,7 @@ export function usePdfExport() {
           if (curY + 7 > PH - MB) {
             doc.addPage();
             curY = MT;
-            drawTableHeader(doc, curY, t);
+            drawTableHeader(doc, curY, t, fontFamily);
             curY += 7;
             rowAlt = false;
           }
@@ -327,7 +358,7 @@ export function usePdfExport() {
 
           const status = getRateStatus(r.rate, pet);
 
-          doc.setFont('helvetica', 'normal');
+          doc.setFont(fontFamily, 'normal');
           doc.setFontSize(9);
           doc.setTextColor('#1a1a1a');
           doc.text(`${dateStr}, ${timeStr}`, ML + 2, curY + 5);
@@ -338,13 +369,13 @@ export function usePdfExport() {
           if (r.restState) {
             const isResting = r.restState === 'resting';
             doc.addImage(isResting ? restingIconUrl : sleepingIconUrl, 'PNG', ML + 129, curY + 1.5, 4, 4);
-            doc.setFont('helvetica', 'normal');
+            doc.setFont(fontFamily, 'normal');
             doc.setFontSize(8);
             doc.setTextColor(isResting ? '#16a34a' : '#d97706');
             doc.text(isResting ? t('restState.resting') : t('restState.sleeping'), ML + 134, curY + 5);
           }
 
-          doc.setFont('helvetica', 'normal');
+          doc.setFont(fontFamily, 'normal');
           doc.setFontSize(8);
           doc.setTextColor('#9ca3af');
           doc.text(r.source === 'manual' ? t('source.manual') : t('source.guided'), ML + 160, curY + 5);
@@ -361,20 +392,20 @@ export function usePdfExport() {
           if (notedReadings.length > 0) {
             doc.setFillColor('#f3f4f6');
             doc.rect(ML, curY, UW, 7, 'F');
-            doc.setFont('helvetica', 'bold');
+            doc.setFont(fontFamily, 'bold');
             doc.setFontSize(9);
             doc.setTextColor('#374151');
             doc.text(t('pdf.notesHeader'), ML + 2, curY + 5);
             curY += 7;
 
-            drawNotesHeader(doc, curY, t);
+            drawNotesHeader(doc, curY, t, fontFamily);
             curY += 7;
 
             const noteColX = ML + 62;
             const noteWidth = UW - 62;
             let noteRowAlt = false;
             for (const r of notedReadings) {
-              doc.setFont('helvetica', 'normal');
+              doc.setFont(fontFamily, 'normal');
               doc.setFontSize(9);
               const plainNote = htmlToPlainText(r.notes!);
               const lines = doc.splitTextToSize(plainNote, noteWidth);
@@ -383,10 +414,10 @@ export function usePdfExport() {
               if (curY + rowH > PH - MB) {
                 doc.addPage();
                 curY = MT;
-                drawNotesHeader(doc, curY, t);
+                drawNotesHeader(doc, curY, t, fontFamily);
                 curY += 7;
                 noteRowAlt = false;
-                doc.setFont('helvetica', 'normal');
+                doc.setFont(fontFamily, 'normal');
               }
               if (noteRowAlt) {
                 doc.setFillColor('#f9fafb');
@@ -410,7 +441,7 @@ export function usePdfExport() {
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
-        doc.setFont('helvetica', 'normal');
+        doc.setFont(fontFamily, 'normal');
         doc.setFontSize(8);
         doc.setTextColor('#9ca3af');
         doc.text(t('pdf.pageOf', { i, total: totalPages }), PW / 2, PH - 8, { align: 'center' });
