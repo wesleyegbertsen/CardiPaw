@@ -75,7 +75,12 @@ function pickLocale(loc: Locale) {
 
         <!-- Language picker -->
         <div class="lang-picker">
-          <button class="lang-trigger" @click="langOpen = !langOpen" :aria-label="$t('home.switchLanguage')" v-html="flagSvg(locale as Locale)" />
+          <button class="lang-trigger" @click="langOpen = !langOpen" :aria-label="$t('home.switchLanguage')">
+            <span class="lang-flag" v-html="flagSvg(locale as Locale)" />
+            <svg class="lang-chevron" :class="{ open: langOpen }" viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </button>
           <div v-if="langOpen" class="lang-dropdown">
             <button
               v-for="loc in SUPPORTED_LOCALES"
@@ -83,8 +88,9 @@ function pickLocale(loc: Locale) {
               class="lang-option"
               :class="{ active: locale === loc }"
               @click="pickLocale(loc)"
-              v-html="flagSvg(loc)"
-            />
+            >
+              <span v-html="flagSvg(loc)" />
+            </button>
           </div>
           <div v-if="langOpen" class="lang-backdrop" @click="langOpen = false" />
         </div>
@@ -166,7 +172,7 @@ function pickLocale(loc: Locale) {
 .lang-trigger {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
   background: none;
   border: none;
   padding: 0;
@@ -180,15 +186,21 @@ function pickLocale(loc: Locale) {
   opacity: 1;
 }
 
-.lang-trigger :deep(svg),
-.lang-option :deep(svg) {
+.lang-flag :deep(svg) {
   display: block;
+  width: 24px;
+  height: auto;
   border-radius: 2px;
 }
 
-.lang-trigger :deep(svg) {
-  width: 26px;
-  height: auto;
+.lang-chevron {
+  color: rgba(255, 255, 255, 0.85);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.lang-chevron.open {
+  transform: rotate(180deg);
 }
 
 .lang-backdrop {
@@ -200,7 +212,8 @@ function pickLocale(loc: Locale) {
 .lang-dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -212,7 +225,7 @@ function pickLocale(loc: Locale) {
 }
 
 .lang-option {
-  padding: 8px 12px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -220,8 +233,10 @@ function pickLocale(loc: Locale) {
 }
 
 .lang-option :deep(svg) {
+  display: block;
   width: 28px;
   height: auto;
+  border-radius: 2px;
 }
 
 .lang-option:hover {
