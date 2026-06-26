@@ -57,6 +57,7 @@ function pick(loc: Locale) {
   align-items: center;
   justify-content: center;
   gap: 5px;
+  width: 80px;
   height: 28px;
   padding: 0 6px;
   border-radius: var(--radius-full);
