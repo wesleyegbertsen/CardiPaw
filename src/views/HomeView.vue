@@ -185,9 +185,8 @@ function pickLocale(loc: Locale) {
   flex-shrink: 0;
 }
 
-/* Mirrors the chevron width so the flag sits visually centred in the pill */
 .lang-trigger-spacer {
-  width: 12px;
+  width: 4px;
   flex-shrink: 0;
 }
 
