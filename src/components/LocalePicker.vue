@@ -138,10 +138,11 @@ function pick(loc: Locale) {
   background: var(--color-primary-light);
 }
 
-/* When header-controls is too narrow to fit both controls side by side
-   (ThemeToggle 80px + gap 8px + LocalePicker ~60px ≈ 148px), the
-   LocalePicker has wrapped to its own row — match the ThemeToggle width. */
-@container header-controls (max-width: 147px) {
+/* When the header is narrow enough that the two controls wrap to separate
+   rows, match the ThemeToggle width. The threshold is the minimum header
+   width at which both controls can sit side by side:
+   padding(48) + gap(12) + title-min(~130) + controls(148) ≈ 338px. */
+@container app-header (max-width: 338px) {
   .lang-trigger {
     width: 80px;
   }
