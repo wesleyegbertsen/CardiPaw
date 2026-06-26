@@ -143,10 +143,20 @@ function pick(loc: Locale) {
 /* When the header is narrow enough that the two controls wrap to separate
    rows, match the ThemeToggle width. The threshold is the minimum header
    width at which both controls can sit side by side:
-   padding(48) + gap(12) + title-min(~130) + controls(148) ≈ 338px. */
-@container app-header (max-width: 338px) {
-  .lang-trigger {
-    width: 80px;
+   padding(48) + gap(12) + title-min(~130) + controls(148) ≈ 338px.
+   Firefox rounds container widths 7px more conservatively, so it needs 331px. */
+@supports (-moz-appearance: none) {
+  @container app-header (max-width: 331px) {
+    .lang-trigger {
+      width: 80px;
+    }
+  }
+}
+@supports not (-moz-appearance: none) {
+  @container app-header (max-width: 338px) {
+    .lang-trigger {
+      width: 80px;
+    }
   }
 }
 </style>
