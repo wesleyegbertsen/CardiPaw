@@ -142,24 +142,17 @@ const LOCALE_COUNTRY: Record<Locale, keyof typeof FlagSVGs> = {
 
 #### 4. Verify key parity
 
-Run the following one-liner from the project root — it exits non-zero if any keys are missing or extra in your new file:
+Run the included script to confirm your file has exactly the same keys as `en.json`:
 
 ```bash
-node -e "
-const en = require('./src/i18n/locales/en.json');
-const fr = require('./src/i18n/locales/fr.json');
-function keys(o, p='') {
-  return Object.entries(o).flatMap(([k,v]) =>
-    typeof v === 'object' && v ? keys(v, p+k+'.') : [p+k]);
-}
-const ek = new Set(keys(en)), fk = new Set(keys(fr));
-const missing = [...ek].filter(k => !fk.has(k));
-const extra   = [...fk].filter(k => !ek.has(k));
-if (missing.length) console.error('Missing in fr:', missing);
-if (extra.length)   console.error('Extra in fr:',   extra);
-if (!missing.length && !extra.length) console.log('All', ek.size, 'keys match.');
-process.exit(missing.length || extra.length ? 1 : 0);
-"
+npm run check-locale -- fr
+```
+
+The script prints every missing or extra key and exits with a non-zero code on failure, so it can be used in CI. You can run it against any existing locale the same way:
+
+```bash
+npm run check-locale -- nl
+npm run check-locale -- de
 ```
 
 That is all that is needed — the language picker, auto-detection, and date/number formatting all pick up the new locale automatically.
