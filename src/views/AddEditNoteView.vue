@@ -82,7 +82,7 @@ async function save() {
   <div class="note-edit-view">
     <header class="note-header">
       <div class="header-start">
-        <button class="back-btn" @click="goBack" aria-label="Go back">
+        <button class="back-btn" @click="goBack" :aria-label="$t('common.back')">
           <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
             <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
           </svg>
@@ -90,7 +90,7 @@ async function save() {
       </div>
 
       <div class="header-center">
-        <span class="header-title">{{ isEditMode ? 'Edit note' : 'New note' }}</span>
+        <span class="header-title">{{ isEditMode ? $t('note.titleEdit') : $t('note.titleNew') }}</span>
         <span class="header-subtitle">{{ pet?.name }}</span>
       </div>
 
@@ -100,7 +100,7 @@ async function save() {
           class="icon-btn"
           :class="{ pinned: editPinned }"
           @click="editPinned = !editPinned"
-          :aria-label="editPinned ? 'Unpin note' : 'Pin note'"
+          :aria-label="editPinned ? $t('note.unpin') : $t('note.pin')"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
@@ -111,25 +111,25 @@ async function save() {
 
     <form class="form" @submit.prevent="save">
       <div class="field">
-        <label class="label" for="note-title">Title</label>
+        <label class="label" for="note-title">{{ $t('note.titleLabel') }}</label>
         <input
           id="note-title"
           class="title-input"
           type="text"
           v-model="editTitle"
-          placeholder="Note title"
+          :placeholder="$t('note.titlePlaceholder')"
           required
           autocomplete="off"
         />
       </div>
 
       <div class="field">
-        <label class="label">Content</label>
+        <label class="label">{{ $t('note.contentLabel') }}</label>
         <RichTextEditor v-model="editContent" />
       </div>
 
       <button type="submit" class="submit-btn" :disabled="saving || !editTitle.trim()">
-        {{ saving ? 'Saving…' : isEditMode ? 'Save changes' : 'Add note' }}
+        {{ saving ? $t('common.saving') : isEditMode ? $t('common.saveChanges') : $t('note.submitAdd') }}
       </button>
     </form>
   </div>

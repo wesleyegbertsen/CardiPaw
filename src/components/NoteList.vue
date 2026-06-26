@@ -2,6 +2,9 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Note } from '../types';
+import { useI18n } from 'vue-i18n';
+
+const { locale } = useI18n();
 
 const props = defineProps<{ notes: Note[]; petId: string }>();
 
@@ -34,7 +37,7 @@ onMounted(() => {
 onUnmounted(() => observer?.disconnect());
 
 function formatDate(iso: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(locale.value, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -51,12 +54,12 @@ function openNote(note: Note) {
 <template>
   <div class="note-list">
     <div v-if="notes.length === 0" class="empty">
-      No notes yet. Tap '+' to write your first one.
+      {{ $t('noteList.empty') }}
     </div>
 
     <template v-for="(note, index) in visibleNotes" :key="note.id">
-      <div v-if="hasPinned && index === 0" class="section-header">Pinned</div>
-      <div v-if="hasPinned && index === firstUnpinnedIndex" class="section-header">Notes</div>
+      <div v-if="hasPinned && index === 0" class="section-header">{{ $t('noteList.pinnedSection') }}</div>
+      <div v-if="hasPinned && index === firstUnpinnedIndex" class="section-header">{{ $t('noteList.notesSection') }}</div>
     <div
       class="note-item"
       @click="openNote(note)"
@@ -65,11 +68,11 @@ function openNote(note: Note) {
         <div class="note-title">{{ note.title }}</div>
         <div class="note-meta">
           <span class="note-date">{{ formatDate(note.modifiedAt ?? note.createdAt) }}</span>
-          <span v-if="note.modifiedAt" class="edited-label">Edited</span>
+          <span v-if="note.modifiedAt" class="edited-label">{{ $t('noteList.edited') }}</span>
         </div>
       </div>
       <div class="note-right">
-        <span v-if="note.pinnedAt" class="pin-badge" aria-label="Pinned">
+        <span v-if="note.pinnedAt" class="pin-badge" :aria-label="$t('note.pinned')">
           <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
             <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
           </svg>

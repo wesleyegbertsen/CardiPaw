@@ -1,6 +1,9 @@
 import { computed, type Ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 export function useAgeCalculator(birthdate: Ref<string>) {
+  const { t } = useI18n();
+
   return computed(() => {
     if (!birthdate.value) return '';
 
@@ -28,16 +31,16 @@ export function useAgeCalculator(birthdate: Ref<string>) {
     if (totalMonths < 2) {
       const msPerWeek = 7 * 24 * 3600 * 1000;
       const weeks = Math.floor((now.getTime() - born.getTime()) / msPerWeek);
-      return weeks <= 1 ? '1 week' : `${weeks} weeks`;
+      return t('age.weeks', weeks <= 1 ? 1 : weeks);
     }
 
     if (years === 0) {
-      return months === 1 ? '1 month' : `${months} months`;
+      return t('age.months', months);
     }
 
-    const yearStr = years === 1 ? '1 year' : `${years} years`;
+    const yearStr = t('age.years', years);
     if (months === 0) return yearStr;
-    const monthStr = months === 1 ? '1 month' : `${months} months`;
-    return `${yearStr}, ${monthStr}`;
+    const monthStr = t('age.months', months);
+    return t('age.yearMonth', { year: yearStr, month: monthStr });
   });
 }

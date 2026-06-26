@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import type { Reading, SharePayload } from '../types';
 import { decodeShare } from '../utils/shareCodec';
 import { getRateStatus } from '../utils/rateStatus';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import RRRChart from '../components/RRRChart.vue';
+import ThemeToggle from '../components/ThemeToggle.vue';
+import LocalePicker from '../components/LocalePicker.vue';
 
 // Standalone read-only viewer for shared snapshots. Renders entirely from the
 // URL payload — it never touches the stores or IndexedDB, so opening a link on
 // the owner's own device cannot mix with or mutate local data.
 
 const route = useRoute();
+const { locale } = useI18n();
 
 const state = ref<'loading' | 'error' | 'ready'>('loading');
 const payload = ref<SharePayload | null>(null);
@@ -44,7 +48,7 @@ const ageDisplay = useAgeCalculator(birthdateRef);
 
 const sharedAtLabel = computed(() => {
   if (!payload.value) return '';
-  return new Intl.DateTimeFormat('en', { dateStyle: 'long' }).format(
+  return new Intl.DateTimeFormat(locale.value, { dateStyle: 'long' }).format(
     new Date(payload.value.sharedAt + 'T12:00:00')
   );
 });
@@ -87,7 +91,7 @@ const monthSections = computed<MonthSection[]>(() => {
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([key, readings]) => ({
       key,
-      label: new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(
+      label: new Intl.DateTimeFormat(locale.value, { month: 'long', year: 'numeric' }).format(
         new Date(key + '-15')
       ),
       chartReadings: [...readings]
@@ -98,7 +102,7 @@ const monthSections = computed<MonthSection[]>(() => {
 });
 
 function formatDateTime(date: string): string {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(locale.value, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -118,54 +122,54 @@ function formatDateTime(date: string): string {
         </svg>
         CardiPaw
       </span>
-      <span v-if="state === 'ready'" class="banner-info">Shared snapshot · {{ sharedAtLabel }}</span>
+      <span v-if="state === 'ready'" class="banner-info">{{ $t('share.bannerInfo', { date: sharedAtLabel }) }}</span>
+      <div class="banner-controls">
+        <ThemeToggle />
+        <LocalePicker />
+      </div>
     </div>
 
-    <div v-if="state === 'loading'" class="status-msg">Loading snapshot…</div>
+    <div v-if="state === 'loading'" class="status-msg">{{ $t('share.loading') }}</div>
 
     <div v-else-if="state === 'error'" class="error-card">
-      <h1>This link is invalid or incomplete</h1>
-      <p>
-        The shared data could not be read. The link may have been truncated by
-        the app it was sent through — ask the sender to share it again, with
-        fewer months selected if it was very long.
-      </p>
+      <h1>{{ $t('share.errorTitle') }}</h1>
+      <p>{{ $t('share.errorBody') }}</p>
     </div>
 
     <template v-else-if="pet">
       <div class="pet-hero">
         <h1 class="pet-name">{{ pet.name }}</h1>
         <div class="pet-meta">
-          <span class="badge" :class="pet.species">{{ pet.species }}</span>
+          <span class="badge" :class="pet.species">{{ $t('species.' + pet.species) }}</span>
           <span class="meta-dot">·</span>
           <span>{{ ageDisplay }}</span>
         </div>
-        <p class="report-title">Resting Respiratory Rate report</p>
+        <p class="report-title">{{ $t('share.reportTitle') }}</p>
       </div>
 
       <div v-if="stats" class="summary-card">
         <div class="stat-grid">
           <div class="stat">
             <span class="stat-value">{{ stats.total }}</span>
-            <span class="stat-label">Readings</span>
+            <span class="stat-label">{{ $t('share.readings') }}</span>
           </div>
           <div class="stat">
             <span class="stat-value">{{ stats.avg }}</span>
-            <span class="stat-label">Average</span>
+            <span class="stat-label">{{ $t('share.average') }}</span>
           </div>
           <div class="stat">
             <span class="stat-value">{{ stats.min }}</span>
-            <span class="stat-label">Lowest</span>
+            <span class="stat-label">{{ $t('share.lowest') }}</span>
           </div>
           <div class="stat">
             <span class="stat-value">{{ stats.max }}</span>
-            <span class="stat-label">Highest</span>
+            <span class="stat-label">{{ $t('share.highest') }}</span>
           </div>
         </div>
         <div class="status-breakdown">
-          <span class="rate-badge normal">{{ stats.counts.normal }} Normal</span>
-          <span class="rate-badge warning">{{ stats.counts.warning }} Elevated</span>
-          <span class="rate-badge danger">{{ stats.counts.danger }} High</span>
+          <span class="rate-badge normal">{{ $t('share.countNormal', { count: stats.counts.normal }) }}</span>
+          <span class="rate-badge warning">{{ $t('share.countElevated', { count: stats.counts.warning }) }}</span>
+          <span class="rate-badge danger">{{ $t('share.countHigh', { count: stats.counts.danger }) }}</span>
         </div>
       </div>
 
@@ -178,28 +182,28 @@ function formatDateTime(date: string): string {
               <span class="row-date">{{ formatDateTime(row.date) }}</span>
             </div>
             <div class="row-right">
-              <span class="row-rate">{{ row.rate }} <span class="rate-unit">breaths/min</span></span>
+              <span class="row-rate">{{ row.rate }} <span class="rate-unit">{{ $t('common.breathsPerMin') }}</span></span>
               <div class="pill-col">
                 <span class="rate-badge" :class="getRateStatus(row.rate, pet).cssClass">
-                  {{ getRateStatus(row.rate, pet).label }}
+                  {{ $t('status.' + getRateStatus(row.rate, pet).cssClass) }}
                 </span>
                 <span v-if="row.restState === 'resting'" class="rest-tag resting">
                   <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
                     <path d="M21 9V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v2c-1.1 0-2 .9-2 2v5h1.33L3 18h1l.67-2h14.67l.66 2h1l-.33-2H23v-5c0-1.1-.9-2-2-2zm-8 0H5V7h8v2zm6 0h-4V7h4v2z"/>
                   </svg>
-                  Resting
+                  {{ $t('restState.resting') }}
                 </span>
                 <span v-else-if="row.restState === 'sleeping'" class="rest-tag sleeping">
                   <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
                     <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
                   </svg>
-                  Sleeping
+                  {{ $t('restState.sleeping') }}
                 </span>
                 <span v-if="row.source === 'manual'" class="source-tag">
                   <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
                     <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                   </svg>
-                  Manual
+                  {{ $t('source.manual') }}
                 </span>
               </div>
             </div>
@@ -208,11 +212,7 @@ function formatDateTime(date: string): string {
       </section>
 
       <footer class="share-footer">
-        <p>
-          Created with <a href="https://cardipaw.com/" target="_blank" rel="noopener">CardiPaw</a>.
-          The data lives entirely in this link — nothing was uploaded or stored
-          by opening this page.
-        </p>
+        <p v-html="$t('share.footer')"></p>
       </footer>
     </template>
   </div>
@@ -229,14 +229,44 @@ function formatDateTime(date: string): string {
 }
 
 .share-banner {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 8px;
   padding: 12px 16px;
   background: var(--color-primary-light);
   border-radius: var(--radius-md);
+}
+
+.banner-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* The toggle/picker use white-on-dark styles for the home header gradient.
+   Override them here to suit the light primary-light banner background. */
+.banner-controls :deep(.theme-toggle),
+.banner-controls :deep(.lang-trigger) {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.banner-controls :deep(.theme-toggle):hover,
+.banner-controls :deep(.lang-trigger):hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+.banner-controls :deep(.theme-toggle-label),
+.banner-controls :deep(.lang-chevron) {
+  color: var(--color-primary);
+}
+
+.banner-controls :deep(.theme-toggle-thumb) {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .brand {
@@ -251,6 +281,7 @@ function formatDateTime(date: string): string {
 .banner-info {
   font-size: 12px;
   color: var(--color-text-muted);
+  text-align: center;
 }
 
 .status-msg {

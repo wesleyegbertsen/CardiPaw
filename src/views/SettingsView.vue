@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import * as db from '../services/db';
@@ -8,6 +9,8 @@ import InfoModal from '../components/InfoModal.vue';
 import type { ExportPayload } from '../types';
 
 const isDev = import.meta.env.DEV;
+
+const { t } = useI18n();
 
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
@@ -48,13 +51,13 @@ async function onImportFileChange(event: Event) {
     const text = await file.text();
     const parsed = JSON.parse(text) as ExportPayload;
     if (parsed.version !== 1 || !Array.isArray(parsed.pets) || !Array.isArray(parsed.readings)) {
-      importError.value = 'Invalid file format. Please select a CardiPaw export file.';
+      importError.value = t('settings.invalidFormat');
       return;
     }
     pendingPayload.value = parsed;
     showImportConfirm.value = true;
   } catch {
-    importError.value = 'Could not read the file. Make sure it is a valid JSON export.';
+    importError.value = t('settings.readError');
   } finally {
     if (importInput.value) importInput.value.value = '';
   }
@@ -126,16 +129,13 @@ function cancelImport() {
 <template>
   <div class="page">
     <header class="page-header">
-      <h1 class="page-title">Settings</h1>
+      <h1 class="page-title">{{ $t('settings.title') }}</h1>
     </header>
 
     <div class="content">
       <section class="section">
-        <h2 class="section-title">Data</h2>
-        <p class="section-desc">
-          Your pet profiles and readings are stored locally on this device using IndexedDB.
-          Export them to back up or transfer to another device.
-        </p>
+        <h2 class="section-title">{{ $t('settings.dataSection') }}</h2>
+        <p class="section-desc">{{ $t('settings.dataDesc') }}</p>
 
         <div class="action-cards">
           <div class="action-card">
@@ -146,12 +146,12 @@ function cancelImport() {
                 </svg>
               </div>
               <div>
-                <div class="action-name">Export data</div>
-                <div class="action-desc">Download all pets and readings as JSON</div>
+                <div class="action-name">{{ $t('settings.exportName') }}</div>
+                <div class="action-desc">{{ $t('settings.exportDesc') }}</div>
               </div>
             </div>
             <button class="action-btn" @click="exportData">
-              {{ exportSuccess ? '✓ Exported' : 'Export' }}
+              {{ exportSuccess ? $t('settings.exported') : $t('settings.export') }}
             </button>
           </div>
 
@@ -163,12 +163,12 @@ function cancelImport() {
                 </svg>
               </div>
               <div>
-                <div class="action-name">Import data</div>
-                <div class="action-desc">Restore from a CardiPaw export file</div>
+                <div class="action-name">{{ $t('settings.importName') }}</div>
+                <div class="action-desc">{{ $t('settings.importDesc') }}</div>
               </div>
             </div>
             <button class="action-btn" @click="triggerImport">
-              {{ importSuccess ? '✓ Imported' : 'Import' }}
+              {{ importSuccess ? $t('settings.imported') : $t('settings.import') }}
             </button>
           </div>
         </div>
@@ -185,34 +185,27 @@ function cancelImport() {
       </section>
 
       <section class="section about-section">
-        <h2 class="section-title">About</h2>
-        <p class="about-text">
-          CardiPaw helps you track your pet's resting respiratory rate (RRR) —
-          an important health indicator for pets with heart conditions like HCM.
-        </p>
+        <h2 class="section-title">{{ $t('settings.aboutSection') }}</h2>
+        <p class="about-text">{{ $t('settings.aboutText') }}</p>
         <div class="thresholds">
           <div class="threshold-row">
-            <span class="threshold-label">Normal</span>
-            <span class="threshold-value">≤ 30 breaths/min</span>
+            <span class="threshold-label">{{ $t('status.normal') }}</span>
+            <span class="threshold-value">{{ $t('settings.thresholdNormalValue') }}</span>
           </div>
           <div class="threshold-row">
-            <span class="threshold-label">Elevated</span>
-            <span class="threshold-value">31–35 breaths/min</span>
+            <span class="threshold-label">{{ $t('status.warning') }}</span>
+            <span class="threshold-value">{{ $t('settings.thresholdElevatedValue') }}</span>
           </div>
           <div class="threshold-row">
-            <span class="threshold-label">High</span>
-            <span class="threshold-value">&gt; 35 breaths/min</span>
+            <span class="threshold-label">{{ $t('status.danger') }}</span>
+            <span class="threshold-value">{{ $t('settings.thresholdHighValue') }}</span>
           </div>
         </div>
-        <p class="disclaimer-text">
-          These are the global default thresholds. You can configure custom ceilings per pet in each
-          pet's profile. Always follow your veterinarian's specific guidance on what values to monitor,
-          what ranges are normal for your pet, and when to seek care.
-        </p>
+        <p class="disclaimer-text">{{ $t('settings.disclaimer') }}</p>
       </section>
 
       <section class="section">
-        <h2 class="section-title">Legal</h2>
+        <h2 class="section-title">{{ $t('settings.legalSection') }}</h2>
         <div class="action-cards">
           <div class="action-card">
             <div class="action-info">
@@ -222,11 +215,11 @@ function cancelImport() {
                 </svg>
               </div>
               <div>
-                <div class="action-name">Privacy Policy</div>
-                <div class="action-desc">How your data is stored and used</div>
+                <div class="action-name">{{ $t('settings.privacyTitle') }}</div>
+                <div class="action-desc">{{ $t('settings.privacyDesc') }}</div>
               </div>
             </div>
-            <button class="action-btn" @click="activeModal = 'privacy'">View</button>
+            <button class="action-btn" @click="activeModal = 'privacy'">{{ $t('common.view') }}</button>
           </div>
 
           <div class="action-card">
@@ -237,11 +230,11 @@ function cancelImport() {
                 </svg>
               </div>
               <div>
-                <div class="action-name">Terms of Use</div>
-                <div class="action-desc">Conditions and disclaimers for using CardiPaw</div>
+                <div class="action-name">{{ $t('settings.termsTitle') }}</div>
+                <div class="action-desc">{{ $t('settings.termsDesc') }}</div>
               </div>
             </div>
-            <button class="action-btn" @click="activeModal = 'terms'">View</button>
+            <button class="action-btn" @click="activeModal = 'terms'">{{ $t('common.view') }}</button>
           </div>
 
           <div class="action-card">
@@ -252,8 +245,8 @@ function cancelImport() {
                 </svg>
               </div>
               <div>
-                <div class="action-name">Source Code</div>
-                <div class="action-desc">CardiPaw is open source on GitHub</div>
+                <div class="action-name">{{ $t('settings.sourceTitle') }}</div>
+                <div class="action-desc">{{ $t('settings.sourceDesc') }}</div>
               </div>
             </div>
             <a
@@ -261,7 +254,7 @@ function cancelImport() {
               href="https://github.com/wesleyegbertsen/CardiPaw"
               target="_blank"
               rel="noopener noreferrer"
-            >View</a>
+            >{{ $t('common.view') }}</a>
           </div>
         </div>
       </section>
@@ -320,29 +313,29 @@ function cancelImport() {
 
     <InfoModal
       v-if="activeModal === 'privacy'"
-      title="Privacy Policy"
+      :title="$t('settings.privacyTitle')"
       @close="activeModal = null"
     >
-      <p><strong>Your data stays on your device.</strong> CardiPaw stores all information (pet profiles, readings, and notes) exclusively in your browser's IndexedDB. Nothing is ever transmitted to a server.</p>
-      <p><strong>No tracking or analytics.</strong> CardiPaw does not use cookies, analytics services, advertising trackers, or any third-party data collection. There are no user accounts and no login.</p>
-      <p><strong>You are in control.</strong> You can export your data at any time from the Settings page, and deleting the app or clearing your browser's site data will permanently remove everything.</p>
-      <p><strong>No data sharing.</strong> Because your data never leaves your device, it is never shared with or accessible by anyone else.</p>
+      <p v-html="$t('settings.privacy.p1')" />
+      <p v-html="$t('settings.privacy.p2')" />
+      <p v-html="$t('settings.privacy.p3')" />
+      <p v-html="$t('settings.privacy.p4')" />
     </InfoModal>
 
     <InfoModal
       v-if="activeModal === 'terms'"
-      title="Terms of Use"
+      :title="$t('settings.termsTitle')"
       @close="activeModal = null"
     >
-      <p><strong>Not medical advice.</strong> CardiPaw is an informational tool to help you log and track your pet's resting respiratory rate. It is not a substitute for professional veterinary diagnosis, advice, or treatment.</p>
-      <p><strong>Consult your veterinarian.</strong> Always follow your vet's specific guidance on what values to monitor, what ranges are normal for your individual pet, and when to seek care. Do not make medical decisions based solely on this app.</p>
-      <p><strong>No warranties.</strong> CardiPaw is provided free of charge, as-is, without any warranties of any kind (express or implied). The developer is not liable for any decisions made based on data logged in this app.</p>
-      <p><strong>Use at your own risk.</strong> By using CardiPaw you accept full responsibility for how you interpret and act on the data it presents.</p>
+      <p v-html="$t('settings.terms.p1')" />
+      <p v-html="$t('settings.terms.p2')" />
+      <p v-html="$t('settings.terms.p3')" />
+      <p v-html="$t('settings.terms.p4')" />
     </InfoModal>
 
     <ConfirmDialog
       v-if="showImportConfirm"
-      :message="`Import ${pendingPayload?.pets.length ?? 0} pet(s) and ${pendingPayload?.readings.length ?? 0} reading(s)? This will overwrite all existing data on this device.`"
+      :message="$t('settings.importConfirm', { pets: pendingPayload?.pets.length ?? 0, readings: pendingPayload?.readings.length ?? 0 })"
       @confirm="confirmImport"
       @cancel="cancelImport"
     />

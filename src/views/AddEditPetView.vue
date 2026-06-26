@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { usePetsStore } from '../stores/pets';
 import PetPhotoUpload from '../components/PetPhotoUpload.vue';
 import type { Species } from '../types';
@@ -9,6 +10,7 @@ import { DEFAULT_NORMAL_CEILING, DEFAULT_ELEVATED_CEILING } from '../utils/rateS
 const route = useRoute();
 const router = useRouter();
 const petsStore = usePetsStore();
+const { t } = useI18n();
 
 const isEdit = !!route.params.id;
 const petId = route.params.id as string;
@@ -24,7 +26,7 @@ const thresholdError = computed(() => {
   const effectiveNormal   = typeof normalCeiling.value   === 'number' ? normalCeiling.value   : DEFAULT_NORMAL_CEILING;
   const effectiveElevated = typeof elevatedCeiling.value === 'number' ? elevatedCeiling.value : DEFAULT_ELEVATED_CEILING;
   return effectiveElevated <= effectiveNormal
-    ? `Elevated ceiling must be higher than normal ceiling (${effectiveNormal}).`
+    ? t('addEditPet.thresholdError', { normal: effectiveNormal })
     : '';
 });
 
@@ -86,12 +88,12 @@ function goBack() {
 <template>
   <div class="page">
     <header class="page-header">
-      <button class="back-btn" @click="goBack" aria-label="Go back">
+      <button class="back-btn" @click="goBack" :aria-label="$t('common.back')">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
         </svg>
       </button>
-      <h1 class="page-title">{{ isEdit ? 'Edit pet' : 'Add pet' }}</h1>
+      <h1 class="page-title">{{ isEdit ? $t('addEditPet.titleEdit') : $t('addEditPet.titleAdd') }}</h1>
       <div class="header-spacer"></div>
     </header>
 
@@ -101,36 +103,36 @@ function goBack() {
       </div>
 
       <div class="field">
-        <label class="label" for="pet-name">Name</label>
+        <label class="label" for="pet-name">{{ $t('addEditPet.name') }}</label>
         <input
           id="pet-name"
           v-model="name"
           class="input"
           type="text"
-          placeholder="e.g. Luna"
+          :placeholder="$t('addEditPet.namePlaceholder')"
           maxlength="50"
           required
         />
       </div>
 
       <div class="field">
-        <label class="label">Species</label>
+        <label class="label">{{ $t('addEditPet.species') }}</label>
         <div class="species-radios">
           <label class="species-option" :class="{ selected: species === 'cat' }">
             <input type="radio" v-model="species" value="cat" class="sr-only" />
             <span class="species-icon">🐱</span>
-            <span>Cat</span>
+            <span>{{ $t('species.cat') }}</span>
           </label>
           <label class="species-option" :class="{ selected: species === 'dog' }">
             <input type="radio" v-model="species" value="dog" class="sr-only" />
             <span class="species-icon">🐶</span>
-            <span>Dog</span>
+            <span>{{ $t('species.dog') }}</span>
           </label>
         </div>
       </div>
 
       <div class="field">
-        <label class="label" for="pet-birthdate">Birthdate</label>
+        <label class="label" for="pet-birthdate">{{ $t('addEditPet.birthdate') }}</label>
         <input
           id="pet-birthdate"
           v-model="birthdate"
@@ -142,10 +144,10 @@ function goBack() {
       </div>
 
       <div class="field">
-        <label class="label"><abbr title="Resting respiratory rate">RRR</abbr> thresholds (optional)</label>
+        <label class="label"><abbr :title="$t('addEditPet.rrrTitle')">{{ $t('addEditPet.rrrAbbr') }}</abbr> {{ $t('addEditPet.thresholdsSuffix') }}</label>
         <div class="threshold-inputs">
           <div class="threshold-input-group">
-            <label class="threshold-sub-label" for="normal-ceiling">Normal ceiling</label>
+            <label class="threshold-sub-label" for="normal-ceiling">{{ $t('addEditPet.normalCeiling') }}</label>
             <input
               id="normal-ceiling"
               v-model.number="normalCeiling"
@@ -157,7 +159,7 @@ function goBack() {
             />
           </div>
           <div class="threshold-input-group" :data-error="thresholdError || undefined">
-            <label class="threshold-sub-label" for="elevated-ceiling">Elevated ceiling</label>
+            <label class="threshold-sub-label" for="elevated-ceiling">{{ $t('addEditPet.elevatedCeiling') }}</label>
             <input
               id="elevated-ceiling"
               v-model.number="elevatedCeiling"
@@ -169,7 +171,7 @@ function goBack() {
             />
           </div>
         </div>
-        <p class="threshold-hint">Leave blank to use the defaults ({{ DEFAULT_NORMAL_CEILING }} / {{ DEFAULT_ELEVATED_CEILING }} breaths/min).</p>
+        <p class="threshold-hint">{{ $t('addEditPet.thresholdHint', { normal: DEFAULT_NORMAL_CEILING, elevated: DEFAULT_ELEVATED_CEILING }) }}</p>
       </div>
 
       <button
@@ -177,7 +179,7 @@ function goBack() {
         class="submit-btn"
         :disabled="saving || !name.trim() || !birthdate || !!thresholdError"
       >
-        {{ saving ? 'Saving…' : (isEdit ? 'Save changes' : 'Add pet') }}
+        {{ saving ? $t('common.saving') : (isEdit ? $t('common.saveChanges') : $t('addEditPet.submitAdd')) }}
       </button>
     </form>
   </div>

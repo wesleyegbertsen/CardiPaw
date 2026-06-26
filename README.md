@@ -1,5 +1,28 @@
 # CardiPaw
 
+## Table of Contents
+
+- [Try It](#try-it)
+- [Why I Built This](#why-i-built-this)
+- [What Is a Resting Respiratory Rate?](#what-is-a-resting-respiratory-rate)
+- [Features](#features)
+  - [Multiple Pets](#multiple-pets)
+  - [Guided Tracking](#guided-tracking)
+  - [Readings](#readings)
+  - [Charts](#charts)
+  - [Home Screen Sparkline](#home-screen-sparkline)
+  - [PDF Report](#pdf-report)
+  - [Share](#share)
+  - [Pet Notes](#pet-notes)
+  - [Data Export & Import](#data-export--import)
+  - [Languages](#languages)
+- [Contributing a Translation](#contributing-a-translation)
+  - [Fixing a label in an existing language](#fixing-a-label-in-an-existing-language)
+  - [Adding a new language](#adding-a-new-language)
+- [Status Thresholds](#status-thresholds)
+- [Docker](#docker)
+- [Tech Stack](#tech-stack)
+
 ## Try It
 
 CardiPaw is available for free at **[cardipaw.com](https://cardipaw.com/)**. No installation required and all data is stored locally in your browser.
@@ -59,6 +82,80 @@ Each pet has a general-purpose **Notes** tab where you can write anything that d
 ### Data Export & Import
 
 Export all pets and readings as a JSON file for backup or transfer. Import a previously exported file to restore your data.
+
+### Languages
+
+CardiPaw is available in **English**, **Dutch**, and **German**. On first launch the app picks a language from your browser settings (falling back to English), and you can switch it at any time using the flag picker in the home screen header — your choice is remembered locally. Dates and numbers are formatted according to the selected language.
+
+## Contributing a Translation
+
+All translations live in `src/i18n/locales/`. Each file is a flat-ish JSON object keyed by feature area. English (`en.json`) is the source of truth — every other locale must have the exact same set of keys.
+
+### Fixing a label in an existing language
+
+1. Open `src/i18n/locales/<code>.json` (e.g. `nl.json` for Dutch).
+2. Find the key — the structure mirrors `en.json`, so search for the English text to locate the right key.
+3. Edit the value and save. The dev server picks up the change instantly.
+
+### Adding a new language
+
+Four small steps:
+
+#### 1. Create the locale file
+
+Copy `src/i18n/locales/en.json` to `src/i18n/locales/<code>.json`, where `<code>` is the [BCP 47 language subtag](https://www.iana.org/assignments/language-subtag-registry) (e.g. `fr` for French). Translate every value — do not translate the keys.
+
+#### 2. Register the locale in `src/i18n/index.ts`
+
+```ts
+// add the import
+import fr from './locales/fr.json';
+
+// add to the tuple (drives type-checking and the language picker)
+export const SUPPORTED_LOCALES = ['en', 'nl', 'de', 'fr'] as const;
+
+// add the native-language name shown in the picker
+export const LOCALE_NAMES: Record<Locale, string> = {
+  en: 'English',
+  nl: 'Nederlands',
+  de: 'Deutsch',
+  fr: 'Français',
+};
+
+// add to the messages object
+export const i18n = createI18n({
+  messages: { en, nl, de, fr },
+  // …
+});
+```
+
+#### 3. Add a flag in `src/components/LocalePicker.vue`
+
+```ts
+const LOCALE_COUNTRY: Record<Locale, keyof typeof FlagSVGs> = {
+  en: 'GB',
+  nl: 'NL',
+  de: 'DE',
+  fr: 'FR',   // ISO 3166-1 alpha-2 country code
+};
+```
+
+#### 4. Verify key parity
+
+Run the included script to confirm your file has exactly the same keys as `en.json`:
+
+```bash
+npm run check-locale -- fr
+```
+
+The script prints every missing or extra key and exits with a non-zero code on failure, so it can be used in CI. You can run it against any existing locale the same way:
+
+```bash
+npm run check-locale -- nl
+npm run check-locale -- de
+```
+
+That is all that is needed — the language picker, auto-detection, and date/number formatting all pick up the new locale automatically.
 
 ## Status Thresholds
 

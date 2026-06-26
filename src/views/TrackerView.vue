@@ -131,7 +131,7 @@ onUnmounted(() => {
 <template>
   <div class="tracker" :class="`phase-${phase}`">
     <header class="tracker-header">
-      <button class="back-btn" @click="discard" aria-label="Go back">
+      <button class="back-btn" @click="discard" :aria-label="$t('common.back')">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
         </svg>
@@ -145,8 +145,8 @@ onUnmounted(() => {
     <div v-if="phase === 'idle'" class="mode-toggle-bar">
       <div class="mode-toggle">
         <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }"></div>
-        <button class="mode-pill" :class="{ active: !isManualMode }" @click="switchMode('guided')">Guided</button>
-        <button class="mode-pill" :class="{ active: isManualMode }" @click="switchMode('manual')">Manual</button>
+        <button class="mode-pill" :class="{ active: !isManualMode }" @click="switchMode('guided')">{{ $t('tracker.guided') }}</button>
+        <button class="mode-pill" :class="{ active: isManualMode }" @click="switchMode('manual')">{{ $t('tracker.manual') }}</button>
       </div>
     </div>
 
@@ -163,26 +163,26 @@ onUnmounted(() => {
           inputmode="numeric"
           autofocus
         />
-        <span class="manual-rate-unit">breaths / min</span>
+        <span class="manual-rate-unit">{{ $t('tracker.unitSpaced') }}</span>
         <span
           class="rate-badge"
           :class="getRateStatus(manualRate, pet).cssClass"
           :style="{ visibility: manualRate > 0 ? 'visible' : 'hidden' }"
-        >{{ getRateStatus(manualRate, pet).label }}</span>
+        >{{ $t('status.' + getRateStatus(manualRate, pet).cssClass) }}</span>
       </div>
 
       <div class="rest-state-row">
-        <span class="rest-state-label">Pet was</span>
+        <span class="rest-state-label">{{ $t('restState.petWas') }}</span>
         <button
           class="rest-btn"
           :class="{ active: restState === 'resting' }"
           @click="restState = restState === 'resting' ? undefined : 'resting'"
-        >Resting</button>
+        >{{ $t('restState.resting') }}</button>
         <button
           class="rest-btn"
           :class="{ active: restState === 'sleeping' }"
           @click="restState = restState === 'sleeping' ? undefined : 'sleeping'"
-        >Sleeping</button>
+        >{{ $t('restState.sleeping') }}</button>
       </div>
 
       <div class="notes-wrapper">
@@ -191,29 +191,29 @@ onUnmounted(() => {
 
       <div class="done-actions">
         <button class="btn-save" @click="saveReading" :disabled="saving || manualRate < 1">
-          {{ saving ? 'Saving…' : 'Save reading' }}
+          {{ saving ? $t('common.saving') : $t('tracker.saveReading') }}
         </button>
-        <button class="btn-discard" @click="discard">Discard</button>
+        <button class="btn-discard" @click="discard">{{ $t('common.discard') }}</button>
       </div>
     </div>
 
     <!-- Guided: Idle -->
     <div v-else-if="phase === 'idle'" class="tracker-body">
       <div class="body-top">
-        <p class="instruction">Tap the heart each time you see your pet's chest rise and fall.</p>
+        <p class="instruction">{{ $t('tracker.instruction') }}</p>
       </div>
 
-      <button class="heart-btn" :class="{ pulsing: isPulsing }" @click="handleHeartClick" aria-label="Tap to start">
+      <button class="heart-btn" :class="{ pulsing: isPulsing }" @click="handleHeartClick" :aria-label="$t('tracker.tapToStart')">
         <svg class="heart-svg" viewBox="0 0 100 90" fill="currentColor">
           <path d="M50 85 C50 85 5 55 5 28 C5 13 17 3 30 3 C39 3 47 8 50 15 C53 8 61 3 70 3 C83 3 95 13 95 28 C95 55 50 85 50 85Z"/>
         </svg>
       </button>
 
       <div class="body-bottom">
-        <p class="tap-hint">Tap to start</p>
-        <p class="timer-note">30-second measurement</p>
+        <p class="tap-hint">{{ $t('tracker.tapToStart') }}</p>
+        <p class="timer-note">{{ $t('tracker.measurement30') }}</p>
         <div class="option-row">
-          <span class="toggle-label">Sound</span>
+          <span class="toggle-label">{{ $t('tracker.sound') }}</span>
           <button
             class="slide-toggle"
             :class="{ on: soundEnabled }"
@@ -244,7 +244,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <button class="heart-btn" :class="{ pulsing: isPulsing }" @click="handleHeartClick" aria-label="Tap for each breath">
+      <button class="heart-btn" :class="{ pulsing: isPulsing }" @click="handleHeartClick" :aria-label="$t('tracker.tapForBreath')">
         <svg class="heart-svg" viewBox="0 0 100 90" fill="currentColor">
           <path d="M50 85 C50 85 5 55 5 28 C5 13 17 3 30 3 C39 3 47 8 50 15 C53 8 61 3 70 3 C83 3 95 13 95 28 C95 55 50 85 50 85Z"/>
         </svg>
@@ -253,7 +253,7 @@ onUnmounted(() => {
       <div class="body-bottom">
         <div class="breath-count">
           <span class="count-number">{{ clickCount }}</span>
-          <span class="count-label">breaths counted</span>
+          <span class="count-label">{{ $t('tracker.breathsCounted') }}</span>
         </div>
       </div>
     </div>
@@ -268,23 +268,23 @@ onUnmounted(() => {
 
       <div class="result">
         <div class="result-number">{{ resultRate }}</div>
-        <div class="result-label">breaths/min</div>
+        <div class="result-label">{{ $t('common.breathsPerMin') }}</div>
       </div>
 
-      <p class="result-note">Based on {{ clickCount }} breaths in 30 seconds</p>
+      <p class="result-note">{{ $t('tracker.basedOn', clickCount) }}</p>
 
       <div class="rest-state-row">
-        <span class="rest-state-label">Pet was</span>
+        <span class="rest-state-label">{{ $t('restState.petWas') }}</span>
         <button
           class="rest-btn"
           :class="{ active: restState === 'resting' }"
           @click="restState = restState === 'resting' ? undefined : 'resting'"
-        >Resting</button>
+        >{{ $t('restState.resting') }}</button>
         <button
           class="rest-btn"
           :class="{ active: restState === 'sleeping' }"
           @click="restState = restState === 'sleeping' ? undefined : 'sleeping'"
-        >Sleeping</button>
+        >{{ $t('restState.sleeping') }}</button>
       </div>
 
       <div class="notes-wrapper">
@@ -293,10 +293,10 @@ onUnmounted(() => {
 
       <div class="done-actions">
         <button class="btn-save" @click="saveReading" :disabled="saving">
-          {{ saving ? 'Saving…' : 'Save result' }}
+          {{ saving ? $t('common.saving') : $t('tracker.saveResult') }}
         </button>
-        <button class="btn-retry" @click="reset">Try again</button>
-        <button class="btn-discard" @click="discard">Discard</button>
+        <button class="btn-retry" @click="reset">{{ $t('tracker.tryAgain') }}</button>
+        <button class="btn-discard" @click="discard">{{ $t('common.discard') }}</button>
       </div>
     </div>
     </div>

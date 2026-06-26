@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
 import { usePdfExport } from '../composables/usePdfExport';
 
@@ -7,6 +8,7 @@ const props = defineProps<{ pet: Pet; readings: Reading[] }>();
 const emit = defineEmits<{ close: [] }>();
 
 const { isGenerating, generatePdf } = usePdfExport();
+const { locale } = useI18n();
 
 const availableMonths = computed(() => {
   const set = new Set(props.readings.map(r => r.date.slice(0, 7)));
@@ -35,7 +37,7 @@ function toggleMonth(month: string) {
 }
 
 function formatMonth(key: string): string {
-  return new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(
+  return new Intl.DateTimeFormat(locale.value, { month: 'long', year: 'numeric' }).format(
     new Date(key + '-15')
   );
 }
@@ -55,40 +57,40 @@ async function handleExport() {
     <div class="overlay" @click.self="() => { if (!isGenerating) emit('close'); }">
       <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pdf-modal-title">
         <div class="dialog-header">
-          <h2 class="dialog-title" id="pdf-modal-title">Export PDF</h2>
+          <h2 class="dialog-title" id="pdf-modal-title">{{ $t('pdfModal.title') }}</h2>
           <p class="dialog-subtitle">{{ pet.name }}</p>
         </div>
 
         <div class="list-controls">
           <span class="list-info">
-            {{ availableMonths.length }} month{{ availableMonths.length !== 1 ? 's' : '' }} available
+            {{ $t('pdfModal.monthsAvailable', availableMonths.length) }}
           </span>
           <button class="toggle-all-btn" @click="toggleAll" :disabled="isGenerating">
-            {{ allSelected ? 'Clear all' : 'Select all' }}
+            {{ allSelected ? $t('pdfModal.clearAll') : $t('pdfModal.selectAll') }}
           </button>
         </div>
 
         <div class="export-options">
           <div class="option-row">
-            <span class="export-option-label">Order</span>
+            <span class="export-option-label">{{ $t('pdfModal.order') }}</span>
             <div class="sort-options">
               <button
                 class="sort-btn"
                 :class="{ active: newestFirst }"
                 @click="newestFirst = true"
                 :disabled="isGenerating"
-              >Newest first</button>
+              >{{ $t('pdfModal.newestFirst') }}</button>
               <button
                 class="sort-btn"
                 :class="{ active: !newestFirst }"
                 @click="newestFirst = false"
                 :disabled="isGenerating"
-              >Oldest first</button>
+              >{{ $t('pdfModal.oldestFirst') }}</button>
             </div>
           </div>
 
           <div class="option-row">
-            <span class="export-option-label">Include reading notes</span>
+            <span class="export-option-label">{{ $t('pdfModal.includeNotes') }}</span>
             <button
               class="slide-toggle"
               :class="{ on: includeNotes, disabled: isGenerating }"
@@ -119,12 +121,12 @@ async function handleExport() {
         </div>
 
         <p v-if="selectedMonths.length === 0" class="empty-hint">
-          Select at least one month to export.
+          {{ $t('pdfModal.selectAtLeastOne') }}
         </p>
 
         <div class="dialog-footer">
           <button class="btn-cancel" @click="emit('close')" :disabled="isGenerating">
-            Cancel
+            {{ $t('common.cancel') }}
           </button>
           <button
             class="btn-export"
@@ -132,7 +134,7 @@ async function handleExport() {
             :disabled="isGenerating || selectedMonths.length === 0"
           >
             <span v-if="isGenerating" class="spinner" aria-hidden="true" />
-            {{ isGenerating ? 'Generating…' : 'Export PDF' }}
+            {{ isGenerating ? $t('pdfModal.generating') : $t('pdfModal.export') }}
           </button>
         </div>
       </div>

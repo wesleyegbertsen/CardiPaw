@@ -8,19 +8,22 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "generate-pwa-assets": "pwa-assets-generator",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "check-locale": "node scripts/check-locale.mjs"
   },
   "dependencies": {
     "@tiptap/extension-placeholder": "^3.22.4",
     "@tiptap/starter-kit": "^3.22.4",
     "@tiptap/vue-3": "^3.22.4",
     "chart.js": "^4.4.0",
+    "country-flag-icons": "^1.6.19",
     "idb": "^8.0.0",
     "jspdf": "^4.2.1",
     "pinia": "^2.2.0",
     "uuid": "^14.0.0",
     "vue": "^3.5.0",
     "vue-chartjs": "^5.3.0",
+    "vue-i18n": "^9.14.5",
     "vue-router": "^4.4.0"
   },
   "devDependencies": {

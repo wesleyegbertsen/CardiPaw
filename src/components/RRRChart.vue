@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Line } from 'vue-chartjs';
 import {
   Chart as ChartJS,
@@ -20,6 +21,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 const props = defineProps<{ readings: Reading[]; maxTicks?: number; normalCeiling?: number }>();
 const themeStore = useThemeStore();
+const { t, locale } = useI18n();
 
 const effectiveNormalCeiling = computed(() => props.normalCeiling ?? DEFAULT_NORMAL_CEILING);
 
@@ -29,7 +31,7 @@ const sortedReadings = computed(() =>
 
 const labels = computed(() =>
   sortedReadings.value.map((r) =>
-    new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(r.date))
+    new Intl.DateTimeFormat(locale.value, { month: 'short', day: 'numeric' }).format(new Date(r.date))
   )
 );
 
@@ -72,7 +74,7 @@ const chartOptions = computed(() => {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: (ctx: { parsed: { y: number | null } }) => `${ctx.parsed.y ?? ''} breaths/min`,
+          label: (ctx: { parsed: { y: number | null } }) => t('chart.tooltip', { n: ctx.parsed.y ?? 0 }),
         },
       },
     },
@@ -86,7 +88,7 @@ const chartOptions = computed(() => {
         grid: { display: false },
       },
       y: {
-        title: { display: true, text: 'Breaths / min', color: textMuted, font: { size: 11 } },
+        title: { display: true, text: t('chart.yAxis'), color: textMuted, font: { size: 11 } },
         min: 0,
         suggestedMax: 80,
         ticks: { font: { size: 11 }, color: textMuted },
@@ -101,14 +103,14 @@ const chartOptions = computed(() => {
   <div class="chart-wrap">
     <template v-if="readings.length > 0">
       <div class="legend">
-        <span class="legend-item primary">— Rate</span>
-        <span class="legend-item normal">- - Normal max ({{ effectiveNormalCeiling }} breaths/min)</span>
+        <span class="legend-item primary">{{ $t('chart.legendRate') }}</span>
+        <span class="legend-item normal">{{ $t('chart.legendNormalMax', { n: effectiveNormalCeiling }) }}</span>
       </div>
       <div class="chart-container">
         <Line :data="chartData" :options="chartOptions" />
       </div>
     </template>
-    <div v-else class="empty">No readings yet — start tracking to see a chart.</div>
+    <div v-else class="empty">{{ $t('chart.empty') }}</div>
   </div>
 </template>
 

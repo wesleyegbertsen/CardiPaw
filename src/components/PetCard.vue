@@ -107,7 +107,7 @@ function startTracking() {
 </script>
 
 <template>
-  <div class="pet-card" @click="navigate" role="button" tabindex="0" @keydown.enter="navigate" @keydown.space.prevent="navigate" :aria-label="`View ${pet.name}'s profile`">
+  <div class="pet-card" @click="navigate" role="button" tabindex="0" @keydown.enter="navigate" @keydown.space.prevent="navigate" :aria-label="$t('petCard.viewProfile', { name: pet.name })">
     <div class="photo-wrap">
       <img v-if="pet.photo" :src="pet.photo" :alt="pet.name" class="photo" />
       <div v-else class="photo-placeholder">
@@ -117,7 +117,7 @@ function startTracking() {
 
     <div class="info">
       <h3 class="name">{{ pet.name }}</h3>
-      <span class="badge" :class="pet.species">{{ pet.species }}</span>
+      <span class="badge" :class="pet.species">{{ $t('species.' + pet.species) }}</span>
       <p class="age">{{ ageDisplay }}</p>
       <p class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
     </div>
@@ -126,7 +126,7 @@ function startTracking() {
       <Line :data="chartData" :options="(chartOptions as any)" />
     </div>
 
-    <button class="track-btn" @click.stop="startTracking" :aria-label="`Start tracking ${pet.name}`">
+    <button class="track-btn" @click.stop="startTracking" :aria-label="$t('petCard.startTracking', { name: pet.name })">
       <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
       </svg>
