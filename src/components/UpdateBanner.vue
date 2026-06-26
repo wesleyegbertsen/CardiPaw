@@ -42,7 +42,10 @@ function close() {
   padding: 12px 16px;
   box-shadow: var(--shadow-lg);
   z-index: 600;
-  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
 }
 
 .update-message {
