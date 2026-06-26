@@ -1,0 +1,282 @@
+{
+  "common": {
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "close": "Fermer",
+    "view": "Voir",
+    "discard": "Abandonner",
+    "saving": "Enregistrement…",
+    "saveChanges": "Enregistrer les modifications",
+    "back": "Retour",
+    "breathsPerMin": "resp./min"
+  },
+  "nav": {
+    "home": "Accueil",
+    "settings": "Paramètres"
+  },
+  "status": {
+    "normal": "Normal",
+    "warning": "Élevé",
+    "danger": "Haut"
+  },
+  "species": {
+    "cat": "Chat",
+    "dog": "Chien"
+  },
+  "restState": {
+    "petWas": "L'animal était",
+    "resting": "Au repos",
+    "sleeping": "Endormi",
+    "notRecorded": "Non enregistré"
+  },
+  "source": {
+    "manual": "Manuel",
+    "guided": "Guidé",
+    "manualEntry": "Saisie manuelle",
+    "guided30": "Guidé (30 s)"
+  },
+  "age": {
+    "weeks": "1 semaine | {n} semaines",
+    "months": "1 mois | {n} mois",
+    "years": "1 an | {n} ans",
+    "yearMonth": "{year}, {month}"
+  },
+  "lastMeasured": {
+    "none": "Aucune mesure",
+    "today": "Mesuré aujourd'hui",
+    "yesterday": "Mesuré hier",
+    "daysAgo": "Mesuré il y a {n} jour | Mesuré il y a {n} jours",
+    "weeksAgo": "Mesuré il y a {n} semaine | Mesuré il y a {n} semaines"
+  },
+  "home": {
+    "subtitle": "Suivi de la respiration au repos",
+    "yourPets": "Vos animaux",
+    "noPetsTitle": "Aucun animal",
+    "noPetsBody": "Ajoutez votre premier animal pour commencer à suivre sa fréquence respiratoire au repos.",
+    "addPet": "Ajouter un animal",
+    "themeDark": "Sombre",
+    "themeLight": "Clair",
+    "switchToLight": "Passer en mode clair",
+    "switchToDark": "Passer en mode sombre",
+    "switchLanguage": "Changer de langue"
+  },
+  "petCard": {
+    "viewProfile": "Voir le profil de {name}",
+    "startTracking": "Commencer le suivi de {name}"
+  },
+  "petDetail": {
+    "share": "Partager",
+    "exportPdf": "Exporter en PDF",
+    "editPet": "Modifier l'animal",
+    "deletePet": "Supprimer l'animal",
+    "addNote": "Ajouter une note",
+    "startTracking": "Commencer le suivi",
+    "tabChart": "Graphique",
+    "tabReadings": "Mesures",
+    "tabNotes": "Notes",
+    "rangeWeek": "Semaine",
+    "rangeMonth": "Mois",
+    "rangeYear": "Année",
+    "prevPeriod": "Période précédente",
+    "nextPeriod": "Période suivante",
+    "thisWeek": "Cette semaine",
+    "thisMonth": "Ce mois-ci",
+    "thisYear": "Cette année",
+    "deleteConfirm": "Supprimer {name} ? Toutes ses mesures seront également supprimées définitivement."
+  },
+  "tracker": {
+    "tapToStart": "Appuyez pour commencer",
+    "tapForBreath": "Appuyez à chaque respiration",
+    "guided": "Guidé",
+    "manual": "Manuel",
+    "instruction": "Appuyez sur le cœur chaque fois que vous voyez la poitrine de votre animal se soulever.",
+    "measurement30": "Mesure de 30 secondes",
+    "sound": "Son",
+    "breathsCounted": "respirations comptées",
+    "unitSpaced": "resp. / min",
+    "basedOn": "Basé sur {n} respiration en 30 secondes | Basé sur {n} respirations en 30 secondes",
+    "saveReading": "Enregistrer la mesure",
+    "saveResult": "Enregistrer le résultat",
+    "tryAgain": "Réessayer"
+  },
+  "addEditPet": {
+    "titleEdit": "Modifier l'animal",
+    "titleAdd": "Ajouter un animal",
+    "name": "Nom",
+    "namePlaceholder": "ex. Luna",
+    "species": "Espèce",
+    "birthdate": "Date de naissance",
+    "rrrAbbr": "FRR",
+    "rrrTitle": "Fréquence respiratoire au repos",
+    "thresholdsSuffix": "seuils (optionnel)",
+    "normalCeiling": "Plafond normal",
+    "elevatedCeiling": "Plafond élevé",
+    "thresholdHint": "Laissez vide pour utiliser les valeurs par défaut ({normal} / {elevated} resp./min).",
+    "thresholdError": "Le plafond élevé doit être supérieur au plafond normal ({normal}).",
+    "submitAdd": "Ajouter l'animal"
+  },
+  "reading": {
+    "editAria": "Modifier la mesure",
+    "deleteAria": "Supprimer la mesure",
+    "title": "Modifier la mesure",
+    "notesLabel": "Notes",
+    "noNotes": "Aucune note",
+    "notFound": "Mesure introuvable.",
+    "deleteConfirm": "Supprimer cette mesure ? Cette action est irréversible.",
+    "rateLabel": "Fréquence (resp./min)"
+  },
+  "note": {
+    "titleEdit": "Modifier la note",
+    "titleNew": "Nouvelle note",
+    "pin": "Épingler la note",
+    "unpin": "Désépingler la note",
+    "editAria": "Modifier la note",
+    "deleteAria": "Supprimer la note",
+    "created": "Créée",
+    "edited": "Modifiée",
+    "pinned": "Épinglée",
+    "noContent": "Aucun contenu",
+    "notFound": "Note introuvable.",
+    "deleteConfirm": "Supprimer cette note ? Cette action est irréversible.",
+    "titleLabel": "Titre",
+    "titlePlaceholder": "Titre de la note",
+    "contentLabel": "Contenu",
+    "submitAdd": "Ajouter la note"
+  },
+  "readingList": {
+    "empty": "Aucune mesure. Appuyez sur « Commencer le suivi » pour enregistrer votre première mesure.",
+    "hasNotes": "Contient des notes",
+    "manuallyEntered": "Saisie manuelle"
+  },
+  "noteList": {
+    "empty": "Aucune note. Appuyez sur « + » pour écrire votre première note.",
+    "pinnedSection": "Épinglées",
+    "notesSection": "Notes",
+    "edited": "Modifiée"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "languageSection": "Langue",
+    "languageDesc": "Choisissez la langue utilisée dans toute l'application.",
+    "dataSection": "Données",
+    "dataDesc": "Vos profils d'animaux et vos mesures sont stockés localement sur cet appareil via IndexedDB. Exportez-les pour les sauvegarder ou les transférer sur un autre appareil.",
+    "exportName": "Exporter les données",
+    "exportDesc": "Télécharger tous les animaux et mesures au format JSON",
+    "exported": "✓ Exporté",
+    "export": "Exporter",
+    "importName": "Importer des données",
+    "importDesc": "Restaurer depuis un fichier d'export CardiPaw",
+    "imported": "✓ Importé",
+    "import": "Importer",
+    "invalidFormat": "Format de fichier invalide. Veuillez sélectionner un fichier d'export CardiPaw.",
+    "readError": "Impossible de lire le fichier. Assurez-vous qu'il s'agit d'un export JSON valide.",
+    "importConfirm": "Importer {pets} animal(aux) et {readings} mesure(s) ? Toutes les données actuelles de cet appareil seront écrasées.",
+    "aboutSection": "À propos",
+    "aboutText": "CardiPaw vous aide à suivre la fréquence respiratoire au repos (FRR) de votre animal — un indicateur de santé important pour les animaux atteints de maladies cardiaques comme la CMH.",
+    "thresholdNormalValue": "≤ 30 resp./min",
+    "thresholdElevatedValue": "31–35 resp./min",
+    "thresholdHighValue": "> 35 resp./min",
+    "disclaimer": "Ce sont les seuils par défaut globaux. Vous pouvez configurer des plafonds personnalisés par animal dans chaque profil. Suivez toujours les conseils spécifiques de votre vétérinaire concernant les valeurs à surveiller, les plages normales pour votre animal et le moment de consulter.",
+    "legalSection": "Mentions légales",
+    "privacyTitle": "Politique de confidentialité",
+    "privacyDesc": "Comment vos données sont stockées et utilisées",
+    "termsTitle": "Conditions d'utilisation",
+    "termsDesc": "Conditions et avertissements pour l'utilisation de CardiPaw",
+    "sourceTitle": "Code source",
+    "sourceDesc": "CardiPaw est open source sur GitHub",
+    "privacy": {
+      "p1": "<strong>Vos données restent sur votre appareil.</strong> CardiPaw stocke toutes les informations (profils d'animaux, mesures et notes) exclusivement dans l'IndexedDB de votre navigateur. Rien n'est jamais transmis à un serveur.",
+      "p2": "<strong>Aucun suivi ni analyse.</strong> CardiPaw n'utilise pas de cookies, de services d'analyse, de traceurs publicitaires ni aucune collecte de données par des tiers. Il n'y a pas de compte utilisateur ni de connexion.",
+      "p3": "<strong>Vous gardez le contrôle.</strong> Vous pouvez exporter vos données à tout moment depuis la page Paramètres, et supprimer l'application ou effacer les données du site dans votre navigateur supprimera définitivement tout.",
+      "p4": "<strong>Aucun partage de données.</strong> Comme vos données ne quittent jamais votre appareil, elles ne sont jamais partagées avec ni accessibles par quiconque d'autre."
+    },
+    "terms": {
+      "p1": "<strong>Pas un avis médical.</strong> CardiPaw est un outil d'information pour vous aider à enregistrer et suivre la fréquence respiratoire au repos de votre animal. Il ne remplace pas un diagnostic, un conseil ou un traitement vétérinaire professionnel.",
+      "p2": "<strong>Consultez votre vétérinaire.</strong> Suivez toujours les conseils spécifiques de votre vétérinaire concernant les valeurs à surveiller, les plages normales pour votre animal et le moment de consulter. Ne prenez pas de décisions médicales uniquement sur la base de cette application.",
+      "p3": "<strong>Aucune garantie.</strong> CardiPaw est fourni gratuitement, tel quel, sans aucune garantie d'aucune sorte (expresse ou implicite). Le développeur n'est pas responsable des décisions prises sur la base des données enregistrées dans cette application.",
+      "p4": "<strong>Utilisation à vos risques et périls.</strong> En utilisant CardiPaw, vous acceptez l'entière responsabilité de la façon dont vous interprétez et agissez sur les données qu'il présente."
+    }
+  },
+  "share": {
+    "bannerInfo": "Instantané partagé · {date}",
+    "loading": "Chargement de l'instantané…",
+    "errorTitle": "Ce lien est invalide ou incomplet",
+    "errorBody": "Les données partagées n'ont pas pu être lues. Le lien a peut-être été tronqué par l'application utilisée pour l'envoyer — demandez à l'expéditeur de le partager à nouveau, en sélectionnant moins de mois si le lien était très long.",
+    "reportTitle": "Rapport de fréquence respiratoire au repos",
+    "readings": "Mesures",
+    "average": "Moyenne",
+    "lowest": "Minimum",
+    "highest": "Maximum",
+    "countNormal": "{count} Normal",
+    "countElevated": "{count} Élevé",
+    "countHigh": "{count} Haut",
+    "footer": "Créé avec <a href=\"https://cardipaw.com/\" target=\"_blank\" rel=\"noopener\">CardiPaw</a>. Les données sont entièrement intégrées dans ce lien — rien n'a été téléchargé ou stocké en ouvrant cette page."
+  },
+  "pdfModal": {
+    "title": "Exporter en PDF",
+    "monthsAvailable": "{n} mois disponible | {n} mois disponibles",
+    "clearAll": "Tout effacer",
+    "selectAll": "Tout sélectionner",
+    "order": "Ordre",
+    "newestFirst": "Plus récent d'abord",
+    "oldestFirst": "Plus ancien d'abord",
+    "includeNotes": "Inclure les notes de mesure",
+    "selectAtLeastOne": "Sélectionnez au moins un mois à exporter.",
+    "generating": "Génération…",
+    "export": "Exporter en PDF"
+  },
+  "shareModal": {
+    "title": "Partager",
+    "privacyNote": "Les données sélectionnées sont intégrées dans le lien lui-même — rien n'est téléchargé sur un serveur. Toute personne à qui vous envoyez le lien peut voir ces données.",
+    "monthsAvailable": "{n} mois disponible | {n} mois disponibles",
+    "clearAll": "Tout effacer",
+    "selectAll": "Tout sélectionner",
+    "selectAtLeastOne": "Sélectionnez au moins un mois à partager.",
+    "lengthWarning": "Ce lien est très long et peut être tronqué par certaines applications de messagerie ou de chat. Envisagez de sélectionner moins de mois.",
+    "shareNative": "Partager…",
+    "copied": "Copié !",
+    "copyLink": "Copier le lien"
+  },
+  "chart": {
+    "legendRate": "— Fréquence",
+    "legendNormalMax": "- - Max normal ({n} resp./min)",
+    "empty": "Aucune mesure — commencez le suivi pour voir un graphique.",
+    "tooltip": "{n} resp./min",
+    "yAxis": "Resp. / min"
+  },
+  "photo": {
+    "add": "Ajouter une photo",
+    "remove": "Supprimer la photo",
+    "alt": "Photo de l'animal"
+  },
+  "update": {
+    "offline": "Application prête pour une utilisation hors ligne.",
+    "newVersion": "Une nouvelle version est disponible.",
+    "reload": "Recharger"
+  },
+  "editor": {
+    "placeholder": "Ajouter des notes… (optionnel)",
+    "bold": "Gras",
+    "italic": "Italique",
+    "bulletList": "Liste à puces"
+  },
+  "pdf": {
+    "reportTitle": "Rapport de fréquence respiratoire CardiPaw",
+    "dateTime": "Date / Heure",
+    "note": "Note",
+    "rateHeader": "Fréquence (resp./min)",
+    "statusHeader": "Statut",
+    "restHeader": "Repos",
+    "sourceHeader": "Source",
+    "readingsHeader": "Mesures",
+    "notesHeader": "Notes de mesure",
+    "readingsCount": "{n} mesure | {n} mesures",
+    "summaryStats": "Moy. : {avg} · Min. : {min} · Max. : {max} resp./min",
+    "pageOf": "Page {i} sur {total}",
+    "normalMax": "Max normal ({n})",
+    "breathsPerMin": "Resp./min",
+    "ageMonths": "{n} mois | {n} mois",
+    "ageYears": "{n} an | {n} ans",
+    "ageYearMonth": "{y} an {m} mois"
+  }
+}

@@ -11,6 +11,7 @@ const LOCALE_COUNTRY: Record<Locale, keyof typeof FlagSVGs> = {
   en: 'GB',
   nl: 'NL',
   de: 'DE',
+  fr: 'FR',
 };
 
 function flagSvg(loc: Locale): string {

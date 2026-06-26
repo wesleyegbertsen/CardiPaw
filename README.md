@@ -103,16 +103,16 @@ Four small steps:
 
 #### 1. Create the locale file
 
-Copy `src/i18n/locales/en.json` to `src/i18n/locales/<code>.json`, where `<code>` is the [BCP 47 language subtag](https://www.iana.org/assignments/language-subtag-registry) (e.g. `fr` for French). Translate every value — do not translate the keys.
+Copy `src/i18n/locales/en.json` to `src/i18n/locales/<code>.json`, where `<code>` is the [BCP 47 language subtag](https://www.iana.org/assignments/language-subtag-registry) (e.g. `es` for Spanish). Translate every value — do not translate the keys.
 
 #### 2. Register the locale in `src/i18n/index.ts`
 
 ```ts
 // add the import
-import fr from './locales/fr.json';
+import es from './locales/es.json';
 
 // add to the tuple (drives type-checking and the language picker)
-export const SUPPORTED_LOCALES = ['en', 'nl', 'de', 'fr'] as const;
+export const SUPPORTED_LOCALES = ['en', 'nl', 'de', 'fr', 'es'] as const;
 
 // add the native-language name shown in the picker
 export const LOCALE_NAMES: Record<Locale, string> = {
@@ -120,11 +120,12 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   nl: 'Nederlands',
   de: 'Deutsch',
   fr: 'Français',
+  es: 'Español',
 };
 
 // add to the messages object
 export const i18n = createI18n({
-  messages: { en, nl, de, fr },
+  messages: { en, nl, de, fr, es },
   // …
 });
 ```
@@ -136,7 +137,8 @@ const LOCALE_COUNTRY: Record<Locale, keyof typeof FlagSVGs> = {
   en: 'GB',
   nl: 'NL',
   de: 'DE',
-  fr: 'FR',   // ISO 3166-1 alpha-2 country code
+  fr: 'FR',
+  es: 'ES',   // ISO 3166-1 alpha-2 country code
 };
 ```
 
@@ -145,7 +147,7 @@ const LOCALE_COUNTRY: Record<Locale, keyof typeof FlagSVGs> = {
 Run the included script to confirm your file has exactly the same keys as `en.json`:
 
 ```bash
-npm run check-locale -- fr
+npm run check-locale -- es
 ```
 
 The script prints every missing or extra key and exits with a non-zero code on failure, so it can be used in CI. You can run it against any existing locale the same way:
