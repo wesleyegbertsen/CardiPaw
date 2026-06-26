@@ -1,5 +1,28 @@
 # CardiPaw
 
+## Table of Contents
+
+- [Try It](#try-it)
+- [Why I Built This](#why-i-built-this)
+- [What Is a Resting Respiratory Rate?](#what-is-a-resting-respiratory-rate)
+- [Features](#features)
+  - [Multiple Pets](#multiple-pets)
+  - [Guided Tracking](#guided-tracking)
+  - [Readings](#readings)
+  - [Charts](#charts)
+  - [Home Screen Sparkline](#home-screen-sparkline)
+  - [PDF Report](#pdf-report)
+  - [Share](#share)
+  - [Pet Notes](#pet-notes)
+  - [Data Export & Import](#data-export--import)
+  - [Languages](#languages)
+- [Contributing a Translation](#contributing-a-translation)
+  - [Fixing a label in an existing language](#fixing-a-label-in-an-existing-language)
+  - [Adding a new language](#adding-a-new-language)
+- [Status Thresholds](#status-thresholds)
+- [Docker](#docker)
+- [Tech Stack](#tech-stack)
+
 ## Try It
 
 CardiPaw is available for free at **[cardipaw.com](https://cardipaw.com/)**. No installation required and all data is stored locally in your browser.
