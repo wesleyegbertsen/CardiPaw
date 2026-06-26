@@ -88,7 +88,9 @@ const router = useRouter();
   grid-row: 1 / 3;
   align-self: center;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
