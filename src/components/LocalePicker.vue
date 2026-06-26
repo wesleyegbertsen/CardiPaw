@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as FlagSVGs from 'country-flag-icons/string/3x2';
-import { SUPPORTED_LOCALES, setLocale, type Locale } from '../i18n';
+import { SUPPORTED_LOCALES, LOCALE_NAMES, setLocale, type Locale } from '../i18n';
 
 const { locale } = useI18n();
 const open = ref(false);
@@ -38,6 +38,7 @@ function pick(loc: Locale) {
         :key="loc"
         class="lang-option"
         :class="{ active: locale === loc }"
+        :title="LOCALE_NAMES[loc]"
         @click="pick(loc)"
       >
         <span v-html="flagSvg(loc)" />
