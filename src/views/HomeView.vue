@@ -259,7 +259,7 @@ function pickLocale(loc: Locale) {
 /* Theme toggle */
 .theme-toggle {
   position: relative;
-  width: 86px;
+  width: 80px;
   height: 28px;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.2);
@@ -293,7 +293,7 @@ function pickLocale(loc: Locale) {
 }
 
 .theme-toggle.is-light .theme-toggle-thumb {
-  transform: translateX(58px);
+  transform: translateX(52px);
 }
 
 .theme-toggle-label {
