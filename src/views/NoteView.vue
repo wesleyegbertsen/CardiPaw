@@ -276,9 +276,9 @@ const sanitizedContent = computed(() => {
   color: var(--color-text-muted);
   background: var(--color-border);
   border-radius: var(--radius-full);
-  padding: 2px 0;
-  width: 62px;
+  padding: 2px 8px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 
