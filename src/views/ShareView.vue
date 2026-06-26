@@ -229,10 +229,9 @@ function formatDateTime(date: string): string {
 }
 
 .share-banner {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 8px;
   padding: 12px 16px;
   background: var(--color-primary-light);
@@ -242,8 +241,8 @@ function formatDateTime(date: string): string {
 .banner-controls {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-  margin-left: auto;
 }
 
 /* The toggle/picker use white-on-dark styles for the home header gradient.
@@ -282,6 +281,7 @@ function formatDateTime(date: string): string {
 .banner-info {
   font-size: 12px;
   color: var(--color-text-muted);
+  text-align: center;
 }
 
 .status-msg {
