@@ -7,6 +7,8 @@ import { decodeShare } from '../utils/shareCodec';
 import { getRateStatus } from '../utils/rateStatus';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import RRRChart from '../components/RRRChart.vue';
+import ThemeToggle from '../components/ThemeToggle.vue';
+import LocalePicker from '../components/LocalePicker.vue';
 
 // Standalone read-only viewer for shared snapshots. Renders entirely from the
 // URL payload — it never touches the stores or IndexedDB, so opening a link on
@@ -121,6 +123,10 @@ function formatDateTime(date: string): string {
         CardiPaw
       </span>
       <span v-if="state === 'ready'" class="banner-info">{{ $t('share.bannerInfo', { date: sharedAtLabel }) }}</span>
+      <div class="banner-controls">
+        <ThemeToggle />
+        <LocalePicker />
+      </div>
     </div>
 
     <div v-if="state === 'loading'" class="status-msg">{{ $t('share.loading') }}</div>
@@ -231,6 +237,37 @@ function formatDateTime(date: string): string {
   padding: 12px 16px;
   background: var(--color-primary-light);
   border-radius: var(--radius-md);
+}
+
+.banner-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* The toggle/picker use white-on-dark styles for the home header gradient.
+   Override them here to suit the light primary-light banner background. */
+.banner-controls :deep(.theme-toggle),
+.banner-controls :deep(.lang-trigger) {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.banner-controls :deep(.theme-toggle):hover,
+.banner-controls :deep(.lang-trigger):hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+.banner-controls :deep(.theme-toggle-label),
+.banner-controls :deep(.lang-chevron) {
+  color: var(--color-primary);
+}
+
+.banner-controls :deep(.theme-toggle-thumb) {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .brand {
