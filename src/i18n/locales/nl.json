@@ -57,7 +57,8 @@
     "themeDark": "Donker",
     "themeLight": "Licht",
     "switchToLight": "Naar lichte modus",
-    "switchToDark": "Naar donkere modus"
+    "switchToDark": "Naar donkere modus",
+    "switchLanguage": "Taal wisselen"
   },
   "petCard": {
     "viewProfile": "Profiel van {name} bekijken",

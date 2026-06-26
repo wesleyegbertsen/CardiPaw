@@ -57,7 +57,8 @@
     "themeDark": "Dunkel",
     "themeLight": "Hell",
     "switchToLight": "Zum hellen Modus wechseln",
-    "switchToDark": "Zum dunklen Modus wechseln"
+    "switchToDark": "Zum dunklen Modus wechseln",
+    "switchLanguage": "Sprache wechseln"
   },
   "petCard": {
     "viewProfile": "Profil von {name} ansehen",

@@ -7,15 +7,10 @@ import * as db from '../services/db';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
 import type { ExportPayload } from '../types';
-import { SUPPORTED_LOCALES, LOCALE_NAMES, setLocale, type Locale } from '../i18n';
 
 const isDev = import.meta.env.DEV;
 
-const { t, locale } = useI18n();
-
-function onLocaleChange(value: Locale) {
-  setLocale(value);
-}
+const { t } = useI18n();
 
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
@@ -138,22 +133,6 @@ function cancelImport() {
     </header>
 
     <div class="content">
-      <section class="section">
-        <h2 class="section-title">{{ $t('settings.languageSection') }}</h2>
-        <p class="section-desc">{{ $t('settings.languageDesc') }}</p>
-        <div class="lang-options">
-          <button
-            v-for="loc in SUPPORTED_LOCALES"
-            :key="loc"
-            class="lang-btn"
-            :class="{ active: locale === loc }"
-            @click="onLocaleChange(loc)"
-          >
-            {{ LOCALE_NAMES[loc] }}
-          </button>
-        </div>
-      </section>
-
       <section class="section">
         <h2 class="section-title">{{ $t('settings.dataSection') }}</h2>
         <p class="section-desc">{{ $t('settings.dataDesc') }}</p>
@@ -477,30 +456,6 @@ function cancelImport() {
 
 .action-btn:active {
   background: var(--color-border);
-}
-
-.lang-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.lang-btn {
-  padding: 10px 18px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text);
-  background: var(--color-surface);
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-}
-
-.lang-btn.active {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: var(--color-primary-light);
-  font-weight: 600;
 }
 
 .error-msg {

@@ -3,16 +3,31 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePetsStore } from '../stores/pets';
 import { useThemeStore } from '../stores/theme';
+import { useI18n } from 'vue-i18n';
 import PetCard from '../components/PetCard.vue';
+import { SUPPORTED_LOCALES, setLocale, type Locale } from '../i18n';
 
 const petsStore = usePetsStore();
 const router = useRouter();
 const themeStore = useThemeStore();
+const { locale } = useI18n();
 const hasToggledTheme = ref(false);
+const langOpen = ref(false);
+
+const LOCALE_FLAGS: Record<Locale, string> = {
+  en: '🇬🇧',
+  nl: '🇳🇱',
+  de: '🇩🇪',
+};
 
 function toggleTheme() {
   hasToggledTheme.value = true;
   themeStore.toggle();
+}
+
+function pickLocale(loc: Locale) {
+  setLocale(loc);
+  langOpen.value = false;
 }
 </script>
 
@@ -25,30 +40,54 @@ function toggleTheme() {
           <path d="M226.5 92.9c14.3 42.9-.3 86.2-32.6 96.8s-70.1-15.6-84.4-58.5 .3-86.2 32.6-96.8 70.1 15.6 84.4 58.5zm-133 106.8c18.9 32.4 14.3 70.1-10.2 84.1s-59.7-.9-78.5-33.3-14.3-70.1 10.2-84.1 59.7 .9 78.5 33.3zM256 224c-41.3 0-134.4 35.9-186.8 177.2-3.6 9.7-5.2 20.1-5.2 30.5v1.6C64 459.1 84.9 480 110.7 480c11.5 0 22.9-1.2 34-3.6 22.1-4.6 44.6-6.9 67.3-6.9s45.2 2.3 67.3 6.9c11.1 2.4 22.5 3.6 34 3.6 25.8 0 46.7-20.9 46.7-46.7v-1.6c0-10.4-1.6-20.8-5.2-30.5C402.4 259.9 309.3 224 256 224zm165.8 58.7c-24.5-14-29.1-51.7-10.2-84.1s54-47.3 78.5-33.3 29.1 51.7 10.2 84.1-54 47.3-78.5 33.3zM310.1 189.7c-32.3-10.6-46.9-53.9-32.6-96.8s52.1-69.1 84.4-58.5 46.9 53.9 32.6 96.8-52.1 69.1-84.4 58.5z"/>
         </svg>
       </h1>
-      <button
-        class="theme-toggle"
-        :class="{ 'is-light': !themeStore.isDark, 'has-toggled': hasToggledTheme }"
-        @click="toggleTheme"
-        :aria-label="themeStore.isDark ? $t('home.switchToLight') : $t('home.switchToDark')"
-      >
-        <span class="theme-toggle-thumb">
-          <svg v-if="themeStore.isDark" viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 1 0 9.79 9.79z"/>
-          </svg>
-          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-          </svg>
-        </span>
-        <span class="theme-toggle-label">{{ themeStore.isDark ? $t('home.themeDark') : $t('home.themeLight') }}</span>
-      </button>
+
+      <div class="header-controls">
+        <!-- Language picker -->
+        <div class="lang-picker">
+          <button class="lang-trigger" @click="langOpen = !langOpen" :aria-label="$t('home.switchLanguage')">
+            {{ LOCALE_FLAGS[locale as Locale] }}
+          </button>
+          <div v-if="langOpen" class="lang-dropdown">
+            <button
+              v-for="loc in SUPPORTED_LOCALES"
+              :key="loc"
+              class="lang-option"
+              :class="{ active: locale === loc }"
+              @click="pickLocale(loc)"
+            >
+              {{ LOCALE_FLAGS[loc] }}
+            </button>
+          </div>
+          <div v-if="langOpen" class="lang-backdrop" @click="langOpen = false" />
+        </div>
+
+        <!-- Theme toggle -->
+        <button
+          class="theme-toggle"
+          :class="{ 'is-light': !themeStore.isDark, 'has-toggled': hasToggledTheme }"
+          @click="toggleTheme"
+          :aria-label="themeStore.isDark ? $t('home.switchToLight') : $t('home.switchToDark')"
+        >
+          <span class="theme-toggle-thumb">
+            <svg v-if="themeStore.isDark" viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 1 0 9.79 9.79z"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+              <circle cx="12" cy="12" r="5"/>
+              <line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          </span>
+          <span class="theme-toggle-label">{{ themeStore.isDark ? $t('home.themeDark') : $t('home.themeLight') }}</span>
+        </button>
+      </div>
+
       <p class="subtitle">{{ $t('home.subtitle') }}</p>
     </header>
 
@@ -108,10 +147,79 @@ function toggleTheme() {
   gap: 8px;
 }
 
-.theme-toggle {
+.header-controls {
   grid-column: 2;
   grid-row: 1 / 3;
   align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Language picker */
+.lang-picker {
+  position: relative;
+}
+
+.lang-trigger {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.lang-trigger:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.lang-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+}
+
+.lang-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 50;
+}
+
+.lang-option {
+  padding: 8px 14px;
+  font-size: 20px;
+  line-height: 1;
+  text-align: center;
+  transition: background 0.12s;
+  color: var(--color-text);
+}
+
+.lang-option:hover {
+  background: var(--color-bg);
+}
+
+.lang-option.active {
+  background: var(--color-primary-light);
+}
+
+/* Theme toggle */
+.theme-toggle {
   position: relative;
   width: 72px;
   height: 28px;
