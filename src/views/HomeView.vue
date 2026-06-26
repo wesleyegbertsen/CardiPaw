@@ -6,6 +6,7 @@ import { useThemeStore } from '../stores/theme';
 import { useI18n } from 'vue-i18n';
 import PetCard from '../components/PetCard.vue';
 import { SUPPORTED_LOCALES, setLocale, type Locale } from '../i18n';
+import * as FlagSVGs from 'country-flag-icons/string/3x2';
 
 const petsStore = usePetsStore();
 const router = useRouter();
@@ -14,11 +15,15 @@ const { locale } = useI18n();
 const hasToggledTheme = ref(false);
 const langOpen = ref(false);
 
-const LOCALE_FLAGS: Record<Locale, string> = {
-  en: '🇬🇧',
-  nl: '🇳🇱',
-  de: '🇩🇪',
+const LOCALE_COUNTRY: Record<Locale, keyof typeof FlagSVGs> = {
+  en: 'GB',
+  nl: 'NL',
+  de: 'DE',
 };
+
+function flagSvg(loc: Locale): string {
+  return FlagSVGs[LOCALE_COUNTRY[loc]] as string;
+}
 
 function toggleTheme() {
   hasToggledTheme.value = true;
@@ -42,25 +47,6 @@ function pickLocale(loc: Locale) {
       </h1>
 
       <div class="header-controls">
-        <!-- Language picker -->
-        <div class="lang-picker">
-          <button class="lang-trigger" @click="langOpen = !langOpen" :aria-label="$t('home.switchLanguage')">
-            {{ LOCALE_FLAGS[locale as Locale] }}
-          </button>
-          <div v-if="langOpen" class="lang-dropdown">
-            <button
-              v-for="loc in SUPPORTED_LOCALES"
-              :key="loc"
-              class="lang-option"
-              :class="{ active: locale === loc }"
-              @click="pickLocale(loc)"
-            >
-              {{ LOCALE_FLAGS[loc] }}
-            </button>
-          </div>
-          <div v-if="langOpen" class="lang-backdrop" @click="langOpen = false" />
-        </div>
-
         <!-- Theme toggle -->
         <button
           class="theme-toggle"
@@ -86,6 +72,22 @@ function pickLocale(loc: Locale) {
           </span>
           <span class="theme-toggle-label">{{ themeStore.isDark ? $t('home.themeDark') : $t('home.themeLight') }}</span>
         </button>
+
+        <!-- Language picker -->
+        <div class="lang-picker">
+          <button class="lang-trigger" @click="langOpen = !langOpen" :aria-label="$t('home.switchLanguage')" v-html="flagSvg(locale as Locale)" />
+          <div v-if="langOpen" class="lang-dropdown">
+            <button
+              v-for="loc in SUPPORTED_LOCALES"
+              :key="loc"
+              class="lang-option"
+              :class="{ active: locale === loc }"
+              @click="pickLocale(loc)"
+              v-html="flagSvg(loc)"
+            />
+          </div>
+          <div v-if="langOpen" class="lang-backdrop" @click="langOpen = false" />
+        </div>
       </div>
 
       <p class="subtitle">{{ $t('home.subtitle') }}</p>
@@ -162,23 +164,31 @@ function pickLocale(loc: Locale) {
 }
 
 .lang-trigger {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.2);
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
-  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
-  transition: background 0.2s, border-color 0.2s;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity 0.15s;
   flex-shrink: 0;
 }
 
 .lang-trigger:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.8);
+  opacity: 1;
+}
+
+.lang-trigger :deep(svg),
+.lang-option :deep(svg) {
+  display: block;
+  border-radius: 2px;
+}
+
+.lang-trigger :deep(svg) {
+  width: 26px;
+  height: auto;
 }
 
 .lang-backdrop {
@@ -189,7 +199,7 @@ function pickLocale(loc: Locale) {
 
 .lang-dropdown {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   right: 0;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -202,12 +212,16 @@ function pickLocale(loc: Locale) {
 }
 
 .lang-option {
-  padding: 8px 14px;
-  font-size: 20px;
-  line-height: 1;
-  text-align: center;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.12s;
-  color: var(--color-text);
+}
+
+.lang-option :deep(svg) {
+  width: 28px;
+  height: auto;
 }
 
 .lang-option:hover {
