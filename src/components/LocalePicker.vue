@@ -57,7 +57,6 @@ function pick(loc: Locale) {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  width: 80px;
   height: 28px;
   padding: 0 6px;
   border-radius: var(--radius-full);
@@ -137,5 +136,14 @@ function pick(loc: Locale) {
 
 .lang-option.active {
   background: var(--color-primary-light);
+}
+
+/* When header-controls is too narrow to fit both controls side by side
+   (ThemeToggle 80px + gap 8px + LocalePicker ~60px ≈ 148px), the
+   LocalePicker has wrapped to its own row — match the ThemeToggle width. */
+@container header-controls (max-width: 147px) {
+  .lang-trigger {
+    width: 80px;
+  }
 }
 </style>

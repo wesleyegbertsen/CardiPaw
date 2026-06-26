@@ -92,6 +92,8 @@ const router = useRouter();
   align-items: center;
   justify-content: center;
   gap: 8px;
+  container-type: inline-size;
+  container-name: header-controls;
 }
 
 .paw-icon {
