@@ -62,7 +62,7 @@ Export all pets and readings as a JSON file for backup or transfer. Import a pre
 
 ### Languages
 
-CardiPaw is available in **English**, **Dutch**, and **German**. On first launch the app picks a language from your browser settings (falling back to English), and you can switch it at any time from the Settings page — your choice is remembered locally. Dates and numbers are formatted according to the selected language.
+CardiPaw is available in **English**, **Dutch**, and **German**. On first launch the app picks a language from your browser settings (falling back to English), and you can switch it at any time using the flag picker in the home screen header — your choice is remembered locally. Dates and numbers are formatted according to the selected language.
 
 ## Contributing a Translation
 
