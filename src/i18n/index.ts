@@ -17,6 +17,17 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   ja: '日本語',
 };
 
+// First day of the week per locale: 0 = Sunday, 1 = Monday.
+// The Record<Locale, ...> type makes the build fail if a new locale is
+// added without one — Intl can't answer this from a bare language code.
+export const WEEK_START: Record<Locale, 0 | 1> = {
+  en: 0,
+  nl: 1,
+  de: 1,
+  fr: 1,
+  ja: 0,
+};
+
 const STORAGE_KEY = 'cardipaw-locale';
 
 function isSupported(value: string): value is Locale {

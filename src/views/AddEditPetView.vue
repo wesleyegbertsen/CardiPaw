@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { usePetsStore } from '../stores/pets';
 import PetPhotoUpload from '../components/PetPhotoUpload.vue';
+import DatePicker from '../components/DatePicker.vue';
 import type { Species } from '../types';
 import { DEFAULT_NORMAL_CEILING, DEFAULT_ELEVATED_CEILING } from '../utils/rateStatus';
 
@@ -14,6 +15,9 @@ const { t } = useI18n();
 
 const isEdit = !!route.params.id;
 const petId = route.params.id as string;
+
+const now = new Date();
+const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
 const name = ref('');
 const species = ref<Species>('cat');
@@ -133,14 +137,7 @@ function goBack() {
 
       <div class="field">
         <label class="label" for="pet-birthdate">{{ $t('addEditPet.birthdate') }}</label>
-        <input
-          id="pet-birthdate"
-          v-model="birthdate"
-          class="input"
-          type="date"
-          :max="new Date().toISOString().slice(0, 10)"
-          required
-        />
+        <DatePicker id="pet-birthdate" v-model="birthdate" :max="todayISO" />
       </div>
 
       <div class="field">

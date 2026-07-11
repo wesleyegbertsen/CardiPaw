@@ -115,6 +115,17 @@
     "thresholdError": "Le plafond élevé doit être supérieur au plafond normal ({normal}).",
     "submitAdd": "Ajouter l'animal"
   },
+  "datePicker": {
+    "placeholder": "Sélectionner une date",
+    "prevMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "prevYear": "Année précédente",
+    "nextYear": "Année suivante",
+    "prevYears": "Années précédentes",
+    "nextYears": "Années suivantes",
+    "selectMonth": "Choisir le mois",
+    "selectYear": "Choisir l'année"
+  },
   "reading": {
     "editAria": "Modifier la mesure",
     "deleteAria": "Supprimer la mesure",

@@ -115,6 +115,17 @@
     "thresholdError": "高め上限は正常上限（{normal}）より大きくする必要があります。",
     "submitAdd": "ペットを追加"
   },
+  "datePicker": {
+    "placeholder": "日付を選択",
+    "prevMonth": "前の月",
+    "nextMonth": "次の月",
+    "prevYear": "前の年",
+    "nextYear": "次の年",
+    "prevYears": "前の年代",
+    "nextYears": "次の年代",
+    "selectMonth": "月を選択",
+    "selectYear": "年を選択"
+  },
   "reading": {
     "editAria": "測定値を編集",
     "deleteAria": "測定値を削除",
