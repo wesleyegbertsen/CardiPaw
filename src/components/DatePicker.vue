@@ -22,6 +22,10 @@ const panelRef = ref<HTMLDivElement | null>(null);
 
 const YEARS_PER_PAGE = 12;
 
+// 6 weeks × 7 days: the most rows any month can span, so every month
+// renders the same number of cells and the panel height never changes.
+const DAY_GRID_CELLS = 6 * 7;
+
 // Parse a YYYY-MM-DD string as a local-time date; toISOString() would shift
 // the day across the UTC boundary in some timezones.
 function parseISO(value: string | undefined): Date | null {
@@ -88,6 +92,8 @@ const leadingBlanks = computed(() => {
   const firstWeekday = new Date(viewYear.value, viewMonth.value, 1).getDay();
   return (firstWeekday - weekStart.value + 7) % 7;
 });
+
+const trailingBlanks = computed(() => DAY_GRID_CELLS - leadingBlanks.value - dayCells.value.length);
 
 const dayCells = computed<DayCell[]>(() => {
   const daysInMonth = new Date(viewYear.value, viewMonth.value + 1, 0).getDate();
@@ -273,7 +279,7 @@ function dayAriaLabel(day: number): string {
             <span v-for="(name, i) in weekdayNames" :key="i" class="weekday">{{ name }}</span>
           </div>
           <div class="day-grid">
-            <span v-for="i in leadingBlanks" :key="`blank-${i}`"></span>
+            <span v-for="i in leadingBlanks" :key="`lead-${i}`" class="day-blank"></span>
             <button
               v-for="cell in dayCells"
               :key="cell.day"
@@ -286,6 +292,7 @@ function dayAriaLabel(day: number): string {
             >
               {{ cell.day }}
             </button>
+            <span v-for="i in trailingBlanks" :key="`trail-${i}`" class="day-blank"></span>
           </div>
         </template>
 
@@ -437,6 +444,11 @@ function dayAriaLabel(day: number): string {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
+}
+
+.day-blank {
+  aspect-ratio: 1;
+  min-height: 38px;
 }
 
 .day-btn {
