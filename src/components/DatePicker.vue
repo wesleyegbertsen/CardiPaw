@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { WEEK_START, type Locale } from '../i18n';
 
 const props = defineProps<{
   modelValue: string;
@@ -44,10 +45,7 @@ const displayText = computed(() =>
     : ''
 );
 
-// 0 = Sunday, 1 = Monday. The app only exposes bare locale codes, so a small
-// map is more predictable than Intl week info (which needs a region).
-const WEEK_START: Record<string, number> = { en: 0, ja: 0, nl: 1, de: 1, fr: 1 };
-const weekStart = computed(() => WEEK_START[locale.value] ?? 1);
+const weekStart = computed(() => WEEK_START[locale.value as Locale] ?? 1);
 
 // 2021-08-01 is a Sunday, used as a reference week for weekday names.
 const weekdayNames = computed(() => {
