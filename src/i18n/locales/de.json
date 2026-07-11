@@ -115,6 +115,17 @@
     "thresholdError": "Die Obergrenze für „erhöht“ muss höher sein als die Obergrenze für „normal“ ({normal}).",
     "submitAdd": "Tier hinzufügen"
   },
+  "datePicker": {
+    "placeholder": "Datum auswählen",
+    "prevMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "prevYear": "Vorheriges Jahr",
+    "nextYear": "Nächstes Jahr",
+    "prevYears": "Frühere Jahre",
+    "nextYears": "Spätere Jahre",
+    "selectMonth": "Monat auswählen",
+    "selectYear": "Jahr auswählen"
+  },
   "reading": {
     "editAria": "Messung bearbeiten",
     "deleteAria": "Messung löschen",
