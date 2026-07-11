@@ -89,6 +89,10 @@ const leadingBlanks = computed(() => {
   return (firstWeekday - weekStart.value + 7) % 7;
 });
 
+// Pad every month to a full 6-week grid so the panel height (and the
+// position of the nav buttons) stays constant while flipping months.
+const trailingBlanks = computed(() => 42 - leadingBlanks.value - dayCells.value.length);
+
 const dayCells = computed<DayCell[]>(() => {
   const daysInMonth = new Date(viewYear.value, viewMonth.value + 1, 0).getDate();
   const today = new Date();
@@ -273,7 +277,7 @@ function dayAriaLabel(day: number): string {
             <span v-for="(name, i) in weekdayNames" :key="i" class="weekday">{{ name }}</span>
           </div>
           <div class="day-grid">
-            <span v-for="i in leadingBlanks" :key="`blank-${i}`"></span>
+            <span v-for="i in leadingBlanks" :key="`lead-${i}`" class="day-blank"></span>
             <button
               v-for="cell in dayCells"
               :key="cell.day"
@@ -286,6 +290,7 @@ function dayAriaLabel(day: number): string {
             >
               {{ cell.day }}
             </button>
+            <span v-for="i in trailingBlanks" :key="`trail-${i}`" class="day-blank"></span>
           </div>
         </template>
 
@@ -437,6 +442,11 @@ function dayAriaLabel(day: number): string {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
+}
+
+.day-blank {
+  aspect-ratio: 1;
+  min-height: 38px;
 }
 
 .day-btn {
