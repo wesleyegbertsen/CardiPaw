@@ -85,7 +85,7 @@ Export all pets and readings as a JSON file for backup or transfer. Import a pre
 
 ### Languages
 
-CardiPaw is available in **English**, **Dutch**, and **German**. On first launch the app picks a language from your browser settings (falling back to English), and you can switch it at any time using the flag picker in the home screen header — your choice is remembered locally. Dates and numbers are formatted according to the selected language.
+CardiPaw is available in **English**, **Dutch**, **German**, **French**, and **Japanese**. On first launch the app picks a language from your browser settings (falling back to English), and you can switch it at any time using the flag picker in the home screen header — your choice is remembered locally. Dates and numbers are formatted according to the selected language.
 
 ## Contributing a Translation
 
@@ -112,7 +112,7 @@ Copy `src/i18n/locales/en.json` to `src/i18n/locales/<code>.json`, where `<code>
 import es from './locales/es.json';
 
 // add to the tuple (drives type-checking and the language picker)
-export const SUPPORTED_LOCALES = ['en', 'nl', 'de', 'fr', 'es'] as const;
+export const SUPPORTED_LOCALES = ['en', 'nl', 'de', 'fr', 'ja', 'es'] as const;
 
 // add the native-language name shown in the picker
 export const LOCALE_NAMES: Record<Locale, string> = {
@@ -120,15 +120,29 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   nl: 'Nederlands',
   de: 'Deutsch',
   fr: 'Français',
+  ja: '日本語',
   es: 'Español',
+};
+
+// add the first day of the week (0 = Sunday, 1 = Monday),
+// used by the in-app date picker's calendar grid
+export const WEEK_START: Record<Locale, 0 | 1> = {
+  en: 0,
+  nl: 1,
+  de: 1,
+  fr: 1,
+  ja: 0,
+  es: 1,
 };
 
 // add to the messages object
 export const i18n = createI18n({
-  messages: { en, nl, de, fr, es },
+  messages: { en, nl, de, fr, ja, es },
   // …
 });
 ```
+
+The `Record<Locale, …>` types are deliberate: if you extend `SUPPORTED_LOCALES` but forget a name or week start, `npm run build` fails with a missing-property error, so nothing can be registered halfway.
 
 #### 3. Add a flag in `src/components/LocalePicker.vue`
 
@@ -138,6 +152,7 @@ const LOCALE_COUNTRY: Record<Locale, keyof typeof FlagSVGs> = {
   nl: 'NL',
   de: 'DE',
   fr: 'FR',
+  ja: 'JP',
   es: 'ES',   // ISO 3166-1 alpha-2 country code
 };
 ```
@@ -157,7 +172,9 @@ npm run check-locale -- nl
 npm run check-locale -- de
 ```
 
-That is all that is needed — the language picker, auto-detection, and date/number formatting all pick up the new locale automatically.
+That is all that is needed — the language picker, auto-detection, date/number formatting, and the date picker's month/weekday names all pick up the new locale automatically.
+
+> **Note on non-Latin scripts:** the PDF report renders with jsPDF's built-in Helvetica font, which only covers Latin characters. A locale written in another script (like Japanese) also needs an embedded font: place the `.ttf` files in `public/fonts/` and follow the `loadJaFont`/`registerJaFont` pattern in `src/composables/usePdfExport.ts`. Latin-script locales can skip this entirely.
 
 ## Status Thresholds
 
