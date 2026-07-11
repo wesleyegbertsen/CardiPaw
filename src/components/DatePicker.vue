@@ -22,6 +22,10 @@ const panelRef = ref<HTMLDivElement | null>(null);
 
 const YEARS_PER_PAGE = 12;
 
+// 6 weeks × 7 days: the most rows any month can span, so every month
+// renders the same number of cells and the panel height never changes.
+const DAY_GRID_CELLS = 6 * 7;
+
 // Parse a YYYY-MM-DD string as a local-time date; toISOString() would shift
 // the day across the UTC boundary in some timezones.
 function parseISO(value: string | undefined): Date | null {
@@ -89,9 +93,7 @@ const leadingBlanks = computed(() => {
   return (firstWeekday - weekStart.value + 7) % 7;
 });
 
-// Pad every month to a full 6-week grid so the panel height (and the
-// position of the nav buttons) stays constant while flipping months.
-const trailingBlanks = computed(() => 42 - leadingBlanks.value - dayCells.value.length);
+const trailingBlanks = computed(() => DAY_GRID_CELLS - leadingBlanks.value - dayCells.value.length);
 
 const dayCells = computed<DayCell[]>(() => {
   const daysInMonth = new Date(viewYear.value, viewMonth.value + 1, 0).getDate();
