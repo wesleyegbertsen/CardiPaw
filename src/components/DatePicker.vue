@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { WEEK_START, type Locale } from '../i18n';
 
@@ -157,12 +157,24 @@ function close() {
   triggerRef.value?.focus();
 }
 
+// Escape must work no matter where focus sits — e.g. clicking the header
+// into the years view disables the title button, which drops focus out of
+// the panel and would silence a panel-scoped keydown handler.
+function onWindowKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') close();
+}
+
 watch(open, async (isOpen) => {
   if (isOpen) {
+    window.addEventListener('keydown', onWindowKeydown);
     await nextTick();
     panelRef.value?.focus();
+  } else {
+    window.removeEventListener('keydown', onWindowKeydown);
   }
 });
+
+onUnmounted(() => window.removeEventListener('keydown', onWindowKeydown));
 
 function goPrev() {
   if (view.value === 'days') {
@@ -250,7 +262,6 @@ function dayAriaLabel(day: number): string {
         aria-modal="true"
         :aria-label="t('datePicker.placeholder')"
         tabindex="-1"
-        @keydown.esc="close"
       >
         <div class="nav">
           <button type="button" class="nav-btn" :aria-label="prevLabel" @click="goPrev">
@@ -274,54 +285,56 @@ function dayAriaLabel(day: number): string {
           </button>
         </div>
 
-        <template v-if="view === 'days'">
-          <div class="weekdays" aria-hidden="true">
-            <span v-for="(name, i) in weekdayNames" :key="i" class="weekday">{{ name }}</span>
-          </div>
-          <div class="day-grid">
-            <span v-for="i in leadingBlanks" :key="`lead-${i}`" class="day-blank"></span>
+        <div class="view-body">
+          <template v-if="view === 'days'">
+            <div class="weekdays" aria-hidden="true">
+              <span v-for="(name, i) in weekdayNames" :key="i" class="weekday">{{ name }}</span>
+            </div>
+            <div class="day-grid">
+              <span v-for="i in leadingBlanks" :key="`lead-${i}`" class="day-blank"></span>
+              <button
+                v-for="cell in dayCells"
+                :key="cell.day"
+                type="button"
+                class="day-btn"
+                :class="{ selected: cell.isSelected, today: cell.isToday }"
+                :disabled="cell.disabled"
+                :aria-label="dayAriaLabel(cell.day)"
+                @click="selectDay(cell.day)"
+              >
+                {{ cell.day }}
+              </button>
+              <span v-for="i in trailingBlanks" :key="`trail-${i}`" class="day-blank"></span>
+            </div>
+          </template>
+
+          <div v-else-if="view === 'months'" class="option-grid">
             <button
-              v-for="cell in dayCells"
-              :key="cell.day"
+              v-for="(name, i) in monthNames"
+              :key="i"
               type="button"
-              class="day-btn"
-              :class="{ selected: cell.isSelected, today: cell.isToday }"
-              :disabled="cell.disabled"
-              :aria-label="dayAriaLabel(cell.day)"
-              @click="selectDay(cell.day)"
+              class="option-btn"
+              :class="{ selected: selected && i === selected.getMonth() && viewYear === selected.getFullYear() }"
+              :disabled="isMonthDisabled(i)"
+              @click="selectMonth(i)"
             >
-              {{ cell.day }}
+              {{ name }}
             </button>
-            <span v-for="i in trailingBlanks" :key="`trail-${i}`" class="day-blank"></span>
           </div>
-        </template>
 
-        <div v-else-if="view === 'months'" class="option-grid">
-          <button
-            v-for="(name, i) in monthNames"
-            :key="i"
-            type="button"
-            class="option-btn"
-            :class="{ selected: selected && i === selected.getMonth() && viewYear === selected.getFullYear() }"
-            :disabled="isMonthDisabled(i)"
-            @click="selectMonth(i)"
-          >
-            {{ name }}
-          </button>
-        </div>
-
-        <div v-else class="option-grid">
-          <button
-            v-for="year in yearPage"
-            :key="year"
-            type="button"
-            class="option-btn"
-            :class="{ selected: selected && year === selected.getFullYear() }"
-            :disabled="isYearDisabled(year)"
-            @click="selectYear(year)"
-          >
-            {{ year }}
-          </button>
+          <div v-else class="option-grid">
+            <button
+              v-for="year in yearPage"
+              :key="year"
+              type="button"
+              class="option-btn"
+              :class="{ selected: selected && year === selected.getFullYear() }"
+              :disabled="isYearDisabled(year)"
+              @click="selectYear(year)"
+            >
+              {{ year }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -426,6 +439,15 @@ function dayAriaLabel(day: number): string {
   cursor: default;
 }
 
+/* Fixed height shared by all three views (days / months / years) so
+   switching views never resizes the panel or moves the nav buttons:
+   24px weekday row + 4px margin + 6 day rows of 40px + 5 gaps of 2px. */
+.view-body {
+  height: 278px;
+  display: flex;
+  flex-direction: column;
+}
+
 .weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -437,6 +459,7 @@ function dayAriaLabel(day: number): string {
   font-size: 12px;
   font-weight: 600;
   color: var(--color-text-muted);
+  line-height: 16px;
   padding: 4px 0;
 }
 
@@ -447,13 +470,11 @@ function dayAriaLabel(day: number): string {
 }
 
 .day-blank {
-  aspect-ratio: 1;
-  min-height: 38px;
+  height: 40px;
 }
 
 .day-btn {
-  aspect-ratio: 1;
-  min-height: 38px;
+  height: 40px;
   border-radius: var(--radius-full);
   font-size: 14px;
   color: var(--color-text);
@@ -483,13 +504,14 @@ function dayAriaLabel(day: number): string {
 }
 
 .option-grid {
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
   gap: 6px;
 }
 
 .option-btn {
-  height: 48px;
   border-radius: var(--radius-sm);
   font-size: 14px;
   color: var(--color-text);
