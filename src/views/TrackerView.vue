@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAudioBeep } from '../composables/useAudioBeep';
+import { useHaptics } from '../composables/useHaptics';
 import RichTextEditor from '../components/RichTextEditor.vue';
 import { getRateStatus } from '../utils/rateStatus';
 
@@ -12,6 +13,7 @@ const router = useRouter();
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
 const { init: initAudio, playBeep, playDoneSound } = useAudioBeep();
+const { isSupported: hapticsSupported, vibrateTap, vibrateDone } = useHaptics();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
@@ -28,6 +30,7 @@ const saving = ref(false);
 const restState = ref<'resting' | 'sleeping' | undefined>(undefined);
 const notes = ref('');
 const soundEnabled = ref(true);
+const vibrationEnabled = ref(true);
 const manualRate = ref(0);
 const isManualMode = computed(() => mode.value === 'manual');
 
@@ -52,6 +55,7 @@ function startTracking() {
   phase.value = 'running';
   clickCount.value = 1; // first click counts as the first breath
   if (soundEnabled.value) playBeep(880, 0.15, 0.3);
+  if (vibrationEnabled.value) vibrateTap();
   triggerPulse();
   intervalId.value = setInterval(tick, 1000);
 }
@@ -59,6 +63,7 @@ function startTracking() {
 function registerBreath() {
   clickCount.value++;
   if (soundEnabled.value) playBeep(880, 0.15, 0.3);
+  if (vibrationEnabled.value) vibrateTap();
   triggerPulse();
 }
 
@@ -76,6 +81,7 @@ function stopTracking() {
   }
   phase.value = 'done';
   if (soundEnabled.value) playDoneSound();
+  if (vibrationEnabled.value) vibrateDone();
 }
 
 function triggerPulse() {
@@ -198,21 +204,21 @@ onUnmounted(() => {
     </div>
 
     <!-- Guided: Idle -->
-    <div v-else-if="phase === 'idle'" class="tracker-body">
+    <div v-else-if="phase === 'idle'" class="tracker-body tap-area" @click="handleHeartClick">
       <div class="body-top">
         <p class="instruction">{{ $t('tracker.instruction') }}</p>
       </div>
 
-      <button class="heart-btn" :class="{ pulsing: isPulsing }" @click="handleHeartClick" :aria-label="$t('tracker.tapToStart')">
+      <button class="heart-btn" :class="{ pulsing: isPulsing }" :aria-label="$t('tracker.tapToStart')">
         <svg class="heart-svg" viewBox="0 0 100 90" fill="currentColor">
           <path d="M50 85 C50 85 5 55 5 28 C5 13 17 3 30 3 C39 3 47 8 50 15 C53 8 61 3 70 3 C83 3 95 13 95 28 C95 55 50 85 50 85Z"/>
         </svg>
       </button>
 
       <div class="body-bottom">
-        <p class="tap-hint">{{ $t('tracker.tapToStart') }}</p>
+        <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
         <p class="timer-note">{{ $t('tracker.measurement30') }}</p>
-        <div class="option-row">
+        <div class="option-row" @click.stop>
           <span class="toggle-label">{{ $t('tracker.sound') }}</span>
           <button
             class="slide-toggle"
@@ -222,11 +228,21 @@ onUnmounted(() => {
             @click="soundEnabled = !soundEnabled"
           />
         </div>
+        <div v-if="hapticsSupported" class="option-row" @click.stop>
+          <span class="toggle-label">{{ $t('tracker.vibration') }}</span>
+          <button
+            class="slide-toggle"
+            :class="{ on: vibrationEnabled }"
+            role="switch"
+            :aria-checked="vibrationEnabled"
+            @click="vibrationEnabled = !vibrationEnabled"
+          />
+        </div>
       </div>
     </div>
 
     <!-- Running state -->
-    <div v-else-if="phase === 'running'" class="tracker-body">
+    <div v-else-if="phase === 'running'" class="tracker-body tap-area" @click="handleHeartClick">
       <div class="body-top">
         <div class="timer-ring">
           <svg viewBox="0 0 120 120" class="ring-svg">
@@ -244,7 +260,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <button class="heart-btn" :class="{ pulsing: isPulsing }" @click="handleHeartClick" :aria-label="$t('tracker.tapForBreath')">
+      <button class="heart-btn" :class="{ pulsing: isPulsing }" :aria-label="$t('tracker.tapForBreath')">
         <svg class="heart-svg" viewBox="0 0 100 90" fill="currentColor">
           <path d="M50 85 C50 85 5 55 5 28 C5 13 17 3 30 3 C39 3 47 8 50 15 C53 8 61 3 70 3 C83 3 95 13 95 28 C95 55 50 85 50 85Z"/>
         </svg>
@@ -338,6 +354,16 @@ onUnmounted(() => {
   grid-template-rows: 1fr auto 1fr;
   justify-items: center;
   padding: 32px 24px;
+}
+
+/* Whole body acts as the tap target in idle/running; suppress selection and
+   double-tap zoom so rapid breath taps register cleanly */
+.tap-area {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .body-top {
