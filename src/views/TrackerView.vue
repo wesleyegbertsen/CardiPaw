@@ -5,6 +5,7 @@ import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAudioBeep } from '../composables/useAudioBeep';
 import { useHaptics } from '../composables/useHaptics';
+import { useTrackerPrefs } from '../composables/useTrackerPrefs';
 import RichTextEditor from '../components/RichTextEditor.vue';
 import { getRateStatus } from '../utils/rateStatus';
 
@@ -17,6 +18,7 @@ const { isSupported: hapticsSupported, vibrateTap, vibrateDone } = useHaptics();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
+const { soundEnabled, vibrationEnabled } = useTrackerPrefs(petId);
 
 type Phase = 'idle' | 'running' | 'done';
 type Mode = 'guided' | 'manual';
@@ -29,8 +31,6 @@ const isPulsing = ref(false);
 const saving = ref(false);
 const restState = ref<'resting' | 'sleeping' | undefined>(undefined);
 const notes = ref('');
-const soundEnabled = ref(true);
-const vibrationEnabled = ref(true);
 const manualRate = ref(0);
 const isManualMode = computed(() => mode.value === 'manual');
 
