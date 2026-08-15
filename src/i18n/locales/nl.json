@@ -273,6 +273,22 @@
     "italic": "Cursief",
     "bulletList": "Opsommingslijst"
   },
+  "onboarding": {
+    "step1Title": "Laat je huisdier rusten of slapen",
+    "step1Body": "De RAF is alleen betrouwbaar als je huisdier kalm is — niet vlak na spelen, beweging of opwinding. Wacht tot het rustig is of slaapt voordat je begint.",
+    "step2Title": "Let op de borstkas",
+    "step2Body": "Eén keer op- en neergaan van de borstkas telt als één ademhaling. Zoek een hoek waarin je de zij- of buikbeweging van je huisdier goed kunt zien.",
+    "step3Title": "Tik bij elke ademhaling, 30 seconden lang",
+    "step3Body": "Start de begeleide meting en tik op het scherm telkens als je een ademhaling ziet. CardiPaw telt 30 seconden en verdubbelt het totaal om ademhalingen per minuut te berekenen.",
+    "step4Title": "Wanneer je niet moet meten",
+    "step4Body": "Sla de meting over als je huisdier hijgt, net heeft gegeten, net wakker is, gestrest of angstig is, of loops is — dit kan de frequentie tijdelijk verhogen.",
+    "stepCount": "Stap {current} van {total}",
+    "back": "Terug",
+    "next": "Volgende",
+    "skip": "Overslaan",
+    "gotIt": "Begrepen, meting starten",
+    "howItWorks": "Hoe het werkt"
+  },
   "pdf": {
     "reportTitle": "CardiPaw-rapport ademhalingsfrequentie",
     "dateTime": "Datum / tijd",

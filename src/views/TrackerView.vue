@@ -6,7 +6,9 @@ import { useReadingsStore } from '../stores/readings';
 import { useAudioBeep } from '../composables/useAudioBeep';
 import { useHaptics } from '../composables/useHaptics';
 import { useTrackerPrefs } from '../composables/useTrackerPrefs';
+import { useOnboarding } from '../composables/useOnboarding';
 import RichTextEditor from '../components/RichTextEditor.vue';
+import OnboardingModal from '../components/OnboardingModal.vue';
 import { getRateStatus } from '../utils/rateStatus';
 
 const route = useRoute();
@@ -19,6 +21,13 @@ const { isSupported: hapticsSupported, vibrateTap, vibrateDone } = useHaptics();
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
 const { soundEnabled, vibrationEnabled } = useTrackerPrefs(petId);
+const { hasSeenOnboarding, markSeen } = useOnboarding();
+const showOnboarding = ref(!hasSeenOnboarding.value);
+
+function closeOnboarding() {
+  showOnboarding.value = false;
+  markSeen();
+}
 
 type Phase = 'idle' | 'running' | 'done';
 type Mode = 'guided' | 'manual';
@@ -143,8 +152,16 @@ onUnmounted(() => {
         </svg>
       </button>
       <span class="pet-name-label">{{ pet?.name }}</span>
-      <div style="width: 32px;"></div>
+      <button class="help-btn" @click="showOnboarding = true" :aria-label="$t('onboarding.howItWorks')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M9.5 9.5a2.5 2.5 0 0 1 4.7 1.2c0 1.6-2.2 1.8-2.2 3.3" />
+          <path d="M12 17.5h.01" />
+        </svg>
+      </button>
     </header>
+
+    <OnboardingModal v-if="showOnboarding" @close="closeOnboarding" />
 
     <div class="tracker-main">
     <!-- Mode toggle: absolutely positioned so it overlays the body without affecting its height -->
@@ -337,6 +354,13 @@ onUnmounted(() => {
 }
 
 .back-btn {
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.help-btn {
   color: var(--color-text-muted);
   display: flex;
   align-items: center;

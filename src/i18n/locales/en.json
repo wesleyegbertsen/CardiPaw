@@ -273,6 +273,22 @@
     "italic": "Italic",
     "bulletList": "Bullet list"
   },
+  "onboarding": {
+    "step1Title": "Get your pet resting or sleeping",
+    "step1Body": "RRR is only meaningful when your pet is calm — not right after play, exercise, or excitement. Wait until they're settled or asleep before you start.",
+    "step2Title": "Watch the chest",
+    "step2Body": "One rise and fall of the chest counts as one breath. Find an angle where you can clearly see your pet's side or belly move.",
+    "step3Title": "Tap for every breath, for 30 seconds",
+    "step3Body": "Start the guided tracker and tap the screen each time you see a breath. CardiPaw counts for 30 seconds and doubles the total to get breaths per minute.",
+    "step4Title": "When not to measure",
+    "step4Body": "Skip the reading if your pet is panting, just ate, just woke up, is anxious or stressed, or is in heat — these can temporarily raise the rate.",
+    "stepCount": "Step {current} of {total}",
+    "back": "Back",
+    "next": "Next",
+    "skip": "Skip",
+    "gotIt": "Got it, start tracking",
+    "howItWorks": "How it works"
+  },
   "pdf": {
     "reportTitle": "CardiPaw Respiratory Rate Report",
     "dateTime": "Date / Time",

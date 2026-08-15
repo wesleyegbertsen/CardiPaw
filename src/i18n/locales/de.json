@@ -273,6 +273,22 @@
     "italic": "Kursiv",
     "bulletList": "Aufzählung"
   },
+  "onboarding": {
+    "step1Title": "Lass dein Tier ruhen oder schlafen",
+    "step1Body": "Die RAF ist nur aussagekräftig, wenn dein Tier ruhig ist — nicht direkt nach dem Spielen, Bewegung oder Aufregung. Warte, bis es sich beruhigt hat oder eingeschlafen ist, bevor du beginnst.",
+    "step2Title": "Beobachte den Brustkorb",
+    "step2Body": "Ein Heben und Senken des Brustkorbs zählt als ein Atemzug. Suche dir einen Blickwinkel, aus dem du die Seite oder den Bauch deines Tieres gut sehen kannst.",
+    "step3Title": "Tippe bei jedem Atemzug, 30 Sekunden lang",
+    "step3Body": "Starte die geführte Messung und tippe auf den Bildschirm, sobald du einen Atemzug siehst. CardiPaw zählt 30 Sekunden und verdoppelt die Summe, um die Atemzüge pro Minute zu berechnen.",
+    "step4Title": "Wann du nicht messen solltest",
+    "step4Body": "Überspringe die Messung, wenn dein Tier hechelt, gerade gefressen hat, gerade aufgewacht ist, ängstlich oder gestresst ist oder läufig ist — all das kann die Frequenz vorübergehend erhöhen.",
+    "stepCount": "Schritt {current} von {total}",
+    "back": "Zurück",
+    "next": "Weiter",
+    "skip": "Überspringen",
+    "gotIt": "Verstanden, Messung starten",
+    "howItWorks": "So funktioniert's"
+  },
   "pdf": {
     "reportTitle": "CardiPaw-Bericht zur Atemfrequenz",
     "dateTime": "Datum / Uhrzeit",
