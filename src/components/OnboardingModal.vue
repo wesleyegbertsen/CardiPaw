@@ -137,8 +137,12 @@ function back() {
 .step-title {
   font-size: 17px;
   font-weight: 700;
+  line-height: 1.3;
   color: var(--color-text);
   margin: 0;
+  min-height: calc(1.3em * 2);
+  display: flex;
+  align-items: center;
 }
 
 .step-body {
@@ -146,6 +150,10 @@ function back() {
   line-height: 1.6;
   color: var(--color-text-muted);
   margin: 0;
+  min-height: calc(1.6em * 5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dialog-footer {
