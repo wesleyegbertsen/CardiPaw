@@ -273,6 +273,22 @@
     "italic": "Italique",
     "bulletList": "Liste à puces"
   },
+  "onboarding": {
+    "step1Title": "Laissez votre animal se reposer ou s'endormir",
+    "step1Body": "La FRR n'est fiable que lorsque votre animal est calme — pas juste après avoir joué, bougé ou été excité. Attendez qu'il soit posé ou endormi avant de commencer.",
+    "step2Title": "Observez la poitrine",
+    "step2Body": "Un soulèvement et un abaissement de la poitrine comptent pour une respiration. Trouvez un angle qui vous permet de bien voir le flanc ou le ventre de votre animal bouger.",
+    "step3Title": "Appuyez à chaque respiration, pendant 30 secondes",
+    "step3Body": "Lancez le suivi guidé et appuyez sur l'écran chaque fois que vous voyez une respiration. CardiPaw compte pendant 30 secondes et double le total pour obtenir les respirations par minute.",
+    "step4Title": "Quand ne pas mesurer",
+    "step4Body": "Ne prenez pas de mesure si votre animal halète, vient de manger, vient de se réveiller, est anxieux ou stressé, ou est en chaleur — cela peut augmenter temporairement la fréquence.",
+    "stepCount": "Étape {current} sur {total}",
+    "back": "Retour",
+    "next": "Suivant",
+    "skip": "Passer",
+    "gotIt": "Compris, commencer le suivi",
+    "howItWorks": "Comment ça marche"
+  },
   "pdf": {
     "reportTitle": "Rapport de fréquence respiratoire CardiPaw",
     "dateTime": "Date / Heure",
