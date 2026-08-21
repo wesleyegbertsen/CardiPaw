@@ -6,17 +6,39 @@ const emit = defineEmits<{ close: [] }>();
 const steps = ['rest', 'watch', 'count', 'avoid'] as const;
 const step = ref(0);
 const isLastStep = computed(() => step.value === steps.length - 1);
+const transitionName = ref<'slide-left' | 'slide-right'>('slide-left');
 
 function next() {
   if (isLastStep.value) {
     emit('close');
   } else {
+    transitionName.value = 'slide-left';
     step.value++;
   }
 }
 
 function back() {
-  if (step.value > 0) step.value--;
+  if (step.value > 0) {
+    transitionName.value = 'slide-right';
+    step.value--;
+  }
+}
+
+const SWIPE_THRESHOLD = 40;
+let touchStartX = 0;
+let touchStartY = 0;
+
+function onTouchStart(e: TouchEvent) {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}
+
+function onTouchEnd(e: TouchEvent) {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
+  if (dx < 0) next();
+  else back();
 }
 </script>
 
@@ -29,27 +51,31 @@ function back() {
           <button class="btn-skip" @click="emit('close')">{{ $t('onboarding.skip') }}</button>
         </div>
 
-        <div class="dialog-body">
-          <div class="icon-badge">
-            <svg v-if="step === 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
-            </svg>
-            <svg v-else-if="step === 1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M2 13h3.5l2-6 3.5 12 2.5-9 1.5 3H21" />
-            </svg>
-            <svg v-else-if="step === 2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="13" r="8" />
-              <path d="M12 9v4l3 2" />
-              <path d="M9 2h6" />
-            </svg>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3 2 20h20L12 3Z" />
-              <path d="M12 9v5" />
-              <path d="M12 17h.01" />
-            </svg>
-          </div>
-          <h2 class="step-title">{{ $t(`onboarding.step${step + 1}Title`) }}</h2>
-          <p class="step-body">{{ $t(`onboarding.step${step + 1}Body`) }}</p>
+        <div class="dialog-body" @touchstart="onTouchStart" @touchend="onTouchEnd">
+          <Transition :name="transitionName" mode="out-in">
+            <div class="step-content" :key="step">
+              <div class="icon-badge">
+                <svg v-if="step === 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
+                </svg>
+                <svg v-else-if="step === 1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 13h3.5l2-6 3.5 12 2.5-9 1.5 3H21" />
+                </svg>
+                <svg v-else-if="step === 2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="13" r="8" />
+                  <path d="M12 9v4l3 2" />
+                  <path d="M9 2h6" />
+                </svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3 2 20h20L12 3Z" />
+                  <path d="M12 9v5" />
+                  <path d="M12 17h.01" />
+                </svg>
+              </div>
+              <h2 class="step-title">{{ $t(`onboarding.step${step + 1}Title`) }}</h2>
+              <p class="step-body">{{ $t(`onboarding.step${step + 1}Body`) }}</p>
+            </div>
+          </Transition>
         </div>
 
         <div class="dialog-footer">
@@ -109,12 +135,44 @@ function back() {
 }
 
 .dialog-body {
+  padding: 16px 28px 8px;
+  overflow-x: hidden;
+  touch-action: pan-y;
+}
+
+.step-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 12px;
-  padding: 16px 28px 8px;
+}
+
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(24px);
+  opacity: 0;
+}
+
+.slide-left-leave-to {
+  transform: translateX(-24px);
+  opacity: 0;
+}
+
+.slide-right-enter-from {
+  transform: translateX(-24px);
+  opacity: 0;
+}
+
+.slide-right-leave-to {
+  transform: translateX(24px);
+  opacity: 0;
 }
 
 .icon-badge {
