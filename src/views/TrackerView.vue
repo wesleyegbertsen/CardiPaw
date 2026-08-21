@@ -152,13 +152,7 @@ onUnmounted(() => {
         </svg>
       </button>
       <span class="pet-name-label">{{ pet?.name }}</span>
-      <button class="help-btn" @click="showOnboarding = true" :aria-label="$t('onboarding.howItWorks')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M9.5 9.5a2.5 2.5 0 0 1 4.7 1.2c0 1.6-2.2 1.8-2.2 3.3" />
-          <path d="M12 17.5h.01" />
-        </svg>
-      </button>
+      <button class="help-btn" @click="showOnboarding = true" :aria-label="$t('onboarding.howItWorks')">?</button>
     </header>
 
     <OnboardingModal v-if="showOnboarding" @close="closeOnboarding" />
@@ -361,10 +355,18 @@ onUnmounted(() => {
 }
 
 .help-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
-  padding: 4px;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .pet-name-label {
