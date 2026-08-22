@@ -90,18 +90,31 @@ const tabItems = computed(() => [
 
 // The indicator is measured from the live tab elements rather than assuming equal
 // widths: labels differ per locale and the count badges change the widths too.
+const tabsBarRef = ref<HTMLElement | null>(null);
 const tabsRef = ref<HTMLElement | null>(null);
 const tabEls = ref<HTMLElement[]>([]);
 const tabIndicatorStyle = ref<Record<string, string>>({ width: '0px', transform: 'translateX(0)' });
+// The arrows exist only when the labels genuinely do not all fit; when they do,
+// there is nothing to step towards that is not already on screen.
+const tabsOverflow = ref(false);
 
 function setTabRef(el: Element | null, index: number) {
   if (el) tabEls.value[index] = el as HTMLElement;
 }
 
-function syncTabIndicator(behavior: ScrollBehavior = 'smooth') {
-  const el = tabEls.value[activeTabIndex.value];
+async function syncTabs(behavior: ScrollBehavior = 'smooth') {
   const strip = tabsRef.value;
-  if (!el || !strip) return;
+  const bar = tabsBarRef.value;
+  if (!strip || !bar) return;
+
+  // Measured against the bar rather than the strip: the arrows take space of their
+  // own, so measuring the strip would make the answer depend on whether they are
+  // already shown, and the two would flip-flop.
+  tabsOverflow.value = strip.scrollWidth > bar.clientWidth + 1;
+  await nextTick(); // showing or hiding the arrows changes the strip's width
+
+  const el = tabEls.value[activeTabIndex.value];
+  if (!el) return;
   tabIndicatorStyle.value = {
     width: `${el.offsetWidth}px`,
     transform: `translateX(${el.offsetLeft}px)`,
@@ -113,11 +126,11 @@ function syncTabIndicator(behavior: ScrollBehavior = 'smooth') {
 
 watch(
   [activeTab, locale, () => readings.value.length, () => notes.value.length, () => trend.value.state],
-  () => nextTick(() => syncTabIndicator())
+  () => nextTick(() => syncTabs())
 );
 
 function onWindowResize() {
-  syncTabIndicator('auto');
+  syncTabs('auto');
 }
 
 onMounted(() => window.addEventListener('resize', onWindowResize));
@@ -364,7 +377,7 @@ onMounted(async () => {
   notesStore.loadNotesForPet(petId);
   // Measure once the labels and count badges are actually in the DOM.
   await nextTick();
-  syncTabIndicator('auto');
+  syncTabs('auto');
 });
 
 async function deletePet() {
@@ -431,8 +444,9 @@ async function deletePet() {
       </button>
     </div>
 
-    <div class="tabs-bar">
+    <div class="tabs-bar" ref="tabsBarRef">
       <button
+        v-if="tabsOverflow"
         class="tab-arrow"
         :style="{ visibility: canTabPrev ? 'visible' : 'hidden' }"
         :disabled="!canTabPrev"
@@ -463,6 +477,7 @@ async function deletePet() {
       </div>
 
       <button
+        v-if="tabsOverflow"
         class="tab-arrow"
         :style="{ visibility: canTabNext ? 'visible' : 'hidden' }"
         :disabled="!canTabNext"

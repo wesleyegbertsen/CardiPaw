@@ -64,7 +64,7 @@ Visualise trends over time with a line chart that supports three time ranges:
 
 Navigate backwards and forwards through history with previous/next controls, or jump straight back to the current period. The chart automatically disables navigation when there is no data further back.
 
-The pet detail view's tabs — Chart, Trend, Readings and Notes — can be stepped through with the arrows on either side of the tab strip (each arrow appears only when there is a tab that way) or by swiping the content left and right. When the labels do not all fit, as in some languages on narrow screens, the strip scrolls and keeps the active tab in view.
+The pet detail view's tabs — Chart, Trend, Readings and Notes — can be stepped through by swiping the content left and right. When the labels do not all fit, as in some languages on narrow screens, the strip scrolls, keeps the active tab in view, and shows arrows either side to step through it; each arrow is hidden at the end of the row where there is no further tab. When every tab fits on screen the arrows are not shown at all.
 
 ### Trend Watch
 
