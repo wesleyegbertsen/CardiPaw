@@ -253,6 +253,7 @@
   "chart": {
     "legendRate": "— Rate",
     "legendNormalMax": "- - Normal max ({n} breaths/min)",
+    "legendBaseline": "·· Usual ({n} breaths/min)",
     "empty": "No readings yet — start tracking to see a chart.",
     "tooltip": "{n} breaths/min",
     "yAxis": "Breaths / min"
@@ -307,5 +308,20 @@
     "ageMonths": "{n} month | {n} months",
     "ageYears": "{n} year | {n} years",
     "ageYearMonth": "{y}y {m}mo"
+  },
+  "trend": {
+    "title": "Trend watch",
+    "stateCalm": "Steady",
+    "stateWatch": "Slightly up",
+    "stateRising": "Rising",
+    "usualLabel": "Usual",
+    "nowLabel": "Now",
+    "changeLabel": "Change",
+    "bodyCalm": "{name}'s recent readings are in line with their usual range.",
+    "bodyWatch": "{name}'s recent readings are running a little above their usual range. Worth keeping an eye on.",
+    "bodyRising": "{name}'s recent readings are running well above their usual range — even if each one still looks normal on its own. This is worth mentioning to your vet.",
+    "bodyInsufficient": "Once there are readings across a few weeks, CardiPaw will compare recent measurements against {name}'s own usual range here.",
+    "basedOn": "Based on {recent} recent readings against {baseline} from the 30 days before.",
+    "disclaimer": "Trend watch compares your pet against their own history — it is not a diagnosis. Always follow your vet's advice."
   }
 }

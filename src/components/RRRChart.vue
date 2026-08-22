@@ -19,11 +19,20 @@ import { DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-const props = defineProps<{ readings: Reading[]; maxTicks?: number; normalCeiling?: number }>();
+const props = defineProps<{
+  readings: Reading[];
+  maxTicks?: number;
+  normalCeiling?: number;
+  /** The pet's usual range, drawn as a second reference line. Omit to hide it. */
+  baseline?: number | null;
+}>();
 const themeStore = useThemeStore();
 const { t, locale } = useI18n();
 
 const effectiveNormalCeiling = computed(() => props.normalCeiling ?? DEFAULT_NORMAL_CEILING);
+
+const baselineValue = computed(() => props.baseline ?? null);
+const baselineColor = computed(() => (themeStore.isDark ? '#60a5fa' : '#2563eb'));
 
 const sortedReadings = computed(() =>
   [...props.readings].sort((a, b) => a.date.localeCompare(b.date))
@@ -37,9 +46,8 @@ const labels = computed(() =>
 
 const rates = computed(() => sortedReadings.value.map((r) => r.rate));
 
-const chartData = computed(() => ({
-  labels: labels.value,
-  datasets: [
+const chartData = computed(() => {
+  const datasets = [
     {
       label: 'Breaths/min',
       data: rates.value,
@@ -61,8 +69,24 @@ const chartData = computed(() => ({
       pointRadius: 0,
       fill: false,
     },
-  ],
-}));
+  ];
+
+  const baseline = baselineValue.value;
+  if (baseline !== null) {
+    // Shorter dashes than the Normal max line so the two are told apart at a glance.
+    datasets.push({
+      label: `Usual (${baseline})`,
+      data: labels.value.map(() => baseline),
+      borderColor: baselineColor.value,
+      borderWidth: 1.5,
+      borderDash: [2, 3],
+      pointRadius: 0,
+      fill: false,
+    });
+  }
+
+  return { labels: labels.value, datasets };
+});
 
 const chartOptions = computed(() => {
   const textMuted = themeStore.isDark ? '#9ca3af' : '#6b7280';
@@ -105,6 +129,7 @@ const chartOptions = computed(() => {
       <div class="legend">
         <span class="legend-item primary">{{ $t('chart.legendRate') }}</span>
         <span class="legend-item normal">{{ $t('chart.legendNormalMax', { n: effectiveNormalCeiling }) }}</span>
+        <span v-if="baselineValue !== null" class="legend-item baseline">{{ $t('chart.legendBaseline', { n: baselineValue }) }}</span>
       </div>
       <div class="chart-container">
         <Line :data="chartData" :options="chartOptions" />
@@ -146,6 +171,11 @@ const chartOptions = computed(() => {
 .legend-item.normal {
   color: var(--color-success);
   opacity: 0.7;
+}
+
+.legend-item.baseline {
+  color: var(--color-info);
+  opacity: 0.85;
 }
 
 .empty {

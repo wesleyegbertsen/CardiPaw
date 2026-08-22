@@ -19,6 +19,8 @@
   --color-warning-bg: #fef3c7;
   --color-danger: #dc2626;
   --color-danger-bg: #fee2e2;
+  --color-info: #2563eb;
+  --color-info-bg: #dbeafe;
   --color-badge-cat-bg: #fce7f3;
   --color-badge-cat-text: #9d174d;
   --color-badge-dog-bg: #dbeafe;
@@ -48,6 +50,8 @@
   --color-success-bg: #052e16;
   --color-warning-bg: #1a120a;
   --color-danger-bg: #2d0a0a;
+  --color-info: #60a5fa;
+  --color-info-bg: #1a2a3d;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);

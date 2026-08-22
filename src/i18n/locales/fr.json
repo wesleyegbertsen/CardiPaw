@@ -253,6 +253,7 @@
   "chart": {
     "legendRate": "— Fréquence",
     "legendNormalMax": "- - Max normal ({n} resp./min)",
+    "legendBaseline": "·· Habituel ({n} resp./min)",
     "empty": "Aucune mesure — commencez le suivi pour voir un graphique.",
     "tooltip": "{n} resp./min",
     "yAxis": "Resp. / min"
@@ -307,5 +308,20 @@
     "ageMonths": "{n} mois | {n} mois",
     "ageYears": "{n} an | {n} ans",
     "ageYearMonth": "{y} an {m} mois"
+  },
+  "trend": {
+    "title": "Suivi de tendance",
+    "stateCalm": "Stable",
+    "stateWatch": "Légèrement élevé",
+    "stateRising": "En hausse",
+    "usualLabel": "Habituel",
+    "nowLabel": "Actuel",
+    "changeLabel": "Écart",
+    "bodyCalm": "Les mesures récentes de {name} correspondent à sa plage habituelle.",
+    "bodyWatch": "Les mesures récentes de {name} sont un peu au-dessus de sa plage habituelle. À surveiller.",
+    "bodyRising": "Les mesures récentes de {name} sont nettement au-dessus de sa plage habituelle — même si chacune paraît encore normale isolément. Cela mérite d’être signalé à votre vétérinaire.",
+    "bodyInsufficient": "Dès qu’il y aura des mesures sur quelques semaines, CardiPaw comparera ici les mesures récentes à la plage habituelle de {name}.",
+    "basedOn": "Basé sur {recent} mesures récentes comparées à {baseline} des 30 jours précédents.",
+    "disclaimer": "Le suivi de tendance compare votre animal à son propre historique — ce n’est pas un diagnostic. Suivez toujours les conseils de votre vétérinaire."
   }
 }

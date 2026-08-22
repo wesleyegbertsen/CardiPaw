@@ -7,6 +7,7 @@ import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
+import { useTrendWatch } from '../composables/useTrendWatch';
 import RRRChart from '../components/RRRChart.vue';
 import ReadingList from '../components/ReadingList.vue';
 import NoteList from '../components/NoteList.vue';
@@ -29,6 +30,28 @@ const ageDisplay = useAgeCalculator(birthdateRef);
 
 const readings = computed(() => readingsStore.getReadingsForPet(petId));
 const lastMeasured = useLastMeasured(readings);
+const trend = useTrendWatch(readings);
+
+function formatRate(value: number): string {
+  return new Intl.NumberFormat(locale.value, { maximumFractionDigits: 1 }).format(value);
+}
+
+const deviationLabel = computed(() =>
+  trend.value.deviation === null
+    ? ''
+    : new Intl.NumberFormat(locale.value, {
+        style: 'percent',
+        signDisplay: 'exceptZero',
+        maximumFractionDigits: 0,
+      }).format(trend.value.deviation)
+);
+
+// A brand-new pet already gets the chart's own empty state — no need to explain
+// Trend Watch there too.
+const showTrendCard = computed(() => trend.value.state !== 'insufficient' || readings.value.length > 0);
+
+// 'rising' -> 'Rising', so trend.state* / trend.body* keys can be built from the state.
+const trendKey = computed(() => trend.value.state.charAt(0).toUpperCase() + trend.value.state.slice(1));
 const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
@@ -139,6 +162,15 @@ const chartLabel = computed(() => {
 });
 
 const canGoNext = computed(() => chartOffset.value < 0);
+
+// The usual range is a "right now" figure. Drawing it across a period the user has
+// navigated back to — or across a year of monthly averages — would compare the pet
+// to a range that did not exist then, so the line is limited to the current week/month.
+const chartBaseline = computed(() => {
+  if (chartOffset.value !== 0 || chartRange.value === 'year') return null;
+  const b = trend.value.baseline;
+  return b === null ? null : Math.round(b * 10) / 10;
+});
 
 const oldestReadingDate = computed(() => {
   if (readings.value.length === 0) return null;
@@ -341,6 +373,38 @@ async function deletePet() {
 
     <div class="tab-content">
       <template v-if="activeTab === 'chart'">
+        <section v-if="showTrendCard" class="trend-card" :class="trend.state">
+          <div class="trend-head">
+            <h2 class="trend-title">{{ $t('trend.title') }}</h2>
+            <span v-if="trend.state !== 'insufficient'" class="trend-badge" :class="trend.state">
+              {{ $t('trend.state' + trendKey) }}
+            </span>
+          </div>
+
+          <div v-if="trend.baseline !== null && trend.current !== null" class="trend-stats">
+            <div class="trend-stat">
+              <span class="trend-stat-value">{{ formatRate(trend.baseline) }}</span>
+              <span class="trend-stat-label">{{ $t('trend.usualLabel') }}</span>
+            </div>
+            <div class="trend-stat">
+              <span class="trend-stat-value">{{ formatRate(trend.current) }}</span>
+              <span class="trend-stat-label">{{ $t('trend.nowLabel') }}</span>
+            </div>
+            <div class="trend-stat">
+              <span class="trend-stat-value" :class="trend.state">{{ deviationLabel }}</span>
+              <span class="trend-stat-label">{{ $t('trend.changeLabel') }}</span>
+            </div>
+          </div>
+
+          <p class="trend-body">
+            {{ $t('trend.body' + trendKey, { name: pet.name }) }}
+          </p>
+          <p v-if="trend.state !== 'insufficient'" class="trend-meta">
+            {{ $t('trend.basedOn', { recent: trend.recentCount, baseline: trend.baselineCount }) }}
+          </p>
+          <p v-if="trend.state !== 'insufficient'" class="trend-disclaimer">{{ $t('trend.disclaimer') }}</p>
+        </section>
+
         <div class="chart-controls">
           <div class="range-toggle">
             <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
@@ -413,7 +477,12 @@ async function deletePet() {
             </div>
           </div>
         </div>
-        <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" :normal-ceiling="pet?.normalCeiling" />
+        <RRRChart
+          :readings="chartReadings"
+          :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8"
+          :normal-ceiling="pet?.normalCeiling"
+          :baseline="chartBaseline"
+        />
       </template>
       <ReadingList v-else-if="activeTab === 'readings'" :readings="readings" :pet="pet" />
       <NoteList v-else :notes="notes" :petId="petId" />
@@ -647,6 +716,128 @@ async function deletePet() {
 .tab-content {
   padding: 16px;
   padding-bottom: 32px;
+}
+
+.trend-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  border-left: 3px solid var(--color-border);
+  margin-bottom: 12px;
+}
+
+.trend-card.calm {
+  border-left-color: var(--color-success);
+}
+
+.trend-card.watch {
+  border-left-color: var(--color-warning);
+}
+
+.trend-card.rising {
+  border-left-color: var(--color-danger);
+}
+
+.trend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.trend-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+.trend-badge {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.trend-badge.calm {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.trend-badge.watch {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.trend-badge.rising {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.trend-stats {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.trend-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  min-width: 0;
+}
+
+.trend-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.trend-stat-value.watch {
+  color: var(--color-warning);
+}
+
+.trend-stat-value.rising {
+  color: var(--color-danger);
+}
+
+.trend-stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.trend-body {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.trend-meta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.trend-disclaimer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
 }
 
 .chart-controls {

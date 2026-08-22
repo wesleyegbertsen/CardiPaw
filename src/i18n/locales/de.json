@@ -253,6 +253,7 @@
   "chart": {
     "legendRate": "— Frequenz",
     "legendNormalMax": "- - Normal max. ({n} Atemz./Min)",
+    "legendBaseline": "·· Üblich ({n} Atemz./Min)",
     "empty": "Noch keine Messungen — starte eine Messung, um ein Diagramm zu sehen.",
     "tooltip": "{n} Atemz./Min",
     "yAxis": "Atemz. / Min"
@@ -307,5 +308,20 @@
     "ageMonths": "{n} Monat | {n} Monate",
     "ageYears": "{n} Jahr | {n} Jahre",
     "ageYearMonth": "{y}J {m}Mon"
+  },
+  "trend": {
+    "title": "Trendbeobachtung",
+    "stateCalm": "Stabil",
+    "stateWatch": "Leicht erhöht",
+    "stateRising": "Steigend",
+    "usualLabel": "Üblich",
+    "nowLabel": "Jetzt",
+    "changeLabel": "Änderung",
+    "bodyCalm": "Die letzten Messungen von {name} entsprechen dem üblichen Bereich.",
+    "bodyWatch": "Die letzten Messungen von {name} liegen etwas über dem üblichen Bereich. Behalte es im Auge.",
+    "bodyRising": "Die letzten Messungen von {name} liegen deutlich über dem üblichen Bereich — auch wenn jede einzelne für sich noch normal wirkt. Das solltest du mit deiner Tierärztin oder deinem Tierarzt besprechen.",
+    "bodyInsufficient": "Sobald Messungen über einige Wochen vorliegen, vergleicht CardiPaw hier die letzten Messungen mit dem üblichen Bereich von {name}.",
+    "basedOn": "Basierend auf {recent} aktuellen Messungen gegenüber {baseline} aus den 30 Tagen davor.",
+    "disclaimer": "Die Trendbeobachtung vergleicht dein Tier mit seiner eigenen Historie — sie ist keine Diagnose. Folge immer dem Rat deiner Tierärztin oder deines Tierarztes."
   }
 }

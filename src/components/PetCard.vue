@@ -13,6 +13,7 @@ import {
 import type { Pet } from '../types';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
+import { useTrendWatch } from '../composables/useTrendWatch';
 import { useReadingsStore } from '../stores/readings';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
@@ -28,6 +29,11 @@ onMounted(() => readingsStore.loadReadingsForPet(props.pet.id));
 
 const readings = computed(() => readingsStore.getReadingsForPet(props.pet.id));
 const lastMeasured = useLastMeasured(readings);
+const trend = useTrendWatch(readings);
+
+// Steady is the expected state — showing a chip for it on every card would be noise,
+// so the chip only appears when a rise is worth surfacing.
+const showTrendChip = computed(() => trend.value.state === 'watch' || trend.value.state === 'rising');
 
 const sparklineData = computed(() => {
   const allReadings = readings.value;
@@ -120,6 +126,12 @@ function startTracking() {
       <span class="badge" :class="pet.species">{{ $t('species.' + pet.species) }}</span>
       <p class="age">{{ ageDisplay }}</p>
       <p class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
+      <span v-if="showTrendChip" class="trend-chip" :class="trend.state">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11" aria-hidden="true">
+          <path d="M3.5 18.5l6-6 4 4L22 7.9 20.6 6.5l-7.1 7.1-4-4L2 17z"/>
+        </svg>
+        {{ $t('trend.state' + (trend.state === 'rising' ? 'Rising' : 'Watch')) }}
+      </span>
     </div>
 
     <div v-if="hasSparklineData" class="sparkline-wrap">
@@ -240,6 +252,27 @@ function startTracking() {
 
 .last-measured.stale {
   color: #d97706;
+}
+
+.trend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.trend-chip.watch {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.trend-chip.rising {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 
 .sparkline-wrap {
