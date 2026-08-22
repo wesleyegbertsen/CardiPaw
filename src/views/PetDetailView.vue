@@ -97,9 +97,37 @@ const tabIndicatorStyle = ref<Record<string, string>>({ width: '0px', transform:
 // The arrows exist only when the labels genuinely do not all fit; when they do,
 // there is nothing to step towards that is not already on screen.
 const tabsOverflow = ref(false);
+// Which edges currently cut a label off, so only those get faded.
+const tabsFadeStart = ref(false);
+const tabsFadeEnd = ref(false);
 
 function setTabRef(el: Element | null, index: number) {
   if (el) tabEls.value[index] = el as HTMLElement;
+}
+
+// Smooth scrolling's last scroll event can land a pixel or two short of the
+// resting position, and fractional device pixels round the same way, so the edges
+// are compared with a small tolerance rather than exactly.
+const TAB_EDGE_TOLERANCE = 4;
+
+// Measured from the tabs rather than the strip's scrollWidth: the indicator
+// overshoots as it slides (its easing is deliberately springy) and while it does,
+// it inflates the strip's scrollable width, which would read as "more tabs to the
+// right" for as long as the bounce lasts.
+function tabsContentWidth(): number {
+  const last = tabEls.value[tabEls.value.length - 1];
+  return last ? last.offsetLeft + last.offsetWidth : 0;
+}
+
+function setTabFades(scrollLeft: number, strip: HTMLElement) {
+  const content = tabsContentWidth();
+  tabsFadeStart.value = scrollLeft > TAB_EDGE_TOLERANCE;
+  tabsFadeEnd.value = scrollLeft + strip.clientWidth < content - TAB_EDGE_TOLERANCE;
+}
+
+function onTabsScroll() {
+  const strip = tabsRef.value;
+  if (strip) setTabFades(strip.scrollLeft, strip);
 }
 
 async function syncTabs(behavior: ScrollBehavior = 'smooth') {
@@ -110,7 +138,7 @@ async function syncTabs(behavior: ScrollBehavior = 'smooth') {
   // Measured against the bar rather than the strip: the arrows take space of their
   // own, so measuring the strip would make the answer depend on whether they are
   // already shown, and the two would flip-flop.
-  tabsOverflow.value = strip.scrollWidth > bar.clientWidth + 1;
+  tabsOverflow.value = tabsContentWidth() > bar.clientWidth + 1;
   await nextTick(); // showing or hiding the arrows changes the strip's width
 
   const el = tabEls.value[activeTabIndex.value];
@@ -120,8 +148,16 @@ async function syncTabs(behavior: ScrollBehavior = 'smooth') {
     transform: `translateX(${el.offsetLeft}px)`,
   };
   // When the labels do not all fit, keep the active tab centred in the strip.
-  const target = el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2;
-  strip.scrollTo({ left: Math.max(0, target), behavior });
+  const maxScroll = Math.max(0, tabsContentWidth() - strip.clientWidth);
+  const target = Math.min(
+    Math.max(0, el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2),
+    maxScroll
+  );
+  strip.scrollTo({ left: target, behavior });
+  // Derived from where the scroll comes to rest, not from the live position:
+  // the scroll has not happened yet, and a scroll that does not move fires no
+  // event to correct a stale reading.
+  setTabFades(target, strip);
 }
 
 watch(
@@ -458,7 +494,14 @@ async function deletePet() {
         </svg>
       </button>
 
-      <div class="tabs" ref="tabsRef" role="tablist">
+      <div
+        class="tabs"
+        :class="{ 'fade-start': tabsFadeStart, 'fade-end': tabsFadeEnd }"
+        ref="tabsRef"
+        role="tablist"
+        @scroll="onTabsScroll"
+        @scrollend="onTabsScroll"
+      >
         <button
           v-for="(item, i) in tabItems"
           :key="item.name"
@@ -810,6 +853,7 @@ async function deletePet() {
 }
 
 .tabs {
+  --tab-fade: 24px;
   display: flex;
   position: relative;
   flex: 1;
@@ -824,6 +868,36 @@ async function deletePet() {
 
 .tabs::-webkit-scrollbar {
   display: none;
+}
+
+/* A scrolled strip cuts a label mid-word. Fading the cut edge makes that read as
+   "more this way" instead of as a rendering glitch — and only the edge that is
+   actually cutting something off is faded. */
+.tabs.fade-start {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--tab-fade));
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--tab-fade));
+}
+
+.tabs.fade-end {
+  -webkit-mask-image: linear-gradient(to left, transparent 0, #000 var(--tab-fade));
+  mask-image: linear-gradient(to left, transparent 0, #000 var(--tab-fade));
+}
+
+.tabs.fade-start.fade-end {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--tab-fade),
+    #000 calc(100% - var(--tab-fade)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--tab-fade),
+    #000 calc(100% - var(--tab-fade)),
+    transparent 100%
+  );
 }
 
 .tab {
