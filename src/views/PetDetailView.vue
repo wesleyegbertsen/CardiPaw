@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
@@ -21,7 +21,7 @@ const router = useRouter();
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
 const notesStore = useNotesStore();
-const { locale } = useI18n();
+const { t, locale } = useI18n();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
@@ -46,30 +46,100 @@ const deviationLabel = computed(() =>
       }).format(trend.value.deviation)
 );
 
-// A brand-new pet already gets the chart's own empty state — no need to explain
-// Trend Watch there too.
-const showTrendCard = computed(() => trend.value.state !== 'insufficient' || readings.value.length > 0);
-
 // 'rising' -> 'Rising', so trend.state* / trend.body* keys can be built from the state.
 const trendKey = computed(() => trend.value.state.charAt(0).toUpperCase() + trend.value.state.slice(1));
 const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
 const showShareModal = ref(false);
+const TABS = ['chart', 'trend', 'readings', 'notes'] as const;
+type TabName = (typeof TABS)[number];
+
 const activeTab = computed({
-  get: () => {
-    if (route.query.tab === 'readings') return 'readings';
-    if (route.query.tab === 'notes') return 'notes';
-    return 'chart';
+  get: (): TabName => {
+    const q = route.query.tab;
+    return TABS.includes(q as TabName) ? (q as TabName) : 'chart';
   },
-  set: (val: 'chart' | 'readings' | 'notes') => {
+  set: (val: TabName) => {
     router.replace({ query: { ...route.query, tab: val } });
   },
 });
 
-const tabIndicatorIndex = computed(() =>
-  ({ chart: 0, readings: 1, notes: 2 }[activeTab.value] ?? 0)
+const activeTabIndex = computed(() => TABS.indexOf(activeTab.value));
+const canTabPrev = computed(() => activeTabIndex.value > 0);
+const canTabNext = computed(() => activeTabIndex.value < TABS.length - 1);
+
+function goToTab(index: number) {
+  if (index < 0 || index >= TABS.length) return;
+  activeTab.value = TABS[index];
+}
+
+const tabItems = computed(() => [
+  { name: 'chart' as const, label: t('petDetail.tabChart'), count: 0, dot: null as string | null },
+  // A rise used to be visible on the chart tab itself; behind a tab it needs a marker,
+  // otherwise moving Trend Watch here would make it harder to notice, not easier.
+  {
+    name: 'trend' as const,
+    label: t('petDetail.tabTrend'),
+    count: 0,
+    dot: trend.value.state === 'watch' || trend.value.state === 'rising' ? trend.value.state : null,
+  },
+  { name: 'readings' as const, label: t('petDetail.tabReadings'), count: readings.value.length, dot: null as string | null },
+  { name: 'notes' as const, label: t('petDetail.tabNotes'), count: notes.value.length, dot: null as string | null },
+]);
+
+// The indicator is measured from the live tab elements rather than assuming equal
+// widths: labels differ per locale and the count badges change the widths too.
+const tabsRef = ref<HTMLElement | null>(null);
+const tabEls = ref<HTMLElement[]>([]);
+const tabIndicatorStyle = ref<Record<string, string>>({ width: '0px', transform: 'translateX(0)' });
+
+function setTabRef(el: Element | null, index: number) {
+  if (el) tabEls.value[index] = el as HTMLElement;
+}
+
+function syncTabIndicator(behavior: ScrollBehavior = 'smooth') {
+  const el = tabEls.value[activeTabIndex.value];
+  const strip = tabsRef.value;
+  if (!el || !strip) return;
+  tabIndicatorStyle.value = {
+    width: `${el.offsetWidth}px`,
+    transform: `translateX(${el.offsetLeft}px)`,
+  };
+  // When the labels do not all fit, keep the active tab centred in the strip.
+  const target = el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2;
+  strip.scrollTo({ left: Math.max(0, target), behavior });
+}
+
+watch(
+  [activeTab, locale, () => readings.value.length, () => notes.value.length, () => trend.value.state],
+  () => nextTick(() => syncTabIndicator())
 );
+
+function onWindowResize() {
+  syncTabIndicator('auto');
+}
+
+onMounted(() => window.addEventListener('resize', onWindowResize));
+onUnmounted(() => window.removeEventListener('resize', onWindowResize));
+
+// Swipe between tabs, matching the onboarding walkthrough's gesture.
+const TAB_SWIPE_THRESHOLD = 40;
+let tabTouchStartX = 0;
+let tabTouchStartY = 0;
+
+function onTabTouchStart(e: TouchEvent) {
+  tabTouchStartX = e.touches[0].clientX;
+  tabTouchStartY = e.touches[0].clientY;
+}
+
+function onTabTouchEnd(e: TouchEvent) {
+  if (showJumpPicker.value) return; // the open picker owns the gesture
+  const dx = e.changedTouches[0].clientX - tabTouchStartX;
+  const dy = e.changedTouches[0].clientY - tabTouchStartY;
+  if (Math.abs(dx) < TAB_SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
+  goToTab(activeTabIndex.value + (dx < 0 ? 1 : -1));
+}
 
 const chartRange = ref<'week' | 'month' | 'year'>('week');
 const chartOffset = ref(0);
@@ -292,6 +362,9 @@ onMounted(async () => {
   }
   readingsStore.loadReadingsForPet(petId);
   notesStore.loadNotesForPet(petId);
+  // Measure once the labels and count badges are actually in the DOM.
+  await nextTick();
+  syncTabIndicator('auto');
 });
 
 async function deletePet() {
@@ -358,53 +431,52 @@ async function deletePet() {
       </button>
     </div>
 
-    <div class="tabs">
-      <button class="tab" :class="{ active: activeTab === 'chart' }" @click="activeTab = 'chart'">{{ $t('petDetail.tabChart') }}</button>
-      <button class="tab" :class="{ active: activeTab === 'readings' }" @click="activeTab = 'readings'">
-        {{ $t('petDetail.tabReadings') }}
-        <span v-if="readings.length > 0" class="tab-count">{{ readings.length }}</span>
+    <div class="tabs-bar">
+      <button
+        class="tab-arrow"
+        :style="{ visibility: canTabPrev ? 'visible' : 'hidden' }"
+        :disabled="!canTabPrev"
+        :aria-label="$t('petDetail.prevTab')"
+        @click="goToTab(activeTabIndex - 1)"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+        </svg>
       </button>
-      <button class="tab" :class="{ active: activeTab === 'notes' }" @click="activeTab = 'notes'">
-        {{ $t('petDetail.tabNotes') }}
-        <span v-if="notes.length > 0" class="tab-count">{{ notes.length }}</span>
+
+      <div class="tabs" ref="tabsRef" role="tablist">
+        <button
+          v-for="(item, i) in tabItems"
+          :key="item.name"
+          :ref="(el) => setTabRef(el as Element | null, i)"
+          class="tab"
+          :class="{ active: activeTab === item.name }"
+          role="tab"
+          :aria-selected="activeTab === item.name"
+          @click="activeTab = item.name"
+        >
+          {{ item.label }}
+          <span v-if="item.count > 0" class="tab-count">{{ item.count }}</span>
+          <span v-else-if="item.dot" class="tab-dot" :class="item.dot"></span>
+        </button>
+        <div class="tab-indicator" :style="tabIndicatorStyle"></div>
+      </div>
+
+      <button
+        class="tab-arrow"
+        :style="{ visibility: canTabNext ? 'visible' : 'hidden' }"
+        :disabled="!canTabNext"
+        :aria-label="$t('petDetail.nextTab')"
+        @click="goToTab(activeTabIndex + 1)"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+        </svg>
       </button>
-      <div class="tab-indicator" :style="{ transform: `translateX(${tabIndicatorIndex * 100}%)` }"></div>
     </div>
 
-    <div class="tab-content">
+    <div class="tab-content" @touchstart="onTabTouchStart" @touchend="onTabTouchEnd">
       <template v-if="activeTab === 'chart'">
-        <section v-if="showTrendCard" class="trend-card" :class="trend.state">
-          <div class="trend-head">
-            <h2 class="trend-title">{{ $t('trend.title') }}</h2>
-            <span v-if="trend.state !== 'insufficient'" class="trend-badge" :class="trend.state">
-              {{ $t('trend.state' + trendKey) }}
-            </span>
-          </div>
-
-          <div v-if="trend.baseline !== null && trend.current !== null" class="trend-stats">
-            <div class="trend-stat">
-              <span class="trend-stat-value">{{ formatRate(trend.baseline) }}</span>
-              <span class="trend-stat-label">{{ $t('trend.usualLabel') }}</span>
-            </div>
-            <div class="trend-stat">
-              <span class="trend-stat-value">{{ formatRate(trend.current) }}</span>
-              <span class="trend-stat-label">{{ $t('trend.nowLabel') }}</span>
-            </div>
-            <div class="trend-stat">
-              <span class="trend-stat-value" :class="trend.state">{{ deviationLabel }}</span>
-              <span class="trend-stat-label">{{ $t('trend.changeLabel') }}</span>
-            </div>
-          </div>
-
-          <p class="trend-body">
-            {{ $t('trend.body' + trendKey, { name: pet.name }) }}
-          </p>
-          <p v-if="trend.state !== 'insufficient'" class="trend-meta">
-            {{ $t('trend.basedOn', { recent: trend.recentCount, baseline: trend.baselineCount }) }}
-          </p>
-          <p v-if="trend.state !== 'insufficient'" class="trend-disclaimer">{{ $t('trend.disclaimer') }}</p>
-        </section>
-
         <div class="chart-controls">
           <div class="range-toggle">
             <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
@@ -483,6 +555,39 @@ async function deletePet() {
           :normal-ceiling="pet?.normalCeiling"
           :baseline="chartBaseline"
         />
+      </template>
+      <template v-else-if="activeTab === 'trend'">
+        <section class="trend-card" :class="trend.state">
+          <div class="trend-head">
+            <h2 class="trend-title">{{ $t('trend.title') }}</h2>
+            <span v-if="trend.state !== 'insufficient'" class="trend-badge" :class="trend.state">
+              {{ $t('trend.state' + trendKey) }}
+            </span>
+          </div>
+
+          <div v-if="trend.baseline !== null && trend.current !== null" class="trend-stats">
+            <div class="trend-stat">
+              <span class="trend-stat-value">{{ formatRate(trend.baseline) }}</span>
+              <span class="trend-stat-label">{{ $t('trend.usualLabel') }}</span>
+            </div>
+            <div class="trend-stat">
+              <span class="trend-stat-value">{{ formatRate(trend.current) }}</span>
+              <span class="trend-stat-label">{{ $t('trend.nowLabel') }}</span>
+            </div>
+            <div class="trend-stat">
+              <span class="trend-stat-value" :class="trend.state">{{ deviationLabel }}</span>
+              <span class="trend-stat-label">{{ $t('trend.changeLabel') }}</span>
+            </div>
+          </div>
+
+          <p class="trend-body">
+            {{ $t('trend.body' + trendKey, { name: pet.name }) }}
+          </p>
+          <p v-if="trend.state !== 'insufficient'" class="trend-meta">
+            {{ $t('trend.basedOn', { recent: trend.recentCount, baseline: trend.baselineCount }) }}
+          </p>
+          <p v-if="trend.state !== 'insufficient'" class="trend-disclaimer">{{ $t('trend.disclaimer') }}</p>
+        </section>
       </template>
       <ReadingList v-else-if="activeTab === 'readings'" :readings="readings" :pet="pet" />
       <NoteList v-else :notes="notes" :petId="petId" />
@@ -668,19 +773,50 @@ async function deletePet() {
   opacity: 0.85;
 }
 
+.tabs-bar {
+  display: flex;
+  align-items: stretch;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab-arrow {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  color: var(--color-text-muted);
+  transition: color 0.15s;
+}
+
+.tab-arrow:hover {
+  color: var(--color-primary);
+}
+
 .tabs {
   display: flex;
   position: relative;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: 0 16px;
+  flex: 1;
+  min-width: 0;
+  /* Four tabs do not fit at narrow widths in every language, so the strip scrolls
+     and the arrows step through it. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
-  flex: 1;
-  padding: 14px 0;
+  flex: 1 0 auto;
+  padding: 14px 12px;
   font-size: 14px;
   font-weight: 500;
+  white-space: nowrap;
   color: var(--color-text-muted);
   transition: color 0.15s;
   display: flex;
@@ -696,12 +832,25 @@ async function deletePet() {
 .tab-indicator {
   position: absolute;
   bottom: 0;
-  left: 16px;
-  width: calc((100% - 32px) / 3);
+  left: 0;
   height: 2px;
   background: var(--color-primary);
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   border-radius: 1px 1px 0 0;
+}
+
+.tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+}
+
+.tab-dot.watch {
+  background: var(--color-warning);
+}
+
+.tab-dot.rising {
+  background: var(--color-danger);
 }
 
 .tab-count {
@@ -716,6 +865,8 @@ async function deletePet() {
 .tab-content {
   padding: 16px;
   padding-bottom: 32px;
+  /* Vertical scrolling stays native; horizontal is ours, for the tab swipe. */
+  touch-action: pan-y;
 }
 
 .trend-card {
@@ -724,7 +875,6 @@ async function deletePet() {
   padding: 16px;
   box-shadow: var(--shadow-sm);
   border-left: 3px solid var(--color-border);
-  margin-bottom: 12px;
 }
 
 .trend-card.calm {
