@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { Line } from 'vue-chartjs';
 import {
   Chart as ChartJS,
@@ -13,7 +14,7 @@ import {
 import type { Pet } from '../types';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
-import { useTrendWatch } from '../composables/useTrendWatch';
+import { useTrendWatch, TREND_STATE_KEY } from '../composables/useTrendWatch';
 import { useReadingsStore } from '../stores/readings';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
@@ -21,6 +22,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
 const props = defineProps<{ pet: Pet }>();
 const router = useRouter();
 const readingsStore = useReadingsStore();
+const { t } = useI18n();
 
 const birthdateRef = computed(() => props.pet.birthdate);
 const ageDisplay = useAgeCalculator(birthdateRef);
@@ -34,6 +36,10 @@ const trend = useTrendWatch(readings);
 // Steady is the expected state — showing a chip for it on every card would be noise,
 // so the chip only appears when a rise is worth surfacing.
 const showTrendChip = computed(() => trend.value.state === 'watch' || trend.value.state === 'rising');
+
+const trendChipLabel = computed(() =>
+  trend.value.state === 'insufficient' ? '' : t(TREND_STATE_KEY[trend.value.state])
+);
 
 const sparklineData = computed(() => {
   const allReadings = readings.value;
@@ -130,7 +136,7 @@ function startTracking() {
         <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11" aria-hidden="true">
           <path d="M3.5 18.5l6-6 4 4L22 7.9 20.6 6.5l-7.1 7.1-4-4L2 17z"/>
         </svg>
-        {{ $t('trend.state' + (trend.state === 'rising' ? 'Rising' : 'Watch')) }}
+        {{ trendChipLabel }}
       </span>
     </div>
 

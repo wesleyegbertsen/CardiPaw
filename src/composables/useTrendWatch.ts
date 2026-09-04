@@ -25,6 +25,23 @@ export type TrendState =
   | 'watch'
   | 'rising';
 
+/** Every state except the one that renders nothing. */
+export type ReportedTrendState = Exclude<TrendState, 'insufficient'>;
+
+// Spelled out rather than built by concatenating a prefix with the state name: these
+// stay greppable, and the locale tooling can only check keys it can see as literals.
+export const TREND_STATE_KEY: Record<ReportedTrendState, string> = {
+  calm: 'trend.stateCalm',
+  watch: 'trend.stateWatch',
+  rising: 'trend.stateRising',
+};
+
+export const TREND_BODY_KEY: Record<ReportedTrendState, string> = {
+  calm: 'trend.bodyCalm',
+  watch: 'trend.bodyWatch',
+  rising: 'trend.bodyRising',
+};
+
 export interface TrendWatch {
   state: TrendState;
   /** Median of the baseline window, or null when there is not enough history. */
@@ -55,6 +72,19 @@ function median(values: number[]): number {
 
 const MS_PER_DAY = 86_400_000;
 
+/**
+ * Which band a current reading falls into relative to a usual range. Shared so a
+ * report rebuilt from a stored baseline and current — a share link, say — lands on
+ * the same wording the app showed when the snapshot was taken.
+ */
+export function classifyTrend(baseline: number, current: number): TrendState {
+  if (baseline <= 0) return 'insufficient';
+  const pct = ((current - baseline) / baseline) * 100;
+  if (pct >= RISING_THRESHOLD_PCT) return 'rising';
+  if (pct >= WATCH_THRESHOLD_PCT) return 'watch';
+  return 'calm';
+}
+
 export function computeTrendWatch(readings: Reading[], now: number = Date.now()): TrendWatch {
   const recentStart = now - RECENT_WINDOW_DAYS * MS_PER_DAY;
   const baselineStart = recentStart - BASELINE_WINDOW_DAYS * MS_PER_DAY;
@@ -80,14 +110,9 @@ export function computeTrendWatch(readings: Reading[], now: number = Date.now())
   if (baseline <= 0) return INSUFFICIENT(baselineRates.length, recentRates.length);
 
   const deviation = (current - baseline) / baseline;
-  const pct = deviation * 100;
-
-  let state: TrendState = 'calm';
-  if (pct >= RISING_THRESHOLD_PCT) state = 'rising';
-  else if (pct >= WATCH_THRESHOLD_PCT) state = 'watch';
 
   return {
-    state,
+    state: classifyTrend(baseline, current),
     baseline,
     current,
     deviation,

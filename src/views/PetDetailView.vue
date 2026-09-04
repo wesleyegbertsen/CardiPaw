@@ -7,7 +7,7 @@ import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
-import { useTrendWatch } from '../composables/useTrendWatch';
+import { useTrendWatch, TREND_STATE_KEY, TREND_BODY_KEY } from '../composables/useTrendWatch';
 import RRRChart from '../components/RRRChart.vue';
 import ReadingList from '../components/ReadingList.vue';
 import NoteList from '../components/NoteList.vue';
@@ -47,8 +47,15 @@ const deviationLabel = computed(() =>
       }).format(trend.value.deviation)
 );
 
-// 'rising' -> 'Rising', so trend.state* / trend.body* keys can be built from the state.
-const trendKey = computed(() => trend.value.state.charAt(0).toUpperCase() + trend.value.state.slice(1));
+const trendStateLabel = computed(() =>
+  trend.value.state === 'insufficient' ? '' : t(TREND_STATE_KEY[trend.value.state])
+);
+
+const trendBodyText = computed(() =>
+  trend.value.state === 'insufficient'
+    ? ''
+    : t(TREND_BODY_KEY[trend.value.state], { name: pet.value?.name ?? '' })
+);
 const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
@@ -472,7 +479,7 @@ async function deletePet() {
       >
         <span class="trend-line-dot" :class="trend.state"></span>
         <span>
-          {{ $t('trend.state' + trendKey) }} ·
+          {{ trendStateLabel }} ·
           {{ $t('trend.heroSummary', { current: formatRate(trend.current!), baseline: formatRate(trend.baseline!) }) }}
         </span>
         <svg class="trend-line-chevron" viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
@@ -680,7 +687,7 @@ async function deletePet() {
           <span class="trend-stat-label">{{ $t('trend.changeLabel') }}</span>
         </div>
       </div>
-      <p class="trend-body">{{ $t('trend.body' + trendKey, { name: pet.name }) }}</p>
+      <p class="trend-body">{{ trendBodyText }}</p>
       <p class="trend-meta">{{ $t('trend.basedOn', { recent: trend.recentCount, baseline: trend.baselineCount }) }}</p>
       <p class="trend-disclaimer">{{ $t('trend.disclaimer') }}</p>
     </InfoModal>
