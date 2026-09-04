@@ -72,7 +72,6 @@
     "addNote": "Ajouter une note",
     "startTracking": "Commencer le suivi",
     "tabChart": "Graphique",
-    "tabTrend": "Tendance",
     "tabReadings": "Mesures",
     "tabNotes": "Notes",
     "rangeWeek": "Semaine",
@@ -317,13 +316,13 @@
     "stateCalm": "Stable",
     "stateWatch": "Légèrement élevé",
     "stateRising": "En hausse",
+    "heroSummary": "{current} actuellement contre {baseline} habituellement",
     "usualLabel": "Habituel",
     "nowLabel": "Actuel",
     "changeLabel": "Écart",
     "bodyCalm": "Les mesures récentes de {name} correspondent à sa plage habituelle.",
     "bodyWatch": "Les mesures récentes de {name} sont un peu au-dessus de sa plage habituelle. À surveiller.",
     "bodyRising": "Les mesures récentes de {name} sont nettement au-dessus de sa plage habituelle — même si chacune paraît encore normale isolément. Cela mérite d’être signalé à votre vétérinaire.",
-    "bodyInsufficient": "Dès qu’il y aura des mesures sur quelques semaines, CardiPaw comparera ici les mesures récentes à la plage habituelle de {name}.",
     "basedOn": "Basé sur {recent} mesures récentes comparées à {baseline} des 30 jours précédents.",
     "disclaimer": "Le suivi de tendance compare votre animal à son propre historique — ce n’est pas un diagnostic. Suivez toujours les conseils de votre vétérinaire."
   }

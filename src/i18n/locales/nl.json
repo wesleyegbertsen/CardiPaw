@@ -72,7 +72,6 @@
     "addNote": "Notitie toevoegen",
     "startTracking": "Meting starten",
     "tabChart": "Grafiek",
-    "tabTrend": "Trend",
     "tabReadings": "Metingen",
     "tabNotes": "Notities",
     "rangeWeek": "Week",
@@ -317,13 +316,13 @@
     "stateCalm": "Stabiel",
     "stateWatch": "Iets hoger",
     "stateRising": "Stijgend",
+    "heroSummary": "{current} nu tegenover {baseline} gebruikelijk",
     "usualLabel": "Gebruikelijk",
     "nowLabel": "Nu",
     "changeLabel": "Verschil",
     "bodyCalm": "De recente metingen van {name} liggen in lijn met het gebruikelijke bereik.",
     "bodyWatch": "De recente metingen van {name} liggen iets boven het gebruikelijke bereik. Houd het in de gaten.",
     "bodyRising": "De recente metingen van {name} liggen duidelijk boven het gebruikelijke bereik — ook als elke meting op zichzelf nog normaal lijkt. Dit is het bespreken met je dierenarts waard.",
-    "bodyInsufficient": "Zodra er metingen over een paar weken zijn, vergelijkt CardiPaw hier de recente metingen met het eigen gebruikelijke bereik van {name}.",
     "basedOn": "Gebaseerd op {recent} recente metingen tegenover {baseline} uit de 30 dagen daarvoor.",
     "disclaimer": "Trendbewaking vergelijkt je huisdier met zijn eigen geschiedenis — het is geen diagnose. Volg altijd het advies van je dierenarts."
   }

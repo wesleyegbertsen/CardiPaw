@@ -64,7 +64,7 @@ Visualise trends over time with a line chart that supports three time ranges:
 
 Navigate backwards and forwards through history with previous/next controls, or jump straight back to the current period. The chart automatically disables navigation when there is no data further back.
 
-The pet detail view's tabs — Chart, Trend, Readings and Notes — can be stepped through by swiping the content left and right. When the labels do not all fit, as in some languages on narrow screens, the strip scrolls, keeps the active tab in view, and shows arrows either side to step through it; each arrow is hidden at the end of the row where there is no further tab. When every tab fits on screen the arrows are not shown at all.
+The pet detail view's tabs — Chart, Readings and Notes — can be stepped through by swiping the content left and right. When the labels do not all fit, as in some languages on narrow screens, the strip scrolls, keeps the active tab in view, and shows arrows either side to step through it; each arrow is hidden at the end of the row where there is no further tab. When every tab fits on screen the arrows are not shown at all.
 
 ### Trend Watch
 
@@ -72,7 +72,7 @@ The Normal/Elevated/High labels are absolute thresholds, and they miss a real pa
 
 Trend Watch compares recent readings against each pet's *own* usual range instead. It takes the median of the last 5 days and compares it to the median of the 30 days before that (the windows never overlap, so a sustained rise cannot quietly drag its own baseline upwards). Medians rather than averages mean one odd reading — taken while your pet was dreaming, say — does not move the range.
 
-The result appears as **Steady**, **Slightly up** (10% or more above usual), or **Rising** (20% or more), on the pet's own **Trend** tab together with the usual/now/change figures. A rise also shows as a dot on the tab itself and as a chip on the home screen, so it is noticeable without opening the tab. The usual range is drawn on the chart as a dotted reference line alongside the Normal max line, so you can see the gap rather than just read about it.
+The result appears as **Steady**, **Slightly up** (10% or more above usual), or **Rising** (20% or more), as a single line under the pet's name — right next to "Measured yesterday" — so it is visible on every visit rather than tucked behind a tab. Tapping it opens the usual/now/change figures and an explanation. A rise also shows as a chip on the home screen. The usual range is drawn on the chart as a dotted reference line alongside the Normal max line, so you can see the gap rather than just read about it.
 
 It stays quiet until there is enough history to be meaningful — at least 8 readings in the baseline window and 2 in the recent one — and it deliberately says nothing rather than something unreliable. This is a comparison against your pet's own history, not a diagnosis; always follow your vet's advice.
 

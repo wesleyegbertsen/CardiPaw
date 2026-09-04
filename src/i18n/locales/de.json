@@ -72,7 +72,6 @@
     "addNote": "Notiz hinzufügen",
     "startTracking": "Messung starten",
     "tabChart": "Diagramm",
-    "tabTrend": "Trend",
     "tabReadings": "Messungen",
     "tabNotes": "Notizen",
     "rangeWeek": "Woche",
@@ -317,13 +316,13 @@
     "stateCalm": "Stabil",
     "stateWatch": "Leicht erhöht",
     "stateRising": "Steigend",
+    "heroSummary": "{current} jetzt gegenüber {baseline} üblich",
     "usualLabel": "Üblich",
     "nowLabel": "Jetzt",
     "changeLabel": "Änderung",
     "bodyCalm": "Die letzten Messungen von {name} entsprechen dem üblichen Bereich.",
     "bodyWatch": "Die letzten Messungen von {name} liegen etwas über dem üblichen Bereich. Behalte es im Auge.",
     "bodyRising": "Die letzten Messungen von {name} liegen deutlich über dem üblichen Bereich — auch wenn jede einzelne für sich noch normal wirkt. Das solltest du mit deiner Tierärztin oder deinem Tierarzt besprechen.",
-    "bodyInsufficient": "Sobald Messungen über einige Wochen vorliegen, vergleicht CardiPaw hier die letzten Messungen mit dem üblichen Bereich von {name}.",
     "basedOn": "Basierend auf {recent} aktuellen Messungen gegenüber {baseline} aus den 30 Tagen davor.",
     "disclaimer": "Die Trendbeobachtung vergleicht dein Tier mit seiner eigenen Historie — sie ist keine Diagnose. Folge immer dem Rat deiner Tierärztin oder deines Tierarztes."
   }

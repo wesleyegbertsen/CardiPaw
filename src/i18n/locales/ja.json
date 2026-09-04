@@ -72,7 +72,6 @@
     "addNote": "メモを追加",
     "startTracking": "記録を開始",
     "tabChart": "グラフ",
-    "tabTrend": "傾向",
     "tabReadings": "測定値",
     "tabNotes": "メモ",
     "rangeWeek": "週",
@@ -317,13 +316,13 @@
     "stateCalm": "安定",
     "stateWatch": "やや上昇",
     "stateRising": "上昇中",
+    "heroSummary": "現在{current} / 通常{baseline}",
     "usualLabel": "通常値",
     "nowLabel": "現在",
     "changeLabel": "変化",
     "bodyCalm": "{name}の最近の測定値は、通常の範囲内です。",
     "bodyWatch": "{name}の最近の測定値は、通常の範囲をやや上回っています。経過を見守ってください。",
     "bodyRising": "{name}の最近の測定値は、通常の範囲を大きく上回っています。個々の値は正常に見えても、獣医師に相談することをおすすめします。",
-    "bodyInsufficient": "数週間分の測定値がたまると、ここで最近の測定値を{name}自身の通常の範囲と比較して表示します。",
     "basedOn": "直近の{recent}件の測定値を、その前の30日間の{baseline}件と比較しています。",
     "disclaimer": "トレンド監視は、ペット自身の記録と比較するものであり、診断ではありません。必ず獣医師の指示に従ってください。"
   }

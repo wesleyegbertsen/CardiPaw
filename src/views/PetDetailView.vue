@@ -14,6 +14,7 @@ import NoteList from '../components/NoteList.vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import PdfExportModal from '../components/PdfExportModal.vue';
 import ShareLinkModal from '../components/ShareLinkModal.vue';
+import InfoModal from '../components/InfoModal.vue';
 import { useNotesStore } from '../stores/notes';
 
 const route = useRoute();
@@ -52,7 +53,8 @@ const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
 const showShareModal = ref(false);
-const TABS = ['chart', 'trend', 'readings', 'notes'] as const;
+const showTrendInfo = ref(false);
+const TABS = ['chart', 'readings', 'notes'] as const;
 type TabName = (typeof TABS)[number];
 
 const activeTab = computed({
@@ -75,17 +77,9 @@ function goToTab(index: number) {
 }
 
 const tabItems = computed(() => [
-  { name: 'chart' as const, label: t('petDetail.tabChart'), count: 0, dot: null as string | null },
-  // A rise used to be visible on the chart tab itself; behind a tab it needs a marker,
-  // otherwise moving Trend Watch here would make it harder to notice, not easier.
-  {
-    name: 'trend' as const,
-    label: t('petDetail.tabTrend'),
-    count: 0,
-    dot: trend.value.state === 'watch' || trend.value.state === 'rising' ? trend.value.state : null,
-  },
-  { name: 'readings' as const, label: t('petDetail.tabReadings'), count: readings.value.length, dot: null as string | null },
-  { name: 'notes' as const, label: t('petDetail.tabNotes'), count: notes.value.length, dot: null as string | null },
+  { name: 'chart' as const, label: t('petDetail.tabChart'), count: 0 },
+  { name: 'readings' as const, label: t('petDetail.tabReadings'), count: readings.value.length },
+  { name: 'notes' as const, label: t('petDetail.tabNotes'), count: notes.value.length },
 ]);
 
 // The indicator is measured from the live tab elements rather than assuming equal
@@ -161,7 +155,7 @@ async function syncTabs(behavior: ScrollBehavior = 'smooth') {
 }
 
 watch(
-  [activeTab, locale, () => readings.value.length, () => notes.value.length, () => trend.value.state],
+  [activeTab, locale, () => readings.value.length, () => notes.value.length],
   () => nextTick(() => syncTabs())
 );
 
@@ -469,6 +463,22 @@ async function deletePet() {
         <span class="pet-age">{{ ageDisplay }}</span>
       </div>
       <p class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
+      <button
+        v-if="trend.state !== 'insufficient'"
+        type="button"
+        class="trend-line"
+        :class="trend.state"
+        @click="showTrendInfo = true"
+      >
+        <span class="trend-line-dot" :class="trend.state"></span>
+        <span>
+          {{ $t('trend.state' + trendKey) }} ·
+          {{ $t('trend.heroSummary', { current: formatRate(trend.current!), baseline: formatRate(trend.baseline!) }) }}
+        </span>
+        <svg class="trend-line-chevron" viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
+          <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>
+        </svg>
+      </button>
     </div>
 
     <div class="track-cta">
@@ -514,7 +524,6 @@ async function deletePet() {
         >
           {{ item.label }}
           <span v-if="item.count > 0" class="tab-count">{{ item.count }}</span>
-          <span v-else-if="item.dot" class="tab-dot" :class="item.dot"></span>
         </button>
         <div class="tab-indicator" :style="tabIndicatorStyle"></div>
       </div>
@@ -614,39 +623,6 @@ async function deletePet() {
           :baseline="chartBaseline"
         />
       </template>
-      <template v-else-if="activeTab === 'trend'">
-        <section class="trend-card" :class="trend.state">
-          <div class="trend-head">
-            <h2 class="trend-title">{{ $t('trend.title') }}</h2>
-            <span v-if="trend.state !== 'insufficient'" class="trend-badge" :class="trend.state">
-              {{ $t('trend.state' + trendKey) }}
-            </span>
-          </div>
-
-          <div v-if="trend.baseline !== null && trend.current !== null" class="trend-stats">
-            <div class="trend-stat">
-              <span class="trend-stat-value">{{ formatRate(trend.baseline) }}</span>
-              <span class="trend-stat-label">{{ $t('trend.usualLabel') }}</span>
-            </div>
-            <div class="trend-stat">
-              <span class="trend-stat-value">{{ formatRate(trend.current) }}</span>
-              <span class="trend-stat-label">{{ $t('trend.nowLabel') }}</span>
-            </div>
-            <div class="trend-stat">
-              <span class="trend-stat-value" :class="trend.state">{{ deviationLabel }}</span>
-              <span class="trend-stat-label">{{ $t('trend.changeLabel') }}</span>
-            </div>
-          </div>
-
-          <p class="trend-body">
-            {{ $t('trend.body' + trendKey, { name: pet.name }) }}
-          </p>
-          <p v-if="trend.state !== 'insufficient'" class="trend-meta">
-            {{ $t('trend.basedOn', { recent: trend.recentCount, baseline: trend.baselineCount }) }}
-          </p>
-          <p v-if="trend.state !== 'insufficient'" class="trend-disclaimer">{{ $t('trend.disclaimer') }}</p>
-        </section>
-      </template>
       <ReadingList v-else-if="activeTab === 'readings'" :readings="readings" :pet="pet" />
       <NoteList v-else :notes="notes" :petId="petId" />
     </div>
@@ -684,6 +660,30 @@ async function deletePet() {
       @confirm="deletePet"
       @cancel="showDeleteDialog = false"
     />
+
+    <InfoModal
+      v-if="showTrendInfo"
+      :title="$t('trend.title')"
+      @close="showTrendInfo = false"
+    >
+      <div v-if="trend.baseline !== null && trend.current !== null" class="trend-stats">
+        <div class="trend-stat">
+          <span class="trend-stat-value">{{ formatRate(trend.baseline) }}</span>
+          <span class="trend-stat-label">{{ $t('trend.usualLabel') }}</span>
+        </div>
+        <div class="trend-stat">
+          <span class="trend-stat-value">{{ formatRate(trend.current) }}</span>
+          <span class="trend-stat-label">{{ $t('trend.nowLabel') }}</span>
+        </div>
+        <div class="trend-stat">
+          <span class="trend-stat-value" :class="trend.state">{{ deviationLabel }}</span>
+          <span class="trend-stat-label">{{ $t('trend.changeLabel') }}</span>
+        </div>
+      </div>
+      <p class="trend-body">{{ $t('trend.body' + trendKey, { name: pet.name }) }}</p>
+      <p class="trend-meta">{{ $t('trend.basedOn', { recent: trend.recentCount, baseline: trend.baselineCount }) }}</p>
+      <p class="trend-disclaimer">{{ $t('trend.disclaimer') }}</p>
+    </InfoModal>
 
   </div>
 </template>
@@ -804,6 +804,57 @@ async function deletePet() {
 
 .last-measured.stale {
   color: #d97706;
+}
+
+.trend-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.trend-line.watch {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
+
+.trend-line.rising {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.trend-line-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  flex-shrink: 0;
+}
+
+.trend-line-dot.watch {
+  background: var(--color-warning);
+}
+
+.trend-line-dot.rising {
+  background: var(--color-danger);
+}
+
+.trend-line-chevron {
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.trend-line:hover .trend-line-chevron {
+  opacity: 1;
 }
 
 .track-cta {
@@ -928,20 +979,6 @@ async function deletePet() {
   border-radius: 1px 1px 0 0;
 }
 
-.tab-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: var(--radius-full);
-}
-
-.tab-dot.watch {
-  background: var(--color-warning);
-}
-
-.tab-dot.rising {
-  background: var(--color-danger);
-}
-
 .tab-count {
   background: var(--color-primary-light);
   color: var(--color-primary);
@@ -956,65 +993,6 @@ async function deletePet() {
   padding-bottom: 32px;
   /* Vertical scrolling stays native; horizontal is ours, for the tab swipe. */
   touch-action: pan-y;
-}
-
-.trend-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  padding: 16px;
-  box-shadow: var(--shadow-sm);
-  border-left: 3px solid var(--color-border);
-}
-
-.trend-card.calm {
-  border-left-color: var(--color-success);
-}
-
-.trend-card.watch {
-  border-left-color: var(--color-warning);
-}
-
-.trend-card.rising {
-  border-left-color: var(--color-danger);
-}
-
-.trend-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.trend-title {
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--color-text-muted);
-}
-
-.trend-badge {
-  flex-shrink: 0;
-  padding: 3px 10px;
-  border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.trend-badge.calm {
-  background: var(--color-success-bg);
-  color: var(--color-success);
-}
-
-.trend-badge.watch {
-  background: var(--color-warning-bg);
-  color: var(--color-warning);
-}
-
-.trend-badge.rising {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
 }
 
 .trend-stats {
