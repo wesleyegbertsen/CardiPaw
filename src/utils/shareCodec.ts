@@ -1,4 +1,5 @@
 import type { Pet, Reading, SharePayload } from '../types';
+import { computeTrendWatch } from '../composables/useTrendWatch';
 
 // Encodes a SharePayload into a compact URL-safe string (and back) so a pet's
 // readings can be shared as a link. The data is deflate-compressed and
@@ -23,6 +24,10 @@ export function buildSharePayload(pet: Pet, readings: Reading[], months: string[
       ...(r.source && { source: r.source }),
     }));
 
+  // Computed from the full history, not just the shared months: the usual range is
+  // a property of the pet right now, independent of which months were picked.
+  const trend = computeTrendWatch(readings);
+
   return {
     v: 1,
     sharedAt: new Date().toISOString().slice(0, 10),
@@ -34,6 +39,14 @@ export function buildSharePayload(pet: Pet, readings: Reading[], months: string[
       ...(pet.elevatedCeiling !== undefined && { elevatedCeiling: pet.elevatedCeiling }),
     },
     readings: shared,
+    ...(trend.baseline !== null && trend.current !== null && {
+      trend: {
+        baseline: trend.baseline,
+        current: trend.current,
+        recentCount: trend.recentCount,
+        baselineCount: trend.baselineCount,
+      },
+    }),
   };
 }
 
@@ -88,6 +101,14 @@ function isSharePayload(value: unknown): value is SharePayload {
   if (typeof pet.name !== 'string' || typeof pet.birthdate !== 'string') return false;
   if (pet.species !== 'cat' && pet.species !== 'dog') return false;
   if (!Array.isArray(v.readings)) return false;
+  // Optional, but a malformed one means a corrupted link rather than an older
+  // sender — the version gate above already rejects other shapes.
+  if (v.trend !== undefined) {
+    const trend = v.trend as Record<string, unknown> | null;
+    if (typeof trend !== 'object' || trend === null) return false;
+    const numeric = ['baseline', 'current', 'recentCount', 'baselineCount'];
+    if (!numeric.every((k) => typeof trend[k] === 'number' && Number.isFinite(trend[k]))) return false;
+  }
   return v.readings.every((r) => {
     if (typeof r !== 'object' || r === null) return false;
     const reading = r as Record<string, unknown>;

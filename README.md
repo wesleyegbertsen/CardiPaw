@@ -74,6 +74,8 @@ Trend Watch compares recent readings against each pet's *own* usual range instea
 
 The result appears as **Steady**, **Slightly up** (10% or more above usual), or **Rising** (20% or more), as a single line under the pet's name — right next to "Measured yesterday" — so it is visible on every visit rather than tucked behind a tab. Tapping it opens the usual/now/change figures and an explanation. A rise also shows as a chip on the home screen. The usual range is drawn on the chart as a dotted reference line alongside the Normal max line, so you can see the gap rather than just read about it.
 
+The same summary appears in the [PDF report](#pdf-report) and the [shared link](#share), so whoever you hand them to sees it too. In both it is stated once, with the date it was taken, rather than drawn over month charts that may predate it — a usual range describes the pet now, not last February. Because a shared link carries only the months you picked and is opened after the fact, the figures travel inside the link as a snapshot rather than being recalculated on the reader's side.
+
 It stays quiet until there is enough history to be meaningful — at least 8 readings in the baseline window and 2 in the recent one — and it deliberately says nothing rather than something unreliable. This is a comparison against your pet's own history, not a diagnosis; always follow your vet's advice.
 
 ### Home Screen Sparkline

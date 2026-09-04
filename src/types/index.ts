@@ -46,4 +46,15 @@ export interface SharePayload {
   pet: Pick<Pet, 'name' | 'species' | 'birthdate' | 'normalCeiling' | 'elevatedCeiling'>;
   // date is truncated to minute precision ("YYYY-MM-DDTHH:mm") to keep the URL short
   readings: Pick<Reading, 'date' | 'rate' | 'restState' | 'source'>[];
+  // Trend Watch as it stood on sharedAt. Carried rather than recomputed: only the
+  // selected months travel in the link, and the reader opens it at some later date,
+  // so neither the usual range nor "now" can be derived on their side. Absent when
+  // there was not enough history to report. State and change are left out because
+  // they follow from these two numbers.
+  trend?: {
+    baseline: number;
+    current: number;
+    recentCount: number;
+    baselineCount: number;
+  };
 }

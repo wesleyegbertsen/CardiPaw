@@ -324,6 +324,7 @@
     "bodyWatch": "Les mesures récentes de {name} sont un peu au-dessus de sa plage habituelle. À surveiller.",
     "bodyRising": "Les mesures récentes de {name} sont nettement au-dessus de sa plage habituelle — même si chacune paraît encore normale isolément. Cela mérite d’être signalé à votre vétérinaire.",
     "basedOn": "Basé sur {recent} mesures récentes comparées à {baseline} des 30 jours précédents.",
+    "asOf": "au {date}",
     "disclaimer": "Le suivi de tendance compare votre animal à son propre historique — ce n’est pas un diagnostic. Suivez toujours les conseils de votre vétérinaire."
   }
 }

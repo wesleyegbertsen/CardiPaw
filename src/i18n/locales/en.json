@@ -324,6 +324,7 @@
     "bodyWatch": "{name}'s recent readings are running a little above their usual range. Worth keeping an eye on.",
     "bodyRising": "{name}'s recent readings are running well above their usual range — even if each one still looks normal on its own. This is worth mentioning to your vet.",
     "basedOn": "Based on {recent} recent readings against {baseline} from the 30 days before.",
+    "asOf": "as of {date}",
     "disclaimer": "Trend watch compares your pet against their own history — it is not a diagnosis. Always follow your vet's advice."
   }
 }

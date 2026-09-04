@@ -324,6 +324,7 @@
     "bodyWatch": "Die letzten Messungen von {name} liegen etwas über dem üblichen Bereich. Behalte es im Auge.",
     "bodyRising": "Die letzten Messungen von {name} liegen deutlich über dem üblichen Bereich — auch wenn jede einzelne für sich noch normal wirkt. Das solltest du mit deiner Tierärztin oder deinem Tierarzt besprechen.",
     "basedOn": "Basierend auf {recent} aktuellen Messungen gegenüber {baseline} aus den 30 Tagen davor.",
+    "asOf": "Stand {date}",
     "disclaimer": "Die Trendbeobachtung vergleicht dein Tier mit seiner eigenen Historie — sie ist keine Diagnose. Folge immer dem Rat deiner Tierärztin oder deines Tierarztes."
   }
 }

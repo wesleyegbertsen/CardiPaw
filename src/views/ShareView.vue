@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import type { Reading, SharePayload } from '../types';
 import { decodeShare } from '../utils/shareCodec';
 import { getRateStatus } from '../utils/rateStatus';
+import { classifyTrend, TREND_STATE_KEY, TREND_BODY_KEY } from '../composables/useTrendWatch';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import RRRChart from '../components/RRRChart.vue';
 import ThemeToggle from '../components/ThemeToggle.vue';
@@ -15,7 +16,7 @@ import LocalePicker from '../components/LocalePicker.vue';
 // the owner's own device cannot mix with or mutate local data.
 
 const route = useRoute();
-const { locale } = useI18n();
+const { t, locale } = useI18n();
 
 const state = ref<'loading' | 'error' | 'ready'>('loading');
 const payload = ref<SharePayload | null>(null);
@@ -54,6 +55,36 @@ const sharedAtLabel = computed(() => {
 });
 
 const allReadings = computed(() => payload.value?.readings ?? []);
+
+// Rebuilt from the snapshot carried in the link rather than from the shared
+// readings: only the selected months travel, and this page is opened after the
+// fact, so the usual range cannot be derived here.
+const trend = computed(() => {
+  const snapshot = payload.value?.trend;
+  if (!snapshot) return null;
+  const state = classifyTrend(snapshot.baseline, snapshot.current);
+  if (state === 'insufficient') return null;
+  return {
+    ...snapshot,
+    state,
+    deviation: (snapshot.current - snapshot.baseline) / snapshot.baseline,
+    label: t(TREND_STATE_KEY[state]),
+    body: t(TREND_BODY_KEY[state], { name: payload.value?.pet.name ?? '' }),
+  };
+});
+
+const fmtRate = (v: number) =>
+  new Intl.NumberFormat(locale.value, { maximumFractionDigits: 1 }).format(v);
+
+const trendChangeLabel = computed(() =>
+  trend.value === null
+    ? ''
+    : new Intl.NumberFormat(locale.value, {
+        style: 'percent',
+        signDisplay: 'exceptZero',
+        maximumFractionDigits: 0,
+      }).format(trend.value.deviation)
+);
 
 const stats = computed(() => {
   const rates = allReadings.value.map((r) => r.rate);
@@ -172,6 +203,35 @@ function formatDateTime(date: string): string {
           <span class="rate-badge danger">{{ $t('share.countHigh', { count: stats.counts.danger }) }}</span>
         </div>
       </div>
+
+      <section v-if="trend" class="trend-card" :class="trend.state">
+        <div class="trend-head">
+          <h2 class="trend-title">{{ $t('trend.title') }}</h2>
+          <span class="trend-badge" :class="trend.state">{{ trend.label }}</span>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="stat-value">{{ fmtRate(trend.baseline) }}</span>
+            <span class="stat-label">{{ $t('trend.usualLabel') }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{{ fmtRate(trend.current) }}</span>
+            <span class="stat-label">{{ $t('trend.nowLabel') }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" :class="trend.state">{{ trendChangeLabel }}</span>
+            <span class="stat-label">{{ $t('trend.changeLabel') }}</span>
+          </div>
+        </div>
+
+        <p class="trend-body">{{ trend.body }}</p>
+        <p class="trend-meta">
+          {{ $t('trend.basedOn', { recent: trend.recentCount, baseline: trend.baselineCount }) }}
+          · {{ $t('trend.asOf', { date: sharedAtLabel }) }}
+        </p>
+        <p class="trend-disclaimer">{{ $t('trend.disclaimer') }}</p>
+      </section>
 
       <section v-for="month in monthSections" :key="month.key" class="month-section">
         <h2 class="month-title">{{ month.label }}</h2>
@@ -363,6 +423,95 @@ function formatDateTime(date: string): string {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.trend-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+  border-left: 3px solid var(--color-border);
+}
+
+.trend-card.calm {
+  border-left-color: var(--color-success);
+}
+
+.trend-card.watch {
+  border-left-color: var(--color-warning);
+}
+
+.trend-card.rising {
+  border-left-color: var(--color-danger);
+}
+
+.trend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.trend-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+.trend-badge {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.trend-badge.calm {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.trend-badge.watch {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.trend-badge.rising {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.stat-value.watch {
+  color: var(--color-warning);
+}
+
+.stat-value.rising {
+  color: var(--color-danger);
+}
+
+.trend-body {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.trend-meta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.trend-disclaimer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
 }
 
 .stat-grid {

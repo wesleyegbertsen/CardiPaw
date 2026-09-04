@@ -11,6 +11,7 @@ import {
 } from 'chart.js';
 import type { Pet, Reading } from '../types';
 import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
+import { computeTrendWatch, TREND_STATE_KEY, TREND_BODY_KEY } from './useTrendWatch';
 import { currentLocale } from '../i18n';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
@@ -31,6 +32,12 @@ function svgPathToDataUrl(path: string, color: string): Promise<string> {
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   });
 }
+
+const TREND_COLORS: Record<string, string> = {
+  calm: '#16a34a',
+  watch: '#d97706',
+  rising: '#dc2626',
+};
 
 const ML = 14;   // margin left
 const MR = 14;   // margin right
@@ -265,6 +272,83 @@ export function usePdfExport() {
       doc.setLineWidth(0.3);
       doc.line(ML, curY, PW - MR, curY);
       curY += 8;
+
+      // ── Trend watch summary ──
+      // The usual range is a "right now" figure, so it is stated once, with the date
+      // it was taken, rather than drawn across month charts that may predate it.
+      const trend = computeTrendWatch(readings);
+      const { baseline, current, deviation } = trend;
+      if (trend.state !== 'insufficient' && baseline !== null && current !== null && deviation !== null) {
+        const stateColor = TREND_COLORS[trend.state];
+        const num = (v: number) => new Intl.NumberFormat(loc, { maximumFractionDigits: 1 }).format(v);
+        // Several locales put a non-breaking space before the %, which the PDF fonts
+        // do not carry — it would come out as a missing glyph.
+        const change = new Intl.NumberFormat(loc, {
+          style: 'percent',
+          signDisplay: 'exceptZero',
+          maximumFractionDigits: 0,
+        }).format(deviation).replace(/ /g, ' ');
+
+        const lineHeightMm = (size: number) => size / 72 * 25.4 * doc.getLineHeightFactor();
+        const pad = 4;
+        const innerX = ML + pad;
+        const innerW = UW - pad * 2;
+
+        doc.setFont(fontFamily, 'normal');
+        doc.setFontSize(9);
+        const bodyLines: string[] = doc.splitTextToSize(t(TREND_BODY_KEY[trend.state], { name: pet.name }), innerW);
+        const bodyLH = lineHeightMm(9);
+        doc.setFontSize(8);
+        const metaLines: string[] = doc.splitTextToSize(
+          `${t('trend.basedOn', { recent: trend.recentCount, baseline: trend.baselineCount })} · ${t('trend.asOf', { date: exportDate })}`,
+          innerW,
+        );
+        const discLines: string[] = doc.splitTextToSize(t('trend.disclaimer'), innerW);
+        const metaLH = lineHeightMm(8);
+
+        // Positions are relative to the top of the box so the height cannot drift
+        // out of step with what is actually drawn.
+        const yTitle = pad + 3;
+        const yFigures = yTitle + 6;
+        const yBody = yFigures + 5;
+        const bodyEnd = yBody + (bodyLines.length - 1) * bodyLH;
+        const yMeta = bodyEnd + metaLH + 2;
+        const metaEnd = yMeta + (metaLines.length - 1) * metaLH;
+        const yDisc = metaEnd + metaLH + 1.5;
+        const discEnd = yDisc + (discLines.length - 1) * metaLH;
+        const boxH = discEnd + 2 + pad;
+
+        doc.setFillColor('#f9fafb');
+        doc.roundedRect(ML, curY, UW, boxH, 1.5, 1.5, 'F');
+        doc.setFillColor(stateColor);
+        doc.rect(ML, curY, 1.2, boxH, 'F');
+
+        doc.setFont(fontFamily, 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor('#6b7280');
+        doc.text(t('trend.title'), innerX, curY + yTitle);
+        doc.setTextColor(stateColor);
+        doc.text(t(TREND_STATE_KEY[trend.state]), PW - MR - pad, curY + yTitle, { align: 'right' });
+
+        doc.setFontSize(11);
+        doc.setTextColor('#1a1a1a');
+        const figures = `${t('trend.usualLabel')} ${num(baseline)}    ${t('trend.nowLabel')} ${num(current)}    `;
+        doc.text(figures, innerX, curY + yFigures);
+        doc.setTextColor(stateColor);
+        doc.text(change, innerX + doc.getTextWidth(figures), curY + yFigures);
+
+        doc.setFont(fontFamily, 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor('#374151');
+        doc.text(bodyLines, innerX, curY + yBody);
+
+        doc.setFontSize(8);
+        doc.setTextColor('#9ca3af');
+        doc.text(metaLines, innerX, curY + yMeta);
+        doc.text(discLines, innerX, curY + yDisc);
+
+        curY += boxH + 8;
+      }
 
       // ── Month sections ──
       const sortedMonths = [...selectedMonths].sort((a, b) =>

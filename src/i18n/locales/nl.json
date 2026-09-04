@@ -324,6 +324,7 @@
     "bodyWatch": "De recente metingen van {name} liggen iets boven het gebruikelijke bereik. Houd het in de gaten.",
     "bodyRising": "De recente metingen van {name} liggen duidelijk boven het gebruikelijke bereik — ook als elke meting op zichzelf nog normaal lijkt. Dit is het bespreken met je dierenarts waard.",
     "basedOn": "Gebaseerd op {recent} recente metingen tegenover {baseline} uit de 30 dagen daarvoor.",
+    "asOf": "peildatum {date}",
     "disclaimer": "Trendbewaking vergelijkt je huisdier met zijn eigen geschiedenis — het is geen diagnose. Volg altijd het advies van je dierenarts."
   }
 }
