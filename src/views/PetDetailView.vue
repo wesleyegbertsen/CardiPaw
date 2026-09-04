@@ -831,6 +831,18 @@ async function deletePet() {
   background: var(--color-danger-bg);
 }
 
+/* align-items: center lines up the flex items' boxes, but the text's box is taller
+   than its letters — the font reserves descender space below the baseline whether
+   or not the string uses it — so both marks land a little above the letters they
+   read alongside. They are nudged down to sit level with the "·" separator in the
+   string itself, which is the mark the eye compares them against. Aligning instead
+   to the text's full ink box would overshoot, since that box includes descenders.
+   A whole pixel keeps them off a half-pixel, where they would render soft. */
+.trend-line-dot,
+.trend-line-chevron {
+  transform: translateY(1px);
+}
+
 .trend-line-dot {
   width: 6px;
   height: 6px;
