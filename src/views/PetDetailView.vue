@@ -33,20 +33,102 @@ const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
 const showShareModal = ref(false);
+const TABS = ['chart', 'readings', 'notes'] as const;
+type Tab = typeof TABS[number];
+
 const activeTab = computed({
-  get: () => {
-    if (route.query.tab === 'readings') return 'readings';
-    if (route.query.tab === 'notes') return 'notes';
-    return 'chart';
-  },
-  set: (val: 'chart' | 'readings' | 'notes') => {
+  get: (): Tab => TABS.find((t) => t === route.query.tab) ?? 'chart',
+  set: (val: Tab) => {
     router.replace({ query: { ...route.query, tab: val } });
   },
 });
+const activeTabIndex = computed(() => TABS.indexOf(activeTab.value));
 
-const tabIndicatorIndex = computed(() =>
-  ({ chart: 0, readings: 1, notes: 2 }[activeTab.value] ?? 0)
-);
+// Index the swipe track is positioned at. Updated immediately on swipe commit so the
+// slide animation doesn't wait for router.replace to resolve; otherwise mirrors activeTab.
+const trackIndex = ref(activeTabIndex.value);
+
+const tabViewportRef = ref<HTMLElement | null>(null);
+const dragOffset = ref(0);
+const viewportWidth = ref(0);
+const isDragging = ref(false);
+// Keeps off-screen panels expanded until the slide transition ends, so they don't vanish mid-slide
+const isAnimating = ref(false);
+const dragProgress = computed(() => (viewportWidth.value ? dragOffset.value / viewportWidth.value : 0));
+
+// Any tab change closes the jump picker; changes by tap or URL also slide the track
+watch(activeTabIndex, (i) => {
+  showJumpPicker.value = false;
+  if (i === trackIndex.value) return;
+  trackIndex.value = i;
+  isAnimating.value = true;
+});
+
+function isPanelCollapsed(i: number) {
+  return i !== trackIndex.value && !isDragging.value && !isAnimating.value;
+}
+
+const SWIPE_LOCK_THRESHOLD = 10; // px
+const SWIPE_COMMIT_RATIO = 0.25;
+const SWIPE_FLICK_VELOCITY = 0.3; // px/ms
+const SWIPE_EDGE_RESISTANCE = 0.3;
+let touchStartX = 0;
+let touchStartY = 0;
+let touchStartTime = 0;
+let swipeAxis: 'x' | 'y' | 'ignore' | null = null;
+
+function onTabTouchStart(e: TouchEvent) {
+  if (e.touches.length > 1) {
+    // A second finger cancels any swipe in progress
+    endDrag();
+    swipeAxis = 'ignore';
+    return;
+  }
+  swipeAxis = showJumpPicker.value ? 'ignore' : null;
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  touchStartTime = e.timeStamp;
+  viewportWidth.value = tabViewportRef.value?.clientWidth ?? 0;
+}
+
+function onTabTouchMove(e: TouchEvent) {
+  if (swipeAxis === 'ignore' || swipeAxis === 'y') return;
+  const dx = e.touches[0].clientX - touchStartX;
+  const dy = e.touches[0].clientY - touchStartY;
+  if (swipeAxis === null) {
+    if (Math.abs(dx) < SWIPE_LOCK_THRESHOLD && Math.abs(dy) < SWIPE_LOCK_THRESHOLD) return;
+    swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    if (swipeAxis === 'y') return;
+    isDragging.value = true;
+  }
+  const pastEdge = (dx > 0 && trackIndex.value === 0) || (dx < 0 && trackIndex.value === TABS.length - 1);
+  dragOffset.value = pastEdge ? dx * SWIPE_EDGE_RESISTANCE : dx;
+}
+
+function onTabTouchEnd(e: TouchEvent) {
+  if (!isDragging.value) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const velocity = Math.abs(dx) / Math.max(e.timeStamp - touchStartTime, 1);
+  const target = trackIndex.value + (dx < 0 ? 1 : -1);
+  const committed =
+    (Math.abs(dx) > viewportWidth.value * SWIPE_COMMIT_RATIO || velocity > SWIPE_FLICK_VELOCITY) &&
+    target >= 0 && target < TABS.length;
+  if (committed) {
+    endDrag(target);
+    activeTab.value = TABS[target];
+  } else {
+    endDrag();
+  }
+}
+
+function endDrag(targetIndex = trackIndex.value) {
+  if (!isDragging.value) return;
+  isDragging.value = false;
+  // Only wait for transitionend if the track will actually move; otherwise it never fires
+  isAnimating.value = dragOffset.value !== 0 || targetIndex !== trackIndex.value;
+  dragOffset.value = 0;
+  trackIndex.value = targetIndex;
+}
 
 const chartRange = ref<'week' | 'month' | 'year'>('week');
 const chartOffset = ref(0);
@@ -336,87 +418,109 @@ async function deletePet() {
         {{ $t('petDetail.tabNotes') }}
         <span v-if="notes.length > 0" class="tab-count">{{ notes.length }}</span>
       </button>
-      <div class="tab-indicator" :style="{ transform: `translateX(${tabIndicatorIndex * 100}%)` }"></div>
+      <div
+        class="tab-indicator"
+        :class="{ dragging: isDragging }"
+        :style="{ transform: `translateX(${(trackIndex - dragProgress) * 100}%)` }"
+      ></div>
     </div>
 
-    <div class="tab-content">
-      <template v-if="activeTab === 'chart'">
-        <div class="chart-controls">
-          <div class="range-toggle">
-            <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
-            <button :class="{ active: chartRange === 'month' }" @click="chartRange = 'month'">{{ $t('petDetail.rangeMonth') }}</button>
-            <button :class="{ active: chartRange === 'year' }" @click="chartRange = 'year'">{{ $t('petDetail.rangeYear') }}</button>
-          </div>
-          <div class="range-nav">
-            <button class="nav-btn" @click="chartOffset--" :disabled="!canGoPrev" :aria-label="$t('petDetail.prevPeriod')">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-              </svg>
-            </button>
-            <div class="range-label-wrap">
-              <button class="range-label-btn" @click="openJumpPicker">
-                {{ chartLabel }}
-                <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
-                  <path d="M7 10l5 5 5-5z"/>
+    <div
+      ref="tabViewportRef"
+      class="tab-viewport"
+      @touchstart="onTabTouchStart"
+      @touchmove="onTabTouchMove"
+      @touchend="onTabTouchEnd"
+      @touchcancel="endDrag()"
+    >
+      <div
+        class="tab-track"
+        :class="{ dragging: isDragging }"
+        :style="{ transform: `translateX(calc(${-trackIndex * 100}% + ${dragOffset}px))` }"
+        @transitionend.self="isAnimating = false"
+      >
+        <div class="tab-panel" :class="{ collapsed: isPanelCollapsed(0) }">
+          <div class="chart-controls">
+            <div class="range-toggle">
+              <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
+              <button :class="{ active: chartRange === 'month' }" @click="chartRange = 'month'">{{ $t('petDetail.rangeMonth') }}</button>
+              <button :class="{ active: chartRange === 'year' }" @click="chartRange = 'year'">{{ $t('petDetail.rangeYear') }}</button>
+            </div>
+            <div class="range-nav">
+              <button class="nav-btn" @click="chartOffset--" :disabled="!canGoPrev" :aria-label="$t('petDetail.prevPeriod')">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                 </svg>
               </button>
-              <div v-if="showJumpPicker" class="jump-picker" :class="`picker-${chartRange}`">
-                <div class="jump-picker-scroll" ref="jumpPickerRef">
-                <template v-if="chartRange === 'year'">
-                  <button v-for="y in availableYears" :key="y"
-                    class="jump-year-btn" :class="{ active: y === chartWindow.start.getFullYear() }"
-                    @click="jumpToYear(y)">{{ y }}</button>
-                </template>
-                <template v-else-if="chartRange === 'month'">
-                  <div class="jump-month-nav">
-                    <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[availableYears.length - 1]" @click="pickerYear--">
-                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </button>
-                    <span class="jump-year-label">{{ pickerYear }}</span>
-                    <button class="jump-nav-arrow" :disabled="pickerYear >= new Date().getFullYear()" @click="pickerYear++">
-                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="jump-month-grid">
-                    <button v-for="(m, i) in MONTH_NAMES" :key="i"
-                      class="jump-month-btn"
-                      :class="{ active: isDisplayedMonth(i, pickerYear) }"
-                      :disabled="isFutureMonth(i, pickerYear) || hasNoReadingsInMonth(i, pickerYear)"
-                      @click="jumpToMonth(i, pickerYear)">{{ m }}</button>
-                  </div>
-                </template>
-                <template v-else>
-                  <template v-for="item in weeksWithReadingsSections" :key="item.type === 'header' ? `h-${item.year}` : item.offset">
-                    <div v-if="item.type === 'header'" class="jump-week-year-header">{{ item.year }}</div>
-                    <button v-else
-                      class="jump-year-btn" :class="{ active: item.offset === chartOffset }"
-                      @click="jumpToWeekOffset(item.offset)">{{ weekLabel(item.offset) }}</button>
+              <div class="range-label-wrap">
+                <button class="range-label-btn" @click="openJumpPicker">
+                  {{ chartLabel }}
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                    <path d="M7 10l5 5 5-5z"/>
+                  </svg>
+                </button>
+                <div v-if="showJumpPicker" class="jump-picker" :class="`picker-${chartRange}`">
+                  <div class="jump-picker-scroll" ref="jumpPickerRef">
+                  <template v-if="chartRange === 'year'">
+                    <button v-for="y in availableYears" :key="y"
+                      class="jump-year-btn" :class="{ active: y === chartWindow.start.getFullYear() }"
+                      @click="jumpToYear(y)">{{ y }}</button>
                   </template>
-                </template>
+                  <template v-else-if="chartRange === 'month'">
+                    <div class="jump-month-nav">
+                      <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[availableYears.length - 1]" @click="pickerYear--">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                        </svg>
+                      </button>
+                      <span class="jump-year-label">{{ pickerYear }}</span>
+                      <button class="jump-nav-arrow" :disabled="pickerYear >= new Date().getFullYear()" @click="pickerYear++">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="jump-month-grid">
+                      <button v-for="(m, i) in MONTH_NAMES" :key="i"
+                        class="jump-month-btn"
+                        :class="{ active: isDisplayedMonth(i, pickerYear) }"
+                        :disabled="isFutureMonth(i, pickerYear) || hasNoReadingsInMonth(i, pickerYear)"
+                        @click="jumpToMonth(i, pickerYear)">{{ m }}</button>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <template v-for="item in weeksWithReadingsSections" :key="item.type === 'header' ? `h-${item.year}` : item.offset">
+                      <div v-if="item.type === 'header'" class="jump-week-year-header">{{ item.year }}</div>
+                      <button v-else
+                        class="jump-year-btn" :class="{ active: item.offset === chartOffset }"
+                        @click="jumpToWeekOffset(item.offset)">{{ weekLabel(item.offset) }}</button>
+                    </template>
+                  </template>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div v-if="showJumpPicker" class="jump-backdrop" @click="showJumpPicker = false" />
-            <div class="range-right">
-              <button class="today-btn" :style="{ visibility: chartOffset !== 0 ? 'visible' : 'hidden' }" @click="chartOffset = 0">
-                {{ chartRange === 'week' ? $t('petDetail.thisWeek') : chartRange === 'month' ? $t('petDetail.thisMonth') : $t('petDetail.thisYear') }}
-              </button>
-              <button class="nav-btn" @click="chartOffset++" :disabled="!canGoNext" :aria-label="$t('petDetail.nextPeriod')">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-                </svg>
-              </button>
+              <div v-if="showJumpPicker" class="jump-backdrop" @click="showJumpPicker = false" />
+              <div class="range-right">
+                <button class="today-btn" :style="{ visibility: chartOffset !== 0 ? 'visible' : 'hidden' }" @click="chartOffset = 0">
+                  {{ chartRange === 'week' ? $t('petDetail.thisWeek') : chartRange === 'month' ? $t('petDetail.thisMonth') : $t('petDetail.thisYear') }}
+                </button>
+                <button class="nav-btn" @click="chartOffset++" :disabled="!canGoNext" :aria-label="$t('petDetail.nextPeriod')">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
+          <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" :normal-ceiling="pet?.normalCeiling" />
         </div>
-        <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" :normal-ceiling="pet?.normalCeiling" />
-      </template>
-      <ReadingList v-else-if="activeTab === 'readings'" :readings="readings" :pet="pet" />
-      <NoteList v-else :notes="notes" :petId="petId" />
+        <div class="tab-panel" :class="{ collapsed: isPanelCollapsed(1) }">
+          <ReadingList :readings="readings" :pet="pet" />
+        </div>
+        <div class="tab-panel" :class="{ collapsed: isPanelCollapsed(2) }">
+          <NoteList :notes="notes" :petId="petId" />
+        </div>
+      </div>
     </div>
 
     <Transition name="fab">
@@ -460,6 +564,8 @@ async function deletePet() {
 .page {
   min-height: 100%;
   background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
@@ -635,6 +741,11 @@ async function deletePet() {
   border-radius: 1px 1px 0 0;
 }
 
+.tab-indicator.dragging,
+.tab-track.dragging {
+  transition: none;
+}
+
 .tab-count {
   background: var(--color-primary-light);
   color: var(--color-primary);
@@ -644,9 +755,33 @@ async function deletePet() {
   border-radius: var(--radius-full);
 }
 
-.tab-content {
+/* Grows to the bottom of the page so swipes work below short tab content too */
+.tab-viewport {
+  flex: 1;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.tab-track {
+  display: flex;
+  align-items: flex-start;
+  transition: transform 0.3s ease-out;
+}
+
+.tab-panel {
+  flex: 0 0 100%;
+  min-width: 0;
   padding: 16px;
   padding-bottom: 32px;
+}
+
+/* Off-screen panels stay mounted but take no height, so the page only scrolls the active tab */
+.tab-panel.collapsed {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+  visibility: hidden;
 }
 
 .chart-controls {
