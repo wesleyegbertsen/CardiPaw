@@ -101,9 +101,6 @@ function onTabTouchMove(e: TouchEvent) {
     if (swipeAxis === 'y') return;
     isDragging.value = true;
   }
-  // Claim the gesture so the browser doesn't run its own scroll gesture alongside the swipe;
-  // otherwise Chrome Android swallows a quick tap right after the swipe to cancel that gesture
-  if (e.cancelable) e.preventDefault();
   const pastEdge = (dx > 0 && trackIndex.value === 0) || (dx < 0 && trackIndex.value === TABS.length - 1);
   dragOffset.value = pastEdge ? dx * SWIPE_EDGE_RESISTANCE : dx;
 }
