@@ -27,6 +27,11 @@ const showOnboarding = ref(!hasSeenOnboarding.value);
 function closeOnboarding() {
   showOnboarding.value = false;
   markSeen();
+  // When onboarding opened by itself on mount there is no focus to restore;
+  // start keyboard users on the heart instead of <body>.
+  nextTick(() => {
+    if (!document.activeElement || document.activeElement === document.body) heartRef.value?.focus();
+  });
 }
 
 type Phase = 'idle' | 'running' | 'done';
@@ -257,6 +262,11 @@ onUnmounted(() => {
         </svg>
       </button>
 
+      <!-- Mounted in idle too (empty), so the first count is announced as a change -->
+      <p class="sr-only" aria-live="polite" aria-atomic="true">
+        {{ phase === 'running' ? `${clickCount} ${$t('tracker.breathsCounted')}` : '' }}
+      </p>
+
       <div class="body-bottom">
         <template v-if="phase === 'idle'">
           <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
@@ -282,7 +292,7 @@ onUnmounted(() => {
             />
           </div>
         </template>
-        <div v-else class="breath-count" aria-live="polite" aria-atomic="true">
+        <div v-else class="breath-count">
           <span class="count-number">{{ clickCount }}</span>
           <span class="count-label">{{ $t('tracker.breathsCounted') }}</span>
         </div>
@@ -512,6 +522,18 @@ onUnmounted(() => {
 }
 
 /* Breath count */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .breath-count {
   display: flex;
   flex-direction: column;
