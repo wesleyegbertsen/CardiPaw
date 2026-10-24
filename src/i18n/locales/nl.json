@@ -185,6 +185,7 @@
     "readError": "Het bestand kon niet worden gelezen. Zorg dat het een geldige JSON-export is.",
     "importConfirm": "{pets} huisdier(en) en {readings} meting(en) importeren? Hiermee worden alle bestaande gegevens op dit apparaat overschreven.",
     "aboutSection": "Over",
+    "version": "Versie",
     "aboutText": "CardiPaw helpt je de rustademhalingsfrequentie (RAF) van je huisdier bij te houden — een belangrijke gezondheidsindicator voor huisdieren met hartaandoeningen zoals HCM.",
     "thresholdNormalValue": "≤ 30 ademh./min",
     "thresholdElevatedValue": "31–35 ademh./min",

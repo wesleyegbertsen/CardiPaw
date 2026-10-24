@@ -185,6 +185,7 @@
     "readError": "Could not read the file. Make sure it is a valid JSON export.",
     "importConfirm": "Import {pets} pet(s) and {readings} reading(s)? This will overwrite all existing data on this device.",
     "aboutSection": "About",
+    "version": "Version",
     "aboutText": "CardiPaw helps you track your pet's resting respiratory rate (RRR) — an important health indicator for pets with heart conditions like HCM.",
     "thresholdNormalValue": "≤ 30 breaths/min",
     "thresholdElevatedValue": "31–35 breaths/min",

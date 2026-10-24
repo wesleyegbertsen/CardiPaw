@@ -1,8 +1,17 @@
 name: Docker Build & Push
 
+# Called by the Release workflow with the version determined by GitVersion.
 on:
-  push:
-    branches: [main]
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to build
+        required: true
+        type: string
+      version:
+        description: Release version (SemVer, without "v")
+        required: true
+        type: string
 
 jobs:
   docker:
@@ -12,6 +21,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Docker tags
+        id: tags
+        env:
+          IMAGE: wesleyegbertsen/cardipaw
+          VERSION: ${{ inputs.version }}
+        run: |
+          # 1.4.2 → :1.4.2, :1.4, :1 and :latest
+          IFS=. read -r major minor _ <<< "$VERSION"
+          {
+            echo "tags<<EOF"
+            echo "$IMAGE:latest"
+            echo "$IMAGE:$VERSION"
+            echo "$IMAGE:$major.$minor"
+            echo "$IMAGE:$major"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
@@ -24,4 +52,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: wesleyegbertsen/cardipaw:latest
+          build-args: APP_VERSION=${{ inputs.version }}
+          tags: ${{ steps.tags.outputs.tags }}

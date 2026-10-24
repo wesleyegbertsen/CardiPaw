@@ -1,0 +1,10 @@
+# GitVersion configuration — https://gitversion.net/docs/reference/configuration
+# Releases are cut from main by .github/workflows/release.yml and tagged vX.Y.Z.
+# Each release bumps the patch version by default. To bump further, put one of these
+# in the PR's squash-merge commit message (e.g. the PR description):
+#   +semver: minor   (or +semver: feature)
+#   +semver: major   (or +semver: breaking)
+workflow: GitHubFlow/v1
+tag-prefix: '[vV]?'
+# Version used for the very first release, before any vX.Y.Z tag exists.
+next-version: 1.0.0

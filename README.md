@@ -21,6 +21,7 @@
   - [Adding a new language](#adding-a-new-language)
 - [Status Thresholds](#status-thresholds)
 - [Docker](#docker)
+- [Releases & Versioning](#releases--versioning)
 - [Tech Stack](#tech-stack)
 
 ## Try It
@@ -209,6 +210,22 @@ services:
       - "8080:80"
     restart: unless-stopped
 ```
+
+Every release is also published under its version, e.g. `wesleyegbertsen/cardipaw:1.4.2`, plus floating `:1.4` and `:1` tags. Pin one of those instead of `latest` if you want to control when you upgrade.
+
+## Releases & Versioning
+
+CardiPaw follows [Semantic Versioning](https://semver.org/). The version is shown at the bottom of the About section on the Settings page and links to its release notes.
+
+Releases are automated by the [Release workflow](.github/workflows/release.yml), which runs daily and can be started manually from the Actions tab:
+
+1. If no commits have been merged into `main` since the last `vX.Y.Z` tag, the run stops.
+2. Otherwise [GitVersion](https://gitversion.net/) determines the next version (configured in [`GitVersion.yml`](GitVersion.yml)). Each release bumps the patch version; add `+semver: minor` or `+semver: major` to a PR's squash-merge commit message (e.g. the PR description) to bump further.
+3. [`scripts/set-version.mjs`](scripts/set-version.mjs) stamps that version into `package.json` and `package-lock.json`, from which the app reads it at build time. You can run it locally with `npm run set-version -- 1.2.3`.
+4. The website is deployed and the Docker image is pushed with the new version tags.
+5. The commit is tagged `vX.Y.Z` and a GitHub release is created whose changelog lists every commit merged since the previous release.
+
+The version is not committed back to the repository: the git tags are the source of truth, so `package.json` stays at `0.0.0` on `main`.
 
 ## Tech Stack
 

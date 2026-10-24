@@ -185,6 +185,7 @@
     "readError": "Impossible de lire le fichier. Assurez-vous qu'il s'agit d'un export JSON valide.",
     "importConfirm": "Importer {pets} animal(aux) et {readings} mesure(s) ? Toutes les données actuelles de cet appareil seront écrasées.",
     "aboutSection": "À propos",
+    "version": "Version",
     "aboutText": "CardiPaw vous aide à suivre la fréquence respiratoire au repos (FRR) de votre animal — un indicateur de santé important pour les animaux atteints de maladies cardiaques comme la CMH.",
     "thresholdNormalValue": "≤ 30 resp./min",
     "thresholdElevatedValue": "31–35 resp./min",

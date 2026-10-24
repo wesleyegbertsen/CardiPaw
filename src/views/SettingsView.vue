@@ -10,6 +10,12 @@ import type { ExportPayload } from '../types';
 
 const isDev = import.meta.env.DEV;
 
+const appVersion = __APP_VERSION__;
+// Local builds keep package.json's placeholder 0.0.0; only released versions have release notes to link to.
+const releaseUrl = appVersion === '0.0.0'
+  ? null
+  : `https://github.com/wesleyegbertsen/CardiPaw/releases/tag/v${appVersion}`;
+
 const { t } = useI18n();
 
 const petsStore = usePetsStore();
@@ -202,6 +208,16 @@ function cancelImport() {
           </div>
         </div>
         <p class="disclaimer-text">{{ $t('settings.disclaimer') }}</p>
+        <p class="version-text">
+          {{ $t('settings.version') }}
+          <a
+            v-if="releaseUrl"
+            :href="releaseUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >{{ appVersion }}</a>
+          <span v-else>{{ appVersion }}</span>
+        </p>
       </section>
 
       <section class="section">
@@ -513,6 +529,18 @@ function cancelImport() {
   font-size: 13px;
   color: var(--color-text-muted);
   line-height: 1.6;
+}
+
+.version-text {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.version-text a,
+.version-text span {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
 }
 
 .dev-section {
