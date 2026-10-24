@@ -23,6 +23,7 @@
 - [Docker](#docker)
 - [Releases & Versioning](#releases--versioning)
   - [PR titles](#pr-titles)
+- [Development](#development)
 - [Tech Stack](#tech-stack)
 
 ## Try It
@@ -173,11 +174,10 @@ Run the included script to confirm your file has exactly the same keys as `en.js
 npm run check-locale -- es
 ```
 
-The script prints every missing or extra key and exits with a non-zero code on failure, so it can be used in CI. You can run it against any existing locale the same way:
+The script prints every missing or extra key and exits with a non-zero code on failure. Without an argument it checks every locale, which is what CI runs:
 
 ```bash
-npm run check-locale -- nl
-npm run check-locale -- de
+npm run check-locale
 ```
 
 That is all that is needed — the language picker, auto-detection, date/number formatting, and the date picker's month/weekday names all pick up the new locale automatically.
@@ -227,10 +227,11 @@ CardiPaw follows [Semantic Versioning](https://semver.org/). The version is show
 Releases are automated by the [Release workflow](.github/workflows/release.yml), which runs daily and can be started manually from the Actions tab:
 
 1. If no commits have been merged into `main` since the last `vX.Y.Z` tag, the run stops.
-2. Otherwise [GitVersion](https://gitversion.net/) determines the next version from the commit messages since that release (see [PR titles](#pr-titles) below and [`GitVersion.yml`](GitVersion.yml)).
-3. [`scripts/set-version.mjs`](scripts/set-version.mjs) stamps that version into `package.json` and `package-lock.json`, from which the app reads it at build time. You can run it locally with `npm run set-version -- 1.2.3`.
-4. The website is deployed and the Docker image is pushed with the new version tags.
-5. The commit is tagged `vX.Y.Z` and a GitHub release is created whose changelog lists every commit merged since the previous release.
+2. The commit must pass the same [checks as CI](#development) (lint, type-check, tests, locale check, build and `npm audit`); otherwise nothing is released.
+3. [GitVersion](https://gitversion.net/) determines the next version from the commit messages since that release (see [PR titles](#pr-titles) below and [`GitVersion.yml`](GitVersion.yml)).
+4. [`scripts/set-version.mjs`](scripts/set-version.mjs) stamps that version into `package.json` and `package-lock.json`, from which the app reads it at build time. You can run it locally with `npm run set-version -- 1.2.3`.
+5. The website is deployed and the Docker image is pushed with the new version tags.
+6. The commit is tagged `vX.Y.Z` and a GitHub release is created whose changelog lists every commit merged since the previous release.
 
 The version is not committed back to the repository: the git tags are the source of truth, so `package.json` stays at `0.0.0` on `main`.
 
@@ -245,6 +246,22 @@ PRs are squash-merged, so each PR title becomes a commit message on `main`. Titl
 | `fix: …`, `perf: …`, `refactor: …`, `docs: …`, `style: …`, `test: …`, `build: …`, `ci: …`, `chore: …`, `revert: …` | patch (`1.4.2` → `1.4.3`) |
 
 When a release contains several PRs, the biggest bump wins: one `feat:` among ten `fix:` PRs makes it a minor release.
+
+## Development
+
+```bash
+npm ci
+npm run dev           # start the dev server
+npm test              # run the unit tests once (npm run test:watch to keep them running)
+npm run lint          # ESLint
+npm run typecheck     # vue-tsc
+npm run check-locale  # key parity of every locale against en.json
+npm run build
+```
+
+CI runs all of these, plus `npm audit --omit=dev --audit-level=high`, on every PR and every push to `main`, and the Release workflow runs them again before it deploys. Tests live next to the code they cover as `*.test.ts` and use [Vitest](https://vitest.dev/); IndexedDB is provided by [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) and components are mounted with [Vue Test Utils](https://test-utils.vuejs.org/).
+
+A Prettier config is included for new code (`npm run format:check`, `npm run format`). The existing code has not been reformatted yet, so CI does not enforce it.
 
 ## Tech Stack
 
