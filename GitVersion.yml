@@ -1,10 +1,17 @@
 # GitVersion configuration — https://gitversion.net/docs/reference/configuration
 # Releases are cut from main by .github/workflows/release.yml and tagged vX.Y.Z.
-# Each release bumps the patch version by default. To bump further, put one of these
-# in the PR's squash-merge commit message (e.g. the PR description):
-#   +semver: minor   (or +semver: feature)
-#   +semver: major   (or +semver: breaking)
+#
+# The bump is derived from the commit messages since the last release, using Conventional Commits
+# (https://www.conventionalcommits.org). PRs are squash-merged, so the PR title becomes the commit
+# subject; CI (.github/workflows/ci.yml) checks that PR titles follow this format:
+#   feat!: …  /  fix(tracker)!: …  or a "BREAKING CHANGE:" footer   → major
+#   feat: …   /  feat(pdf): …                                       → minor
+#   fix: …, perf: …, refactor: …, docs: …, chore: … (any other type) → patch
+# The highest bump among the released commits wins. "+semver: major|minor|patch" still works too.
 workflow: GitHubFlow/v1
 tag-prefix: '[vV]?'
 # Version used for the very first release, before any vX.Y.Z tag exists.
 next-version: 1.0.0
+major-version-bump-message: '^[a-z]+(\([\w\s\-,/\\]*\))?!:|(?m:^BREAKING[ -]CHANGE:)|\+semver:\s?(breaking|major)'
+minor-version-bump-message: '^feat(\([\w\s\-,/\\]*\))?:|\+semver:\s?(feature|minor)'
+patch-version-bump-message: '^[a-z]+(\([\w\s\-,/\\]*\))?:|\+semver:\s?(fix|patch)'
