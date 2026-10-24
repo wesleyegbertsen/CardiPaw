@@ -159,13 +159,23 @@ export async function closeAndDeleteDatabase(): Promise<void> {
 export async function importAllData(payload: ExportPayload): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(['pets', 'readings', 'notes'], 'readwrite');
-  await tx.objectStore('pets').clear();
-  await tx.objectStore('readings').clear();
-  await tx.objectStore('notes').clear();
-  await Promise.all([
-    ...payload.pets.map((p) => tx.objectStore('pets').put(p)),
-    ...payload.readings.map((r) => tx.objectStore('readings').put(r)),
-    ...(payload.notes ?? []).map((n) => tx.objectStore('notes').put(n)),
-  ]);
-  await tx.done;
+  const done = tx.done;
+  const requests: Promise<unknown>[] = [];
+  try {
+    // put() can throw synchronously (e.g. a DataError for a missing key), which
+    // does not abort the transaction by itself, hence the explicit abort below.
+    requests.push(tx.objectStore('pets').clear(), tx.objectStore('readings').clear(), tx.objectStore('notes').clear());
+    for (const p of payload.pets) requests.push(tx.objectStore('pets').put(p));
+    for (const r of payload.readings) requests.push(tx.objectStore('readings').put(r));
+    for (const n of payload.notes) requests.push(tx.objectStore('notes').put(n));
+    await Promise.all(requests);
+    await done;
+  } catch (e) {
+    // Roll back the clears so existing data stays untouched. Requests already
+    // queued now reject with AbortError; mark them handled.
+    for (const request of requests) request.catch(() => {});
+    try { tx.abort(); } catch { /* already aborted or finished */ }
+    await done.catch(() => {});
+    throw e;
+  }
 }

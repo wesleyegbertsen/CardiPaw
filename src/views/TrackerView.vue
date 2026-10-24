@@ -7,7 +7,7 @@ import { useAudioBeep } from '../composables/useAudioBeep';
 import { useHaptics } from '../composables/useHaptics';
 import { useTrackerPrefs } from '../composables/useTrackerPrefs';
 import { useOnboarding } from '../composables/useOnboarding';
-import RichTextEditor from '../components/RichTextEditor.vue';
+import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
 import OnboardingModal from '../components/OnboardingModal.vue';
 import { getRateStatus } from '../utils/rateStatus';
 
@@ -152,7 +152,11 @@ function reset() {
   nextTick(() => heartRef.value?.focus());
 }
 
-onMounted(() => { initAudio(); });
+onMounted(() => {
+  initAudio();
+  // Fetch the notes editor while the user counts, so the done screen doesn't wait for it.
+  preloadRichTextEditor();
+});
 
 onUnmounted(() => {
   if (intervalId.value !== null) clearInterval(intervalId.value);

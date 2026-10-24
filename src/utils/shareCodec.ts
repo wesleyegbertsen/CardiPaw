@@ -1,4 +1,5 @@
 import type { Pet, Reading, SharePayload } from '../types';
+import { localDayKey, localMonthKey } from './date';
 
 // Encodes a SharePayload into a compact URL-safe string (and back) so a pet's
 // readings can be shared as a link. The data is deflate-compressed and
@@ -14,10 +15,10 @@ export class ShareDecodeError extends Error {
 export function buildSharePayload(pet: Pet, readings: Reading[], months: string[]): SharePayload {
   const monthSet = new Set(months);
   const shared = readings
-    .filter((r) => monthSet.has(r.date.slice(0, 7)))
+    .filter((r) => monthSet.has(localMonthKey(r.date)))
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((r) => ({
-      date: r.date.slice(0, 16), // minute precision keeps the URL short
+      date: toShareDate(r.date),
       rate: r.rate,
       ...(r.restState && { restState: r.restState }),
       ...(r.source && { source: r.source }),
@@ -25,7 +26,7 @@ export function buildSharePayload(pet: Pet, readings: Reading[], months: string[
 
   return {
     v: 1,
-    sharedAt: new Date().toISOString().slice(0, 10),
+    sharedAt: localDayKey(new Date()),
     pet: {
       name: pet.name,
       species: pet.species,
@@ -55,7 +56,25 @@ export async function decodeShare(encoded: string): Promise<SharePayload> {
   if (!isSharePayload(payload)) {
     throw new ShareDecodeError('The link does not contain a valid snapshot.');
   }
-  return payload;
+  return {
+    ...payload,
+    readings: payload.readings.map((r) => ({ ...r, date: fromShareDate(r.date) })),
+  };
+}
+
+// Stored dates are UTC toISOString() values. Minute precision keeps the URL
+// short; the trailing "Z" keeps the instant unambiguous so viewers in any
+// timezone see the same moment.
+function toShareDate(iso: string): string {
+  return iso.slice(0, 16) + 'Z';
+}
+
+// Links created before dates carried an offset hold UTC times without one
+// ("YYYY-MM-DDTHH:mm"), which JS would parse as local time. Mark them as UTC.
+const OFFSETLESS_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/;
+
+function fromShareDate(date: string): string {
+  return OFFSETLESS_DATE_TIME.test(date) ? date + 'Z' : date;
 }
 
 async function transform(

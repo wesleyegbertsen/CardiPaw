@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { jsPDF } from 'jspdf';
+// Type-only: jsPDF itself (~380 KB with its deps) is loaded on demand in generatePdf.
+import type { jsPDF } from 'jspdf';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,6 +12,7 @@ import {
 } from 'chart.js';
 import type { Pet, Reading } from '../types';
 import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
+import { localDayKey, localMonthKey } from '../utils/date';
 import { currentLocale } from '../i18n';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
@@ -41,10 +43,10 @@ const PH = 297;  // page height (A4 mm)
 const UW = PW - ML - MR; // usable width = 182mm
 
 function aggregateByDay(readings: Reading[], monthKey: string): { date: string; rate: number }[] {
-  const inMonth = readings.filter(r => r.date.startsWith(monthKey));
+  const inMonth = readings.filter(r => localMonthKey(r.date) === monthKey);
   const groups = new Map<string, number[]>();
   for (const r of inMonth) {
-    const day = r.date.slice(0, 10);
+    const day = localDayKey(r.date);
     if (!groups.has(day)) groups.set(day, []);
     groups.get(day)!.push(r.rate);
   }
@@ -207,6 +209,15 @@ function htmlToPlainText(html: string): string {
     .trim();
 }
 
+const loadPdfLibrary = () => import('jspdf');
+
+/** Starts fetching jsPDF ahead of an export, e.g. when the export dialog opens. */
+export function preloadPdfLibrary(): void {
+  loadPdfLibrary().catch(() => {
+    // Ignored here; generatePdf reports the error if it still can't load.
+  });
+}
+
 export function usePdfExport() {
   const isGenerating = ref(false);
   const { t } = useI18n();
@@ -215,7 +226,8 @@ export function usePdfExport() {
     isGenerating.value = true;
     const loc = currentLocale();
     try {
-      const [restingIconUrl, sleepingIconUrl] = await Promise.all([
+      const [{ jsPDF }, restingIconUrl, sleepingIconUrl] = await Promise.all([
+        loadPdfLibrary(),
         svgPathToDataUrl(RESTING_SVG_PATH, '#16a34a'),
         svgPathToDataUrl(SLEEPING_SVG_PATH, '#d97706'),
       ]);
@@ -249,7 +261,9 @@ export function usePdfExport() {
       doc.setFont(fontFamily, 'normal');
       doc.setFontSize(10);
       doc.setTextColor('#6b7280');
-      const speciesAge = `${t('species.' + pet.species)} · ${calcAge(pet.birthdate, t)}`;
+      // An imported pet can have an empty birthdate (see services/backup.ts).
+      const species = t('species.' + pet.species);
+      const speciesAge = pet.birthdate ? `${species} · ${calcAge(pet.birthdate, t)}` : species;
       doc.text(speciesAge, textX, curY + 14);
 
       doc.setFontSize(9);
@@ -273,7 +287,7 @@ export function usePdfExport() {
 
       for (const monthKey of sortedMonths) {
         const monthReadings = readings
-          .filter(r => r.date.startsWith(monthKey))
+          .filter(r => localMonthKey(r.date) === monthKey)
           .sort((a, b) => a.date.localeCompare(b.date));
 
         if (monthReadings.length === 0) continue;
@@ -447,7 +461,7 @@ export function usePdfExport() {
         doc.text(t('pdf.pageOf', { i, total: totalPages }), PW / 2, PH - 8, { align: 'center' });
       }
 
-      const dateSlug = new Date().toISOString().slice(0, 10);
+      const dateSlug = localDayKey(new Date());
       const safeName = pet.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
       doc.save(`cardipaw-${safeName}-${dateSlug}.pdf`);
     } finally {

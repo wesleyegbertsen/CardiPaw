@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
+import { localMonthKey } from '../utils/date';
 import { buildSharePayload, encodeShare } from '../utils/shareCodec';
 import { useModal } from '../composables/useModal';
 
@@ -16,7 +17,7 @@ const dialogRef = ref<HTMLElement | null>(null);
 useModal(dialogRef, { onClose: () => emit('close') });
 
 const availableMonths = computed(() => {
-  const set = new Set(props.readings.map(r => r.date.slice(0, 7)));
+  const set = new Set(props.readings.map(r => localMonthKey(r.date)));
   return [...set].sort().reverse();
 });
 
@@ -46,7 +47,7 @@ function formatMonth(key: string): string {
 }
 
 function countReadings(monthKey: string): number {
-  return props.readings.filter(r => r.date.startsWith(monthKey)).length;
+  return props.readings.filter(r => localMonthKey(r.date) === monthKey).length;
 }
 
 const shareUrl = ref('');

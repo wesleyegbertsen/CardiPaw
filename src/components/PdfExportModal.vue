@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
-import { usePdfExport } from '../composables/usePdfExport';
+import { localMonthKey } from '../utils/date';
+import { usePdfExport, preloadPdfLibrary } from '../composables/usePdfExport';
 import { useModal } from '../composables/useModal';
 
 const props = defineProps<{ pet: Pet; readings: Reading[] }>();
@@ -15,13 +16,20 @@ const dialogRef = ref<HTMLElement | null>(null);
 useModal(dialogRef, { onClose: () => emit('close'), canClose: () => !isGenerating.value });
 
 const availableMonths = computed(() => {
-  const set = new Set(props.readings.map(r => r.date.slice(0, 7)));
+  const set = new Set(props.readings.map(r => localMonthKey(r.date)));
   return [...set].sort().reverse();
 });
 
 const selectedMonths = ref<string[]>([...availableMonths.value]);
 const newestFirst = ref(true);
 const includeNotes = ref(false);
+const exportFailed = ref(false);
+
+// Fetch jsPDF while the user picks months, so Export doesn't wait for the download.
+onMounted(preloadPdfLibrary);
+
+// A changed selection is a fresh attempt; don't keep showing the previous failure.
+watch([selectedMonths, newestFirst, includeNotes], () => { exportFailed.value = false; });
 
 const allSelected = computed(
   () => selectedMonths.value.length === availableMonths.value.length
@@ -47,11 +55,19 @@ function formatMonth(key: string): string {
 }
 
 function countReadings(monthKey: string): number {
-  return props.readings.filter(r => r.date.startsWith(monthKey)).length;
+  return props.readings.filter(r => localMonthKey(r.date) === monthKey).length;
 }
 
 async function handleExport() {
-  await generatePdf(props.pet, props.readings, selectedMonths.value, newestFirst.value, includeNotes.value);
+  exportFailed.value = false;
+  try {
+    await generatePdf(props.pet, props.readings, selectedMonths.value, newestFirst.value, includeNotes.value);
+  } catch (err) {
+    // e.g. the on-demand jsPDF chunk could not be fetched; keep the dialog open
+    console.error('PDF export failed', err);
+    exportFailed.value = true;
+    return;
+  }
   setTimeout(() => emit('close'), 200);
 }
 </script>
@@ -126,6 +142,10 @@ async function handleExport() {
 
         <p v-if="selectedMonths.length === 0" class="empty-hint">
           {{ $t('pdfModal.selectAtLeastOne') }}
+        </p>
+
+        <p v-if="exportFailed" class="error-msg" role="alert">
+          {{ $t('pdfModal.exportError') }}
         </p>
 
         <div class="dialog-footer">
@@ -376,6 +396,15 @@ async function handleExport() {
   font-size: 12px;
   color: var(--color-text-muted);
   text-align: center;
+  margin: 0;
+}
+
+.error-msg {
+  font-size: 13px;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
   margin: 0;
 }
 
