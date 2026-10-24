@@ -185,6 +185,7 @@
     "readError": "Die Datei konnte nicht gelesen werden. Stelle sicher, dass es sich um einen gültigen JSON-Export handelt.",
     "importConfirm": "{pets} Tier(e) und {readings} Messung(en) importieren? Dadurch werden alle vorhandenen Daten auf diesem Gerät überschrieben.",
     "aboutSection": "Über",
+    "version": "Version",
     "aboutText": "CardiPaw hilft dir, die Ruhe-Atemfrequenz (RAF) deines Tieres zu verfolgen — ein wichtiger Gesundheitsindikator für Tiere mit Herzerkrankungen wie HCM.",
     "thresholdNormalValue": "≤ 30 Atemz./Min",
     "thresholdElevatedValue": "31–35 Atemz./Min",

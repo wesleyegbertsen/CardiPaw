@@ -185,6 +185,7 @@
     "readError": "ファイルを読み込めません。有効なJSONエクスポートファイルであることを確認してください。",
     "importConfirm": "{pets}匹のペットと{readings}件の測定値をインポートしますか？このデバイスの現在のデータはすべて上書きされます。",
     "aboutSection": "アプリについて",
+    "version": "バージョン",
     "aboutText": "CardiPawは、心筋症（HCM）などの心臓疾患を持つペットにとって重要な健康指標である安静時呼吸数（RRR）の追跡をサポートします。",
     "thresholdNormalValue": "≤ 30 回/分",
     "thresholdElevatedValue": "31〜35 回/分",

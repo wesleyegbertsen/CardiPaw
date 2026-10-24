@@ -1,0 +1,162 @@
+name: Release
+
+on:
+  schedule:
+    # Daily at 03:17 UTC (off the top of the hour to dodge the scheduler rush).
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+# Only one release run at a time; a queued run picks up whatever the previous one didn't release.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check for unreleased commits
+    runs-on: ubuntu-latest
+    # Releases are only cut from main, also when started manually.
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      sha: ${{ steps.check.outputs.sha }}
+      previous-tag: ${{ steps.check.outputs.previous-tag }}
+      has-changes: ${{ steps.check.outputs.has-changes }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Compare with last release
+        id: check
+        run: |
+          # Pin the commit so every later job builds and tags exactly what was checked here,
+          # even if more PRs get merged while the release is running.
+          sha="$(git rev-parse HEAD)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+          previous_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' "$sha" 2>/dev/null || true)"
+          echo "previous-tag=$previous_tag" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$previous_tag" ]; then
+            echo "No previous release found; the first release will include all commits."
+            echo "has-changes=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          count="$(git rev-list --count "$previous_tag..$sha")"
+          echo "$count commit(s) since $previous_tag."
+          if [ "$count" -gt 0 ]; then
+            echo "has-changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-changes=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing new since $previous_tag — skipping release." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  version:
+    name: Determine version
+    needs: check
+    if: needs.check.outputs.has-changes == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.gitversion.outputs.majorMinorPatch }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.check.outputs.sha }}
+          # GitVersion needs the full history and tags.
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: '6.x'
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4
+
+      - name: Summary
+        run: echo "Releasing **v${{ steps.gitversion.outputs.majorMinorPatch }}**" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy website
+    needs: [check, version]
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ needs.check.outputs.sha }}
+      version: ${{ needs.version.outputs.version }}
+    secrets: inherit
+
+  docker:
+    name: Docker image
+    needs: [check, version]
+    uses: ./.github/workflows/docker-publish.yml
+    with:
+      ref: ${{ needs.check.outputs.sha }}
+      version: ${{ needs.version.outputs.version }}
+    secrets: inherit
+
+  release:
+    name: Create GitHub release
+    # Tag only after the build shipped, so a failed deploy is retried with the same version next run.
+    needs: [check, version, deploy, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.check.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Generate changelog
+        env:
+          PREVIOUS_TAG: ${{ needs.check.outputs.previous-tag }}
+          SHA: ${{ needs.check.outputs.sha }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          if [ -n "$PREVIOUS_TAG" ]; then
+            range="$PREVIOUS_TAG..$SHA"
+          else
+            range="$SHA"
+          fi
+
+          {
+            echo "## What's changed"
+            echo
+            # --first-parent lists each merged PR once (squash-merge or merge commit), not the commits inside it.
+            # GitHub turns the "(#123)" in squash-merge subjects into links to the PR.
+            git log --first-parent --pretty=format:'- %s (%h)' "$range"
+            echo
+            echo
+            if [ -n "$PREVIOUS_TAG" ]; then
+              echo "**Full changelog**: https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...v$VERSION"
+            else
+              echo "**Full changelog**: https://github.com/${{ github.repository }}/commits/v$VERSION"
+            fi
+            echo
+            echo "**Docker image**: \`wesleyegbertsen/cardipaw:$VERSION\`"
+          } > release-notes.md
+
+          cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.check.outputs.sha }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          gh release create "v$VERSION" \
+            --target "$SHA" \
+            --title "v$VERSION" \
+            --notes-file release-notes.md \
+            --latest
