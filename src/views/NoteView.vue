@@ -5,6 +5,7 @@ import { useNotesStore } from '../stores/notes';
 import { usePetsStore } from '../stores/pets';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { useI18n } from 'vue-i18n';
+import { richTextToSafeHtml } from '../utils/html';
 
 const { locale } = useI18n();
 
@@ -58,11 +59,7 @@ function formatDate(iso: string) {
   }).format(new Date(iso));
 }
 
-const sanitizedContent = computed(() => {
-  const raw = note.value?.content ?? '';
-  const isHtml = /^<[a-z]/i.test(raw.trimStart());
-  return isHtml ? raw : raw.replace(/\n/g, '<br>');
-});
+const safeContentHtml = computed(() => richTextToSafeHtml(note.value?.content ?? ''));
 </script>
 
 <template>
@@ -136,7 +133,7 @@ const sanitizedContent = computed(() => {
       </div>
 
       <div class="detail-card">
-        <div v-if="note.content" class="note-content" v-html="sanitizedContent" />
+        <div v-if="note.content" class="note-content" v-html="safeContentHtml" />
         <p v-else class="no-value">{{ $t('note.noContent') }}</p>
       </div>
     </div>
