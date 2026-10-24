@@ -1,23 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import * as FlagSVGs from 'country-flag-icons/string/3x2';
+import { GB, NL, DE, FR, JP } from 'country-flag-icons/string/3x2';
 import { SUPPORTED_LOCALES, LOCALE_NAMES, setLocale, type Locale } from '../i18n';
 
 const { locale } = useI18n();
 const open = ref(false);
 
-const LOCALE_COUNTRY: Record<Locale, keyof typeof FlagSVGs> = {
-  en: 'GB',
-  nl: 'NL',
-  de: 'DE',
-  fr: 'FR',
-  ja: 'JP',
+// Named imports keep the bundle to just these flags; a namespace import with a
+// dynamic lookup would pull in all ~265. Record<Locale, ...> makes the build
+// fail if a locale is added to SUPPORTED_LOCALES without a flag.
+const FLAGS: Record<Locale, string> = {
+  en: GB,
+  nl: NL,
+  de: DE,
+  fr: FR,
+  ja: JP,
 };
-
-function flagSvg(loc: Locale): string {
-  return FlagSVGs[LOCALE_COUNTRY[loc]] as string;
-}
 
 function pick(loc: Locale) {
   setLocale(loc);
@@ -29,7 +28,7 @@ function pick(loc: Locale) {
   <div class="lang-picker">
     <button class="lang-trigger" @click="open = !open" :aria-label="$t('home.switchLanguage')">
       <span class="lang-trigger-spacer" />
-      <span class="lang-flag" v-html="flagSvg(locale as Locale)" />
+      <span class="lang-flag" v-html="FLAGS[locale as Locale]" />
       <svg class="lang-chevron" :class="{ open }" viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
         <path d="M7 10l5 5 5-5z"/>
       </svg>
@@ -43,7 +42,7 @@ function pick(loc: Locale) {
         :title="LOCALE_NAMES[loc]"
         @click="pick(loc)"
       >
-        <span v-html="flagSvg(loc)" />
+        <span v-html="FLAGS[loc]" />
       </button>
     </div>
     <div v-if="open" class="lang-backdrop" @click="open = false" />
