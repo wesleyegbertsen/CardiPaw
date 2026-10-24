@@ -1,0 +1,71 @@
+name: Verify
+
+# Lint, type-check, test and build one commit, and audit its runtime dependencies.
+# Called by CI (pushes and PRs) and by the Release workflow, which only deploys
+# a commit that passes.
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to verify (defaults to the commit that triggered the caller)
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, type-check, test and build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Check locale keys
+        run: npm run check-locale
+
+      - name: Build
+        run: npm run build
+
+  # A separate job so a new advisory shows up on its own instead of hiding test results.
+  audit:
+    name: Audit runtime dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # Reads package-lock.json only; --omit=dev skips build tooling that never reaches users.
+      - name: npm audit
+        run: npm audit --omit=dev --audit-level=high
