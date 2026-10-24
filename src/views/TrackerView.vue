@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
@@ -42,6 +42,8 @@ const restState = ref<'resting' | 'sleeping' | undefined>(undefined);
 const notes = ref('');
 const manualRate = ref(0);
 const isManualMode = computed(() => mode.value === 'manual');
+const heartRef = ref<HTMLButtonElement | null>(null);
+const resultRef = ref<HTMLElement | null>(null);
 
 function switchMode(next: Mode) {
   mode.value = next;
@@ -58,6 +60,11 @@ function handleHeartClick() {
   } else if (phase.value === 'running') {
     registerBreath();
   }
+}
+
+// Holding Enter auto-repeats clicks on a button; only count deliberate presses
+function onHeartEnter(e: KeyboardEvent) {
+  if (e.repeat) e.preventDefault();
 }
 
 function startTracking() {
@@ -91,6 +98,9 @@ function stopTracking() {
   phase.value = 'done';
   if (soundEnabled.value) playDoneSound();
   if (vibrationEnabled.value) vibrateDone();
+  // The heart button is gone; park focus on the result (not on Save) so it is
+  // read out and further key presses meant as breaths can't trigger an action.
+  nextTick(() => resultRef.value?.focus());
 }
 
 function triggerPulse() {
@@ -134,6 +144,7 @@ function reset() {
   restState.value = undefined;
   notes.value = '';
   manualRate.value = 0;
+  nextTick(() => heartRef.value?.focus());
 }
 
 onMounted(() => { initAudio(); });
@@ -214,48 +225,11 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Guided: Idle -->
-    <div v-else-if="phase === 'idle'" class="tracker-body tap-area" @click="handleHeartClick">
+    <!-- Guided: idle and running share one body so the heart button (and keyboard focus on it) persists -->
+    <div v-else-if="phase !== 'done'" class="tracker-body tap-area" @click="handleHeartClick">
       <div class="body-top">
-        <p class="instruction">{{ $t('tracker.instruction') }}</p>
-      </div>
-
-      <button class="heart-btn" :class="{ pulsing: isPulsing }" :aria-label="$t('tracker.tapToStart')">
-        <svg class="heart-svg" viewBox="0 0 100 90" fill="currentColor">
-          <path d="M50 85 C50 85 5 55 5 28 C5 13 17 3 30 3 C39 3 47 8 50 15 C53 8 61 3 70 3 C83 3 95 13 95 28 C95 55 50 85 50 85Z"/>
-        </svg>
-      </button>
-
-      <div class="body-bottom">
-        <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
-        <p class="timer-note">{{ $t('tracker.measurement30') }}</p>
-        <div class="option-row" @click.stop>
-          <span class="toggle-label">{{ $t('tracker.sound') }}</span>
-          <button
-            class="slide-toggle"
-            :class="{ on: soundEnabled }"
-            role="switch"
-            :aria-checked="soundEnabled"
-            @click="soundEnabled = !soundEnabled"
-          />
-        </div>
-        <div v-if="hapticsSupported" class="option-row" @click.stop>
-          <span class="toggle-label">{{ $t('tracker.vibration') }}</span>
-          <button
-            class="slide-toggle"
-            :class="{ on: vibrationEnabled }"
-            role="switch"
-            :aria-checked="vibrationEnabled"
-            @click="vibrationEnabled = !vibrationEnabled"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Running state -->
-    <div v-else-if="phase === 'running'" class="tracker-body tap-area" @click="handleHeartClick">
-      <div class="body-top">
-        <div class="timer-ring">
+        <p v-if="phase === 'idle'" class="instruction">{{ $t('tracker.instruction') }}</p>
+        <div v-else class="timer-ring">
           <svg viewBox="0 0 120 120" class="ring-svg">
             <circle cx="60" cy="60" r="54" class="ring-track" />
             <circle
@@ -271,14 +245,44 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <button class="heart-btn" :class="{ pulsing: isPulsing }" :aria-label="$t('tracker.tapForBreath')">
-        <svg class="heart-svg" viewBox="0 0 100 90" fill="currentColor">
+      <button
+        ref="heartRef"
+        class="heart-btn"
+        :class="{ pulsing: isPulsing }"
+        :aria-label="phase === 'idle' ? $t('tracker.tapToStart') : $t('tracker.tapForBreath')"
+        @keydown.enter="onHeartEnter"
+      >
+        <svg class="heart-svg" viewBox="0 0 100 90" fill="currentColor" aria-hidden="true">
           <path d="M50 85 C50 85 5 55 5 28 C5 13 17 3 30 3 C39 3 47 8 50 15 C53 8 61 3 70 3 C83 3 95 13 95 28 C95 55 50 85 50 85Z"/>
         </svg>
       </button>
 
       <div class="body-bottom">
-        <div class="breath-count">
+        <template v-if="phase === 'idle'">
+          <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
+          <p class="timer-note">{{ $t('tracker.measurement30') }}</p>
+          <div class="option-row" @click.stop>
+            <span class="toggle-label">{{ $t('tracker.sound') }}</span>
+            <button
+              class="slide-toggle"
+              :class="{ on: soundEnabled }"
+              role="switch"
+              :aria-checked="soundEnabled"
+              @click="soundEnabled = !soundEnabled"
+            />
+          </div>
+          <div v-if="hapticsSupported" class="option-row" @click.stop>
+            <span class="toggle-label">{{ $t('tracker.vibration') }}</span>
+            <button
+              class="slide-toggle"
+              :class="{ on: vibrationEnabled }"
+              role="switch"
+              :aria-checked="vibrationEnabled"
+              @click="vibrationEnabled = !vibrationEnabled"
+            />
+          </div>
+        </template>
+        <div v-else class="breath-count" aria-live="polite" aria-atomic="true">
           <span class="count-number">{{ clickCount }}</span>
           <span class="count-label">{{ $t('tracker.breathsCounted') }}</span>
         </div>
@@ -293,7 +297,7 @@ onUnmounted(() => {
         </svg>
       </div>
 
-      <div class="result">
+      <div ref="resultRef" class="result" tabindex="-1" aria-live="polite" aria-atomic="true">
         <div class="result-number">{{ resultRate }}</div>
         <div class="result-label">{{ $t('common.breathsPerMin') }}</div>
       </div>
@@ -544,6 +548,11 @@ onUnmounted(() => {
 
 .result {
   text-align: center;
+}
+
+/* Focused programmatically when the timer ends; not a control */
+.result:focus {
+  outline: none;
 }
 
 .result-number {

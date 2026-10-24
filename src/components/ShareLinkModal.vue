@@ -4,12 +4,16 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
 import { buildSharePayload, encodeShare } from '../utils/shareCodec';
+import { useModal } from '../composables/useModal';
 
 const props = defineProps<{ pet: Pet; readings: Reading[] }>();
 const emit = defineEmits<{ close: [] }>();
 
 const router = useRouter();
 const { locale } = useI18n();
+
+const dialogRef = ref<HTMLElement | null>(null);
+useModal(dialogRef, { onClose: () => emit('close') });
 
 const availableMonths = computed(() => {
   const set = new Set(props.readings.map(r => r.date.slice(0, 7)));
@@ -100,7 +104,7 @@ async function nativeShare() {
 <template>
   <Teleport to="body">
     <div class="overlay" @click.self="emit('close')">
-      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
+      <div ref="dialogRef" class="dialog" role="dialog" aria-modal="true" aria-labelledby="share-modal-title" tabindex="-1">
         <div class="dialog-header">
           <h2 class="dialog-title" id="share-modal-title">{{ $t('shareModal.title') }}</h2>
           <p class="dialog-subtitle">{{ pet.name }}</p>
@@ -184,6 +188,7 @@ async function nativeShare() {
   flex-direction: column;
   gap: 16px;
   max-height: 80vh;
+  outline: none;
 }
 
 @media (min-width: 480px) {

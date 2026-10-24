@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useModal } from '../composables/useModal';
 
 const emit = defineEmits<{ close: [] }>();
 
 const steps = ['rest', 'watch', 'count', 'avoid'] as const;
 const step = ref(0);
 const isLastStep = computed(() => step.value === steps.length - 1);
+const dialogRef = ref<HTMLElement | null>(null);
+useModal(dialogRef, { onClose: () => emit('close') });
 const transitionName = ref<'slide-left' | 'slide-right'>('slide-left');
 
 function next() {
@@ -45,13 +48,13 @@ function onTouchEnd(e: TouchEvent) {
 <template>
   <Teleport to="body">
     <div class="overlay" @click.self="emit('close')">
-      <div class="dialog" role="dialog" aria-modal="true" :aria-label="$t('onboarding.howItWorks')">
+      <div ref="dialogRef" class="dialog" role="dialog" aria-modal="true" :aria-label="$t('onboarding.howItWorks')" tabindex="-1">
         <div class="dialog-header">
           <span class="step-count">{{ $t('onboarding.stepCount', { current: step + 1, total: steps.length }) }}</span>
           <button class="btn-skip" @click="emit('close')">{{ $t('onboarding.skip') }}</button>
         </div>
 
-        <div class="dialog-body" @touchstart="onTouchStart" @touchend="onTouchEnd">
+        <div class="dialog-body" aria-live="polite" @touchstart="onTouchStart" @touchend="onTouchEnd">
           <Transition :name="transitionName" mode="out-in">
             <div class="step-content" :key="step">
               <div class="icon-badge">
@@ -112,6 +115,7 @@ function onTouchEnd(e: TouchEvent) {
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
+  outline: none;
 }
 
 .dialog-header {

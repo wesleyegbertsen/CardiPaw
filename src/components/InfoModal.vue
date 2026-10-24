@@ -1,14 +1,21 @@
 <script setup lang="ts">
+import { ref, useId } from 'vue';
+import { useModal } from '../composables/useModal';
+
 defineProps<{ title: string }>();
-defineEmits<{ close: [] }>();
+const emit = defineEmits<{ close: [] }>();
+
+const titleId = useId();
+const dialogRef = ref<HTMLElement | null>(null);
+useModal(dialogRef, { onClose: () => emit('close') });
 </script>
 
 <template>
   <Teleport to="body">
     <div class="overlay" @click.self="$emit('close')">
-      <div class="dialog" role="dialog" aria-modal="true" :aria-label="title">
+      <div ref="dialogRef" class="dialog" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1">
         <div class="dialog-header">
-          <h2 class="dialog-title">{{ title }}</h2>
+          <h2 :id="titleId" class="dialog-title">{{ title }}</h2>
           <button class="btn-close" @click="$emit('close')" :aria-label="$t('common.close')">✕</button>
         </div>
         <div class="dialog-body">
@@ -43,6 +50,7 @@ defineEmits<{ close: [] }>();
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
+  outline: none;
 }
 
 .dialog-header {
