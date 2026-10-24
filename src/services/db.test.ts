@@ -1,0 +1,193 @@
+import 'fake-indexeddb/auto';
+import { IDBFactory } from 'fake-indexeddb';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ExportPayload, Note, Pet, Reading } from '../types';
+
+type DbModule = typeof import('./db');
+
+const pet = (id: string, name = id): Pet => ({
+  id,
+  name,
+  species: 'dog',
+  photo: null,
+  birthdate: '2020-01-01',
+  createdAt: '2024-01-01T00:00:00.000Z',
+});
+
+const reading = (id: string, petId: string, rate = 24): Reading => ({
+  id,
+  petId,
+  date: '2026-03-15T12:00:00.000Z',
+  rate,
+  clickCount: rate / 2,
+});
+
+const note = (id: string, petId: string): Note => ({
+  id,
+  petId,
+  title: `Note ${id}`,
+  content: '<p>Hello</p>',
+  createdAt: '2026-03-15T12:00:00.000Z',
+});
+
+const byId = <T extends { id: string }>(items: T[]) =>
+  [...items].sort((a, b) => a.id.localeCompare(b.id));
+
+// db.ts caches its connection in module state, so every test gets a fresh
+// in-memory IndexedDB and a fresh copy of the module.
+async function freshDb(): Promise<DbModule> {
+  vi.resetModules();
+  return import('./db');
+}
+
+/** Creates the database as the v1 app (before notes existed) left it. */
+function createV1Db(seed: { pets: Pet[]; readings: Reading[] }): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('cardipaw', 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      const pets = db.createObjectStore('pets', { keyPath: 'id' });
+      pets.createIndex('by-name', 'name');
+      const readings = db.createObjectStore('readings', { keyPath: 'id' });
+      readings.createIndex('by-petId', 'petId');
+      readings.createIndex('by-date', 'date');
+      seed.pets.forEach((p) => pets.put(p));
+      seed.readings.forEach((r) => readings.put(r));
+    };
+    req.onsuccess = () => {
+      req.result.close();
+      resolve();
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function storeLayout(): Promise<Record<string, string[]>> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('cardipaw');
+    req.onsuccess = () => {
+      const db = req.result;
+      const names = [...db.objectStoreNames].sort();
+      const tx = db.transaction(names, 'readonly');
+      const layout = Object.fromEntries(
+        names.map((n) => [n, [...tx.objectStore(n).indexNames].sort()]),
+      );
+      db.close();
+      resolve(layout);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+beforeEach(() => {
+  globalThis.indexedDB = new IDBFactory();
+});
+
+describe('database upgrades', () => {
+  it('creates all stores and indexes on a fresh install', async () => {
+    const db = await freshDb();
+    expect(await db.getAllPets()).toEqual([]);
+    expect(await db.getAllReadings()).toEqual([]);
+    expect(await db.getAllNotes()).toEqual([]);
+
+    // A second connection at the current version can open while db.ts holds its own.
+    expect(await storeLayout()).toEqual({
+      notes: ['by-petId'],
+      pets: ['by-name'],
+      readings: ['by-date', 'by-petId'],
+    });
+  });
+
+  it('upgrades a v1 database to v2 and keeps existing pets and readings', async () => {
+    const pets = [pet('a', 'Ace'), pet('b', 'Bo')];
+    const readings = [reading('r1', 'a', 20), reading('r2', 'a', 30), reading('r3', 'b', 40)];
+    await createV1Db({ pets, readings });
+
+    const db = await freshDb();
+    expect(byId(await db.getAllPets())).toEqual(pets);
+    expect(byId(await db.getAllReadings())).toEqual(readings);
+    expect(await db.getAllNotes()).toEqual([]);
+
+    // The new notes store and the old indexes are usable straight away.
+    await db.saveNote(note('n1', 'a'));
+    expect(await db.getNotesForPet('a')).toEqual([note('n1', 'a')]);
+    expect(byId(await db.getReadingsForPet('a'))).toEqual([readings[0], readings[1]]);
+  });
+});
+
+describe('CRUD helpers', () => {
+  let db: DbModule;
+  beforeEach(async () => {
+    db = await freshDb();
+  });
+
+  it('saves, overwrites and deletes a pet', async () => {
+    await db.savePet(pet('a', 'Ace'));
+    await db.savePet({ ...pet('a', 'Ace'), name: 'Ace II' });
+    expect(await db.getPet('a')).toMatchObject({ name: 'Ace II' });
+    await db.deletePet('a');
+    expect(await db.getPet('a')).toBeUndefined();
+  });
+
+  it('deletes only the given pet’s readings and notes', async () => {
+    await Promise.all([
+      db.saveReading(reading('r1', 'a')),
+      db.saveReading(reading('r2', 'a')),
+      db.saveReading(reading('r3', 'b')),
+      db.saveNote(note('n1', 'a')),
+      db.saveNote(note('n2', 'b')),
+    ]);
+
+    await db.deleteReadingsForPet('a');
+    await db.deleteNotesForPet('a');
+
+    expect(await db.getAllReadings()).toEqual([reading('r3', 'b')]);
+    expect(await db.getAllNotes()).toEqual([note('n2', 'b')]);
+  });
+});
+
+describe('exportAllData / importAllData', () => {
+  let db: DbModule;
+  beforeEach(async () => {
+    db = await freshDb();
+  });
+
+  it('replaces all existing data with the imported backup', async () => {
+    await db.savePet(pet('old'));
+    await db.saveReading(reading('old-r', 'old'));
+    await db.saveNote(note('old-n', 'old'));
+
+    const payload: ExportPayload = {
+      version: 1,
+      exportedAt: '2026-03-20T10:00:00.000Z',
+      pets: [pet('a', 'Ace'), pet('b', 'Bo')],
+      readings: [reading('r1', 'a'), reading('r2', 'b', 32)],
+      notes: [note('n1', 'a')],
+    };
+    await db.importAllData(payload);
+
+    expect(byId(await db.getAllPets())).toEqual(payload.pets);
+    expect(byId(await db.getAllReadings())).toEqual(payload.readings);
+    expect(await db.getAllNotes()).toEqual(payload.notes);
+    expect(await db.getPet('old')).toBeUndefined();
+  });
+
+  it('round-trips an export through import', async () => {
+    await db.savePet(pet('a'));
+    await db.saveReading(reading('r1', 'a'));
+    await db.saveNote(note('n1', 'a'));
+
+    const exported = await db.exportAllData();
+    expect(exported).toMatchObject({ version: 1 });
+    expect(Number.isNaN(Date.parse(exported.exportedAt))).toBe(false);
+
+    // Import into a brand-new, empty database (as on another device).
+    globalThis.indexedDB = new IDBFactory();
+    const other = await freshDb();
+    await other.importAllData(exported);
+
+    expect(await other.getAllPets()).toEqual(exported.pets);
+    expect(await other.getAllReadings()).toEqual(exported.readings);
+    expect(await other.getAllNotes()).toEqual(exported.notes);
+  });
+});

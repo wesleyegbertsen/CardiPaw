@@ -1,0 +1,6 @@
+dist
+dev-dist
+coverage
+public
+package-lock.json
+*.md
