@@ -239,7 +239,8 @@
     "includeNotes": "Notizen zu Messungen einbeziehen",
     "selectAtLeastOne": "Wähle mindestens einen Monat zum Exportieren aus.",
     "generating": "Wird erstellt…",
-    "export": "PDF exportieren"
+    "export": "PDF exportieren",
+    "exportError": "Das PDF konnte nicht erstellt werden. Prüfe deine Verbindung, lade die App neu und versuche es erneut."
   },
   "shareModal": {
     "title": "Teilen",
@@ -274,7 +275,8 @@
     "placeholder": "Notizen hinzufügen… (optional)",
     "bold": "Fett",
     "italic": "Kursiv",
-    "bulletList": "Aufzählung"
+    "bulletList": "Aufzählung",
+    "loadError": "Der Editor konnte nicht geladen werden. Prüfe deine Verbindung und lade die App neu."
   },
   "onboarding": {
     "step1Title": "Lass dein Tier ruhen oder schlafen",

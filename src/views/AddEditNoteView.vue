@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useNotesStore } from '../stores/notes';
 import { usePetsStore } from '../stores/pets';
-import RichTextEditor from '../components/RichTextEditor.vue';
+import { LazyRichTextEditor as RichTextEditor } from '../components/LazyRichTextEditor';
 
 const route = useRoute();
 const router = useRouter();
