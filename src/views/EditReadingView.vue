@@ -5,7 +5,7 @@ import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import type { Reading } from '../types';
 import { getRateStatus } from '../utils/rateStatus';
-import RichTextEditor from '../components/RichTextEditor.vue';
+import { LazyRichTextEditor as RichTextEditor } from '../components/LazyRichTextEditor';
 import { useI18n } from 'vue-i18n';
 
 const { locale } = useI18n();

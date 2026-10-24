@@ -239,7 +239,8 @@
     "includeNotes": "Notities bij metingen opnemen",
     "selectAtLeastOne": "Selecteer minstens één maand om te exporteren.",
     "generating": "Genereren…",
-    "export": "Pdf exporteren"
+    "export": "Pdf exporteren",
+    "exportError": "De pdf kon niet worden gemaakt. Controleer je verbinding, laad de app opnieuw en probeer het nog eens."
   },
   "shareModal": {
     "title": "Delen",
@@ -274,7 +275,8 @@
     "placeholder": "Notities toevoegen… (optioneel)",
     "bold": "Vet",
     "italic": "Cursief",
-    "bulletList": "Opsommingslijst"
+    "bulletList": "Opsommingslijst",
+    "loadError": "De editor kon niet worden geladen. Controleer je verbinding en laad de app opnieuw."
   },
   "onboarding": {
     "step1Title": "Laat je huisdier rusten of slapen",
