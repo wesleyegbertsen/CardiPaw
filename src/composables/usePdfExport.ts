@@ -260,7 +260,9 @@ export function usePdfExport() {
       doc.setFont(fontFamily, 'normal');
       doc.setFontSize(10);
       doc.setTextColor('#6b7280');
-      const speciesAge = `${t('species.' + pet.species)} · ${calcAge(pet.birthdate, t)}`;
+      // An imported pet can have an empty birthdate (see services/backup.ts).
+      const species = t('species.' + pet.species);
+      const speciesAge = pet.birthdate ? `${species} · ${calcAge(pet.birthdate, t)}` : species;
       doc.text(speciesAge, textX, curY + 14);
 
       doc.setFontSize(9);
