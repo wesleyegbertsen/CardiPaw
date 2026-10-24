@@ -44,6 +44,7 @@ export interface SharePayload {
   v: 1;
   sharedAt: string; // "YYYY-MM-DD"
   pet: Pick<Pet, 'name' | 'species' | 'birthdate' | 'normalCeiling' | 'elevatedCeiling'>;
-  // date is truncated to minute precision ("YYYY-MM-DDTHH:mm") to keep the URL short
+  // date is truncated to minute precision in UTC ("YYYY-MM-DDTHH:mmZ") to keep the URL short.
+  // Older links omit the "Z"; decodeShare treats those as UTC too.
   readings: Pick<Reading, 'date' | 'rate' | 'restState' | 'source'>[];
 }

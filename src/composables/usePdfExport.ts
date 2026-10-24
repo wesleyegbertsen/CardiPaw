@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { jsPDF } from 'jspdf';
+// Type-only: jsPDF itself (~380 KB with its deps) is loaded on demand in generatePdf.
+import type { jsPDF } from 'jspdf';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -208,6 +209,15 @@ function htmlToPlainText(html: string): string {
     .trim();
 }
 
+const loadPdfLibrary = () => import('jspdf');
+
+/** Starts fetching jsPDF ahead of an export, e.g. when the export dialog opens. */
+export function preloadPdfLibrary(): void {
+  loadPdfLibrary().catch(() => {
+    // Ignored here; generatePdf reports the error if it still can't load.
+  });
+}
+
 export function usePdfExport() {
   const isGenerating = ref(false);
   const { t } = useI18n();
@@ -216,7 +226,8 @@ export function usePdfExport() {
     isGenerating.value = true;
     const loc = currentLocale();
     try {
-      const [restingIconUrl, sleepingIconUrl] = await Promise.all([
+      const [{ jsPDF }, restingIconUrl, sleepingIconUrl] = await Promise.all([
+        loadPdfLibrary(),
         svgPathToDataUrl(RESTING_SVG_PATH, '#16a34a'),
         svgPathToDataUrl(SLEEPING_SVG_PATH, '#d97706'),
       ]);
@@ -250,7 +261,9 @@ export function usePdfExport() {
       doc.setFont(fontFamily, 'normal');
       doc.setFontSize(10);
       doc.setTextColor('#6b7280');
-      const speciesAge = `${t('species.' + pet.species)} · ${calcAge(pet.birthdate, t)}`;
+      // An imported pet can have an empty birthdate (see services/backup.ts).
+      const species = t('species.' + pet.species);
+      const speciesAge = pet.birthdate ? `${species} · ${calcAge(pet.birthdate, t)}` : species;
       doc.text(speciesAge, textX, curY + 14);
 
       doc.setFontSize(9);

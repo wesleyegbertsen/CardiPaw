@@ -183,6 +183,8 @@
     "import": "インポート",
     "invalidFormat": "ファイル形式が無効です。CardiPawのエクスポートファイルを選択してください。",
     "readError": "ファイルを読み込めません。有効なJSONエクスポートファイルであることを確認してください。",
+    "importError": "インポートに失敗しました。既存のデータは変更されていません。",
+    "importSkipped": "ファイル内の破損した{n}件のレコードはスキップされます。",
     "importConfirm": "{pets}匹のペットと{readings}件の測定値をインポートしますか？このデバイスの現在のデータはすべて上書きされます。",
     "aboutSection": "アプリについて",
     "version": "バージョン",
@@ -237,7 +239,8 @@
     "includeNotes": "測定メモを含める",
     "selectAtLeastOne": "エクスポートする月を少なくとも1つ選択してください。",
     "generating": "生成中…",
-    "export": "PDFで書き出す"
+    "export": "PDFで書き出す",
+    "exportError": "PDFを作成できませんでした。接続を確認し、アプリを再読み込みしてから、もう一度お試しください。"
   },
   "shareModal": {
     "title": "共有",
@@ -272,7 +275,8 @@
     "placeholder": "メモを追加…（任意）",
     "bold": "太字",
     "italic": "斜体",
-    "bulletList": "箇条書き"
+    "bulletList": "箇条書き",
+    "loadError": "エディターを読み込めませんでした。接続を確認して、アプリを再読み込みしてください。"
   },
   "onboarding": {
     "step1Title": "ペットを安静にするか眠らせましょう",

@@ -10,19 +10,33 @@ export const usePetsStore = defineStore('pets', () => {
   const pets = ref<Pet[]>([]);
   const loading = ref(false);
   let _loadPromise: Promise<void> | null = null;
+  // Bumped by $reset so a load that started before the reset cannot write stale data.
+  let _generation = 0;
 
   const getPetById = computed(() => (id: string) => pets.value.find((p) => p.id === id));
 
   async function loadPets() {
     if (_loadPromise) return _loadPromise;
+    const generation = _generation;
     _loadPromise = (async () => {
       loading.value = true;
+      let stale = false;
       try {
-        pets.value = await db.getAllPets();
+        const list = await db.getAllPets();
+        stale = generation !== _generation;
+        if (!stale) pets.value = list;
+      } catch (e) {
+        stale = generation !== _generation;
+        if (!stale) throw e;
       } finally {
-        loading.value = false;
-        _loadPromise = null;
+        if (!stale) {
+          loading.value = false;
+          _loadPromise = null;
+        }
       }
+      // Reset while loading: the result may be stale, so wait for a fresh load
+      // instead of resolving (or rejecting) callers with pre-reset data.
+      if (stale) await loadPets();
     })();
     return _loadPromise;
   }
@@ -57,5 +71,12 @@ export const usePetsStore = defineStore('pets', () => {
     notesStore.clearNotesForPet(id);
   }
 
-  return { pets, loading, getPetById, loadPets, addPet, updatePet, removePet };
+  function $reset() {
+    _generation++;
+    pets.value = [];
+    loading.value = false;
+    _loadPromise = null;
+  }
+
+  return { pets, loading, getPetById, loadPets, addPet, updatePet, removePet, $reset };
 });
