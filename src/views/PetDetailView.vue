@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
+import { localDayKey, localMonthKey } from '../utils/date';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
@@ -190,8 +191,8 @@ const chartReadings = computed(() => {
   if (chartRange.value === 'week') return filtered;
 
   const keyFn = chartRange.value === 'month'
-    ? (r: Reading) => r.date.slice(0, 10)
-    : (r: Reading) => r.date.slice(0, 7);
+    ? (r: Reading) => localDayKey(r.date)
+    : (r: Reading) => localMonthKey(r.date);
 
   const groups = new Map<string, number[]>();
   for (const r of filtered) {
@@ -234,7 +235,7 @@ const canGoPrev = computed(() => {
 
 const monthsWithReadings = computed(() => {
   const set = new Set<string>();
-  for (const r of readings.value) set.add(r.date.slice(0, 7));
+  for (const r of readings.value) set.add(localMonthKey(r.date));
   return set;
 });
 

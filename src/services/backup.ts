@@ -1,5 +1,6 @@
 import type { Pet, Reading, Note, ExportPayload } from '../types';
 import * as db from './db';
+import { localDayKey } from '../utils/date';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useNotesStore } from '../stores/notes';
@@ -202,7 +203,7 @@ export async function downloadBackup(): Promise<void> {
   const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = `cardipaw-export-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `cardipaw-export-${localDayKey(new Date())}.json`;
   a.click();
   // Revoking synchronously can cancel the download in some browsers.
   setTimeout(() => URL.revokeObjectURL(url), 10_000);

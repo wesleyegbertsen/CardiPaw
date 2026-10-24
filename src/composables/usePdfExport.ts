@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 import type { Pet, Reading } from '../types';
 import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
+import { localDayKey, localMonthKey } from '../utils/date';
 import { currentLocale } from '../i18n';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
@@ -42,10 +43,10 @@ const PH = 297;  // page height (A4 mm)
 const UW = PW - ML - MR; // usable width = 182mm
 
 function aggregateByDay(readings: Reading[], monthKey: string): { date: string; rate: number }[] {
-  const inMonth = readings.filter(r => r.date.startsWith(monthKey));
+  const inMonth = readings.filter(r => localMonthKey(r.date) === monthKey);
   const groups = new Map<string, number[]>();
   for (const r of inMonth) {
-    const day = r.date.slice(0, 10);
+    const day = localDayKey(r.date);
     if (!groups.has(day)) groups.set(day, []);
     groups.get(day)!.push(r.rate);
   }
@@ -286,7 +287,7 @@ export function usePdfExport() {
 
       for (const monthKey of sortedMonths) {
         const monthReadings = readings
-          .filter(r => r.date.startsWith(monthKey))
+          .filter(r => localMonthKey(r.date) === monthKey)
           .sort((a, b) => a.date.localeCompare(b.date));
 
         if (monthReadings.length === 0) continue;
@@ -460,7 +461,7 @@ export function usePdfExport() {
         doc.text(t('pdf.pageOf', { i, total: totalPages }), PW / 2, PH - 8, { align: 'center' });
       }
 
-      const dateSlug = new Date().toISOString().slice(0, 10);
+      const dateSlug = localDayKey(new Date());
       const safeName = pet.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
       doc.save(`cardipaw-${safeName}-${dateSlug}.pdf`);
     } finally {
