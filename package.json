@@ -19,9 +19,9 @@
     "set-version": "node scripts/set-version.mjs"
   },
   "dependencies": {
-    "@tiptap/extension-placeholder": "^3.22.4",
-    "@tiptap/starter-kit": "^3.22.4",
-    "@tiptap/vue-3": "^3.22.4",
+    "@tiptap/extension-placeholder": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0",
+    "@tiptap/vue-3": "^3.32.0",
     "chart.js": "^4.4.0",
     "country-flag-icons": "^1.6.19",
     "idb": "^8.0.0",
