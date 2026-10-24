@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { usePetsStore } from '../stores/pets';
-import { useReadingsStore } from '../stores/readings';
 import * as db from '../services/db';
+import { BackupError, downloadBackup, importBackup, parseBackup } from '../services/backup';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
 import type { ExportPayload } from '../types';
@@ -18,28 +17,19 @@ const releaseUrl = appVersion === '0.0.0'
 
 const { t } = useI18n();
 
-const petsStore = usePetsStore();
-const readingsStore = useReadingsStore();
-
 const importInput = ref<HTMLInputElement | null>(null);
 const showImportConfirm = ref(false);
 const activeModal = ref<'privacy' | 'terms' | null>(null);
-const pendingPayload = ref<ExportPayload | null>(null);
+// shallowRef: the validated payload only feeds the confirm dialog and is handed to
+// IndexedDB later, so it must stay a plain object (structured clone cannot clone Proxies).
+const pendingPayload = shallowRef<ExportPayload | null>(null);
 const importError = ref('');
 const exportSuccess = ref(false);
 const importSuccess = ref(false);
+const importing = ref(false);
 
 async function exportData() {
-  const payload = await db.exportAllData();
-  const json = JSON.stringify(payload);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const date = new Date().toISOString().slice(0, 10);
-  a.href = url;
-  a.download = `cardipaw-export-${date}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  await downloadBackup();
   exportSuccess.value = true;
   setTimeout(() => { exportSuccess.value = false; }, 3000);
 }
@@ -54,34 +44,33 @@ async function onImportFileChange(event: Event) {
   if (!file) return;
 
   try {
-    const text = await file.text();
-    const parsed = JSON.parse(text) as ExportPayload;
-    if (parsed.version !== 1 || !Array.isArray(parsed.pets) || !Array.isArray(parsed.readings)) {
-      importError.value = t('settings.invalidFormat');
-      return;
-    }
-    pendingPayload.value = parsed;
+    pendingPayload.value = parseBackup(await file.text());
     showImportConfirm.value = true;
-  } catch {
-    importError.value = t('settings.readError');
+  } catch (e) {
+    console.warn('Backup file rejected', e);
+    importError.value = e instanceof BackupError && e.code === 'invalid'
+      ? t('settings.invalidFormat')
+      : t('settings.readError');
   } finally {
     if (importInput.value) importInput.value.value = '';
   }
 }
 
 async function confirmImport() {
-  if (!pendingPayload.value) return;
+  const payload = pendingPayload.value;
+  if (!payload) return;
   showImportConfirm.value = false;
-  // pendingPayload is a Vue ref, so its nested objects are Vue Proxy instances.
-  // IndexedDB's structured clone algorithm cannot clone Proxies, so we strip
-  // reactivity by round-tripping through JSON before passing to IndexedDB.
-  await db.importAllData(JSON.parse(JSON.stringify(pendingPayload.value)));
-  // Reload all stores from scratch
-  await petsStore.loadPets();
-  Object.keys(readingsStore.readingsByPet).forEach((id) => {
-    readingsStore.clearReadingsForPet(id);
-  });
   pendingPayload.value = null;
+  importing.value = true;
+  try {
+    await importBackup(payload);
+  } catch (e) {
+    console.error('Backup import failed', e);
+    importError.value = t('settings.importError');
+    return;
+  } finally {
+    importing.value = false;
+  }
   importSuccess.value = true;
   setTimeout(() => { importSuccess.value = false; }, 3000);
 }
@@ -96,15 +85,7 @@ async function loadSeedData() {
   try {
     const res = await fetch('/seed-data.json');
     if (!res.ok) throw new Error(`HTTP ${res.status} — run "npm run seed" first`);
-    const payload = await res.json() as ExportPayload;
-    if (payload.version !== 1 || !Array.isArray(payload.pets)) {
-      throw new Error('seed-data.json is not a valid CardiPaw export');
-    }
-    await db.importAllData(payload);
-    await petsStore.loadPets();
-    Object.keys(readingsStore.readingsByPet).forEach((id) => {
-      readingsStore.clearReadingsForPet(id);
-    });
+    await importBackup(await res.json());
     seedStatus.value = 'done';
     setTimeout(() => { seedStatus.value = 'idle'; }, 4000);
   } catch (e) {
@@ -173,7 +154,7 @@ function cancelImport() {
                 <div class="action-desc">{{ $t('settings.importDesc') }}</div>
               </div>
             </div>
-            <button class="action-btn" @click="triggerImport">
+            <button class="action-btn" :disabled="importing || seedStatus === 'loading'" @click="triggerImport">
               {{ importSuccess ? $t('settings.imported') : $t('settings.import') }}
             </button>
           </div>
@@ -295,7 +276,7 @@ function cancelImport() {
             </div>
             <button
               class="action-btn dev-btn"
-              :disabled="seedStatus === 'loading'"
+              :disabled="seedStatus === 'loading' || importing"
               @click="loadSeedData"
             >
               {{ seedStatus === 'loading' ? 'Loading…' : seedStatus === 'done' ? '✓ Loaded' : 'Load' }}
