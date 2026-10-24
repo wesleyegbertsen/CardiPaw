@@ -5,7 +5,7 @@ import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import type { Reading } from '../types';
 import { getRateStatus } from '../utils/rateStatus';
-import RichTextEditor from '../components/RichTextEditor.vue';
+import { LazyRichTextEditor as RichTextEditor } from '../components/LazyRichTextEditor';
 import { useI18n } from 'vue-i18n';
 
 const { locale } = useI18n();
@@ -27,6 +27,8 @@ const editRate = ref(0);
 const editRestState = ref<'resting' | 'sleeping' | undefined>(undefined);
 const editNotes = ref('');
 const saving = ref(false);
+// v-model.number yields '' when the field is cleared; never store that as the rate.
+const rateValid = computed(() => Number.isFinite(editRate.value) && editRate.value >= 1);
 
 onMounted(async () => {
   await petsStore.loadPets();
@@ -45,7 +47,7 @@ function goBack() {
 }
 
 async function saveEdit() {
-  if (!reading.value || saving.value) return;
+  if (!reading.value || saving.value || !rateValid.value) return;
   saving.value = true;
   try {
     const updated: Reading = {
@@ -107,6 +109,7 @@ function formatDate(iso: string) {
             class="rate-input"
             type="number"
             v-model.number="editRate"
+            required
             min="1"
             max="200"
           />
@@ -139,7 +142,7 @@ function formatDate(iso: string) {
         <RichTextEditor v-model="editNotes" />
       </div>
 
-      <button type="submit" class="submit-btn" :disabled="saving">
+      <button type="submit" class="submit-btn" :disabled="saving || !rateValid">
         {{ saving ? $t('common.saving') : $t('common.saveChanges') }}
       </button>
     </form>

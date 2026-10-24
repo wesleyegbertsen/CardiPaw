@@ -183,6 +183,8 @@
     "import": "Import",
     "invalidFormat": "Invalid file format. Please select a CardiPaw export file.",
     "readError": "Could not read the file. Make sure it is a valid JSON export.",
+    "importError": "Import failed. Your existing data has not been changed.",
+    "importSkipped": "1 damaged record in the file will be skipped. | {n} damaged records in the file will be skipped.",
     "importConfirm": "Import {pets} pet(s) and {readings} reading(s)? This will overwrite all existing data on this device.",
     "aboutSection": "About",
     "version": "Version",
@@ -237,7 +239,8 @@
     "includeNotes": "Include reading notes",
     "selectAtLeastOne": "Select at least one month to export.",
     "generating": "Generating…",
-    "export": "Export PDF"
+    "export": "Export PDF",
+    "exportError": "The PDF could not be created. Check your connection, reload the app and try again."
   },
   "shareModal": {
     "title": "Share",
@@ -272,7 +275,8 @@
     "placeholder": "Add notes… (optional)",
     "bold": "Bold",
     "italic": "Italic",
-    "bulletList": "Bullet list"
+    "bulletList": "Bullet list",
+    "loadError": "The editor could not be loaded. Check your connection and reload the app."
   },
   "onboarding": {
     "step1Title": "Get your pet resting or sleeping",

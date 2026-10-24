@@ -12,8 +12,14 @@ export const useReadingsStore = defineStore('readings', () => {
     return [...list].sort((a, b) => b.date.localeCompare(a.date));
   });
 
-  async function loadReadingsForPet(petId: string) {
+  // Bumped by $reset so a load that started before the reset cannot write stale data.
+  let generation = 0;
+
+  async function loadReadingsForPet(petId: string): Promise<void> {
+    const startedAt = generation;
     const list = await db.getReadingsForPet(petId);
+    // Reset while loading: the list may be stale, so load again.
+    if (startedAt !== generation) return loadReadingsForPet(petId);
     readingsByPet.value[petId] = list;
   }
 
@@ -46,5 +52,10 @@ export const useReadingsStore = defineStore('readings', () => {
     }
   }
 
-  return { readingsByPet, getReadingsForPet, loadReadingsForPet, addReading, clearReadingsForPet, removeReading, updateReading };
+  function $reset() {
+    generation++;
+    readingsByPet.value = {};
+  }
+
+  return { readingsByPet, getReadingsForPet, loadReadingsForPet, addReading, clearReadingsForPet, removeReading, updateReading, $reset };
 });

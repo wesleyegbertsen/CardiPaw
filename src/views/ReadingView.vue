@@ -6,6 +6,7 @@ import { usePetsStore } from '../stores/pets';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { getRateStatus } from '../utils/rateStatus';
 import { useI18n } from 'vue-i18n';
+import { richTextToSafeHtml } from '../utils/html';
 
 const { locale } = useI18n();
 
@@ -24,11 +25,7 @@ const reading = computed(() =>
 
 const showDeleteDialog = ref(false);
 
-const sanitizedNotes = computed(() => {
-  const raw = reading.value?.notes ?? '';
-  const isHtml = /^<[a-z]/i.test(raw.trimStart());
-  return isHtml ? raw : raw.replace(/\n/g, '<br>');
-});
+const safeNotesHtml = computed(() => richTextToSafeHtml(reading.value?.notes ?? ''));
 
 onMounted(async () => {
   await petsStore.loadPets();
@@ -136,7 +133,7 @@ function formatDate(iso: string) {
 
       <div class="detail-card">
         <p class="section-label">{{ $t('reading.notesLabel') }}</p>
-        <div v-if="reading.notes" class="notes-text" v-html="sanitizedNotes" />
+        <div v-if="reading.notes" class="notes-text" v-html="safeNotesHtml" />
         <p v-else class="no-value">{{ $t('reading.noNotes') }}</p>
       </div>
     </div>

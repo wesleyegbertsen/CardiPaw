@@ -17,8 +17,14 @@ export const useNotesStore = defineStore('notes', () => {
     });
   });
 
-  async function loadNotesForPet(petId: string) {
+  // Bumped by $reset so a load that started before the reset cannot write stale data.
+  let generation = 0;
+
+  async function loadNotesForPet(petId: string): Promise<void> {
+    const startedAt = generation;
     const list = await db.getNotesForPet(petId);
+    // Reset while loading: the list may be stale, so load again.
+    if (startedAt !== generation) return loadNotesForPet(petId);
     notesByPet.value[petId] = list;
   }
 
@@ -51,5 +57,10 @@ export const useNotesStore = defineStore('notes', () => {
     delete notesByPet.value[petId];
   }
 
-  return { notesByPet, getNotesForPet, loadNotesForPet, addNote, updateNote, removeNote, clearNotesForPet };
+  function $reset() {
+    generation++;
+    notesByPet.value = {};
+  }
+
+  return { notesByPet, getNotesForPet, loadNotesForPet, addNote, updateNote, removeNote, clearNotesForPet, $reset };
 });

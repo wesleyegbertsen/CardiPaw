@@ -183,6 +183,8 @@
     "import": "Importeren",
     "invalidFormat": "Ongeldig bestandsformaat. Selecteer een CardiPaw-exportbestand.",
     "readError": "Het bestand kon niet worden gelezen. Zorg dat het een geldige JSON-export is.",
+    "importError": "Importeren is mislukt. Je bestaande gegevens zijn niet gewijzigd.",
+    "importSkipped": "1 beschadigd record in het bestand wordt overgeslagen. | {n} beschadigde records in het bestand worden overgeslagen.",
     "importConfirm": "{pets} huisdier(en) en {readings} meting(en) importeren? Hiermee worden alle bestaande gegevens op dit apparaat overschreven.",
     "aboutSection": "Over",
     "version": "Versie",
@@ -237,7 +239,8 @@
     "includeNotes": "Notities bij metingen opnemen",
     "selectAtLeastOne": "Selecteer minstens één maand om te exporteren.",
     "generating": "Genereren…",
-    "export": "Pdf exporteren"
+    "export": "Pdf exporteren",
+    "exportError": "De pdf kon niet worden gemaakt. Controleer je verbinding, laad de app opnieuw en probeer het nog eens."
   },
   "shareModal": {
     "title": "Delen",
@@ -272,7 +275,8 @@
     "placeholder": "Notities toevoegen… (optioneel)",
     "bold": "Vet",
     "italic": "Cursief",
-    "bulletList": "Opsommingslijst"
+    "bulletList": "Opsommingslijst",
+    "loadError": "De editor kon niet worden geladen. Controleer je verbinding en laad de app opnieuw."
   },
   "onboarding": {
     "step1Title": "Laat je huisdier rusten of slapen",
