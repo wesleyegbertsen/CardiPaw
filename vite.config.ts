@@ -7,6 +7,10 @@ import { version } from './package.json'
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(version),
+    // vue-i18n 9 otherwise compiles messages with `new Function`, which the
+    // Content-Security-Policy in nginx.conf (no 'unsafe-eval') blocks. JIT mode
+    // compiles messages to an AST and interprets it instead (CSP-safe).
+    __INTLIFY_JIT_COMPILATION__: true,
   },
   plugins: [
     vue(),
