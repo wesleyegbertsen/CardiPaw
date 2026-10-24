@@ -237,7 +237,8 @@
     "includeNotes": "Inclure les notes de mesure",
     "selectAtLeastOne": "Sélectionnez au moins un mois à exporter.",
     "generating": "Génération…",
-    "export": "Exporter en PDF"
+    "export": "Exporter en PDF",
+    "exportError": "Le PDF n'a pas pu être créé. Vérifiez votre connexion, rechargez l'application et réessayez."
   },
   "shareModal": {
     "title": "Partager",
@@ -272,7 +273,8 @@
     "placeholder": "Ajouter des notes… (optionnel)",
     "bold": "Gras",
     "italic": "Italique",
-    "bulletList": "Liste à puces"
+    "bulletList": "Liste à puces",
+    "loadError": "L'éditeur n'a pas pu être chargé. Vérifiez votre connexion et rechargez l'application."
   },
   "onboarding": {
     "step1Title": "Laissez votre animal se reposer ou s'endormir",
