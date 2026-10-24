@@ -1,15 +1,34 @@
 <script setup lang="ts">
+import { ref, useId } from 'vue';
+import { useModal } from '../composables/useModal';
+
 defineProps<{ message: string }>();
-defineEmits<{ confirm: []; cancel: [] }>();
+const emit = defineEmits<{ confirm: []; cancel: [] }>();
+
+const id = useId();
+const dialogRef = ref<HTMLElement | null>(null);
+const cancelRef = ref<HTMLButtonElement | null>(null);
+
+// Start on Cancel so a stray Enter can't confirm a destructive action
+useModal(dialogRef, { onClose: () => emit('cancel'), initialFocus: cancelRef });
 </script>
 
 <template>
   <Teleport to="body">
     <div class="overlay" @click.self="$emit('cancel')">
-      <div class="dialog" role="alertdialog" aria-modal="true">
-        <p class="message">{{ message }}</p>
+      <div
+        ref="dialogRef"
+        class="dialog"
+        role="alertdialog"
+        aria-modal="true"
+        :aria-labelledby="`${id}-title`"
+        :aria-describedby="`${id}-message`"
+        tabindex="-1"
+      >
+        <h2 :id="`${id}-title`" class="sr-only">{{ $t('common.confirm') }}</h2>
+        <p :id="`${id}-message`" class="message">{{ message }}</p>
         <div class="actions">
-          <button class="btn-cancel" @click="$emit('cancel')">{{ $t('common.cancel') }}</button>
+          <button ref="cancelRef" class="btn-cancel" @click="$emit('cancel')">{{ $t('common.cancel') }}</button>
           <button class="btn-confirm" @click="$emit('confirm')">{{ $t('common.confirm') }}</button>
         </div>
       </div>
@@ -36,6 +55,19 @@ defineEmits<{ confirm: []; cancel: [] }>();
   max-width: 340px;
   width: 100%;
   box-shadow: var(--shadow-lg);
+  outline: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .message {

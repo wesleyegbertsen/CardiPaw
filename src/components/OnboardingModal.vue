@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
+import { useModal } from '../composables/useModal';
 
 const emit = defineEmits<{ close: [] }>();
 
 const steps = ['rest', 'watch', 'count', 'avoid'] as const;
 const step = ref(0);
 const isLastStep = computed(() => step.value === steps.length - 1);
+const dialogRef = ref<HTMLElement | null>(null);
+const backRef = ref<HTMLButtonElement | null>(null);
+const nextRef = ref<HTMLButtonElement | null>(null);
+useModal(dialogRef, { onClose: () => emit('close') });
 const transitionName = ref<'slide-left' | 'slide-right'>('slide-left');
 
 function next() {
@@ -20,7 +25,10 @@ function next() {
 function back() {
   if (step.value > 0) {
     transitionName.value = 'slide-right';
+    const hadFocus = document.activeElement === backRef.value;
     step.value--;
+    // Back is removed on the first step; don't let its focus fall to <body>
+    if (step.value === 0 && hadFocus) nextTick(() => nextRef.value?.focus());
   }
 }
 
@@ -45,13 +53,13 @@ function onTouchEnd(e: TouchEvent) {
 <template>
   <Teleport to="body">
     <div class="overlay" @click.self="emit('close')">
-      <div class="dialog" role="dialog" aria-modal="true" :aria-label="$t('onboarding.howItWorks')">
+      <div ref="dialogRef" class="dialog" role="dialog" aria-modal="true" :aria-label="$t('onboarding.howItWorks')" tabindex="-1">
         <div class="dialog-header">
           <span class="step-count">{{ $t('onboarding.stepCount', { current: step + 1, total: steps.length }) }}</span>
           <button class="btn-skip" @click="emit('close')">{{ $t('onboarding.skip') }}</button>
         </div>
 
-        <div class="dialog-body" @touchstart="onTouchStart" @touchend="onTouchEnd">
+        <div class="dialog-body" aria-live="polite" @touchstart="onTouchStart" @touchend="onTouchEnd">
           <Transition :name="transitionName" mode="out-in">
             <div class="step-content" :key="step">
               <div class="icon-badge">
@@ -83,8 +91,8 @@ function onTouchEnd(e: TouchEvent) {
             <span v-for="(s, i) in steps" :key="s" class="dot" :class="{ active: i === step }" />
           </div>
           <div class="footer-actions">
-            <button v-if="step > 0" class="btn-back" @click="back">{{ $t('onboarding.back') }}</button>
-            <button class="btn-next" @click="next">{{ isLastStep ? $t('onboarding.gotIt') : $t('onboarding.next') }}</button>
+            <button v-if="step > 0" ref="backRef" class="btn-back" @click="back">{{ $t('onboarding.back') }}</button>
+            <button ref="nextRef" class="btn-next" @click="next">{{ isLastStep ? $t('onboarding.gotIt') : $t('onboarding.next') }}</button>
           </div>
         </div>
       </div>
@@ -112,6 +120,7 @@ function onTouchEnd(e: TouchEvent) {
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
+  outline: none;
 }
 
 .dialog-header {

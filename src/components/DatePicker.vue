@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { WEEK_START, type Locale } from '../i18n';
+import { useModal } from '../composables/useModal';
 
 const props = defineProps<{
   modelValue: string;
@@ -154,27 +155,13 @@ function openPicker() {
 
 function close() {
   open.value = false;
+  // Explicit: Safari doesn't focus a clicked button, so there may be no focus to restore
   triggerRef.value?.focus();
 }
 
-// Escape must work no matter where focus sits — e.g. clicking the header
-// into the years view disables the title button, which drops focus out of
-// the panel and would silence a panel-scoped keydown handler.
-function onWindowKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') close();
-}
-
-watch(open, async (isOpen) => {
-  if (isOpen) {
-    window.addEventListener('keydown', onWindowKeydown);
-    await nextTick();
-    panelRef.value?.focus();
-  } else {
-    window.removeEventListener('keydown', onWindowKeydown);
-  }
-});
-
-onUnmounted(() => window.removeEventListener('keydown', onWindowKeydown));
+// Focus moves to the panel on open, Tab stays inside it and Escape closes it
+// wherever focus sits (e.g. after the years view disables the title button).
+useModal(panelRef, { onClose: close, initialFocus: panelRef, open });
 
 function goPrev() {
   if (view.value === 'days') {

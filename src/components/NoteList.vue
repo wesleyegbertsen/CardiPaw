@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, onUnmounted, ref, useId, watch } from 'vue';
 import type { Note } from '../types';
 import { useI18n } from 'vue-i18n';
 
 const { locale } = useI18n();
 
 const props = defineProps<{ notes: Note[]; petId: string }>();
-
-const router = useRouter();
 
 const PAGE = 20;
 const visibleCount = ref(PAGE);
@@ -19,7 +16,19 @@ const visibleNotes = computed(() => props.notes.slice(0, visibleCount.value));
 const hasMore = computed(() => visibleCount.value < props.notes.length);
 
 const hasPinned = computed(() => props.notes.some(n => n.pinnedAt));
-const firstUnpinnedIndex = computed(() => props.notes.findIndex(n => !n.pinnedAt));
+
+// Notes arrive pinned-first. With pinned notes present, each section is its own
+// list under a header; empty sections (e.g. not yet paged in) are left out.
+const headerId = useId();
+const sections = computed(() => {
+  const all = hasPinned.value
+    ? [
+        { key: 'pinned', label: 'noteList.pinnedSection', notes: visibleNotes.value.filter(n => n.pinnedAt) },
+        { key: 'notes', label: 'noteList.notesSection', notes: visibleNotes.value.filter(n => !n.pinnedAt) },
+      ]
+    : [{ key: 'all', label: '', notes: visibleNotes.value }];
+  return all.filter(section => section.notes.length > 0);
+});
 
 watch(() => props.notes.length, () => { visibleCount.value = PAGE; });
 
@@ -45,10 +54,6 @@ function formatDate(iso: string) {
     minute: '2-digit',
   }).format(new Date(iso));
 }
-
-function openNote(note: Note) {
-  router.push({ name: 'note', params: { id: props.petId, noteId: note.id } });
-}
 </script>
 
 <template>
@@ -57,31 +62,35 @@ function openNote(note: Note) {
       {{ $t('noteList.empty') }}
     </div>
 
-    <template v-for="(note, index) in visibleNotes" :key="note.id">
-      <div v-if="hasPinned && index === 0" class="section-header">{{ $t('noteList.pinnedSection') }}</div>
-      <div v-if="hasPinned && index === firstUnpinnedIndex" class="section-header">{{ $t('noteList.notesSection') }}</div>
-    <div
-      class="note-item"
-      @click="openNote(note)"
-    >
-      <div class="note-left">
-        <div class="note-title">{{ note.title }}</div>
-        <div class="note-meta">
-          <span class="note-date">{{ formatDate(note.modifiedAt ?? note.createdAt) }}</span>
-          <span v-if="note.modifiedAt" class="edited-label">{{ $t('noteList.edited') }}</span>
-        </div>
-      </div>
-      <div class="note-right">
-        <span v-if="note.pinnedAt" class="pin-badge" :aria-label="$t('note.pinned')">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
-          </svg>
-        </span>
-        <svg class="chevron" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-          <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>
-        </svg>
-      </div>
-    </div>
+    <template v-for="section in sections" :key="section.key">
+      <div v-if="section.label" :id="`${headerId}-${section.key}`" class="section-header">{{ $t(section.label) }}</div>
+      <ul
+        class="items"
+        role="list"
+        :aria-labelledby="section.label ? `${headerId}-${section.key}` : undefined"
+      >
+        <li v-for="note in section.notes" :key="note.id">
+          <router-link class="note-item" :to="{ name: 'note', params: { id: petId, noteId: note.id } }">
+            <div class="note-left">
+              <div class="note-title">{{ note.title }}</div>
+              <div class="note-meta">
+                <span class="note-date">{{ formatDate(note.modifiedAt ?? note.createdAt) }}</span>
+                <span v-if="note.modifiedAt" class="edited-label">{{ $t('noteList.edited') }}</span>
+              </div>
+            </div>
+            <div class="note-right">
+              <span v-if="note.pinnedAt" class="pin-badge" role="img" :aria-label="$t('note.pinned')">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
+                  <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
+                </svg>
+              </span>
+              <svg class="chevron" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
+                <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>
+              </svg>
+            </div>
+          </router-link>
+        </li>
+      </ul>
     </template>
 
     <div v-if="hasMore" ref="sentinel" class="sentinel" />
@@ -111,6 +120,14 @@ function openNote(note: Note) {
   padding: 4px 4px 0;
 }
 
+.items {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .note-item {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -127,6 +144,11 @@ function openNote(note: Note) {
 
 .note-item:hover {
   box-shadow: var(--shadow-md);
+}
+
+.note-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .note-item:active {
