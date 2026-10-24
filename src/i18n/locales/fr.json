@@ -184,6 +184,7 @@
     "invalidFormat": "Format de fichier invalide. Veuillez sélectionner un fichier d'export CardiPaw.",
     "readError": "Impossible de lire le fichier. Assurez-vous qu'il s'agit d'un export JSON valide.",
     "importError": "L'importation a échoué. Vos données existantes n'ont pas été modifiées.",
+    "importSkipped": "1 enregistrement endommagé du fichier sera ignoré. | {n} enregistrements endommagés du fichier seront ignorés.",
     "importConfirm": "Importer {pets} animal(aux) et {readings} mesure(s) ? Toutes les données actuelles de cet appareil seront écrasées.",
     "aboutSection": "À propos",
     "version": "Version",

@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, shallowRef } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as db from '../services/db';
-import { BackupError, downloadBackup, importBackup, parseBackup } from '../services/backup';
+import { BackupError, downloadBackup, importBackup, parseBackup, type ValidatedBackup } from '../services/backup';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
-import type { ExportPayload } from '../types';
 
 const isDev = import.meta.env.DEV;
 
@@ -22,7 +21,15 @@ const showImportConfirm = ref(false);
 const activeModal = ref<'privacy' | 'terms' | null>(null);
 // shallowRef: the validated payload only feeds the confirm dialog and is handed to
 // IndexedDB later, so it must stay a plain object (structured clone cannot clone Proxies).
-const pendingPayload = shallowRef<ExportPayload | null>(null);
+const pendingPayload = shallowRef<ValidatedBackup | null>(null);
+const importConfirmMessage = computed(() => {
+  const pending = pendingPayload.value;
+  if (!pending) return '';
+  const message = t('settings.importConfirm', { pets: pending.data.pets.length, readings: pending.data.readings.length });
+  return pending.skipped > 0
+    ? `${message} ${t('settings.importSkipped', pending.skipped)}`
+    : message;
+});
 const importError = ref('');
 const exportSuccess = ref(false);
 const importSuccess = ref(false);
@@ -63,7 +70,7 @@ async function confirmImport() {
   pendingPayload.value = null;
   importing.value = true;
   try {
-    await importBackup(payload);
+    await importBackup(payload.data);
   } catch (e) {
     console.error('Backup import failed', e);
     importError.value = t('settings.importError');
@@ -332,7 +339,7 @@ function cancelImport() {
 
     <ConfirmDialog
       v-if="showImportConfirm"
-      :message="$t('settings.importConfirm', { pets: pendingPayload?.pets.length ?? 0, readings: pendingPayload?.readings.length ?? 0 })"
+      :message="importConfirmMessage"
       @confirm="confirmImport"
       @cancel="cancelImport"
     />

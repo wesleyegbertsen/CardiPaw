@@ -6,12 +6,18 @@ import { useNotesStore } from '../stores/notes';
 
 export type BackupErrorCode = 'unreadable' | 'invalid';
 
-/** Thrown when a backup file cannot be parsed or does not pass validation. */
+/** Thrown when a backup file cannot be parsed or is structurally not a CardiPaw backup. */
 export class BackupError extends Error {
   constructor(public readonly code: BackupErrorCode, message: string) {
     super(message);
     this.name = 'BackupError';
   }
+}
+
+export interface ValidatedBackup {
+  data: ExportPayload;
+  /** Records left out because they were damaged, duplicated or belonged to a skipped pet. */
+  skipped: number;
 }
 
 // Every timestamp the app writes comes from Date#toISOString(); also accept a
@@ -56,11 +62,10 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function isOptional<T>(value: unknown, check: (v: unknown) => v is T): value is T | undefined {
-  return value === undefined || check(value);
-}
-
-// Validators build fresh objects with only the known fields, so unknown keys are
+// The rule: a user's own export must always restore. A record is only skipped
+// when it cannot be shown at all (no id, no pet, no date, no rate, no content);
+// a bad optional field is repaired or dropped instead.
+// Converters build fresh objects with only the known fields, so unknown keys are
 // dropped and the result is a plain (non-reactive) object IndexedDB can clone.
 
 function toPet(value: unknown): Pet | null {
@@ -68,13 +73,21 @@ function toPet(value: unknown): Pet | null {
   const { id, name, species, photo, birthdate, createdAt, normalCeiling, elevatedCeiling } = value;
   if (!isNonEmptyString(id) || typeof name !== 'string') return null;
   if (species !== 'cat' && species !== 'dog') return null;
-  if (photo !== null && photo !== undefined && !(typeof photo === 'string' && PHOTO_DATA_URL.test(photo))) return null;
-  if (!isDay(birthdate) || !isTimestamp(createdAt)) return null;
+  const pet: Pet = {
+    id,
+    name,
+    species,
+    // Anything but a PNG/JPEG base64 data URL (e.g. "data:," from a zero-size
+    // canvas) is dropped rather than stored.
+    photo: typeof photo === 'string' && PHOTO_DATA_URL.test(photo) ? photo : null,
+    // Older versions allowed years like "20245"; an empty birthdate shows no age
+    // and the edit form asks for a new one.
+    birthdate: isDay(birthdate) ? birthdate : '',
+    createdAt: isTimestamp(createdAt) ? toUtc(createdAt) : new Date().toISOString(),
+  };
   // Ceilings are only type-checked: the pet form itself allows any number here.
-  if (!isOptional(normalCeiling, isFiniteNumber) || !isOptional(elevatedCeiling, isFiniteNumber)) return null;
-  const pet: Pet = { id, name, species, photo: photo ?? null, birthdate, createdAt: toUtc(createdAt) };
-  if (normalCeiling !== undefined) pet.normalCeiling = normalCeiling;
-  if (elevatedCeiling !== undefined) pet.elevatedCeiling = elevatedCeiling;
+  if (isFiniteNumber(normalCeiling)) pet.normalCeiling = normalCeiling;
+  if (isFiniteNumber(elevatedCeiling)) pet.elevatedCeiling = elevatedCeiling;
   return pet;
 }
 
@@ -82,15 +95,19 @@ function toReading(value: unknown): Reading | null {
   if (!isObject(value)) return null;
   const { id, petId, date, rate, clickCount, restState, notes, source } = value;
   if (!isNonEmptyString(id) || !isNonEmptyString(petId)) return null;
+  // No usable rate (e.g. "" saved by an older edit form): the reading cannot be
+  // shown or charted, and edited rates cannot be rebuilt from clickCount.
   if (!isTimestamp(date) || !isFiniteNumber(rate)) return null;
-  if (!isOptional(clickCount, isFiniteNumber)) return null;
-  if (restState !== undefined && restState !== 'resting' && restState !== 'sleeping') return null;
-  if (notes !== undefined && typeof notes !== 'string') return null;
-  if (source !== undefined && source !== 'manual') return null;
-  const reading: Reading = { id, petId, date: toUtc(date), rate, clickCount: clickCount ?? 0 };
-  if (restState !== undefined) reading.restState = restState;
-  if (notes !== undefined) reading.notes = notes;
-  if (source !== undefined) reading.source = source;
+  const reading: Reading = {
+    id,
+    petId,
+    date: toUtc(date),
+    rate,
+    clickCount: isFiniteNumber(clickCount) ? clickCount : 0,
+  };
+  if (restState === 'resting' || restState === 'sleeping') reading.restState = restState;
+  if (typeof notes === 'string') reading.notes = notes;
+  if (source === 'manual') reading.source = source;
   return reading;
 }
 
@@ -98,62 +115,74 @@ function toNote(value: unknown): Note | null {
   if (!isObject(value)) return null;
   const { id, petId, title, content, createdAt, modifiedAt, pinnedAt } = value;
   if (!isNonEmptyString(id) || !isNonEmptyString(petId)) return null;
-  if (typeof title !== 'string' || typeof content !== 'string') return null;
-  if (!isTimestamp(createdAt) || !isOptional(modifiedAt, isTimestamp) || !isOptional(pinnedAt, isTimestamp)) return null;
-  const note: Note = { id, petId, title, content, createdAt: toUtc(createdAt) };
-  if (modifiedAt !== undefined) note.modifiedAt = toUtc(modifiedAt);
-  if (pinnedAt !== undefined) note.pinnedAt = toUtc(pinnedAt);
+  if (typeof content !== 'string' || !isTimestamp(createdAt)) return null;
+  const note: Note = {
+    id,
+    petId,
+    title: typeof title === 'string' ? title : '',
+    content,
+    createdAt: toUtc(createdAt),
+  };
+  if (isTimestamp(modifiedAt)) note.modifiedAt = toUtc(modifiedAt);
+  if (isTimestamp(pinnedAt)) note.pinnedAt = toUtc(pinnedAt);
   return note;
 }
 
-function mapAll<T>(list: unknown[], convert: (v: unknown) => T | null, kind: string): T[] {
-  return list.map((item, i) => {
-    const result = convert(item);
-    if (!result) throw new BackupError('invalid', `Invalid ${kind} at index ${i}`);
-    return result;
-  });
-}
-
-function assertUniqueIds(list: { id: string }[], kind: string): void {
+/** Converts every item, keeping the first record per id; returns the kept records and how many were skipped. */
+function convertAll<T extends { id: string }>(
+  list: unknown[],
+  convert: (v: unknown) => T | null,
+  keep: (record: T) => boolean = () => true,
+): { records: T[]; skipped: number } {
   const seen = new Set<string>();
-  for (const { id } of list) {
-    if (seen.has(id)) throw new BackupError('invalid', `Duplicate ${kind} id "${id}"`);
-    seen.add(id);
+  const records: T[] = [];
+  for (const item of list) {
+    const record = convert(item);
+    if (!record || seen.has(record.id) || !keep(record)) continue;
+    seen.add(record.id);
+    records.push(record);
   }
+  return { records, skipped: list.length - records.length };
 }
 
 /**
  * Validates an untrusted value as a CardiPaw backup and returns a sanitized copy.
- * Throws BackupError('invalid') if the payload or any record is malformed.
- * Readings and notes that reference a pet missing from the backup are dropped.
+ * Only structural problems throw BackupError('invalid'): not an object, wrong
+ * version, `pets`/`readings` (or a present `notes`) not arrays, or no usable pet
+ * in a backup that has records. Damaged, duplicate and orphaned records are
+ * skipped and counted; damaged optional fields are repaired.
  * `notes` may be absent (backups made before notes existed).
  */
-export function validateBackup(value: unknown): ExportPayload {
+export function validateBackup(value: unknown): ValidatedBackup {
   if (!isObject(value) || value.version !== 1) throw new BackupError('invalid', 'Not a CardiPaw backup');
-  const { pets, readings, notes } = value;
+  const { pets, readings, notes = [] } = value;
   if (!Array.isArray(pets) || !Array.isArray(readings)) throw new BackupError('invalid', 'Missing pets or readings');
-  if (notes !== undefined && !Array.isArray(notes)) throw new BackupError('invalid', 'Invalid notes');
+  if (!Array.isArray(notes)) throw new BackupError('invalid', 'Invalid notes');
 
-  const payload: ExportPayload = {
-    version: 1,
-    exportedAt: typeof value.exportedAt === 'string' ? value.exportedAt : '',
-    pets: mapAll(pets, toPet, 'pet'),
-    readings: mapAll(readings, toReading, 'reading'),
-    notes: mapAll(notes ?? [], toNote, 'note'),
+  const petResult = convertAll(pets, toPet);
+  const hasRecords = pets.length + readings.length + notes.length > 0;
+  if (hasRecords && petResult.records.length === 0) throw new BackupError('invalid', 'No valid pets in backup');
+
+  // Records whose pet is not in the backup (or was skipped) can never be shown.
+  const petIds = new Set(petResult.records.map((p) => p.id));
+  const belongsToPet = (record: { petId: string }) => petIds.has(record.petId);
+  const readingResult = convertAll(readings, toReading, belongsToPet);
+  const noteResult = convertAll(notes, toNote, belongsToPet);
+
+  return {
+    data: {
+      version: 1,
+      exportedAt: typeof value.exportedAt === 'string' ? value.exportedAt : '',
+      pets: petResult.records,
+      readings: readingResult.records,
+      notes: noteResult.records,
+    },
+    skipped: petResult.skipped + readingResult.skipped + noteResult.skipped,
   };
-  assertUniqueIds(payload.pets, 'pet');
-  assertUniqueIds(payload.readings, 'reading');
-  assertUniqueIds(payload.notes, 'note');
-
-  // Records whose pet is not in the backup can never be shown, so leave them out.
-  const petIds = new Set(payload.pets.map((p) => p.id));
-  payload.readings = payload.readings.filter((r) => petIds.has(r.petId));
-  payload.notes = payload.notes.filter((n) => petIds.has(n.petId));
-  return payload;
 }
 
-/** Parses the text of a backup file. Throws BackupError on unreadable JSON or invalid content. */
-export function parseBackup(text: string): ExportPayload {
+/** Parses the text of a backup file. Throws BackupError on unreadable JSON or a structurally invalid backup. */
+export function parseBackup(text: string): ValidatedBackup {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -185,7 +214,7 @@ export async function downloadBackup(): Promise<void> {
  * no pre-import data stays cached.
  */
 export async function importBackup(payload: unknown): Promise<void> {
-  const data = validateBackup(payload);
+  const { data } = validateBackup(payload);
   await db.importAllData(data);
   useReadingsStore().$reset();
   useNotesStore().$reset();
