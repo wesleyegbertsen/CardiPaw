@@ -85,9 +85,18 @@ jobs:
       - name: Summary
         run: echo "Releasing **v${{ steps.gitversion.outputs.majorMinorPatch }}**" >> "$GITHUB_STEP_SUMMARY"
 
+  verify:
+    name: Verify
+    needs: check
+    if: needs.check.outputs.has-changes == 'true'
+    uses: ./.github/workflows/verify.yml
+    with:
+      ref: ${{ needs.check.outputs.sha }}
+
   deploy:
     name: Deploy website
-    needs: [check, version]
+    # Nothing ships unless lint, type-check, tests, the locale check and the audit pass.
+    needs: [check, version, verify]
     uses: ./.github/workflows/deploy.yml
     with:
       ref: ${{ needs.check.outputs.sha }}
@@ -96,7 +105,7 @@ jobs:
 
   docker:
     name: Docker image
-    needs: [check, version]
+    needs: [check, version, verify]
     uses: ./.github/workflows/docker-publish.yml
     with:
       ref: ${{ needs.check.outputs.sha }}
