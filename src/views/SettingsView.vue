@@ -7,6 +7,7 @@ import * as db from '../services/db';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
 import type { ExportPayload } from '../types';
+import { localDayKey } from '../utils/date';
 
 const isDev = import.meta.env.DEV;
 
@@ -35,7 +36,7 @@ async function exportData() {
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const date = new Date().toISOString().slice(0, 10);
+  const date = localDayKey(new Date());
   a.href = url;
   a.download = `cardipaw-export-${date}.json`;
   a.click();

@@ -1,4 +1,5 @@
 import type { Pet, Reading, SharePayload } from '../types';
+import { localDayKey, localMonthKey } from './date';
 
 // Encodes a SharePayload into a compact URL-safe string (and back) so a pet's
 // readings can be shared as a link. The data is deflate-compressed and
@@ -14,7 +15,7 @@ export class ShareDecodeError extends Error {
 export function buildSharePayload(pet: Pet, readings: Reading[], months: string[]): SharePayload {
   const monthSet = new Set(months);
   const shared = readings
-    .filter((r) => monthSet.has(r.date.slice(0, 7)))
+    .filter((r) => monthSet.has(localMonthKey(r.date)))
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((r) => ({
       date: r.date.slice(0, 16), // minute precision keeps the URL short
@@ -25,7 +26,7 @@ export function buildSharePayload(pet: Pet, readings: Reading[], months: string[
 
   return {
     v: 1,
-    sharedAt: new Date().toISOString().slice(0, 10),
+    sharedAt: localDayKey(new Date()),
     pet: {
       name: pet.name,
       species: pet.species,

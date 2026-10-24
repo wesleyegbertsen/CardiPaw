@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
+import { localMonthKey } from '../utils/date';
 import { usePdfExport } from '../composables/usePdfExport';
 
 const props = defineProps<{ pet: Pet; readings: Reading[] }>();
@@ -11,7 +12,7 @@ const { isGenerating, generatePdf } = usePdfExport();
 const { locale } = useI18n();
 
 const availableMonths = computed(() => {
-  const set = new Set(props.readings.map(r => r.date.slice(0, 7)));
+  const set = new Set(props.readings.map(r => localMonthKey(r.date)));
   return [...set].sort().reverse();
 });
 
@@ -43,7 +44,7 @@ function formatMonth(key: string): string {
 }
 
 function countReadings(monthKey: string): number {
-  return props.readings.filter(r => r.date.startsWith(monthKey)).length;
+  return props.readings.filter(r => localMonthKey(r.date) === monthKey).length;
 }
 
 async function handleExport() {

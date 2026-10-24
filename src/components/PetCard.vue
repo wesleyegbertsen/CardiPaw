@@ -11,6 +11,7 @@ import {
   Filler,
 } from 'chart.js';
 import type { Pet } from '../types';
+import { localDayKey } from '../utils/date';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
 import { useReadingsStore } from '../stores/readings';
@@ -38,10 +39,10 @@ const sparklineData = computed(() => {
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
-    const dayStr = d.toISOString().slice(0, 10);
+    const dayStr = localDayKey(d);
     labels.push(dayStr);
 
-    const dayReadings = allReadings.filter((r) => r.date.slice(0, 10) === dayStr);
+    const dayReadings = allReadings.filter((r) => localDayKey(r.date) === dayStr);
     if (dayReadings.length === 0) {
       values.push(null);
     } else {

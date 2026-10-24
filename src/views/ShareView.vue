@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import type { Reading, SharePayload } from '../types';
 import { decodeShare } from '../utils/shareCodec';
 import { getRateStatus } from '../utils/rateStatus';
+import { localMonthKey } from '../utils/date';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import RRRChart from '../components/RRRChart.vue';
 import ThemeToggle from '../components/ThemeToggle.vue';
@@ -83,7 +84,7 @@ interface MonthSection {
 const monthSections = computed<MonthSection[]>(() => {
   const groups = new Map<string, SharedReading[]>();
   for (const r of allReadings.value) {
-    const key = r.date.slice(0, 7);
+    const key = localMonthKey(r.date);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(r);
   }
