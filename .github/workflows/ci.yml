@@ -19,23 +19,6 @@ jobs:
     name: Verify
     uses: ./.github/workflows/verify.yml
 
-  # Branch protection on main requires a check named "Build" (the job name
-  # before Verify existed). This gate reports it from Verify's result. It runs
-  # with always() because a skipped required check counts as passing.
-  build:
-    name: Build
-    needs: verify
-    if: always()
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check Verify result
-        env:
-          RESULT: ${{ needs.verify.result }}
-        run: |
-          echo "Verify: $RESULT"
-          [ "$RESULT" = "success" ]
-
   docker:
     name: Docker build
     runs-on: ubuntu-latest
