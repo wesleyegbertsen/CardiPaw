@@ -149,16 +149,22 @@ The `Record<Locale, …>` types are deliberate: if you extend `SUPPORTED_LOCALES
 
 #### 3. Add a flag in `src/components/LocalePicker.vue`
 
+Add the country flag to the named import and to the `FLAGS` map:
+
 ```ts
-const LOCALE_COUNTRY: Record<Locale, keyof typeof FlagSVGs> = {
-  en: 'GB',
-  nl: 'NL',
-  de: 'DE',
-  fr: 'FR',
-  ja: 'JP',
-  es: 'ES',   // ISO 3166-1 alpha-2 country code
+import { GB, NL, DE, FR, JP, ES } from 'country-flag-icons/string/3x2';
+
+const FLAGS: Record<Locale, string> = {
+  en: GB,
+  nl: NL,
+  de: DE,
+  fr: FR,
+  ja: JP,
+  es: ES,   // exports are named by ISO 3166-1 alpha-2 country code
 };
 ```
+
+Keep these as named imports: a namespace import (`import * as ...`) with a dynamic lookup bundles every flag in the package (~265).
 
 #### 4. Verify key parity
 
