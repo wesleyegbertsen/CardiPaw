@@ -6,6 +6,7 @@ import * as db from '../services/db';
 import { usePetsStore } from '../stores/pets';
 import { mountView, settle } from '../test/mountView';
 import { makePet } from '../test/fixtures';
+import type { Pet } from '../types';
 
 vi.mock('vue-chartjs', async () => {
   const { defineComponent, h } = await import('vue');
@@ -15,8 +16,8 @@ vi.mock('vue-chartjs', async () => {
 enableAutoUnmount(afterEach);
 
 // App.vue starts the pet load; HomeView only renders the store's state.
-async function mountHome(load: () => Promise<unknown>) {
-  const result = await mountView(HomeView, '/');
+async function mountHome(load: () => Promise<unknown>, pets: Pet[] = []) {
+  const result = await mountView(HomeView, '/', { pets });
   await load().catch(() => {});
   await settle();
   return result;
@@ -41,6 +42,26 @@ describe('HomeView', () => {
     expect(wrapper.findAll('.pet-card')).toHaveLength(1);
     expect(wrapper.text()).toContain('Luna');
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+  });
+
+  it('loads the pets again from the alert', async () => {
+    vi.spyOn(db, 'getAllPets').mockRejectedValueOnce(new Error('idb broken'));
+    const { wrapper } = await mountHome(() => usePetsStore().loadPets(), [makePet({ name: 'Luna' })]);
+    expect(wrapper.text()).not.toContain('Reload the app');
+    await wrapper.get('[role="alert"] button').trigger('click');
+    await settle();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Luna');
+  });
+
+  it('keeps the alert and logs when the retry fails too', async () => {
+    vi.spyOn(db, 'getAllPets').mockRejectedValue(new Error('idb broken'));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper } = await mountHome(() => usePetsStore().loadPets());
+    await wrapper.get('[role="alert"] button').trigger('click');
+    await settle();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    expect(error).toHaveBeenCalledWith('Loading pets failed', expect.any(Error));
   });
 
   it('shows the empty state when there are no pets', async () => {

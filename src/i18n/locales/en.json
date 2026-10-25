@@ -11,7 +11,8 @@
     "breathsPerMin": "breaths/min",
     "saveError": "This could not be saved. Please try again.",
     "loadError": "This could not be loaded. Go back and try again. Your data has not been deleted.",
-    "deleteError": "This could not be deleted. Please try again."
+    "deleteError": "This could not be deleted. Please try again.",
+    "retry": "Try again"
   },
   "nav": {
     "home": "Home",
@@ -56,7 +57,7 @@
     "yourPets": "Your pets",
     "noPetsTitle": "No pets yet",
     "noPetsBody": "Add your first pet to start tracking their resting respiratory rate.",
-    "loadError": "Your pets could not be loaded. Reload the app to try again. Your data has not been deleted.",
+    "loadError": "Your pets could not be loaded. Your data has not been deleted.",
     "addPet": "Add pet",
     "themeDark": "Dark",
     "themeLight": "Light",

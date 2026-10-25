@@ -11,7 +11,8 @@
     "breathsPerMin": "Atemz./Min",
     "saveError": "Das konnte nicht gespeichert werden. Bitte versuche es erneut.",
     "loadError": "Das konnte nicht geladen werden. Geh zurück und versuche es erneut. Deine Daten wurden nicht gelöscht.",
-    "deleteError": "Das konnte nicht gelöscht werden. Bitte versuche es erneut."
+    "deleteError": "Das konnte nicht gelöscht werden. Bitte versuche es erneut.",
+    "retry": "Erneut versuchen"
   },
   "nav": {
     "home": "Start",
@@ -56,7 +57,7 @@
     "yourPets": "Deine Tiere",
     "noPetsTitle": "Noch keine Tiere",
     "noPetsBody": "Füge dein erstes Tier hinzu, um die Ruhe-Atemfrequenz zu verfolgen.",
-    "loadError": "Deine Haustiere konnten nicht geladen werden. Lade die App neu und versuche es erneut. Deine Daten wurden nicht gelöscht.",
+    "loadError": "Deine Tiere konnten nicht geladen werden. Deine Daten wurden nicht gelöscht.",
     "addPet": "Tier hinzufügen",
     "themeDark": "Dunkel",
     "themeLight": "Hell",

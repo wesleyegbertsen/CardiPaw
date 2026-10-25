@@ -11,7 +11,8 @@
     "breathsPerMin": "ademh./min",
     "saveError": "Dit kon niet worden opgeslagen. Probeer het opnieuw.",
     "loadError": "Dit kon niet worden geladen. Ga terug en probeer het opnieuw. Je gegevens zijn niet verwijderd.",
-    "deleteError": "Dit kon niet worden verwijderd. Probeer het opnieuw."
+    "deleteError": "Dit kon niet worden verwijderd. Probeer het opnieuw.",
+    "retry": "Opnieuw proberen"
   },
   "nav": {
     "home": "Start",
@@ -56,7 +57,7 @@
     "yourPets": "Jouw huisdieren",
     "noPetsTitle": "Nog geen huisdieren",
     "noPetsBody": "Voeg je eerste huisdier toe om de rustademhalingsfrequentie bij te houden.",
-    "loadError": "Je huisdieren konden niet worden geladen. Laad de app opnieuw om het nog eens te proberen. Je gegevens zijn niet verwijderd.",
+    "loadError": "Je huisdieren konden niet worden geladen. Je gegevens zijn niet verwijderd.",
     "addPet": "Huisdier toevoegen",
     "themeDark": "Donker",
     "themeLight": "Licht",

@@ -7,6 +7,10 @@ import LocalePicker from '../components/LocalePicker.vue';
 
 const petsStore = usePetsStore();
 const router = useRouter();
+
+function retryLoad() {
+  petsStore.loadPets().catch((e) => console.error('Loading pets failed', e));
+}
 </script>
 
 <template>
@@ -42,6 +46,7 @@ const router = useRouter();
 
       <div v-else-if="petsStore.loadError" class="empty-state" role="alert">
         <p>{{ $t('home.loadError') }}</p>
+        <button class="btn-retry" @click="retryLoad">{{ $t('common.retry') }}</button>
       </div>
 
       <div v-else class="empty-state">
@@ -60,6 +65,15 @@ const router = useRouter();
 </template>
 
 <style scoped>
+.btn-retry {
+  margin-top: 16px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
 .home {
   min-height: 100%;
   position: relative;
