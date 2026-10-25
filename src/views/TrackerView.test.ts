@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { defineComponent, h } from 'vue';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import TrackerView from './TrackerView.vue';
@@ -168,11 +168,64 @@ describe('TrackerView', () => {
     expect(wrapper.get<HTMLButtonElement>('.btn-save').element.disabled).toBe(false);
     expect(error).toHaveBeenCalled();
 
+    // The old alert goes away as soon as the retry starts.
+    let finish!: () => void;
+    addReading.mockImplementationOnce(
+      (data) => new Promise((resolve) => (finish = () => resolve(makeReading(data)))),
+    );
     await wrapper.get('.btn-save').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    finish();
     await flushPromises();
     expect(addReading).toHaveBeenCalledTimes(2);
     expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
     error.mockRestore();
+  });
+
+  describe('after a failed save', () => {
+    async function failSave(wrapper: VueWrapper, addReading: MockInstance) {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      addReading.mockRejectedValueOnce(new Error('quota exceeded'));
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    }
+
+    it('drops the error on Try again, also for the next result', async () => {
+      const { wrapper, addReading } = await mountTracker();
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(30_000);
+      await failSave(wrapper, addReading);
+
+      await wrapper.get('.btn-retry').trigger('click');
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(wrapper.find('.result-number').exists()).toBe(true);
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    });
+
+    it('drops the error when switching modes', async () => {
+      const { wrapper, addReading } = await mountTracker();
+      const [guided, manual] = wrapper.findAll('.mode-pill');
+      await manual.trigger('click');
+      await wrapper.get('.manual-rate-input').setValue('42');
+      await failSave(wrapper, addReading);
+
+      await guided.trigger('click');
+      await manual.trigger('click');
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    });
+
+    it('drops the error on Discard', async () => {
+      const { wrapper, addReading } = await mountTracker();
+      await wrapper.findAll('.mode-pill')[1].trigger('click');
+      await wrapper.get('.manual-rate-input').setValue('42');
+      await failSave(wrapper, addReading);
+
+      await wrapper.get('.btn-discard').trigger('click');
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    });
   });
 
   it('names the sound and vibration switches', async () => {

@@ -59,6 +59,7 @@ function switchMode(next: Mode) {
   restState.value = undefined;
   notes.value = '';
   manualRate.value = 0;
+  saveError.value = false;
 }
 
 const resultRate = computed(() => clickCount.value * 2);
@@ -142,6 +143,7 @@ async function saveReading() {
 }
 
 function discard() {
+  saveError.value = false;
   router.push({ name: 'pet', params: { id: petId } });
 }
 
@@ -157,6 +159,7 @@ function reset() {
   restState.value = undefined;
   notes.value = '';
   manualRate.value = 0;
+  saveError.value = false;
   nextTick(() => heartRef.value?.focus());
 }
 
