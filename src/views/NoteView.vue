@@ -48,7 +48,7 @@ function goBack() {
 }
 
 async function togglePin() {
-  if (!note.value || pinning.value) return;
+  if (!note.value || pinning.value || deleting.value) return;
   pinning.value = true;
   pinError.value = false;
   deleteError.value = false;
@@ -67,7 +67,7 @@ async function togglePin() {
 }
 
 async function confirmDelete() {
-  if (!note.value || deleting.value) return;
+  if (!note.value || deleting.value || pinning.value) return;
   // Close first, so the dialog hands focus back to the delete button.
   showDeleteDialog.value = false;
   deleting.value = true;
