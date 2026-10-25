@@ -56,7 +56,7 @@ function goBack() {
 }
 
 async function saveEdit() {
-  if (!reading.value || saving.value || !rateValid.value) return;
+  if (!reading.value || loadError.value || saving.value || !rateValid.value) return;
   saving.value = true;
   saveError.value = false;
   try {
@@ -109,7 +109,7 @@ function formatDate(iso: string) {
 
     <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
 
-    <form v-if="reading" class="form" novalidate @submit.prevent="saveEdit">
+    <form v-if="reading && !loadError" class="form" novalidate @submit.prevent="saveEdit">
       <div class="reading-meta-row">
         <p class="reading-date">{{ formatDate(reading.date) }}</p>
         <span class="source-chip" :class="reading.source === 'manual' ? 'manual' : 'guided'">
