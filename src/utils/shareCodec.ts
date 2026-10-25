@@ -101,6 +101,8 @@ function fromBase64Url(encoded: string): Uint8Array {
 }
 
 const SHARE_DAY = /^\d{4}-\d{2}-\d{2}$/;
+// Every app version wrote reading times as YYYY-MM-DDTHH:MM…; Date.parse alone also accepts "1" or "March 5".
+const SHARE_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 function isShareDay(s: unknown): s is string {
   return typeof s === 'string' && SHARE_DAY.test(s) && !Number.isNaN(Date.parse(s));
@@ -123,7 +125,11 @@ function isSharePayload(value: unknown): value is SharePayload {
   return v.readings.every((r) => {
     if (typeof r !== 'object' || r === null) return false;
     const reading = r as Record<string, unknown>;
-    if (typeof reading.date !== 'string' || Number.isNaN(Date.parse(fromShareDate(reading.date)))) {
+    if (
+      typeof reading.date !== 'string' ||
+      !SHARE_DATE_TIME.test(reading.date) ||
+      Number.isNaN(Date.parse(fromShareDate(reading.date)))
+    ) {
       return false;
     }
     if (typeof reading.rate !== 'number' || !Number.isFinite(reading.rate)) return false;

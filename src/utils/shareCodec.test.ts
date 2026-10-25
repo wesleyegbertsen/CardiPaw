@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { buildSharePayload, decodeShare, encodeShare, ShareDecodeError } from './shareCodec';
 import type { Pet, Reading, SharePayload } from '../types';
+import { stubTimezone } from '../test/timezone';
 
 const pet: Pet = {
   id: 'pet-1',
@@ -97,7 +98,7 @@ describe('buildSharePayload', () => {
   });
 
   it('selects months by the sharer’s local calendar', () => {
-    vi.stubEnv('TZ', 'America/New_York');
+    stubTimezone('America/New_York');
     // 02:00 UTC on March 1 is still February 29 in New York.
     const built = buildSharePayload(
       pet,
@@ -196,6 +197,11 @@ describe('encodeShare / decodeShare', () => {
     ],
     ['an unparseable sharedAt', { ...samplePayload, sharedAt: 'garbage' }],
     ['an unparseable reading date', { ...samplePayload, readings: [{ date: 'nope', rate: 22 }] }],
+    [
+      'a reading date without a time',
+      { ...samplePayload, readings: [{ date: 'March 5', rate: 22 }] },
+    ],
+    ['a bare-number reading date', { ...samplePayload, readings: [{ date: '1', rate: 22 }] }],
     [
       'a non-numeric ceiling',
       { ...samplePayload, pet: { ...samplePayload.pet, normalCeiling: '30' } },
