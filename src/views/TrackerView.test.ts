@@ -37,14 +37,15 @@ let router: Router;
 
 /**
  * `stored` set: the pets store starts empty, as on a reload straight into the tracker, and
- * loading pets resolves with `stored` (or rejects, for an Error).
+ * loading pets resolves with `stored` (or rejects, for an Error; or settles with a Promise).
  */
-async function mountTracker({ stored }: { stored?: Pet[] | Error } = {}) {
+async function mountTracker({ stored }: { stored?: Pet[] | Error | Promise<Pet[]> } = {}) {
   const pinia = createPinia();
   setActivePinia(pinia);
   const getAllPets = vi.spyOn(db, 'getAllPets');
   if (stored === undefined) usePetsStore().pets = [pet];
   else if (stored instanceof Error) getAllPets.mockRejectedValueOnce(stored);
+  else if (stored instanceof Promise) getAllPets.mockReturnValueOnce(stored);
   else getAllPets.mockResolvedValueOnce(stored);
   const addReading = vi
     .spyOn(useReadingsStore(), 'addReading')
@@ -312,6 +313,15 @@ describe('TrackerView', () => {
       expect(replace).toHaveBeenCalledWith({ name: 'home' });
       expect(wrapper.find('.heart-btn').exists()).toBe(false);
       expect(addReading).not.toHaveBeenCalled();
+    });
+
+    it('does not send the user home after they already left the tracker', async () => {
+      const load = deferred<Pet[]>();
+      const { wrapper, replace } = await mountTracker({ stored: load.promise });
+      wrapper.unmount();
+      load.resolve([]);
+      await flushPromises();
+      expect(replace).not.toHaveBeenCalled();
     });
   });
 

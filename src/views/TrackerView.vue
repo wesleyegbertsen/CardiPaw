@@ -164,6 +164,8 @@ function reset() {
   nextTick(() => heartRef.value?.focus());
 }
 
+let unmounted = false;
+
 onMounted(async () => {
   initAudio();
   // Fetch the notes editor while the user counts, so the done screen doesn't wait for it.
@@ -179,10 +181,12 @@ onMounted(async () => {
     return;
   }
   // Unknown id: a reading saved here would belong to no pet and never show up anywhere.
-  if (!pet.value) router.replace({ name: 'home' });
+  // Skipped once the user has left, so a slow load can't pull them away from another page.
+  if (!pet.value && !unmounted) router.replace({ name: 'home' });
 });
 
 onUnmounted(() => {
+  unmounted = true;
   if (intervalId.value !== null) clearInterval(intervalId.value);
 });
 </script>
