@@ -53,6 +53,7 @@
     "yourPets": "Jouw huisdieren",
     "noPetsTitle": "Nog geen huisdieren",
     "noPetsBody": "Voeg je eerste huisdier toe om de rustademhalingsfrequentie bij te houden.",
+    "loadError": "Je huisdieren konden niet worden geladen. Laad de app opnieuw om het nog eens te proberen. Je gegevens zijn niet verwijderd.",
     "addPet": "Huisdier toevoegen",
     "themeDark": "Donker",
     "themeLight": "Licht",

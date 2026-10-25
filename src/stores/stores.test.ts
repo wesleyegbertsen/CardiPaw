@@ -132,6 +132,37 @@ describe('pets store', () => {
     expect(store.loading).toBe(false);
   });
 
+  it('flags a failed load and clears the flag on a successful retry', async () => {
+    vi.spyOn(db, 'getAllPets')
+      .mockRejectedValueOnce(new Error('idb broken'))
+      .mockResolvedValueOnce([makePet()]);
+    const store = usePetsStore();
+
+    await expect(store.loadPets()).rejects.toThrow('idb broken');
+    expect(store.loadError).toBe(true);
+    expect(store.loading).toBe(false);
+
+    await store.loadPets();
+    expect(store.loadError).toBe(false);
+    expect(store.pets).toEqual([makePet()]);
+  });
+
+  it('does not flag a load that failed after a reset', async () => {
+    let reject!: (e: Error) => void;
+    const spy = vi
+      .spyOn(db, 'getAllPets')
+      .mockImplementationOnce(() => new Promise<Pet[]>((_, r) => (reject = r)));
+    const store = usePetsStore();
+
+    const loading = store.loadPets();
+    store.$reset();
+    reject(new Error('stale'));
+    await loading;
+
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(store.loadError).toBe(false);
+  });
+
   it('adds a pet with a generated id and stores it', async () => {
     const store = usePetsStore();
     const { id: _id, createdAt: _createdAt, ...data } = makePet();

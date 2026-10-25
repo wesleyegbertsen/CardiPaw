@@ -32,6 +32,10 @@ const router = useRouter();
         <div class="spinner"></div>
       </div>
 
+      <div v-else-if="petsStore.loadError" class="empty-state" role="alert">
+        <p>{{ $t('home.loadError') }}</p>
+      </div>
+
       <template v-else-if="petsStore.pets.length > 0">
         <h2 class="section-title">{{ $t('home.yourPets') }}</h2>
         <div class="pet-list">

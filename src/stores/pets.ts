@@ -9,6 +9,7 @@ import { v4 as generateId } from 'uuid';
 export const usePetsStore = defineStore('pets', () => {
   const pets = ref<Pet[]>([]);
   const loading = ref(false);
+  const loadError = ref(false);
   let _loadPromise: Promise<void> | null = null;
   // Bumped by $reset so a load that started before the reset cannot write stale data.
   let _generation = 0;
@@ -20,6 +21,7 @@ export const usePetsStore = defineStore('pets', () => {
     const generation = _generation;
     _loadPromise = (async () => {
       loading.value = true;
+      loadError.value = false;
       let stale = false;
       try {
         const list = await db.getAllPets();
@@ -27,7 +29,10 @@ export const usePetsStore = defineStore('pets', () => {
         if (!stale) pets.value = list;
       } catch (e) {
         stale = generation !== _generation;
-        if (!stale) throw e;
+        if (!stale) {
+          loadError.value = true;
+          throw e;
+        }
       } finally {
         if (!stale) {
           loading.value = false;
@@ -75,8 +80,9 @@ export const usePetsStore = defineStore('pets', () => {
     _generation++;
     pets.value = [];
     loading.value = false;
+    loadError.value = false;
     _loadPromise = null;
   }
 
-  return { pets, loading, getPetById, loadPets, addPet, updatePet, removePet, $reset };
+  return { pets, loading, loadError, getPetById, loadPets, addPet, updatePet, removePet, $reset };
 });

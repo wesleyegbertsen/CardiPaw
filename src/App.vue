@@ -15,7 +15,7 @@ const isShareView = computed(() => route.name === 'share');
 themeStore.init();
 
 onMounted(() => {
-  petsStore.loadPets();
+  petsStore.loadPets().catch((e) => console.error('Loading pets failed', e));
 });
 </script>
 

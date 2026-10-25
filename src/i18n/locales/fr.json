@@ -53,6 +53,7 @@
     "yourPets": "Vos animaux",
     "noPetsTitle": "Aucun animal",
     "noPetsBody": "Ajoutez votre premier animal pour commencer à suivre sa fréquence respiratoire au repos.",
+    "loadError": "Vos animaux n'ont pas pu être chargés. Rechargez l'application pour réessayer. Vos données n'ont pas été supprimées.",
     "addPet": "Ajouter un animal",
     "themeDark": "Sombre",
     "themeLight": "Clair",

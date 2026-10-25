@@ -53,6 +53,7 @@
     "yourPets": "Your pets",
     "noPetsTitle": "No pets yet",
     "noPetsBody": "Add your first pet to start tracking their resting respiratory rate.",
+    "loadError": "Your pets could not be loaded. Reload the app to try again. Your data has not been deleted.",
     "addPet": "Add pet",
     "themeDark": "Dark",
     "themeLight": "Light",
