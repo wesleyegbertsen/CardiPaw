@@ -323,14 +323,22 @@ onMounted(async () => {
   } catch (e) {
     console.error('Loading pet failed', e);
     loadError.value = true;
-    return;
+    // A pet cached from an earlier visit can still be shown, with the alert.
+    if (!pet.value) return;
   }
   if (!pet.value) {
     router.push({ name: 'home' });
     return;
   }
-  readingsStore.loadReadingsForPet(petId).catch((e) => console.error('Loading readings failed', e));
-  notesStore.loadNotesForPet(petId).catch((e) => console.error('Loading notes failed', e));
+  // Alert on failure, so an empty tab is not mistaken for a pet without data.
+  readingsStore.loadReadingsForPet(petId).catch((e) => {
+    console.error('Loading readings failed', e);
+    loadError.value = true;
+  });
+  notesStore.loadNotesForPet(petId).catch((e) => {
+    console.error('Loading notes failed', e);
+    loadError.value = true;
+  });
 });
 
 async function deletePet() {
@@ -387,6 +395,7 @@ async function deletePet() {
     <p v-if="deleteError" class="save-error delete-error" role="alert">
       {{ $t('petDetail.deleteError', { name: pet.name }) }}
     </p>
+    <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
 
     <div class="pet-hero">
       <div class="pet-avatar">

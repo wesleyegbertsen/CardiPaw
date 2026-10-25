@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, type VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import PetDetailView from './PetDetailView.vue';
 import { usePetsStore } from '../stores/pets';
 import { mountView, settle, type MountViewOptions } from '../test/mountView';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
 import { deferred } from '../test/deferred';
+import { createTestI18n } from '../test/i18n';
 import * as db from '../services/db';
 import type { Reading } from '../types';
 
@@ -154,6 +155,44 @@ describe('PetDetailView', () => {
     await wrapper.get('.back-btn').trigger('click');
     expect(push).toHaveBeenCalledWith({ name: 'home' });
     expect(error).toHaveBeenCalledWith('Loading pet failed', expect.any(Error));
+  });
+
+  it.each([
+    ['readings', 'getReadingsForPet'],
+    ['notes', 'getNotesForPet'],
+  ] as const)('shows the pet with an alert when its %s fail to load', async (what, method) => {
+    vi.spyOn(db, method).mockRejectedValueOnce(new Error('idb broken'));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper, push } = await mountDetail('/pets/pet-1', {
+      readings: [makeReading()],
+      notes: [makeNote()],
+    });
+    expect(wrapper.find('.icon-btn.danger').exists()).toBe(true);
+    expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+    expect(error).toHaveBeenCalledWith(`Loading ${what} failed`, expect.any(Error));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('keeps showing a cached pet with an alert when the pets fail to load', async () => {
+    // The first visit caches the pet. It stays mounted: unmounting the router's last
+    // app resets the current route, which the second mount would then read as empty.
+    const first = await mountDetail('/pets/pet-1', { readings: [makeReading()] });
+
+    vi.spyOn(db, 'getAllPets').mockRejectedValueOnce(new Error('idb broken'));
+    const getReadings = vi.spyOn(db, 'getReadingsForPet');
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const wrapper = mount(PetDetailView, {
+      attachTo: document.body,
+      global: { plugins: [first.pinia, first.router, createTestI18n()] },
+    });
+    await settle();
+
+    expect(error).toHaveBeenCalledWith('Loading pet failed', expect.any(Error));
+    expect(wrapper.find('.icon-btn.danger').exists()).toBe(true);
+    expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+    expect(getReadings).toHaveBeenCalledWith('pet-1');
+    expect(tabs(wrapper)[1].get('.tab-count').text()).toBe('1');
+    expect(first.push).not.toHaveBeenCalled();
   });
 
   describe('chart', () => {
