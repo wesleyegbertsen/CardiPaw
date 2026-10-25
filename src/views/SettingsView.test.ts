@@ -47,6 +47,12 @@ describe('SettingsView', () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it('says the data and the export include notes', async () => {
+    const { wrapper } = await mountView(SettingsView, '/settings');
+    expect(wrapper.text()).toContain('Your pet profiles, readings and notes are stored locally');
+    expect(wrapper.text()).toContain('Download all pets, readings and notes as JSON');
+  });
+
   describe('import', () => {
     it('asks to confirm with the counts, then imports', async () => {
       const { wrapper } = await mountView(SettingsView, '/settings');
