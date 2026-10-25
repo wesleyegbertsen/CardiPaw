@@ -1,0 +1,131 @@
+// @vitest-environment happy-dom
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { enableAutoUnmount, flushPromises } from '@vue/test-utils';
+import EditReadingView from './EditReadingView.vue';
+import { useReadingsStore } from '../stores/readings';
+import { mountView, settle } from '../test/mountView';
+import { makePet, makeReading } from '../test/fixtures';
+import type { Reading } from '../types';
+
+vi.mock('../components/LazyRichTextEditor', async () =>
+  (await import('../test/stubs')).lazyEditorStubModule(),
+);
+
+enableAutoUnmount(afterEach);
+
+const location = '/pets/pet-1/readings/reading-1/edit';
+
+async function mountEdit(reading: Reading = makeReading()) {
+  const result = await mountView(EditReadingView, location, {
+    pets: [makePet()],
+    readings: [reading],
+  });
+  const { wrapper } = result;
+  return {
+    ...result,
+    rate: wrapper.get<HTMLInputElement>('.rate-input'),
+    submit: wrapper.get<HTMLButtonElement>('.submit-btn'),
+    badge: () => wrapper.find('.rate-badge'),
+  };
+}
+
+describe('EditReadingView', () => {
+  it('goes to the pet’s readings for an unknown reading', async () => {
+    const { push } = await mountView(EditReadingView, location, { pets: [makePet()] });
+    expect(push).toHaveBeenCalledWith({
+      name: 'pet',
+      params: { id: 'pet-1' },
+      query: { tab: 'readings' },
+    });
+  });
+
+  it('prefills the rate, rest state and notes', async () => {
+    const { wrapper, rate, badge } = await mountEdit(
+      makeReading({ rate: 33, restState: 'sleeping', notes: '<p>Calm</p>' }),
+    );
+    expect(rate.element.value).toBe('33');
+    expect(badge().text()).toBe('Elevated');
+    expect(wrapper.get('.rest-btn.active').text()).toBe('Sleeping');
+    expect((wrapper.get('.notes-stub').element as HTMLTextAreaElement).value).toBe('<p>Calm</p>');
+  });
+
+  it('hides the badge and disables save when the rate is cleared', async () => {
+    const { rate, submit, badge } = await mountEdit();
+    await rate.setValue('');
+    expect(badge().exists()).toBe(false);
+    expect(submit.element.disabled).toBe(true);
+  });
+
+  it.each(['0', '12.5', '250'])('blocks saving a new rate of %s', async (value) => {
+    const { wrapper, rate, submit, badge } = await mountEdit();
+    const update = vi.spyOn(useReadingsStore(), 'updateReading');
+    await rate.setValue(value);
+    expect(submit.element.disabled).toBe(true);
+    expect(badge().exists()).toBe(false);
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('keeps a stored guided rate above 200 saveable while it is unchanged', async () => {
+    const { wrapper, rate, submit, badge, replace } = await mountEdit(
+      makeReading({ rate: 230, clickCount: 115 }),
+    );
+    expect(submit.element.disabled).toBe(false);
+    expect(badge().text()).toBe('High');
+
+    await rate.setValue('250');
+    expect(submit.element.disabled).toBe(true);
+
+    await rate.setValue('230');
+    await wrapper.get('.notes-stub').setValue('<p>Purring</p>');
+    await wrapper.get('form').trigger('submit');
+    await settle();
+    expect(useReadingsStore().getReadingsForPet('pet-1')[0]).toMatchObject({
+      rate: 230,
+      notes: '<p>Purring</p>',
+    });
+    expect(replace).toHaveBeenCalledWith({
+      name: 'reading',
+      params: { id: 'pet-1', readingId: 'reading-1' },
+    });
+  });
+
+  it('toggles the rest state and saves empty notes as undefined', async () => {
+    const { wrapper, rate, replace } = await mountEdit(
+      makeReading({ restState: 'resting', notes: '<p>Old</p>' }),
+    );
+    const update = vi.spyOn(useReadingsStore(), 'updateReading');
+    const [resting, sleeping] = wrapper.findAll('.rest-btn');
+
+    await resting.trigger('click');
+    expect(wrapper.find('.rest-btn.active').exists()).toBe(false);
+    await sleeping.trigger('click');
+    expect(sleeping.classes()).toContain('active');
+
+    await rate.setValue('28');
+    await wrapper.get('.notes-stub').setValue('');
+    await wrapper.get('form').trigger('submit');
+    await settle();
+
+    expect(update).toHaveBeenCalledWith({
+      ...makeReading(),
+      rate: 28,
+      restState: 'sleeping',
+      notes: undefined,
+    });
+    expect(replace).toHaveBeenCalledWith({
+      name: 'reading',
+      params: { id: 'pet-1', readingId: 'reading-1' },
+    });
+  });
+
+  it('goes back to the reading', async () => {
+    const { wrapper, replace } = await mountEdit();
+    await wrapper.get('.back-btn').trigger('click');
+    expect(replace).toHaveBeenCalledWith({
+      name: 'reading',
+      params: { id: 'pet-1', readingId: 'reading-1' },
+    });
+  });
+});

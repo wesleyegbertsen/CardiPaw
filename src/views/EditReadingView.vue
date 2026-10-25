@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import type { Reading } from '../types';
-import { getRateStatus } from '../utils/rateStatus';
+import { getRateStatus, isValidRate } from '../utils/rateStatus';
 import { LazyRichTextEditor as RichTextEditor } from '../components/LazyRichTextEditor';
 import { useI18n } from 'vue-i18n';
 
@@ -28,7 +28,8 @@ const editRestState = ref<'resting' | 'sleeping' | undefined>(undefined);
 const editNotes = ref('');
 const saving = ref(false);
 // v-model.number yields '' when the field is cleared; never store that as the rate.
-const rateValid = computed(() => Number.isFinite(editRate.value) && editRate.value >= 1);
+// Guided results (taps×2) can exceed 200, so an unchanged stored rate stays saveable.
+const rateValid = computed(() => isValidRate(editRate.value) || editRate.value === reading.value?.rate);
 
 onMounted(async () => {
   await petsStore.loadPets();
@@ -113,7 +114,7 @@ function formatDate(iso: string) {
             min="1"
             max="200"
           />
-          <span class="rate-badge" :class="getRateStatus(editRate, pet).cssClass">
+          <span v-if="rateValid" class="rate-badge" :class="getRateStatus(editRate, pet).cssClass">
             {{ $t('status.' + getRateStatus(editRate, pet).cssClass) }}
           </span>
         </div>
