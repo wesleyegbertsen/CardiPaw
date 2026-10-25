@@ -39,12 +39,15 @@ const thresholdError = computed(() => {
     : '';
 });
 const thresholdErrorId = 'threshold-error';
-// Both ceilings take part in the comparison, so both point at the message.
-const thresholdA11y = computed(() =>
-  thresholdError.value
+// A range error marks only the ceiling that is out of range; the comparison error involves both.
+const normalOutOfRange = computed(() => !ceilingOk(normalCeiling.value, stored.value.normal));
+const elevatedOutOfRange = computed(() => !ceilingOk(elevatedCeiling.value, stored.value.elevated));
+const ceilingA11y = (outOfRange: boolean) =>
+  thresholdError.value && (outOfRange || (!normalOutOfRange.value && !elevatedOutOfRange.value))
     ? { 'aria-invalid': 'true' as const, 'aria-describedby': thresholdErrorId }
-    : {},
-);
+    : {};
+const normalA11y = computed(() => ceilingA11y(normalOutOfRange.value));
+const elevatedA11y = computed(() => ceilingA11y(elevatedOutOfRange.value));
 
 onMounted(async () => {
   if (isEdit) {
@@ -168,7 +171,7 @@ function goBack() {
               min="1"
               max="199"
               :placeholder="String(DEFAULT_NORMAL_CEILING)"
-              v-bind="thresholdA11y"
+              v-bind="normalA11y"
             />
           </div>
           <div class="threshold-input-group">
@@ -181,7 +184,7 @@ function goBack() {
               :min="typeof normalCeiling === 'number' ? normalCeiling + 1 : DEFAULT_NORMAL_CEILING + 1"
               max="200"
               :placeholder="String(DEFAULT_ELEVATED_CEILING)"
-              v-bind="thresholdA11y"
+              v-bind="elevatedA11y"
             />
           </div>
         </div>

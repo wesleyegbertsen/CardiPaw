@@ -120,6 +120,17 @@ describe('AddEditPetView', () => {
       }
     });
 
+    it('marks only the out-of-range ceiling as invalid', async () => {
+      const { wrapper, fill } = await mountForm('/pets/add');
+      await fill({ '#normal-ceiling': '250', '#elevated-ceiling': '300' });
+      expect(wrapper.get('#normal-ceiling').attributes('aria-invalid')).toBe('true');
+      expect(wrapper.get('#elevated-ceiling').attributes('aria-invalid')).toBe('true');
+
+      await fill({ '#normal-ceiling': '250', '#elevated-ceiling': '40' });
+      expect(wrapper.get('#normal-ceiling').attributes('aria-invalid')).toBe('true');
+      expect(wrapper.get('#elevated-ceiling').attributes('aria-invalid')).toBeUndefined();
+    });
+
     it.each(['0', '-5', '12.5', '250'])('blocks saving a ceiling of %s', async (value) => {
       const { wrapper, fill, submit, error } = await mountForm('/pets/add');
       const addPet = vi.spyOn(usePetsStore(), 'addPet');
