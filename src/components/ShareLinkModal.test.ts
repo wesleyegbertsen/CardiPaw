@@ -7,6 +7,7 @@ import * as codec from '../utils/shareCodec';
 import { routes } from '../router';
 import { Blank } from '../test/mountView';
 import { createTestI18n } from '../test/i18n';
+import { deferred } from '../test/deferred';
 import { makePet, makeReading } from '../test/fixtures';
 
 vi.mock('../utils/shareCodec', async (importOriginal) => {
@@ -20,16 +21,6 @@ const readings = [
   makeReading({ id: 'march', date: '2024-03-15T12:00:00.000Z' }),
   makeReading({ id: 'feb', date: '2024-02-15T12:00:00.000Z' }),
 ];
-
-function deferred() {
-  let resolve!: (value: string) => void;
-  let reject!: (reason: unknown) => void;
-  const promise = new Promise<string>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
 
 const q = <T extends Element>(selector: string) => document.body.querySelector<T>(selector);
 const copyButton = () => q<HTMLButtonElement>('.btn-primary')!;
@@ -47,17 +38,18 @@ async function mountModal() {
     attachTo: document.body,
     global: { plugins: [router, createTestI18n()] },
   });
-  await vi.waitFor(() => expect(copyButton().disabled).toBe(false));
+  // Encoding runs through real compression streams, which can outlast a few ticks.
+  await vi.waitFor(() => expect(copyButton().disabled).toBe(false), { timeout: 5000 });
   return wrapper;
 }
 
 describe('ShareLinkModal', () => {
   beforeEach(() => {
-    vi.mocked(codec.encodeShare).mockClear();
+    // Reset, not clear: a queued Once value left by a failed test must not leak.
+    vi.mocked(codec.encodeShare).mockReset();
   });
   afterEach(() => {
     vi.useRealTimers();
-    vi.restoreAllMocks();
   });
 
   it('builds a link to the share page that decodes back to the selection', async () => {
@@ -72,7 +64,7 @@ describe('ShareLinkModal', () => {
 
   it('disables Copy while the new selection is being encoded', async () => {
     await mountModal();
-    const held = deferred();
+    const held = deferred<string>();
     vi.mocked(codec.encodeShare).mockImplementationOnce(() => held.promise);
     monthBoxes()[0].click();
     await flushPromises();
@@ -100,14 +92,14 @@ describe('ShareLinkModal', () => {
     expect(error).toHaveBeenCalled();
 
     monthBoxes()[0].click();
-    await vi.waitFor(() => expect(copyButton().disabled).toBe(false));
+    await vi.waitFor(() => expect(copyButton().disabled).toBe(false), { timeout: 5000 });
     expect(alert()).toBeNull();
   });
 
   it('ignores a result that a newer selection superseded', async () => {
     await mountModal();
-    const first = deferred();
-    const second = deferred();
+    const first = deferred<string>();
+    const second = deferred<string>();
     vi.mocked(codec.encodeShare)
       .mockImplementationOnce(() => first.promise)
       .mockImplementationOnce(() => second.promise);
@@ -121,6 +113,29 @@ describe('ShareLinkModal', () => {
     first.resolve('older');
     await flushPromises();
     expect(linkPreview().value).toContain('d=newer');
+  });
+
+  it('ignores a failure that a newer selection superseded', async () => {
+    await mountModal();
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const first = deferred<string>();
+    const second = deferred<string>();
+    vi.mocked(codec.encodeShare)
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+    monthBoxes()[0].click();
+    await flushPromises();
+    monthBoxes()[0].click();
+    await flushPromises();
+
+    second.resolve('newer');
+    await flushPromises();
+    first.reject(new Error('no CompressionStream'));
+    await flushPromises();
+    expect(alert()).toBeNull();
+    expect(linkPreview().value).toContain('d=newer');
+    expect(copyButton().disabled).toBe(false);
+    expect(error).not.toHaveBeenCalled();
   });
 
   it('shows Copied for two seconds after copying', async () => {

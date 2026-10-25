@@ -98,8 +98,13 @@ describe('UpdateBanner', () => {
 
   it('does nothing when no registration is returned', () => {
     vi.useFakeTimers();
+    const setInterval = vi.spyOn(globalThis, 'setInterval');
     mountBanner();
     sw.options!.onRegistered!(undefined);
-    expect(vi.getTimerCount()).toBe(0);
+    expect(setInterval).not.toHaveBeenCalled();
+
+    // The spy does see the hourly check once there is a registration.
+    sw.options!.onRegistered!({ update: vi.fn() });
+    expect(setInterval).toHaveBeenCalledOnce();
   });
 });

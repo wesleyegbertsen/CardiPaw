@@ -23,6 +23,9 @@ export default defineConfig({
     // Plain Node by default: it has CompressionStream, Blob and Response built in.
     // Component tests opt in to a DOM with `// @vitest-environment happy-dom`.
     environment: 'node',
+    // Child processes, not worker threads: Node only applies a runtime change of
+    // process.env.TZ (stubTimezone in src/test/timezone.ts) on the main thread.
+    pool: 'forks',
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,

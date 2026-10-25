@@ -93,7 +93,6 @@ describe('PdfExportModal', () => {
     monthBoxes()[1].click();
     await flushPromises();
     expect(q('[role="alert"]')).toBeNull();
-    error.mockRestore();
   });
 
   it('closes 200 ms after a successful export', async () => {

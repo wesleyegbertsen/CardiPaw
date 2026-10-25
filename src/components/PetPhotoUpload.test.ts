@@ -68,7 +68,6 @@ describe('PetPhotoUpload', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    vi.restoreAllMocks();
   });
 
   it('scales a large photo down to fit 400 px and emits a JPEG', async () => {

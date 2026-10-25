@@ -5,6 +5,7 @@ import { enableAutoUnmount, flushPromises, type VueWrapper } from '@vue/test-uti
 import ShareView from './ShareView.vue';
 import * as codec from '../utils/shareCodec';
 import { mountView } from '../test/mountView';
+import { deferred } from '../test/deferred';
 import { makePet, makeReading } from '../test/fixtures';
 import type { SharePayload } from '../types';
 
@@ -34,7 +35,7 @@ const link = (p = pet) =>
   codec.encodeShare(codec.buildSharePayload(p, readings, ['2024-02', '2024-03']));
 // Decoding runs through real compression streams, which can outlast a few ticks.
 const loaded = (wrapper: VueWrapper) =>
-  vi.waitFor(() => expect(wrapper.find('.status-msg').exists()).toBe(false));
+  vi.waitFor(() => expect(wrapper.find('.status-msg').exists()).toBe(false), { timeout: 5000 });
 
 async function mountShare(query: Record<string, string> = {}) {
   const result = await mountView(ShareView, { name: 'share', query }, { stubs });
@@ -42,19 +43,10 @@ async function mountShare(query: Record<string, string> = {}) {
   return result;
 }
 
-function deferred() {
-  let resolve!: (value: SharePayload) => void;
-  let reject!: (reason: unknown) => void;
-  const promise = new Promise<SharePayload>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
-
 describe('ShareView', () => {
   beforeEach(() => {
-    vi.mocked(codec.decodeShare).mockClear();
+    // Reset, not clear: a queued Once value left by a failed test must not leak.
+    vi.mocked(codec.decodeShare).mockReset();
   });
 
   it('shows the shared pet, stats and months newest first', async () => {
@@ -102,13 +94,15 @@ describe('ShareView', () => {
   it('decodes again when the link changes', async () => {
     const { wrapper, router } = await mountShare({ d: await link() });
     await router.push({ name: 'share', query: { d: await link({ ...pet, name: 'Ziggy' }) } });
-    await vi.waitFor(() => expect(wrapper.find('.pet-name').text()).toBe('Ziggy'));
+    await vi.waitFor(() => expect(wrapper.find('.pet-name').text()).toBe('Ziggy'), {
+      timeout: 5000,
+    });
   });
 
   it('keeps the newest link when an older decode finishes last', async () => {
     const [dA, dB] = [await link(), await link({ ...pet, name: 'Ziggy' })];
-    const first = deferred();
-    const second = deferred();
+    const first = deferred<SharePayload>();
+    const second = deferred<SharePayload>();
     const real = await vi.importActual<typeof import('../utils/shareCodec')>('../utils/shareCodec');
     vi.mocked(codec.decodeShare)
       .mockImplementationOnce(() => first.promise)
@@ -131,7 +125,7 @@ describe('ShareView', () => {
 
   it('ignores an older link that fails after the newest one loaded', async () => {
     const dB = await link({ ...pet, name: 'Ziggy' });
-    const first = deferred();
+    const first = deferred<SharePayload>();
     vi.mocked(codec.decodeShare).mockImplementationOnce(() => first.promise);
 
     const { wrapper, router } = await mountView(

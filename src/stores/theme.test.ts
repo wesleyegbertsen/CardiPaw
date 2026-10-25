@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useThemeStore } from './theme';
 
@@ -15,7 +15,6 @@ describe('theme store', () => {
     document.documentElement.removeAttribute('data-theme');
     setActivePinia(createPinia());
   });
-  afterEach(() => vi.restoreAllMocks());
 
   it('follows the system preference when nothing is saved', () => {
     const matchMedia = prefersDark(true);

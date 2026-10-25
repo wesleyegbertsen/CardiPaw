@@ -5,6 +5,7 @@ import * as db from '../services/db';
 import { usePetsStore } from './pets';
 import { useReadingsStore } from './readings';
 import { useNotesStore } from './notes';
+import { deferred } from '../test/deferred';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
 import type { Pet, Reading } from '../types';
 
@@ -14,12 +15,6 @@ beforeEach(async () => {
   await db.importAllData({ version: 1, exportedAt: '', pets: [], readings: [], notes: [] });
   setActivePinia(createPinia());
 });
-
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((r) => (resolve = r));
-  return { promise, resolve };
-}
 
 describe('readings store', () => {
   it('lists a pet’s readings newest first', async () => {

@@ -17,7 +17,6 @@ const host = (modelValue: string) =>
   defineComponent({ render: () => h(LazyRichTextEditor, { modelValue }) });
 
 describe('LazyRichTextEditor when the chunk fails', () => {
-  afterEach(() => vi.restoreAllMocks());
 
   it('shows an alert instead of the editor', async () => {
     // Vue logs the loader error.

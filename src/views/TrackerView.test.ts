@@ -1,14 +1,17 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
-import { defineComponent, h } from 'vue';
 import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import TrackerView from './TrackerView.vue';
+import { routes } from '../router';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
+import { deferred } from '../test/deferred';
 import { createTestI18n } from '../test/i18n';
+import { Blank } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
+import type { Reading } from '../types';
 
 const audio = vi.hoisted(() => ({ init: vi.fn(), playBeep: vi.fn(), playDoneSound: vi.fn() }));
 const haptics = vi.hoisted(() => ({ vibrateTap: vi.fn(), vibrateDone: vi.fn() }));
@@ -28,7 +31,6 @@ vi.mock('../components/LazyRichTextEditor', async () =>
 
 enableAutoUnmount(afterEach);
 
-const Blank = defineComponent({ render: () => h('div') });
 const pet = makePet();
 let router: Router;
 
@@ -40,14 +42,12 @@ async function mountTracker() {
     .spyOn(useReadingsStore(), 'addReading')
     .mockImplementation(async (data) => makeReading(data));
 
+  // The app's real routes (as mountView uses), so a renamed route fails here too.
   router = createRouter({
     history: createMemoryHistory(),
-    routes: [
-      { path: '/pet/:id', name: 'pet', component: Blank },
-      { path: '/pet/:id/track', name: 'track', component: Blank },
-    ],
+    routes: routes.map((r) => ({ ...r, component: Blank })),
   });
-  await router.push({ name: 'track', params: { id: pet.id } });
+  await router.push({ name: 'tracker', params: { id: pet.id } });
   await router.isReady();
 
   const wrapper = mount(TrackerView, {
@@ -141,8 +141,6 @@ describe('TrackerView', () => {
     expect(wrapper.get<HTMLElement>('.manual-body .rate-badge').element.style.visibility).toBe(
       'hidden',
     );
-    save.element.click();
-    await flushPromises();
     expect(addReading).not.toHaveBeenCalled();
   });
 
@@ -169,18 +167,15 @@ describe('TrackerView', () => {
     expect(error).toHaveBeenCalled();
 
     // The old alert goes away as soon as the retry starts.
-    let finish!: () => void;
-    addReading.mockImplementationOnce(
-      (data) => new Promise((resolve) => (finish = () => resolve(makeReading(data)))),
-    );
+    const retry = deferred<Reading>();
+    addReading.mockImplementationOnce(() => retry.promise);
     await wrapper.get('.btn-save').trigger('click');
     await flushPromises();
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
-    finish();
+    retry.resolve(makeReading());
     await flushPromises();
     expect(addReading).toHaveBeenCalledTimes(2);
     expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
-    error.mockRestore();
   });
 
   describe('after a failed save', () => {

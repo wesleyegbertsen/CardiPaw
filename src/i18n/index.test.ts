@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The module picks the locale when it is first imported, so each test imports a fresh copy.
 async function bootstrap({ languages = ['en-US'], language = 'en-US' } = {}) {
@@ -14,7 +14,6 @@ describe('i18n bootstrap', () => {
     localStorage.clear();
     document.documentElement.removeAttribute('lang');
   });
-  afterEach(() => vi.restoreAllMocks());
 
   it('uses the saved language over the browser’s', async () => {
     localStorage.setItem('cardipaw-locale', 'de');
