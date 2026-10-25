@@ -92,6 +92,22 @@ describe('ReadingView', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it('deletes on a retry after a failed delete', async () => {
+    vi.spyOn(db, 'deleteReading').mockRejectedValueOnce(new Error('quota'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper, push } = await mountView(ReadingView, location, {
+      pets: [makePet()],
+      readings: [makeReading()],
+    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await wrapper.get('.icon-btn.danger').trigger('click');
+      document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
+      await settle();
+    }
+    expect(await db.getReadingsForPet('pet-1')).toEqual([]);
+    expect(push).toHaveBeenCalledWith(readingsTab);
+  });
+
   it('deletes once when confirm is clicked twice', async () => {
     const pending = deferred<void>();
     const deleteReading = vi.spyOn(db, 'deleteReading').mockReturnValue(pending.promise);

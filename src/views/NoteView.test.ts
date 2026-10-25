@@ -101,6 +101,22 @@ describe('NoteView', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it('deletes on a retry after a failed delete', async () => {
+    vi.spyOn(db, 'deleteNote').mockRejectedValueOnce(new Error('quota'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper, push } = await mountView(NoteView, location, {
+      pets: [makePet()],
+      notes: [makeNote()],
+    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await wrapper.get('.icon-btn.danger').trigger('click');
+      document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
+      await settle();
+    }
+    expect(await db.getNotesForPet('pet-1')).toEqual([]);
+    expect(push).toHaveBeenCalledWith(notesTab);
+  });
+
   it('deletes once when confirm is clicked twice', async () => {
     const pending = deferred<void>();
     const deleteNote = vi.spyOn(db, 'deleteNote').mockReturnValue(pending.promise);

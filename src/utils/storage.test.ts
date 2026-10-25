@@ -21,8 +21,10 @@ describe('storage', () => {
   });
 
   it('skips a write when the quota is full', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     failStorageWrites();
     expect(() => writeStorage('k', 'v')).not.toThrow();
+    expect(warn).toHaveBeenCalledWith('Could not save k', expect.any(DOMException));
+    expect(readStorage('k')).toBeNull();
   });
 });

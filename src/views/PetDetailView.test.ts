@@ -124,6 +124,19 @@ describe('PetDetailView', () => {
       expect(push).not.toHaveBeenCalled();
     });
 
+    it('deletes on a retry after a failed delete', async () => {
+      vi.spyOn(db, 'deletePet').mockRejectedValueOnce(new Error('quota'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper, push } = await mountDetail('/pets/pet-1');
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await wrapper.get('.icon-btn.danger').trigger('click');
+        document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
+        await settle();
+      }
+      expect(usePetsStore().pets).toEqual([]);
+      expect(push).toHaveBeenCalledWith({ name: 'home' });
+    });
+
     it('deletes once when confirm is clicked twice', async () => {
       const pending = deferred<void>();
       const deletePet = vi.spyOn(db, 'deletePet').mockReturnValue(pending.promise);

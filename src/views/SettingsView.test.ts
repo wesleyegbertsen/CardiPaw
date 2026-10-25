@@ -4,7 +4,7 @@ import { enableAutoUnmount, flushPromises, type VueWrapper } from '@vue/test-uti
 import SettingsView from './SettingsView.vue';
 import * as backup from '../services/backup';
 import { mountView, settle } from '../test/mountView';
-import { makePet, makeReading } from '../test/fixtures';
+import { makeNote, makePet, makeReading } from '../test/fixtures';
 
 // Keep parsing and validation real; only the IndexedDB-touching calls are faked.
 vi.mock('../services/backup', async (importOriginal) => {
@@ -36,7 +36,7 @@ const backupText = (extra: object = {}) =>
     exportedAt: '',
     pets: [makePet()],
     readings: [makeReading(), makeReading({ id: 'r2' })],
-    notes: [],
+    notes: [makeNote()],
     ...extra,
   });
 
@@ -51,7 +51,7 @@ describe('SettingsView', () => {
     it('asks to confirm with the counts, then imports', async () => {
       const { wrapper } = await mountView(SettingsView, '/settings');
       const input = await pickFile(wrapper, backupText());
-      expect(dialogMessage()?.textContent).toContain('Import 1 pet(s), 2 reading(s) and 0 note(s)?');
+      expect(dialogMessage()?.textContent).toContain('Import 1 pet(s), 2 reading(s) and 1 note(s)?');
       expect(input.value).toBe('');
 
       clickInBody('.btn-confirm');
