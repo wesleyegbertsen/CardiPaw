@@ -47,18 +47,20 @@ function goBack() {
 }
 
 async function save() {
-  if (saving.value || !editTitle.value.trim()) return;
+  // Editing a note that hasn't loaded (or is gone): never fall through to adding one.
+  if (saving.value || !editTitle.value.trim() || (isEditMode.value && !existingNote.value)) return;
   saving.value = true;
   try {
-    if (isEditMode.value && existingNote.value) {
-      const wasPinned = !!existingNote.value.pinnedAt;
+    if (isEditMode.value) {
+      const note = existingNote.value!;
+      const wasPinned = !!note.pinnedAt;
       await notesStore.updateNote({
-        ...existingNote.value,
+        ...note,
         title: editTitle.value.trim(),
         content: editContent.value,
         modifiedAt: new Date().toISOString(),
         pinnedAt: editPinned.value
-          ? (wasPinned ? existingNote.value.pinnedAt : new Date().toISOString())
+          ? (wasPinned ? note.pinnedAt : new Date().toISOString())
           : undefined,
       });
       router.replace({ name: 'note', params: { id: petId, noteId } });
