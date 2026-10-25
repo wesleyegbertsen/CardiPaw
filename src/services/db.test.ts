@@ -263,6 +263,21 @@ describe('exportAllData / importAllData', () => {
       ).rejects.toThrow();
       await expectExistingKept();
     });
+
+    it('in the last store (a note without an id)', async () => {
+      await existing();
+      const { id: _id, ...noId } = note('n1', 'a');
+      await expect(
+        db.importAllData({
+          version: 1,
+          exportedAt: '',
+          pets: [pet('a')],
+          readings: [reading('r1', 'a')],
+          notes: [noId as Note],
+        }),
+      ).rejects.toThrow();
+      await expectExistingKept();
+    });
   });
 });
 

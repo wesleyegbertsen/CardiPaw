@@ -75,6 +75,8 @@ async function mountTracker() {
 
 describe('TrackerView', () => {
   beforeEach(() => {
+    // Hoisted spies outlive each test, so clear their calls to keep tests order-independent.
+    for (const fn of [...Object.values(audio), ...Object.values(haptics)]) fn.mockClear();
     localStorage.clear();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2024-03-15T12:00:00.000Z'));
@@ -175,12 +177,11 @@ describe('TrackerView', () => {
   it('stops the countdown when leaving mid-measurement', async () => {
     const { wrapper } = await mountTracker();
     await wrapper.get('.heart-btn').trigger('click');
-    // Let the tap pulse animation finish so only the countdown is left.
-    await vi.advanceTimersByTimeAsync(500);
-    expect(vi.getTimerCount()).toBe(1);
-
     wrapper.unmount();
 
-    expect(vi.getTimerCount()).toBe(0);
+    // A countdown still running after unmount would finish and play the done cue.
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(audio.playDoneSound).not.toHaveBeenCalled();
+    expect(haptics.vibrateDone).not.toHaveBeenCalled();
   });
 });

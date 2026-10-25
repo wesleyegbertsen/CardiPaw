@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { calendarAge } from './age';
+import { stubTimezone } from '../test/timezone';
 
 describe('calendarAge', () => {
   it('counts whole years and months', () => {
@@ -30,7 +31,7 @@ describe('calendarAge', () => {
   });
 
   it('reads the birthdate as local midnight west of Greenwich', () => {
-    vi.stubEnv('TZ', 'America/Los_Angeles');
+    stubTimezone('America/Los_Angeles');
     const { born, years, months } = calendarAge('2020-03-01', new Date(2021, 2, 1, 9));
     expect(born.getDate()).toBe(1);
     expect(born.getHours()).toBe(0);

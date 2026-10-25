@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { getChartWindow, weekOffsetOf } from './chartWindow';
+import { stubTimezone } from '../test/timezone';
 
 const contains = (window: { start: Date; end: Date }, d: Date) =>
   d >= window.start && d <= window.end;
@@ -7,7 +8,7 @@ const contains = (window: { start: Date; end: Date }, d: Date) =>
 // Europe/Amsterdam: clocks go forward on 31 March 2024 and back on 27 October 2024.
 describe('chart windows across DST changes', () => {
   beforeEach(() => {
-    vi.stubEnv('TZ', 'Europe/Amsterdam');
+    stubTimezone('Europe/Amsterdam');
   });
 
   it('starts the week six calendar days back after spring forward', () => {

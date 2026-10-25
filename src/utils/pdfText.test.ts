@@ -1,13 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { aggregateByDay, formatPdfAge, htmlToPlainText } from './pdfText';
 import { createTestI18n } from '../test/i18n';
 import { makeReading } from '../test/fixtures';
+import { stubTimezone } from '../test/timezone';
 
 const { t } = createTestI18n().global;
 
 describe('formatPdfAge', () => {
   it('reads the birthdate as a local day, not UTC midnight', () => {
-    vi.stubEnv('TZ', 'America/Los_Angeles');
+    stubTimezone('America/Los_Angeles');
     expect(formatPdfAge('2020-03-01', t, new Date(2021, 2, 1, 9))).toBe('1 year');
   });
 
@@ -60,7 +61,7 @@ describe('aggregateByDay', () => {
   });
 
   it('groups by local day and leaves out other months', () => {
-    vi.stubEnv('TZ', 'Asia/Tokyo');
+    stubTimezone('Asia/Tokyo');
     const readings = [
       // 23:30 UTC on Feb 29 is already March 1 in Tokyo.
       makeReading({ id: 'a', date: '2024-02-29T23:30:00.000Z', rate: 20 }),

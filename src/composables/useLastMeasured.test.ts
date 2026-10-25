@@ -5,6 +5,7 @@ import { useLastMeasured } from './useLastMeasured';
 import { withSetup } from '../test/withSetup';
 import { makeReading } from '../test/fixtures';
 import type { Reading } from '../types';
+import { stubTimezone } from '../test/timezone';
 
 function lastMeasured(readings: Reading[]) {
   const [result, app] = withSetup(() => useLastMeasured(ref(readings)));
@@ -51,7 +52,7 @@ describe('useLastMeasured', () => {
   });
 
   it('counts days correctly across a DST weekend', () => {
-    vi.stubEnv('TZ', 'Europe/Amsterdam');
+    stubTimezone('Europe/Amsterdam');
     // Clocks went forward on 31 March 2024, so that day had only 23 hours.
     vi.setSystemTime(new Date(2024, 3, 1, 0, 30));
     expect(lastMeasured([onMarch(30, 23)]).label).toBe('Measured 2 days ago');

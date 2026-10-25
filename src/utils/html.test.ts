@@ -14,6 +14,14 @@ describe('richTextToSafeHtml: rich text', () => {
 
   it.each([
     ['javascript:', '<p><a href="javascript:alert(1)">x</a></p>', '<p><a>x</a></p>'],
+    ['mixed-case javascript:', '<p><a href="JaVaScRiPt:alert(1)">x</a></p>', '<p><a>x</a></p>'],
+    [
+      'entity-encoded javascript:',
+      '<p><a href="&#106;avascript:alert(1)">x</a></p>',
+      '<p><a>x</a></p>',
+    ],
+    ['tab-split javascript:', '<p><a href="java\tscript:alert(1)">x</a></p>', '<p><a>x</a></p>'],
+    ['space-led javascript:', '<p><a href=" javascript:alert(1)">x</a></p>', '<p><a>x</a></p>'],
     ['data:', '<p><a href="data:text/html,hi">x</a></p>', '<p><a>x</a></p>'],
     ['onerror', '<p><img src="x" onerror="alert(1)">hi</p>', '<p>hi</p>'],
     ['onclick', '<p onclick="alert(1)">hi</p>', '<p>hi</p>'],
@@ -95,7 +103,9 @@ describe('richTextToSafeHtml: unsupported DOMPurify', () => {
         '&lt;p onclick=&quot;x()&quot;&gt;hi&lt;/p&gt;',
       );
     } finally {
+      // Drop the mocked module graph so later tests import the real DOMPurify.
       vi.doUnmock('dompurify');
+      vi.resetModules();
     }
   });
 });
