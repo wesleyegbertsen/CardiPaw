@@ -1,4 +1,4 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import { openDB, type DBSchema, type IDBPDatabase, type IDBPTransaction } from 'idb';
 import type { Pet, Reading, Note, ExportPayload } from '../types';
 
 interface CardiPawDB extends DBSchema {
@@ -61,11 +61,6 @@ export async function savePet(pet: Pet): Promise<void> {
   await db.put('pets', pet);
 }
 
-export async function deletePet(id: string): Promise<void> {
-  const db = await getDb();
-  await db.delete('pets', id);
-}
-
 export async function getReadingsForPet(petId: string): Promise<Reading[]> {
   const db = await getDb();
   return db.getAllFromIndex('readings', 'by-petId', petId);
@@ -84,18 +79,6 @@ export async function saveReading(reading: Reading): Promise<void> {
 export async function deleteReading(id: string): Promise<void> {
   const db = await getDb();
   await db.delete('readings', id);
-}
-
-export async function deleteReadingsForPet(petId: string): Promise<void> {
-  const db = await getDb();
-  const tx = db.transaction('readings', 'readwrite');
-  const index = tx.store.index('by-petId');
-  let cursor = await index.openCursor(IDBKeyRange.only(petId));
-  while (cursor) {
-    await cursor.delete();
-    cursor = await cursor.continue();
-  }
-  await tx.done;
 }
 
 export async function getNotesForPet(petId: string): Promise<Note[]> {
@@ -118,16 +101,35 @@ export async function deleteNote(id: string): Promise<void> {
   await db.delete('notes', id);
 }
 
-export async function deleteNotesForPet(petId: string): Promise<void> {
+type PetDataTx = IDBPTransaction<CardiPawDB, ('pets' | 'readings' | 'notes')[], 'readwrite'>;
+
+// Deletes one pet's records from a store inside the caller's transaction.
+// Await only IDB requests here: awaiting anything else lets the transaction
+// commit halfway. The deletes run one at a time, so when one throws no other
+// request is left pending to reject unhandled after the abort.
+async function deleteByPetId(tx: PetDataTx, storeName: 'readings' | 'notes', petId: string) {
+  const store = tx.objectStore(storeName);
+  const keys = await store.index('by-petId').getAllKeys(petId);
+  for (const key of keys) await store.delete(key);
+}
+
+/** Deletes a pet with all its readings and notes, or nothing at all if any step fails. */
+export async function deletePetCascade(id: string): Promise<void> {
   const db = await getDb();
-  const tx = db.transaction('notes', 'readwrite');
-  const index = tx.store.index('by-petId');
-  let cursor = await index.openCursor(IDBKeyRange.only(petId));
-  while (cursor) {
-    await cursor.delete();
-    cursor = await cursor.continue();
+  const tx = db.transaction(['pets', 'readings', 'notes'], 'readwrite');
+  const done = tx.done;
+  try {
+    await tx.objectStore('pets').delete(id);
+    await deleteByPetId(tx, 'readings', id);
+    await deleteByPetId(tx, 'notes', id);
+    await done;
+  } catch (e) {
+    // A delete() that throws synchronously does not abort the transaction, so
+    // the deletes already made would commit. Abort to roll them back.
+    try { tx.abort(); } catch { /* already aborted or finished */ }
+    await done.catch(() => {});
+    throw e;
   }
-  await tx.done;
 }
 
 export async function exportAllData(): Promise<ExportPayload> {

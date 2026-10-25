@@ -107,7 +107,7 @@ describe('PetDetailView', () => {
       expect(push).not.toHaveBeenCalled();
     });
     it('reports a failed delete, keeps the pet and returns focus', async () => {
-      vi.spyOn(db, 'deletePet').mockRejectedValueOnce(new Error('quota'));
+      vi.spyOn(db, 'deletePetCascade').mockRejectedValueOnce(new Error('quota'));
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       const { wrapper, push } = await mountDetail('/pets/pet-1');
       const remove = wrapper.get('.icon-btn.danger');
@@ -125,7 +125,7 @@ describe('PetDetailView', () => {
     });
 
     it('deletes on a retry after a failed delete', async () => {
-      vi.spyOn(db, 'deletePet').mockRejectedValueOnce(new Error('quota'));
+      vi.spyOn(db, 'deletePetCascade').mockRejectedValueOnce(new Error('quota'));
       vi.spyOn(console, 'error').mockImplementation(() => {});
       const { wrapper, push } = await mountDetail('/pets/pet-1');
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -139,7 +139,7 @@ describe('PetDetailView', () => {
 
     it('deletes once when confirm is clicked twice', async () => {
       const pending = deferred<void>();
-      const deletePet = vi.spyOn(db, 'deletePet').mockReturnValue(pending.promise);
+      const deleteCascade = vi.spyOn(db, 'deletePetCascade').mockReturnValue(pending.promise);
       const { wrapper } = await mountDetail('/pets/pet-1');
       await wrapper.get('.icon-btn.danger').trigger('click');
       const confirm = document.body.querySelector<HTMLButtonElement>('.btn-confirm')!;
@@ -147,7 +147,7 @@ describe('PetDetailView', () => {
       confirm.click();
       pending.resolve();
       await settle();
-      expect(deletePet).toHaveBeenCalledTimes(1);
+      expect(deleteCascade).toHaveBeenCalledTimes(1);
     });
 
     it('warns that notes are deleted too', async () => {

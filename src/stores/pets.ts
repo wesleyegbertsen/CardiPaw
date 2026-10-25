@@ -67,8 +67,7 @@ export const usePetsStore = defineStore('pets', () => {
   }
 
   async function removePet(id: string) {
-    await db.deletePet(id);
-    await Promise.all([db.deleteReadingsForPet(id), db.deleteNotesForPet(id)]);
+    await db.deletePetCascade(id);
     pets.value = pets.value.filter((p) => p.id !== id);
     const readingsStore = useReadingsStore();
     readingsStore.clearReadingsForPet(id);
