@@ -132,6 +132,42 @@ describe('pets store', () => {
     expect(store.loading).toBe(false);
   });
 
+  it('adds a pet with a generated id and stores it', async () => {
+    const store = usePetsStore();
+    const { id: _id, createdAt: _createdAt, ...data } = makePet();
+
+    const pet = await store.addPet(data);
+
+    expect(pet.id).toEqual(expect.any(String));
+    expect(Number.isNaN(Date.parse(pet.createdAt))).toBe(false);
+    expect(store.pets).toEqual([pet]);
+    expect(await db.getAllPets()).toEqual([pet]);
+  });
+
+  it('updates a pet, and clears ceilings set to undefined', async () => {
+    await db.savePet(makePet({ normalCeiling: 30, elevatedCeiling: 40 }));
+    const store = usePetsStore();
+    await store.loadPets();
+
+    await store.updatePet('pet-1', {
+      name: 'Renamed',
+      normalCeiling: undefined,
+      elevatedCeiling: undefined,
+    });
+
+    const [stored] = await db.getAllPets();
+    expect(store.pets[0]).toEqual(stored);
+    expect(stored.name).toBe('Renamed');
+    expect(stored.normalCeiling).toBeUndefined();
+    expect(stored.elevatedCeiling).toBeUndefined();
+  });
+
+  it('ignores updates for an unknown pet', async () => {
+    const save = vi.spyOn(db, 'savePet');
+    await usePetsStore().updatePet('missing', { name: 'x' });
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it('removes a pet together with its readings and notes', async () => {
     await Promise.all([
       db.savePet(makePet()),
