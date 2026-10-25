@@ -4,6 +4,7 @@ import { enableAutoUnmount } from '@vue/test-utils';
 import App from './App.vue';
 import * as db from './services/db';
 import { mountView, settle } from './test/mountView';
+import { blockStorage } from './test/blockStorage';
 
 enableAutoUnmount(afterEach);
 
@@ -38,5 +39,13 @@ describe('App', () => {
     }
     expect(error).toHaveBeenCalledWith('Loading pets failed', expect.any(Error));
     expect(unhandled).not.toHaveBeenCalled();
+  });
+
+  it('still renders a shared snapshot when site data is blocked', async () => {
+    blockStorage();
+    vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: false } as MediaQueryList);
+    const { wrapper } = await mountView(App, '/share');
+    expect(wrapper.find('.app-main').exists()).toBe(true);
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 });

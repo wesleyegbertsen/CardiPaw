@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useThemeStore } from './theme';
+import { blockStorage } from '../test/blockStorage';
 
 const STORAGE_KEY = 'cardipaw-theme';
 
@@ -51,5 +52,18 @@ describe('theme store', () => {
     store.toggle();
     expect(localStorage.getItem(STORAGE_KEY)).toBe('light');
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('follows the system and still toggles when site data is blocked', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    prefersDark(true);
+    blockStorage();
+    const store = useThemeStore();
+    store.init();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    store.toggle();
+    expect(store.isDark).toBe(false);
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Could not save'), expect.any(DOMException));
   });
 });

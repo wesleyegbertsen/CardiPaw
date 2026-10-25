@@ -4,6 +4,7 @@ import nl from './locales/nl.json';
 import de from './locales/de.json';
 import fr from './locales/fr.json';
 import ja from './locales/ja.json';
+import { readStorage, writeStorage } from '../utils/storage';
 
 export const SUPPORTED_LOCALES = ['en', 'nl', 'de', 'fr', 'ja'] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
@@ -36,7 +37,7 @@ function isSupported(value: string): value is Locale {
 
 // Saved choice wins; otherwise fall back to the browser languages, then English.
 function detectLocale(): Locale {
-  const saved = localStorage.getItem(STORAGE_KEY);
+  const saved = readStorage(STORAGE_KEY);
   if (saved && isSupported(saved)) return saved;
 
   const candidates = navigator.languages?.length
@@ -61,7 +62,7 @@ document.documentElement.setAttribute('lang', i18n.global.locale.value);
 
 export function setLocale(locale: Locale): void {
   i18n.global.locale.value = locale;
-  localStorage.setItem(STORAGE_KEY, locale);
+  writeStorage(STORAGE_KEY, locale);
   document.documentElement.setAttribute('lang', locale);
 }
 

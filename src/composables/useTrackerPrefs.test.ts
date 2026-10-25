@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import { useTrackerPrefs } from './useTrackerPrefs';
+import { blockStorage, failStorageWrites } from '../test/blockStorage';
 
 const STORAGE_KEY = 'cardipaw-tracker-prefs';
 const stored = () => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
@@ -53,5 +54,26 @@ describe('useTrackerPrefs', () => {
 
     expect(stored()).toEqual({ a: { soundEnabled: false, vibrationEnabled: true } });
     expect(useTrackerPrefs('a').soundEnabled.value).toBe(false);
+  });
+
+  it('keeps a changed pref for this session when it cannot be saved', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    failStorageWrites();
+    const { soundEnabled } = useTrackerPrefs('a');
+    soundEnabled.value = false;
+    await nextTick();
+    expect(soundEnabled.value).toBe(false);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Could not save'), expect.any(DOMException));
+  });
+
+  it('uses defaults and keeps changes when site data is blocked', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    blockStorage();
+    const { soundEnabled } = useTrackerPrefs('a');
+    expect(soundEnabled.value).toBe(true);
+    soundEnabled.value = false;
+    await nextTick();
+    expect(soundEnabled.value).toBe(false);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Could not save'), expect.any(DOMException));
   });
 });

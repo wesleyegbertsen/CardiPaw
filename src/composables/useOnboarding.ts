@@ -1,13 +1,14 @@
 import { ref } from 'vue';
+import { readStorage, writeStorage } from '../utils/storage';
 
 const STORAGE_KEY = 'cardipaw-onboarding-seen';
 
-const hasSeenOnboarding = ref(localStorage.getItem(STORAGE_KEY) === '1');
+const hasSeenOnboarding = ref(readStorage(STORAGE_KEY) === '1');
 
 export function useOnboarding() {
   function markSeen() {
     hasSeenOnboarding.value = true;
-    localStorage.setItem(STORAGE_KEY, '1');
+    writeStorage(STORAGE_KEY, '1');
   }
 
   return { hasSeenOnboarding, markSeen };

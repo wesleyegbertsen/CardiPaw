@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { blockStorage, failStorageWrites } from '../test/blockStorage';
 
 // The module picks the locale when it is first imported, so each test imports a fresh copy.
 async function bootstrap({ languages = ['en-US'], language = 'en-US' } = {}) {
@@ -51,5 +52,26 @@ describe('i18n bootstrap', () => {
     expect(i18n.global.t('common.back')).toBe('Terug');
     expect(localStorage.getItem('cardipaw-locale')).toBe('nl');
     expect(document.documentElement.getAttribute('lang')).toBe('nl');
+  });
+
+  it('starts and switches language when site data is blocked', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    blockStorage();
+    const { setLocale, currentLocale } = await bootstrap({ languages: ['de-DE'] });
+    expect(currentLocale()).toBe('de');
+    setLocale('nl');
+    expect(currentLocale()).toBe('nl');
+    expect(document.documentElement.getAttribute('lang')).toBe('nl');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Could not save'), expect.any(DOMException));
+  });
+
+  it('still switches language when saving the choice fails', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { setLocale, currentLocale } = await bootstrap();
+    failStorageWrites();
+    setLocale('fr');
+    expect(currentLocale()).toBe('fr');
+    expect(document.documentElement.getAttribute('lang')).toBe('fr');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Could not save'), expect.any(DOMException));
   });
 });
