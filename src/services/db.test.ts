@@ -152,6 +152,23 @@ describe('CRUD helpers', () => {
       expect(await db.getAllNotes()).toEqual([note('n3', 'b')]);
     });
 
+    it('resolves only after the transaction has committed', async () => {
+      let committed = false;
+      const transaction = IDBDatabase.prototype.transaction;
+      vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementation(function (
+        this: IDBDatabase,
+        ...args: Parameters<IDBDatabase['transaction']>
+      ) {
+        const tx = transaction.apply(this, args);
+        tx.addEventListener('complete', () => (committed = true));
+        return tx;
+      });
+
+      await db.deletePetCascade('a');
+
+      expect(committed).toBe(true);
+    });
+
     it('does nothing for an unknown pet', async () => {
       await db.deletePetCascade('missing');
 
@@ -161,10 +178,30 @@ describe('CRUD helpers', () => {
 
     it('keeps the pet, its readings and its notes when a delete fails', async () => {
       // The pet, its readings and its first note are deleted before the delete
-      // that fails. Deleting in parallel would leave a request to reject unhandled.
+      // that fails. Deleting a store's records in parallel would leave a request
+      // to reject unhandled.
       failDeletesIn('notes', { succeed: 1 });
 
       await expect(db.deletePetCascade('a')).rejects.toMatchObject({ name: 'UnknownError' });
+
+      expect(await db.getPet('a')).toEqual(pet('a'));
+      expect(byId(await db.getAllReadings())).toEqual([
+        reading('r1', 'a'),
+        reading('r2', 'a'),
+        reading('r3', 'b'),
+      ]);
+      expect(byId(await db.getAllNotes())).toEqual([
+        note('n1', 'a'),
+        note('n2', 'a'),
+        note('n3', 'b'),
+      ]);
+    });
+
+    it('keeps everything when a delete request fails after it was made', async () => {
+      // The request fails asynchronously, which aborts the transaction itself.
+      failDeletesIn('notes', { succeed: 1, async: true });
+
+      await expect(db.deletePetCascade('a')).rejects.toMatchObject({ name: 'ConstraintError' });
 
       expect(await db.getPet('a')).toEqual(pet('a'));
       expect(byId(await db.getAllReadings())).toEqual([
