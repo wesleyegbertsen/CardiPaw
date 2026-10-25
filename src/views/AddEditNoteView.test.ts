@@ -71,6 +71,21 @@ describe('AddEditNoteView', () => {
       expect(replace).not.toHaveBeenCalled();
       expect(submit.element.disabled).toBe(false);
     });
+
+    it('reports a failed load and offers no form to save', async () => {
+      vi.spyOn(db, 'getAllPets').mockRejectedValueOnce(new Error('idb broken'));
+      const save = vi.spyOn(db, 'saveNote');
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper, push, replace } = await mountView(AddEditNoteView, '/pets/pet-1/notes/add', {
+        pets: [makePet()],
+      });
+      expect(wrapper.get('.load-error').text()).toContain('could not be loaded');
+      expect(error).toHaveBeenCalledWith('Loading note failed', expect.any(Error));
+      expect(wrapper.find('form').exists()).toBe(false);
+      expect(save).not.toHaveBeenCalled();
+      expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
+    });
   });
 
   describe('editing', () => {
@@ -129,15 +144,20 @@ describe('AddEditNoteView', () => {
       expect((wrapper.get('#note-title').element as HTMLInputElement).value).toBe('Renamed');
     });
 
-    it('reports a failed load and keeps save unavailable', async () => {
+    it('reports a failed load and offers no form to save', async () => {
       vi.spyOn(db, 'getNotesForPet').mockRejectedValueOnce(new Error('idb broken'));
+      const save = vi.spyOn(db, 'saveNote');
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const { wrapper, submit, push } = await mountNote(location, [makeNote()]);
+      const { wrapper, push, replace } = await mountView(AddEditNoteView, location, {
+        pets: [makePet()],
+        notes: [makeNote()],
+      });
       expect(wrapper.get('.load-error').text()).toContain('could not be loaded');
       expect(error).toHaveBeenCalledWith('Loading note failed', expect.any(Error));
-      await wrapper.get('#note-title').setValue('Typed');
-      expect(submit.element.disabled).toBe(true);
+      expect(wrapper.find('form').exists()).toBe(false);
+      expect(save).not.toHaveBeenCalled();
       expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
     });
 
     it('goes to the notes tab for an unknown note', async () => {

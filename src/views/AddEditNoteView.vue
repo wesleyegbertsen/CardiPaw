@@ -128,7 +128,7 @@ async function save() {
 
     <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
 
-    <form class="form" @submit.prevent="save">
+    <form v-if="!loadError" class="form" @submit.prevent="save">
       <div class="field">
         <label class="label" for="note-title">{{ $t('note.titleLabel') }}</label>
         <input

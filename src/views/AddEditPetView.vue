@@ -134,7 +134,7 @@ function goBack() {
 
     <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
 
-    <form class="form" novalidate @submit.prevent="submit">
+    <form v-if="!loadError" class="form" novalidate @submit.prevent="submit">
       <div class="photo-row">
         <PetPhotoUpload v-model="photo" />
       </div>

@@ -229,18 +229,20 @@ describe('AddEditPetView', () => {
       expect(submit.element.disabled).toBe(true);
     });
 
-    it('reports a failed load and never claims a save', async () => {
+    it('reports a failed load and offers no form to save', async () => {
       vi.spyOn(db, 'getAllPets').mockRejectedValueOnce(new Error('idb broken'));
+      const save = vi.spyOn(db, 'savePet');
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const { wrapper, fill, submit, push } = await mountForm('/pets/pet-1/edit', [pet]);
+      const { wrapper, push, replace } = await mountView(AddEditPetView, '/pets/pet-1/edit', {
+        pets: [pet],
+        stubs,
+      });
       expect(wrapper.get('.load-error').text()).toContain('could not be loaded');
       expect(error).toHaveBeenCalledWith('Loading pet failed', expect.any(Error));
-
-      await fill(required);
-      expect(submit.element.disabled).toBe(true);
-      await wrapper.get('form').trigger('submit');
-      await settle();
+      expect(wrapper.find('form').exists()).toBe(false);
+      expect(save).not.toHaveBeenCalled();
       expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
     });
 
     it('goes home for an unknown pet', async () => {
