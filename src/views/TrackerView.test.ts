@@ -22,25 +22,9 @@ vi.mock('../composables/useOnboarding', async () => {
   return { useOnboarding: () => ({ hasSeenOnboarding: ref(true), markSeen: vi.fn() }) };
 });
 // TipTap needs a real layout engine; a textarea is enough to check the notes reach the save.
-vi.mock('../components/LazyRichTextEditor', async () => {
-  const { defineComponent, h } = await import('vue');
-  return {
-    preloadRichTextEditor: vi.fn(),
-    LazyRichTextEditor: defineComponent({
-      props: { modelValue: { type: String, default: '' } },
-      emits: ['update:modelValue'],
-      setup(props, { emit }) {
-        return () =>
-          h('textarea', {
-            class: 'notes-stub',
-            value: props.modelValue,
-            onInput: (e: Event) =>
-              emit('update:modelValue', (e.target as HTMLTextAreaElement).value),
-          });
-      },
-    }),
-  };
-});
+vi.mock('../components/LazyRichTextEditor', async () =>
+  (await import('../test/stubs')).lazyEditorStubModule(),
+);
 
 enableAutoUnmount(afterEach);
 
