@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
 import { localDayKey, localMonthKey } from '../utils/date';
+import { getChartWindow, weekOffsetOf, type ChartRange } from '../utils/chartWindow';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
@@ -131,7 +132,7 @@ function endDrag(targetIndex = trackIndex.value) {
   trackIndex.value = targetIndex;
 }
 
-const chartRange = ref<'week' | 'month' | 'year'>('week');
+const chartRange = ref<ChartRange>('week');
 const chartOffset = ref(0);
 const showJumpPicker = ref(false);
 const pickerYear = ref(new Date().getFullYear());
@@ -161,26 +162,7 @@ function fmtWeekRange(start: Date, end: Date): string {
   return `${fmt(start, { month: 'short', day: 'numeric' })} – ${fmt(end, { month: 'short', day: 'numeric' })}`;
 }
 
-const chartWindow = computed(() => {
-  const now = new Date();
-  const start = new Date(now);
-  const end = new Date(now);
-
-  if (chartRange.value === 'week') {
-    end.setDate(now.getDate() + chartOffset.value * 7);
-    start.setTime(end.getTime() - 6 * 24 * 60 * 60 * 1000);
-  } else if (chartRange.value === 'month') {
-    start.setMonth(now.getMonth() + chartOffset.value, 1);
-    end.setMonth(now.getMonth() + chartOffset.value + 1, 0);
-  } else {
-    start.setFullYear(now.getFullYear() + chartOffset.value, 0, 1);
-    end.setFullYear(now.getFullYear() + chartOffset.value, 11, 31);
-  }
-
-  start.setHours(0, 0, 0, 0);
-  end.setHours(23, 59, 59, 999);
-  return { start, end };
-});
+const chartWindow = computed(() => getChartWindow(chartRange.value, chartOffset.value));
 
 const chartReadings = computed(() => {
   const filtered = readings.value.filter((r) => {
@@ -253,9 +235,7 @@ const weeksWithReadings = computed(() => {
   const now = new Date();
   const offsets = new Set<number>();
   for (const r of readings.value) {
-    const daysDiff = Math.floor((new Date(r.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    // Same offset formula used by chartWindow: ceil maps a day to the week whose end covers it
-    offsets.add(Math.ceil(daysDiff / 7));
+    offsets.add(weekOffsetOf(new Date(r.date), now));
   }
   return [...offsets].sort((a, b) => b - a);
 });
@@ -280,10 +260,7 @@ const weeksWithReadingsSections = computed(() => {
 const MONTH_NAMES = computed(() => Array.from({ length: 12 }, (_, i) => new Intl.DateTimeFormat(locale.value, { month: 'short' }).format(new Date(2000, i, 1))));
 
 function weekLabel(offset: number): string {
-  const now = new Date();
-  const end = new Date(now);
-  end.setDate(now.getDate() + offset * 7);
-  const start = new Date(end.getTime() - 6 * 24 * 60 * 60 * 1000);
+  const { start, end } = getChartWindow('week', offset);
   return `${fmt(start, { month: 'short', day: 'numeric' })} – ${fmt(end, { month: 'short', day: 'numeric' })}`;
 }
 
