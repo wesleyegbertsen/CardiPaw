@@ -37,8 +37,11 @@ async function mountForm(location: string, pets: Pet[] = []) {
   return { ...result, submit, fill, error: () => thresholdError(wrapper) };
 }
 
-const thresholdError = (wrapper: VueWrapper) =>
-  wrapper.findAll('.threshold-input-group')[1].attributes('data-error');
+/** The threshold message as shown on screen, or undefined when there is none. */
+const thresholdError = (wrapper: VueWrapper) => {
+  const message = wrapper.find('.threshold-error');
+  return message.exists() ? message.text() : undefined;
+};
 
 const required = { '#pet-name': 'Luna', '.date-stub': '2020-05-01' };
 
@@ -90,6 +93,31 @@ describe('AddEditPetView', () => {
       await fill({ '#normal-ceiling': '', '#elevated-ceiling': '' });
       expect(error()).toBeUndefined();
       expect(submit.element.disabled).toBe(false);
+    });
+
+    it('shows the threshold error as text tied to both ceiling inputs', async () => {
+      const { wrapper, fill } = await mountForm('/pets/add');
+      const inputs = [wrapper.get('#normal-ceiling'), wrapper.get('#elevated-ceiling')];
+      for (const input of inputs) {
+        expect(input.attributes('aria-invalid')).toBeUndefined();
+        expect(input.attributes('aria-describedby')).toBeUndefined();
+      }
+
+      await fill({ '#normal-ceiling': '30', '#elevated-ceiling': '30' });
+      const message = wrapper.get('.threshold-error');
+      expect(message.attributes('role')).toBe('alert');
+      expect(message.text()).toBe('Elevated ceiling must be higher than normal ceiling (30).');
+      for (const input of inputs) {
+        expect(input.attributes('aria-invalid')).toBe('true');
+        expect(input.attributes('aria-describedby')).toBe(message.attributes('id'));
+      }
+
+      await fill({ '#elevated-ceiling': '31' });
+      expect(wrapper.find('.threshold-error').exists()).toBe(false);
+      for (const input of inputs) {
+        expect(input.attributes('aria-invalid')).toBeUndefined();
+        expect(input.attributes('aria-describedby')).toBeUndefined();
+      }
     });
 
     it.each(['0', '-5', '12.5', '250'])('blocks saving a ceiling of %s', async (value) => {
