@@ -116,6 +116,7 @@
     "elevatedCeiling": "Obergrenze erhöht",
     "thresholdHint": "Leer lassen, um die Standardwerte zu verwenden ({normal} / {elevated} Atemz./Min).",
     "thresholdError": "Die Obergrenze für „erhöht“ muss höher sein als die Obergrenze für „normal“ ({normal}).",
+    "thresholdRange": "Obergrenzen müssen ganze Zahlen von 1 bis 200 sein.",
     "submitAdd": "Tier hinzufügen"
   },
   "datePicker": {

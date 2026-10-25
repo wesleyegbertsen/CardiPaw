@@ -116,6 +116,7 @@
     "elevatedCeiling": "Bovengrens verhoogd",
     "thresholdHint": "Laat leeg om de standaardwaarden te gebruiken ({normal} / {elevated} ademh./min).",
     "thresholdError": "De bovengrens voor verhoogd moet hoger zijn dan de bovengrens voor normaal ({normal}).",
+    "thresholdRange": "Bovengrenzen moeten hele getallen van 1 tot 200 zijn.",
     "submitAdd": "Huisdier toevoegen"
   },
   "datePicker": {

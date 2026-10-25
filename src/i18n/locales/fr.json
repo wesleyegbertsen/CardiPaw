@@ -116,6 +116,7 @@
     "elevatedCeiling": "Plafond élevé",
     "thresholdHint": "Laissez vide pour utiliser les valeurs par défaut ({normal} / {elevated} resp./min).",
     "thresholdError": "Le plafond élevé doit être supérieur au plafond normal ({normal}).",
+    "thresholdRange": "Les plafonds doivent être des nombres entiers de 1 à 200.",
     "submitAdd": "Ajouter l'animal"
   },
   "datePicker": {

@@ -116,6 +116,7 @@
     "elevatedCeiling": "Elevated ceiling",
     "thresholdHint": "Leave blank to use the defaults ({normal} / {elevated} breaths/min).",
     "thresholdError": "Elevated ceiling must be higher than normal ceiling ({normal}).",
+    "thresholdRange": "Ceilings must be whole numbers from 1 to 200.",
     "submitAdd": "Add pet"
   },
   "datePicker": {

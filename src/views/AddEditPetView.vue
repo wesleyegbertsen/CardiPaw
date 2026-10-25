@@ -6,7 +6,7 @@ import { usePetsStore } from '../stores/pets';
 import PetPhotoUpload from '../components/PetPhotoUpload.vue';
 import DatePicker from '../components/DatePicker.vue';
 import type { Species } from '../types';
-import { DEFAULT_NORMAL_CEILING, DEFAULT_ELEVATED_CEILING } from '../utils/rateStatus';
+import { DEFAULT_NORMAL_CEILING, DEFAULT_ELEVATED_CEILING, isValidRate } from '../utils/rateStatus';
 
 const route = useRoute();
 const router = useRouter();
@@ -26,7 +26,12 @@ const photo = ref<string | null>(null);
 const normalCeiling = ref<number | ''>('');
 const elevatedCeiling = ref<number | ''>('');
 const saving = ref(false);
+// Ceilings restored from a backup are only type-checked; keep them saveable unchanged.
+const stored = ref<{ normal?: number; elevated?: number }>({});
+const ceilingOk = (v: number | '', old?: number) => v === '' || isValidRate(v) || v === old;
 const thresholdError = computed(() => {
+  if (!ceilingOk(normalCeiling.value, stored.value.normal) || !ceilingOk(elevatedCeiling.value, stored.value.elevated))
+    return t('addEditPet.thresholdRange');
   const effectiveNormal   = typeof normalCeiling.value   === 'number' ? normalCeiling.value   : DEFAULT_NORMAL_CEILING;
   const effectiveElevated = typeof elevatedCeiling.value === 'number' ? elevatedCeiling.value : DEFAULT_ELEVATED_CEILING;
   return effectiveElevated <= effectiveNormal
@@ -38,14 +43,17 @@ onMounted(async () => {
   if (isEdit) {
     await petsStore.loadPets();
     const pet = petsStore.getPetById(petId);
-    if (pet) {
-      name.value = pet.name;
-      species.value = pet.species;
-      birthdate.value = pet.birthdate;
-      photo.value = pet.photo;
-      normalCeiling.value = pet.normalCeiling ?? '';
-      elevatedCeiling.value = pet.elevatedCeiling ?? '';
+    if (!pet) {
+      router.replace({ name: 'home' });
+      return;
     }
+    stored.value = { normal: pet.normalCeiling, elevated: pet.elevatedCeiling };
+    name.value = pet.name;
+    species.value = pet.species;
+    birthdate.value = pet.birthdate;
+    photo.value = pet.photo;
+    normalCeiling.value = pet.normalCeiling ?? '';
+    elevatedCeiling.value = pet.elevatedCeiling ?? '';
   }
 });
 

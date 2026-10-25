@@ -116,6 +116,7 @@
     "elevatedCeiling": "高め上限",
     "thresholdHint": "空白のままにするとデフォルト値（{normal} / {elevated} 回/分）が使用されます。",
     "thresholdError": "高め上限は正常上限（{normal}）より大きくする必要があります。",
+    "thresholdRange": "上限は1〜200の整数で入力してください。",
     "submitAdd": "ペットを追加"
   },
   "datePicker": {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_ELEVATED_CEILING, DEFAULT_NORMAL_CEILING, getRateStatus } from './rateStatus';
+import {
+  DEFAULT_ELEVATED_CEILING,
+  DEFAULT_NORMAL_CEILING,
+  getRateStatus,
+  isValidRate,
+} from './rateStatus';
 
 const label = (rate: number, pet?: Parameters<typeof getRateStatus>[1]) =>
   getRateStatus(rate, pet).label;
@@ -63,5 +68,15 @@ describe('getRateStatus', () => {
     expect(label(0, { normalCeiling: 0 })).toBe('Normal');
     expect(label(1, { normalCeiling: 0 })).toBe('Elevated');
     expect(label(1, { normalCeiling: 0, elevatedCeiling: 0 })).toBe('High');
+  });
+});
+
+describe('isValidRate', () => {
+  it.each([1, 30, 200])('accepts %s', (value) => {
+    expect(isValidRate(value)).toBe(true);
+  });
+
+  it.each([0, -5, 201, 12.5, '', '30', NaN, Infinity, undefined])('rejects %j', (value) => {
+    expect(isValidRate(value)).toBe(false);
   });
 });
