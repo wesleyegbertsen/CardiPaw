@@ -345,7 +345,7 @@ async function nativeShare() {
 }
 
 .encode-error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   background: var(--color-danger-bg);
 }
 

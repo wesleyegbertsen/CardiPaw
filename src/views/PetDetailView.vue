@@ -589,7 +589,7 @@ async function deletePet() {
 .save-error {
   margin: 0;
   font-size: 13px;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   background: var(--color-danger-bg);
   padding: 10px 14px;
   border-radius: var(--radius-sm);

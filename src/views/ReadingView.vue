@@ -181,7 +181,7 @@ function formatDate(iso: string) {
 .save-error {
   margin: 0;
   font-size: 13px;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   background: var(--color-danger-bg);
   padding: 10px 14px;
   border-radius: var(--radius-sm);
@@ -324,7 +324,7 @@ function formatDate(iso: string) {
 
 .rate-badge.danger {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .source-row {

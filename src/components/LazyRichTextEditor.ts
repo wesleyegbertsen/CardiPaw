@@ -32,7 +32,7 @@ const RichTextEditorLoadError = defineComponent({
             margin: 0,
             padding: '10px 14px',
             fontSize: '13px',
-            color: 'var(--color-danger)',
+            color: 'var(--color-danger-text)',
             background: 'var(--color-danger-bg)',
             borderRadius: 'var(--radius-sm)',
           },
