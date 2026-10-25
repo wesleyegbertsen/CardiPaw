@@ -48,7 +48,7 @@ describe('HomeView', () => {
     vi.spyOn(db, 'getAllPets').mockRejectedValueOnce(new Error('idb broken'));
     const { wrapper } = await mountHome(() => usePetsStore().loadPets(), [makePet({ name: 'Luna' })]);
     expect(wrapper.text()).not.toContain('Reload the app');
-    await wrapper.get('[role="alert"] button').trigger('click');
+    await wrapper.get('.btn-retry').trigger('click');
     await settle();
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
     expect(wrapper.text()).toContain('Luna');
@@ -58,10 +58,25 @@ describe('HomeView', () => {
     vi.spyOn(db, 'getAllPets').mockRejectedValue(new Error('idb broken'));
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { wrapper } = await mountHome(() => usePetsStore().loadPets());
-    await wrapper.get('[role="alert"] button').trigger('click');
+    await wrapper.get('.btn-retry').trigger('click');
     await settle();
     expect(wrapper.find('[role="alert"]').exists()).toBe(true);
     expect(error).toHaveBeenCalledWith('Loading pets failed', expect.any(Error));
+  });
+
+  it('announces only the message and keeps focus on Retry when the retry fails', async () => {
+    vi.spyOn(db, 'getAllPets').mockRejectedValue(new Error('idb broken'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper } = await mountHome(() => usePetsStore().loadPets());
+    expect(wrapper.get('[role="alert"]').text()).toBe(
+      'Your pets could not be loaded. Your data has not been deleted.',
+    );
+    const retry = wrapper.get<HTMLButtonElement>('.btn-retry');
+    expect(retry.attributes('type')).toBe('button');
+    retry.element.focus();
+    await retry.trigger('click');
+    await settle();
+    expect(document.activeElement).toBe(wrapper.get('.btn-retry').element);
   });
 
   it('shows the empty state when there are no pets', async () => {
