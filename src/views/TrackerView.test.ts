@@ -11,7 +11,8 @@ import { deferred } from '../test/deferred';
 import { createTestI18n } from '../test/i18n';
 import { Blank } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
-import type { Reading } from '../types';
+import * as db from '../services/db';
+import type { Pet, Reading } from '../types';
 
 const audio = vi.hoisted(() => ({ init: vi.fn(), playBeep: vi.fn(), playDoneSound: vi.fn() }));
 const haptics = vi.hoisted(() => ({ vibrateTap: vi.fn(), vibrateDone: vi.fn() }));
@@ -34,10 +35,17 @@ enableAutoUnmount(afterEach);
 const pet = makePet();
 let router: Router;
 
-async function mountTracker() {
+/**
+ * `stored` set: the pets store starts empty, as on a reload straight into the tracker, and
+ * loading pets resolves with `stored` (or rejects, for an Error).
+ */
+async function mountTracker({ stored }: { stored?: Pet[] | Error } = {}) {
   const pinia = createPinia();
   setActivePinia(pinia);
-  usePetsStore().pets = [pet];
+  const getAllPets = vi.spyOn(db, 'getAllPets');
+  if (stored === undefined) usePetsStore().pets = [pet];
+  else if (stored instanceof Error) getAllPets.mockRejectedValueOnce(stored);
+  else getAllPets.mockResolvedValueOnce(stored);
   const addReading = vi
     .spyOn(useReadingsStore(), 'addReading')
     .mockImplementation(async (data) => makeReading(data));
@@ -50,11 +58,15 @@ async function mountTracker() {
   await router.push({ name: 'tracker', params: { id: pet.id } });
   await router.isReady();
 
+  const push = vi.spyOn(router, 'push');
+  const replace = vi.spyOn(router, 'replace');
+
   const wrapper = mount(TrackerView, {
     attachTo: document.body,
     global: { plugins: [pinia, router, createTestI18n()] },
   });
-  return { wrapper, addReading };
+  await flushPromises();
+  return { wrapper, addReading, getAllPets, push, replace };
 }
 
 describe('TrackerView', () => {
@@ -267,5 +279,44 @@ describe('TrackerView', () => {
     await vi.advanceTimersByTimeAsync(30_000);
     expect(audio.playDoneSound).not.toHaveBeenCalled();
     expect(haptics.vibrateDone).not.toHaveBeenCalled();
+  });
+
+  describe('opened directly (pets not loaded yet)', () => {
+    it('loads the pet itself and saves for it', async () => {
+      const { wrapper, addReading } = await mountTracker({ stored: [pet] });
+      expect(wrapper.get('.pet-name-label').text()).toBe(pet.name);
+      await wrapper.findAll('.mode-pill')[1].trigger('click');
+      await wrapper.get('.manual-rate-input').setValue('42');
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledWith(expect.objectContaining({ petId: pet.id, rate: 42 }));
+    });
+
+    it('shows a load error with a way back instead of the tracker when loading fails', async () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const failure = new Error('blocked');
+      const { wrapper, push } = await mountTracker({ stored: failure });
+      expect(wrapper.get('[role="alert"]').text()).toBe(
+        'This could not be loaded. Go back and try again. Your data has not been deleted.',
+      );
+      expect(wrapper.find('.heart-btn').exists()).toBe(false);
+      expect(wrapper.find('.mode-pill').exists()).toBe(false);
+      expect(error).toHaveBeenCalledWith('Loading pet failed', failure);
+
+      await wrapper.get('.back-btn').trigger('click');
+      expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
+    });
+
+    it('goes home for a pet that does not exist, without leaving the tracker in history', async () => {
+      const { wrapper, replace, addReading } = await mountTracker({ stored: [] });
+      expect(replace).toHaveBeenCalledWith({ name: 'home' });
+      expect(wrapper.find('.heart-btn').exists()).toBe(false);
+      expect(addReading).not.toHaveBeenCalled();
+    });
+  });
+
+  it('does not reload pets that are already loaded', async () => {
+    const { getAllPets } = await mountTracker();
+    expect(getAllPets).not.toHaveBeenCalled();
   });
 });

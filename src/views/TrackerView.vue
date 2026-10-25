@@ -48,6 +48,7 @@ const notes = ref('');
 const manualRate = ref(0);
 const manualValid = computed(() => isValidRate(manualRate.value));
 const saveError = ref(false);
+const loadError = ref(false);
 const soundLabelId = useId();
 const vibrationLabelId = useId();
 const isManualMode = computed(() => mode.value === 'manual');
@@ -163,10 +164,22 @@ function reset() {
   nextTick(() => heartRef.value?.focus());
 }
 
-onMounted(() => {
+onMounted(async () => {
   initAudio();
   // Fetch the notes editor while the user counts, so the done screen doesn't wait for it.
   preloadRichTextEditor();
+  // Opened directly (reload, shortcut): the app-level load may still be running or may have
+  // failed. loadPets() joins a running load or retries a failed one.
+  if (pet.value) return;
+  try {
+    await petsStore.loadPets();
+  } catch (e) {
+    console.error('Loading pet failed', e);
+    loadError.value = true;
+    return;
+  }
+  // Unknown id: a reading saved here would belong to no pet and never show up anywhere.
+  if (!pet.value) router.replace({ name: 'home' });
 });
 
 onUnmounted(() => {
@@ -188,7 +201,10 @@ onUnmounted(() => {
 
     <OnboardingModal v-if="showOnboarding" @close="closeOnboarding" />
 
-    <div class="tracker-main">
+    <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
+
+    <!-- Needs the pet: its thresholds rate a manual entry and saving files the reading under it. -->
+    <div v-else-if="pet" class="tracker-main">
     <!-- Mode toggle: absolutely positioned so it overlays the body without affecting its height -->
     <div v-if="phase === 'idle'" class="mode-toggle-bar">
       <div class="mode-toggle">
@@ -667,6 +683,10 @@ onUnmounted(() => {
   padding: 10px 14px;
   border-radius: var(--radius-sm);
   text-align: center;
+}
+
+.load-error {
+  margin: 16px;
 }
 
 .btn-save {
