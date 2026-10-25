@@ -2,8 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Pet } from '../types';
 import * as db from '../services/db';
-import { useReadingsStore } from './readings';
-import { useNotesStore } from './notes';
+import { forgetPetData } from './petData';
 import { v4 as generateId } from 'uuid';
 
 export const usePetsStore = defineStore('pets', () => {
@@ -67,13 +66,9 @@ export const usePetsStore = defineStore('pets', () => {
   }
 
   async function removePet(id: string) {
-    await db.deletePet(id);
-    await Promise.all([db.deleteReadingsForPet(id), db.deleteNotesForPet(id)]);
+    await db.deletePetCascade(id);
     pets.value = pets.value.filter((p) => p.id !== id);
-    const readingsStore = useReadingsStore();
-    readingsStore.clearReadingsForPet(id);
-    const notesStore = useNotesStore();
-    notesStore.clearNotesForPet(id);
+    forgetPetData(id);
   }
 
   function $reset() {

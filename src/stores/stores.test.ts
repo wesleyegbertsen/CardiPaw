@@ -6,6 +6,7 @@ import { usePetsStore } from './pets';
 import { useReadingsStore } from './readings';
 import { useNotesStore } from './notes';
 import { deferred } from '../test/deferred';
+import { failDeletesIn } from '../test/failDeletes';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
 import type { Pet, Reading } from '../types';
 
@@ -192,6 +193,33 @@ describe('pets store', () => {
     const save = vi.spyOn(db, 'savePet');
     await usePetsStore().updatePet('missing', { name: 'x' });
     expect(save).not.toHaveBeenCalled();
+  });
+
+  it('keeps the pet and its data when the delete fails', async () => {
+    const pet2Reading = makeReading({ id: 'r2', petId: 'pet-2' });
+    await Promise.all([
+      db.savePet(makePet()),
+      db.savePet(makePet({ id: 'pet-2' })),
+      db.saveReading(makeReading()),
+      db.saveReading(pet2Reading),
+      db.saveNote(makeNote()),
+    ]);
+    const pets = usePetsStore();
+    const readings = useReadingsStore();
+    const notes = useNotesStore();
+    await pets.loadPets();
+    await readings.loadReadingsForPet('pet-1');
+    await notes.loadNotesForPet('pet-1');
+    failDeletesIn('notes');
+
+    await expect(pets.removePet('pet-1')).rejects.toMatchObject({ name: 'UnknownError' });
+
+    expect(pets.pets.map((p) => p.id)).toEqual(['pet-1', 'pet-2']);
+    expect(readings.readingsByPet['pet-1']).toEqual([makeReading()]);
+    expect(notes.notesByPet['pet-1']).toEqual([makeNote()]);
+    expect(await db.getPet('pet-1')).toEqual(makePet());
+    expect(await db.getReadingsForPet('pet-1')).toEqual([makeReading()]);
+    expect(await db.getNotesForPet('pet-1')).toEqual([makeNote()]);
   });
 
   it('removes a pet together with its readings and notes', async () => {

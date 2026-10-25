@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import 'fake-indexeddb/auto';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -142,11 +143,13 @@ describe('parseBackup', () => {
 });
 
 describe('export and import', () => {
+  const PREFS_KEY = 'cardipaw-tracker-prefs';
   const emptyDb = () =>
     db.importAllData({ version: 1, exportedAt: '', pets: [], readings: [], notes: [] });
 
   beforeEach(async () => {
     setActivePinia(createPinia());
+    localStorage.clear();
     await emptyDb();
   });
 
@@ -187,6 +190,17 @@ describe('export and import', () => {
     expect(notes.notesByPet).toEqual({});
     expect(await db.getAllReadings()).toEqual([]);
     expect(await db.getPet('old')).toBeUndefined();
+  });
+
+  it('drops the tracker prefs of pets the backup does not contain', async () => {
+    const prefs = { soundEnabled: false, vibrationEnabled: true };
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ a: prefs, b: prefs }));
+
+    await importBackup(
+      backup({ pets: [makePet({ id: 'b' }), makePet({ id: 'c' })], readings: [], notes: [] }),
+    );
+
+    expect(JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null')).toEqual({ b: prefs });
   });
 
   it('leaves the database and stores untouched when the payload is invalid', async () => {

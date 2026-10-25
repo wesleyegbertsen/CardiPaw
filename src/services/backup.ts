@@ -2,8 +2,7 @@ import type { Pet, Reading, Note, ExportPayload } from '../types';
 import * as db from './db';
 import { localDayKey } from '../utils/date';
 import { usePetsStore } from '../stores/pets';
-import { useReadingsStore } from '../stores/readings';
-import { useNotesStore } from '../stores/notes';
+import { resetPetData } from '../stores/petData';
 
 export type BackupErrorCode = 'unreadable' | 'invalid';
 
@@ -217,8 +216,7 @@ export async function downloadBackup(): Promise<void> {
 export async function importBackup(payload: unknown): Promise<void> {
   const { data } = validateBackup(payload);
   await db.importAllData(data);
-  useReadingsStore().$reset();
-  useNotesStore().$reset();
+  resetPetData(data.pets.map((p) => p.id));
   const petsStore = usePetsStore();
   petsStore.$reset();
   try {

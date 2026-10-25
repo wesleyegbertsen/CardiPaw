@@ -90,7 +90,7 @@
     "thisMonth": "Deze maand",
     "thisYear": "Dit jaar",
     "deleteConfirm": "{name} verwijderen? Hiermee worden ook al hun metingen en notities definitief verwijderd.",
-    "deleteError": "{name} kon niet volledig worden verwijderd. Een deel van de gegevens is mogelijk al verwijderd. Probeer het opnieuw."
+    "deleteError": "{name} kon niet worden verwijderd. Je gegevens zijn niet gewijzigd. Probeer het opnieuw."
   },
   "tracker": {
     "tapToStart": "Tik om te starten",

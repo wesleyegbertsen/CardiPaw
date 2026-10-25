@@ -90,7 +90,7 @@
     "thisMonth": "Dieser Monat",
     "thisYear": "Dieses Jahr",
     "deleteConfirm": "{name} löschen? Dadurch werden auch alle Messungen und Notizen dieses Tieres dauerhaft entfernt.",
-    "deleteError": "{name} konnte nicht vollständig gelöscht werden. Einige Daten wurden möglicherweise bereits gelöscht. Bitte versuche es erneut."
+    "deleteError": "{name} konnte nicht gelöscht werden. Deine Daten wurden nicht geändert. Bitte versuche es erneut."
   },
   "tracker": {
     "tapToStart": "Zum Starten tippen",

@@ -36,3 +36,22 @@ export function useTrackerPrefs(petId: string) {
 
   return { soundEnabled, vibrationEnabled };
 }
+
+/** Removes a deleted pet's saved prefs. Never throws, even when storage is unavailable. */
+export function forgetTrackerPrefs(petId: string): void {
+  const all = loadAll();
+  // Nothing saved: skip the write, which would only warn where storage is missing.
+  if (!(petId in all)) return;
+  delete all[petId];
+  writeStorage(STORAGE_KEY, JSON.stringify(all));
+}
+
+/** Keeps only the listed pets' saved prefs, e.g. after a backup replaced all pets. Never throws. */
+export function pruneTrackerPrefs(keepIds: Iterable<string>): void {
+  const keep = new Set(keepIds);
+  const all = loadAll();
+  const kept = Object.fromEntries(Object.entries(all).filter(([id]) => keep.has(id)));
+  // Nothing to drop: skip the write, which would only warn where storage is missing.
+  if (Object.keys(kept).length === Object.keys(all).length) return;
+  writeStorage(STORAGE_KEY, JSON.stringify(kept));
+}

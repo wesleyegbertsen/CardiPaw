@@ -90,7 +90,7 @@
     "thisMonth": "This month",
     "thisYear": "This year",
     "deleteConfirm": "Delete {name}? This will permanently remove all their readings and notes too.",
-    "deleteError": "{name} could not be fully deleted. Some of their data may already be gone. Please try again."
+    "deleteError": "{name} could not be deleted. Your data has not been changed. Please try again."
   },
   "tracker": {
     "tapToStart": "Tap to start",

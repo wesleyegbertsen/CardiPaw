@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExportPayload, Note, Pet, Reading } from '../types';
+import { failDeletesIn } from '../test/failDeletes';
 
 type DbModule = typeof import('./db');
 
@@ -125,24 +126,95 @@ describe('CRUD helpers', () => {
     await db.savePet(pet('a', 'Ace'));
     await db.savePet({ ...pet('a', 'Ace'), name: 'Ace II' });
     expect(await db.getPet('a')).toMatchObject({ name: 'Ace II' });
-    await db.deletePet('a');
+    await db.deletePetCascade('a');
     expect(await db.getPet('a')).toBeUndefined();
   });
 
-  it('deletes only the given pet’s readings and notes', async () => {
-    await Promise.all([
-      db.saveReading(reading('r1', 'a')),
-      db.saveReading(reading('r2', 'a')),
-      db.saveReading(reading('r3', 'b')),
-      db.saveNote(note('n1', 'a')),
-      db.saveNote(note('n2', 'b')),
-    ]);
+  describe('deletePetCascade', () => {
+    beforeEach(async () => {
+      await Promise.all([
+        db.savePet(pet('a')),
+        db.savePet(pet('b')),
+        db.saveReading(reading('r1', 'a')),
+        db.saveReading(reading('r2', 'a')),
+        db.saveReading(reading('r3', 'b')),
+        db.saveNote(note('n1', 'a')),
+        db.saveNote(note('n2', 'a')),
+        db.saveNote(note('n3', 'b')),
+      ]);
+    });
 
-    await db.deleteReadingsForPet('a');
-    await db.deleteNotesForPet('a');
+    it('deletes the pet with its readings and notes, and nothing else', async () => {
+      await db.deletePetCascade('a');
 
-    expect(await db.getAllReadings()).toEqual([reading('r3', 'b')]);
-    expect(await db.getAllNotes()).toEqual([note('n2', 'b')]);
+      expect(await db.getAllPets()).toEqual([pet('b')]);
+      expect(await db.getAllReadings()).toEqual([reading('r3', 'b')]);
+      expect(await db.getAllNotes()).toEqual([note('n3', 'b')]);
+    });
+
+    it('resolves only after the transaction has committed', async () => {
+      let committed = false;
+      const transaction = IDBDatabase.prototype.transaction;
+      vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementation(function (
+        this: IDBDatabase,
+        ...args: Parameters<IDBDatabase['transaction']>
+      ) {
+        const tx = transaction.apply(this, args);
+        tx.addEventListener('complete', () => (committed = true));
+        return tx;
+      });
+
+      await db.deletePetCascade('a');
+
+      expect(committed).toBe(true);
+    });
+
+    it('does nothing for an unknown pet', async () => {
+      await db.deletePetCascade('missing');
+
+      const data = await db.exportAllData();
+      expect([data.pets.length, data.readings.length, data.notes.length]).toEqual([2, 3, 3]);
+    });
+
+    it('keeps the pet, its readings and its notes when a delete fails', async () => {
+      // The pet, its readings and its first note are deleted before the delete
+      // that fails. Deleting a store's records in parallel would leave a request
+      // to reject unhandled.
+      failDeletesIn('notes', { succeed: 1 });
+
+      await expect(db.deletePetCascade('a')).rejects.toMatchObject({ name: 'UnknownError' });
+
+      expect(await db.getPet('a')).toEqual(pet('a'));
+      expect(byId(await db.getAllReadings())).toEqual([
+        reading('r1', 'a'),
+        reading('r2', 'a'),
+        reading('r3', 'b'),
+      ]);
+      expect(byId(await db.getAllNotes())).toEqual([
+        note('n1', 'a'),
+        note('n2', 'a'),
+        note('n3', 'b'),
+      ]);
+    });
+
+    it('keeps everything when a delete request fails after it was made', async () => {
+      // The request fails asynchronously, which aborts the transaction itself.
+      failDeletesIn('notes', { succeed: 1, async: true });
+
+      await expect(db.deletePetCascade('a')).rejects.toMatchObject({ name: 'ConstraintError' });
+
+      expect(await db.getPet('a')).toEqual(pet('a'));
+      expect(byId(await db.getAllReadings())).toEqual([
+        reading('r1', 'a'),
+        reading('r2', 'a'),
+        reading('r3', 'b'),
+      ]);
+      expect(byId(await db.getAllNotes())).toEqual([
+        note('n1', 'a'),
+        note('n2', 'a'),
+        note('n3', 'b'),
+      ]);
+    });
   });
 
   it('deletes only the targeted reading or note', async () => {
