@@ -91,6 +91,30 @@ describe('EditReadingView', () => {
     });
   });
 
+  // The input's min/max would make the browser refuse these submits; the form opts out
+  // of native validation so the view's own rule (unchanged stored rates save) applies.
+  it.each([230, 0])(
+    'saves notes on a stored rate of %s when the button is clicked',
+    async (stored) => {
+      const { wrapper, submit, replace } = await mountEdit(
+        makeReading({ rate: stored, clickCount: stored / 2 }),
+      );
+      expect(wrapper.get('form').attributes()).toHaveProperty('novalidate');
+
+      await wrapper.get('.notes-stub').setValue('<p>Purring</p>');
+      await submit.trigger('click');
+      await settle();
+      expect(useReadingsStore().getReadingsForPet('pet-1')[0]).toMatchObject({
+        rate: stored,
+        notes: '<p>Purring</p>',
+      });
+      expect(replace).toHaveBeenCalledWith({
+        name: 'reading',
+        params: { id: 'pet-1', readingId: 'reading-1' },
+      });
+    },
+  );
+
   it('toggles the rest state and saves empty notes as undefined', async () => {
     const { wrapper, rate, replace } = await mountEdit(
       makeReading({ restState: 'resting', notes: '<p>Old</p>' }),

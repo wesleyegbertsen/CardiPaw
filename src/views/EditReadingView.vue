@@ -95,7 +95,7 @@ function formatDate(iso: string) {
       <div class="header-actions"></div>
     </header>
 
-    <form v-if="reading" class="form" @submit.prevent="saveEdit">
+    <form v-if="reading" class="form" novalidate @submit.prevent="saveEdit">
       <div class="reading-meta-row">
         <p class="reading-date">{{ formatDate(reading.date) }}</p>
         <span class="source-chip" :class="reading.source === 'manual' ? 'manual' : 'guided'">
