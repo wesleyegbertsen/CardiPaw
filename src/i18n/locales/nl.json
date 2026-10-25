@@ -250,7 +250,7 @@
     "selectAtLeastOne": "Selecteer minstens één maand om te exporteren.",
     "generating": "Genereren…",
     "export": "Pdf exporteren",
-    "exportError": "De pdf kon niet worden gemaakt. Controleer je verbinding, laad de app opnieuw en probeer het nog eens."
+    "exportError": "De pdf kon niet worden gemaakt. Probeer het opnieuw. Lukt het steeds niet, sluit de app dan en open hem opnieuw."
   },
   "shareModal": {
     "title": "Delen",
@@ -287,7 +287,7 @@
     "bold": "Vet",
     "italic": "Cursief",
     "bulletList": "Opsommingslijst",
-    "loadError": "De editor kon niet worden geladen. Controleer je verbinding en laad de app opnieuw."
+    "loadError": "De editor kon niet worden geladen. Sluit de app en open hem opnieuw om het nog eens te proberen."
   },
   "onboarding": {
     "step1Title": "Laat je huisdier rusten of slapen",

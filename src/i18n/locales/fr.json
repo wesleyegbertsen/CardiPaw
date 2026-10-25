@@ -250,7 +250,7 @@
     "selectAtLeastOne": "Sélectionnez au moins un mois à exporter.",
     "generating": "Génération…",
     "export": "Exporter en PDF",
-    "exportError": "Le PDF n'a pas pu être créé. Vérifiez votre connexion, rechargez l'application et réessayez."
+    "exportError": "Le PDF n'a pas pu être créé. Veuillez réessayer. Si le problème persiste, fermez puis rouvrez l'application."
   },
   "shareModal": {
     "title": "Partager",
@@ -287,7 +287,7 @@
     "bold": "Gras",
     "italic": "Italique",
     "bulletList": "Liste à puces",
-    "loadError": "L'éditeur n'a pas pu être chargé. Vérifiez votre connexion et rechargez l'application."
+    "loadError": "L'éditeur n'a pas pu être chargé. Fermez puis rouvrez l'application pour réessayer."
   },
   "onboarding": {
     "step1Title": "Laissez votre animal se reposer ou s'endormir",

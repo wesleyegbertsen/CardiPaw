@@ -250,7 +250,7 @@
     "selectAtLeastOne": "Wähle mindestens einen Monat zum Exportieren aus.",
     "generating": "Wird erstellt…",
     "export": "PDF exportieren",
-    "exportError": "Das PDF konnte nicht erstellt werden. Prüfe deine Verbindung, lade die App neu und versuche es erneut."
+    "exportError": "Das PDF konnte nicht erstellt werden. Bitte versuche es erneut. Wenn es weiterhin nicht klappt, schließe die App und öffne sie erneut."
   },
   "shareModal": {
     "title": "Teilen",
@@ -287,7 +287,7 @@
     "bold": "Fett",
     "italic": "Kursiv",
     "bulletList": "Aufzählung",
-    "loadError": "Der Editor konnte nicht geladen werden. Prüfe deine Verbindung und lade die App neu."
+    "loadError": "Der Editor konnte nicht geladen werden. Schließe die App und öffne sie erneut, um es noch einmal zu versuchen."
   },
   "onboarding": {
     "step1Title": "Lass dein Tier ruhen oder schlafen",

@@ -53,7 +53,8 @@ export function preloadRichTextEditor(): void {
 
 // No automatic reload when loading fails: the user may be halfway through a form (e.g. a
 // finished measurement), so show a message and keep the rest of the page working. Browsers
-// remember a failed module import until the page reloads, hence the message asks for that.
+// may remember a failed module import until the page reloads, so a retry button could do
+// nothing; the message asks to close and reopen the app, which an installed PWA can do.
 export const LazyRichTextEditor = defineAsyncComponent({
   loader: loadRichTextEditor,
   loadingComponent: RichTextEditorPlaceholder,

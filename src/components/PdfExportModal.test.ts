@@ -86,8 +86,12 @@ describe('PdfExportModal', () => {
     const wrapper = mountModal();
     exportButton().click();
     await flushPromises();
-    expect(q('[role="alert"]')?.textContent).toContain('The PDF could not be created');
+    expect(q('[role="alert"]')?.textContent?.trim()).toBe(
+      'The PDF could not be created. Please try again. If it keeps failing, close and reopen the app.',
+    );
     expect(error).toHaveBeenCalled();
+    // Export stays available as the retry the message asks for.
+    expect(exportButton().disabled).toBe(false);
     expect(wrapper.emitted('close')).toBeUndefined();
 
     monthBoxes()[1].click();

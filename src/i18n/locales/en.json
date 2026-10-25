@@ -250,7 +250,7 @@
     "selectAtLeastOne": "Select at least one month to export.",
     "generating": "Generating…",
     "export": "Export PDF",
-    "exportError": "The PDF could not be created. Check your connection, reload the app and try again."
+    "exportError": "The PDF could not be created. Please try again. If it keeps failing, close and reopen the app."
   },
   "shareModal": {
     "title": "Share",
@@ -287,7 +287,7 @@
     "bold": "Bold",
     "italic": "Italic",
     "bulletList": "Bullet list",
-    "loadError": "The editor could not be loaded. Check your connection and reload the app."
+    "loadError": "The editor could not be loaded. Close and reopen the app to try again."
   },
   "onboarding": {
     "step1Title": "Get your pet resting or sleeping",
