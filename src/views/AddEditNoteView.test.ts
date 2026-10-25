@@ -58,6 +58,19 @@ describe('AddEditNoteView', () => {
       });
       expect(replace).toHaveBeenCalledWith(notesTab);
     });
+
+    it('reports a failed save and stays on the form', async () => {
+      vi.spyOn(db, 'saveNote').mockRejectedValueOnce(new Error('quota'));
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper, submit, replace } = await mountNote('/pets/pet-1/notes/add');
+      await wrapper.get('#note-title').setValue('Vet');
+      await wrapper.get('form').trigger('submit');
+      await settle();
+      expect(wrapper.get('.save-error').text()).toBe('This could not be saved. Please try again.');
+      expect(error).toHaveBeenCalledWith('Saving note failed', expect.any(Error));
+      expect(replace).not.toHaveBeenCalled();
+      expect(submit.element.disabled).toBe(false);
+    });
   });
 
   describe('editing', () => {
@@ -105,6 +118,26 @@ describe('AddEditNoteView', () => {
     it('clears the pin', async () => {
       const { updateNote } = await editAndSave(makeNote({ pinnedAt }), true);
       expect(updateNote.mock.calls[0][0].pinnedAt).toBeUndefined();
+    });
+
+    it('reports a failed save of an edit', async () => {
+      vi.spyOn(db, 'saveNote').mockRejectedValueOnce(new Error('quota'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper, replace } = await editAndSave(makeNote(), false);
+      expect(wrapper.get('.save-error').text()).toBe('This could not be saved. Please try again.');
+      expect(replace).not.toHaveBeenCalled();
+      expect((wrapper.get('#note-title').element as HTMLInputElement).value).toBe('Renamed');
+    });
+
+    it('reports a failed load and keeps save unavailable', async () => {
+      vi.spyOn(db, 'getNotesForPet').mockRejectedValueOnce(new Error('idb broken'));
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper, submit, push } = await mountNote(location, [makeNote()]);
+      expect(wrapper.get('.load-error').text()).toContain('could not be loaded');
+      expect(error).toHaveBeenCalledWith('Loading note failed', expect.any(Error));
+      await wrapper.get('#note-title').setValue('Typed');
+      expect(submit.element.disabled).toBe(true);
+      expect(push).not.toHaveBeenCalled();
     });
 
     it('goes to the notes tab for an unknown note', async () => {

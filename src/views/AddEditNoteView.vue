@@ -23,15 +23,23 @@ const editTitle = ref('');
 const editContent = ref('');
 const editPinned = ref(false);
 const saving = ref(false);
+const saveError = ref(false);
+const loadError = ref(false);
 // Editing a note that hasn't loaded (or is gone): never fall through to adding one.
 const canSave = computed(() =>
-  !saving.value && !!editTitle.value.trim() && (!isEditMode.value || !!existingNote.value)
+  !saving.value && !loadError.value && !!editTitle.value.trim() && (!isEditMode.value || !!existingNote.value)
 );
 
 onMounted(async () => {
-  await petsStore.loadPets();
+  try {
+    await petsStore.loadPets();
+    if (isEditMode.value) await notesStore.loadNotesForPet(petId);
+  } catch (e) {
+    console.error('Loading note failed', e);
+    loadError.value = true;
+    return;
+  }
   if (isEditMode.value) {
-    await notesStore.loadNotesForPet(petId);
     if (!existingNote.value) {
       router.push({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
       return;
@@ -53,6 +61,7 @@ function goBack() {
 async function save() {
   if (!canSave.value) return;
   saving.value = true;
+  saveError.value = false;
   try {
     if (isEditMode.value) {
       const note = existingNote.value!;
@@ -77,6 +86,9 @@ async function save() {
       });
       router.replace({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
     }
+  } catch (e) {
+    console.error('Saving note failed', e);
+    saveError.value = true;
   } finally {
     saving.value = false;
   }
@@ -114,6 +126,8 @@ async function save() {
       </div>
     </header>
 
+    <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
+
     <form class="form" @submit.prevent="save">
       <div class="field">
         <label class="label" for="note-title">{{ $t('note.titleLabel') }}</label>
@@ -133,6 +147,8 @@ async function save() {
         <RichTextEditor v-model="editContent" />
       </div>
 
+      <p v-if="saveError" class="save-error" role="alert">{{ $t('common.saveError') }}</p>
+
       <button type="submit" class="submit-btn" :disabled="!canSave">
         {{ saving ? $t('common.saving') : isEditMode ? $t('common.saveChanges') : $t('note.submitAdd') }}
       </button>
@@ -141,6 +157,20 @@ async function save() {
 </template>
 
 <style scoped>
+.save-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.load-error {
+  margin: 16px;
+}
+
 .note-edit-view {
   min-height: 100%;
   display: flex;
