@@ -6,6 +6,7 @@ import { useReadingsStore } from '../stores/readings';
 import * as db from '../services/db';
 import { mountView, settle } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
+import { deferred } from '../test/deferred';
 import type { Reading } from '../types';
 
 enableAutoUnmount(afterEach);
@@ -68,5 +69,67 @@ describe('ReadingView', () => {
     expect(useReadingsStore().getReadingsForPet('pet-1')).toHaveLength(1);
     expect(await db.getReadingsForPet('pet-1')).toHaveLength(1);
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it('reports a failed delete and keeps the reading', async () => {
+    vi.spyOn(db, 'deleteReading').mockRejectedValueOnce(new Error('quota'));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper, push } = await mountView(ReadingView, location, {
+      pets: [makePet()],
+      readings: [makeReading()],
+    });
+    const remove = wrapper.get('.icon-btn.danger');
+    (remove.element as HTMLElement).focus();
+    await remove.trigger('click');
+    document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
+    await settle();
+
+    expect(document.body.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(document.activeElement).toBe(remove.element);
+    expect(wrapper.get('[role="alert"]').text()).toBe('This could not be deleted. Please try again.');
+    expect(wrapper.find('.reading-body').exists()).toBe(true);
+    expect(error).toHaveBeenCalledWith('Deleting reading failed', expect.any(Error));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('deletes on a retry after a failed delete', async () => {
+    vi.spyOn(db, 'deleteReading').mockRejectedValueOnce(new Error('quota'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper, push } = await mountView(ReadingView, location, {
+      pets: [makePet()],
+      readings: [makeReading()],
+    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await wrapper.get('.icon-btn.danger').trigger('click');
+      document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
+      await settle();
+    }
+    expect(await db.getReadingsForPet('pet-1')).toEqual([]);
+    expect(push).toHaveBeenCalledWith(readingsTab);
+  });
+
+  it('deletes once when confirm is clicked twice', async () => {
+    const pending = deferred<void>();
+    const deleteReading = vi.spyOn(db, 'deleteReading').mockReturnValue(pending.promise);
+    const { wrapper } = await mountView(ReadingView, location, {
+      pets: [makePet()],
+      readings: [makeReading()],
+    });
+    await wrapper.get('.icon-btn.danger').trigger('click');
+    const confirm = document.body.querySelector<HTMLButtonElement>('.btn-confirm')!;
+    confirm.click();
+    confirm.click();
+    pending.resolve();
+    await settle();
+    expect(deleteReading).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a failed load instead of not-found', async () => {
+    vi.spyOn(db, 'getReadingsForPet').mockRejectedValueOnce(new Error('idb broken'));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper } = await mountView(ReadingView, location, { pets: [makePet()] });
+    expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+    expect(wrapper.find('.not-found').exists()).toBe(false);
+    expect(error).toHaveBeenCalledWith('Loading reading failed', expect.any(Error));
   });
 });

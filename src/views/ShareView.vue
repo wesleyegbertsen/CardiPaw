@@ -530,7 +530,7 @@ function formatDateTime(date: string): string {
 
 .rate-badge.danger {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .share-footer {

@@ -8,7 +8,12 @@
     "saving": "保存中…",
     "saveChanges": "変更を保存",
     "back": "戻る",
-    "breathsPerMin": "回/分"
+    "breathsPerMin": "回/分",
+    "saveError": "保存できませんでした。もう一度お試しください。",
+    "loadError": "読み込めませんでした。前の画面に戻って、もう一度お試しください。データは削除されていません。",
+    "deleteError": "削除できませんでした。もう一度お試しください。",
+    "retry": "再試行",
+    "loading": "読み込み中…"
   },
   "nav": {
     "home": "ホーム",
@@ -53,7 +58,7 @@
     "yourPets": "あなたのペット",
     "noPetsTitle": "ペットがいません",
     "noPetsBody": "最初のペットを追加して安静時呼吸数の記録を始めましょう。",
-    "loadError": "ペットを読み込めませんでした。アプリを再読み込みしてください。データは削除されていません。",
+    "loadError": "ペットを読み込めませんでした。データは削除されていません。",
     "addPet": "ペットを追加",
     "themeDark": "ダーク",
     "themeLight": "ライト",
@@ -63,7 +68,8 @@
   },
   "petCard": {
     "viewProfile": "{name}のプロフィールを見る",
-    "startTracking": "{name}の記録を開始"
+    "startTracking": "{name}の記録を開始",
+    "readingsError": "測定値を読み込めませんでした"
   },
   "petDetail": {
     "share": "共有",
@@ -83,7 +89,8 @@
     "thisWeek": "今週",
     "thisMonth": "今月",
     "thisYear": "今年",
-    "deleteConfirm": "{name}を削除しますか？すべての測定値も完全に削除されます。"
+    "deleteConfirm": "{name}を削除しますか？すべての測定値とメモも完全に削除されます。",
+    "deleteError": "{name}を完全には削除できませんでした。一部のデータはすでに削除されている可能性があります。もう一度お試しください。"
   },
   "tracker": {
     "tapToStart": "タップして開始",
@@ -175,9 +182,9 @@
     "languageSection": "言語",
     "languageDesc": "アプリ全体で使用する言語を選択してください。",
     "dataSection": "データ",
-    "dataDesc": "ペットのプロフィールと測定値はIndexedDBを使用してこのデバイスにローカル保存されています。バックアップや他のデバイスへの転送のためにエクスポートしてください。",
+    "dataDesc": "ペットのプロフィール、測定値、メモはIndexedDBを使用してこのデバイスにローカル保存されています。バックアップや他のデバイスへの転送のためにエクスポートしてください。",
     "exportName": "データをエクスポート",
-    "exportDesc": "すべてのペットと測定値をJSONでダウンロード",
+    "exportDesc": "すべてのペット、測定値、メモをJSONでダウンロード",
     "exported": "✓ エクスポート済み",
     "export": "エクスポート",
     "importName": "データをインポート",
@@ -189,7 +196,7 @@
     "importError": "インポートに失敗しました。既存のデータは変更されていません。",
     "exportError": "エクスポートに失敗しました。もう一度お試しください。",
     "importSkipped": "ファイル内の破損した{n}件のレコードはスキップされます。",
-    "importConfirm": "{pets}匹のペットと{readings}件の測定値をインポートしますか？このデバイスの現在のデータはすべて上書きされます。",
+    "importConfirm": "{pets}匹のペット、{readings}件の測定値、{notes}件のメモをインポートしますか？このデバイスの現在のデータはすべて上書きされます。",
     "aboutSection": "アプリについて",
     "version": "バージョン",
     "aboutText": "CardiPawは、心筋症（HCM）などの心臓疾患を持つペットにとって重要な健康指標である安静時呼吸数（RRR）の追跡をサポートします。",
@@ -244,7 +251,7 @@
     "selectAtLeastOne": "エクスポートする月を少なくとも1つ選択してください。",
     "generating": "生成中…",
     "export": "PDFで書き出す",
-    "exportError": "PDFを作成できませんでした。接続を確認し、アプリを再読み込みしてから、もう一度お試しください。"
+    "exportError": "PDFを作成できませんでした。もう一度お試しください。それでもうまくいかない場合は、アプリを閉じてから開き直してください。"
   },
   "shareModal": {
     "title": "共有",
@@ -281,7 +288,7 @@
     "bold": "太字",
     "italic": "斜体",
     "bulletList": "箇条書き",
-    "loadError": "エディターを読み込めませんでした。接続を確認して、アプリを再読み込みしてください。"
+    "loadError": "エディターを読み込めませんでした。アプリを閉じてから開き直して、もう一度お試しください。"
   },
   "onboarding": {
     "step1Title": "ペットを安静にするか眠らせましょう",

@@ -313,19 +313,49 @@ function hasNoReadingsInMonth(monthIndex: number, year: number): boolean {
   return !monthsWithReadings.value.has(key);
 }
 
+const loadError = ref(false);
+const deleting = ref(false);
+const deleteError = ref(false);
+
 onMounted(async () => {
-  await petsStore.loadPets();
+  try {
+    await petsStore.loadPets();
+  } catch (e) {
+    console.error('Loading pet failed', e);
+    loadError.value = true;
+    // A pet cached from an earlier visit can still be shown, with the alert.
+    if (!pet.value) return;
+  }
   if (!pet.value) {
     router.push({ name: 'home' });
     return;
   }
-  readingsStore.loadReadingsForPet(petId);
-  notesStore.loadNotesForPet(petId);
+  // Alert on failure, so an empty tab is not mistaken for a pet without data.
+  readingsStore.loadReadingsForPet(petId).catch((e) => {
+    console.error('Loading readings failed', e);
+    loadError.value = true;
+  });
+  notesStore.loadNotesForPet(petId).catch((e) => {
+    console.error('Loading notes failed', e);
+    loadError.value = true;
+  });
 });
 
 async function deletePet() {
-  await petsStore.removePet(petId);
-  router.push({ name: 'home' });
+  if (deleting.value) return;
+  // Close first, so the dialog hands focus back to the delete button.
+  showDeleteDialog.value = false;
+  deleting.value = true;
+  deleteError.value = false;
+  try {
+    await petsStore.removePet(petId);
+    router.push({ name: 'home' });
+  } catch (e) {
+    console.error('Deleting pet failed', e);
+    deleteError.value = true;
+  } finally {
+    deleting.value = false;
+  }
 }
 
 </script>
@@ -361,6 +391,11 @@ async function deletePet() {
         </button>
       </div>
     </header>
+
+    <p v-if="deleteError" class="save-error delete-error" role="alert">
+      {{ $t('petDetail.deleteError', { name: pet.name }) }}
+    </p>
+    <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
 
     <div class="pet-hero">
       <div class="pet-avatar">
@@ -537,9 +572,35 @@ async function deletePet() {
     />
 
   </div>
+
+  <div v-else-if="loadError" class="page">
+    <header class="page-header">
+      <button class="back-btn" @click="router.push({ name: 'home' })" :aria-label="$t('common.back')">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+      </button>
+    </header>
+    <p class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
+  </div>
 </template>
 
 <style scoped>
+.save-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.delete-error,
+.load-error {
+  margin: 0 16px 12px;
+}
+
 .page {
   min-height: 100%;
   background: var(--color-bg);

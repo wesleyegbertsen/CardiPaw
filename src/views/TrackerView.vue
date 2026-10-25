@@ -48,6 +48,7 @@ const notes = ref('');
 const manualRate = ref(0);
 const manualValid = computed(() => isValidRate(manualRate.value));
 const saveError = ref(false);
+const loadError = ref(false);
 const soundLabelId = useId();
 const vibrationLabelId = useId();
 const isManualMode = computed(() => mode.value === 'manual');
@@ -163,13 +164,29 @@ function reset() {
   nextTick(() => heartRef.value?.focus());
 }
 
-onMounted(() => {
+let unmounted = false;
+
+onMounted(async () => {
   initAudio();
   // Fetch the notes editor while the user counts, so the done screen doesn't wait for it.
   preloadRichTextEditor();
+  // Opened directly (reload, shortcut): the app-level load may still be running or may have
+  // failed. loadPets() joins a running load or retries a failed one.
+  if (pet.value) return;
+  try {
+    await petsStore.loadPets();
+  } catch (e) {
+    console.error('Loading pet failed', e);
+    loadError.value = true;
+    return;
+  }
+  // Unknown id: a reading saved here would belong to no pet and never show up anywhere.
+  // Skipped once the user has left, so a slow load can't pull them away from another page.
+  if (!pet.value && !unmounted) router.replace({ name: 'home' });
 });
 
 onUnmounted(() => {
+  unmounted = true;
   if (intervalId.value !== null) clearInterval(intervalId.value);
 });
 </script>
@@ -188,7 +205,10 @@ onUnmounted(() => {
 
     <OnboardingModal v-if="showOnboarding" @close="closeOnboarding" />
 
-    <div class="tracker-main">
+    <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
+
+    <!-- Needs the pet: its thresholds rate a manual entry and saving files the reading under it. -->
+    <div v-else-if="pet" class="tracker-main">
     <!-- Mode toggle: absolutely positioned so it overlays the body without affecting its height -->
     <div v-if="phase === 'idle'" class="mode-toggle-bar">
       <div class="mode-toggle">
@@ -360,10 +380,34 @@ onUnmounted(() => {
       </div>
     </div>
     </div>
+
+    <div v-else class="loading" role="status">
+      <div class="spinner" aria-hidden="true"></div>
+      <span class="sr-only">{{ $t('common.loading') }}</span>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .tracker {
   min-height: 100%;
   display: flex;
@@ -662,11 +706,15 @@ onUnmounted(() => {
 .save-error {
   margin: 0;
   font-size: 13px;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   background: var(--color-danger-bg);
   padding: 10px 14px;
   border-radius: var(--radius-sm);
   text-align: center;
+}
+
+.load-error {
+  margin: 16px;
 }
 
 .btn-save {
@@ -876,6 +924,6 @@ onUnmounted(() => {
 
 .rate-badge.danger {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 </style>

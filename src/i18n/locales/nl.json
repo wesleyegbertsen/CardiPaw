@@ -8,7 +8,12 @@
     "saving": "Opslaan…",
     "saveChanges": "Wijzigingen opslaan",
     "back": "Terug",
-    "breathsPerMin": "ademh./min"
+    "breathsPerMin": "ademh./min",
+    "saveError": "Dit kon niet worden opgeslagen. Probeer het opnieuw.",
+    "loadError": "Dit kon niet worden geladen. Ga terug en probeer het opnieuw. Je gegevens zijn niet verwijderd.",
+    "deleteError": "Dit kon niet worden verwijderd. Probeer het opnieuw.",
+    "retry": "Opnieuw proberen",
+    "loading": "Laden…"
   },
   "nav": {
     "home": "Start",
@@ -53,7 +58,7 @@
     "yourPets": "Jouw huisdieren",
     "noPetsTitle": "Nog geen huisdieren",
     "noPetsBody": "Voeg je eerste huisdier toe om de rustademhalingsfrequentie bij te houden.",
-    "loadError": "Je huisdieren konden niet worden geladen. Laad de app opnieuw om het nog eens te proberen. Je gegevens zijn niet verwijderd.",
+    "loadError": "Je huisdieren konden niet worden geladen. Je gegevens zijn niet verwijderd.",
     "addPet": "Huisdier toevoegen",
     "themeDark": "Donker",
     "themeLight": "Licht",
@@ -63,7 +68,8 @@
   },
   "petCard": {
     "viewProfile": "Profiel van {name} bekijken",
-    "startTracking": "Meting starten voor {name}"
+    "startTracking": "Meting starten voor {name}",
+    "readingsError": "Metingen konden niet worden geladen"
   },
   "petDetail": {
     "share": "Delen",
@@ -83,7 +89,8 @@
     "thisWeek": "Deze week",
     "thisMonth": "Deze maand",
     "thisYear": "Dit jaar",
-    "deleteConfirm": "{name} verwijderen? Hiermee worden ook al hun metingen definitief verwijderd."
+    "deleteConfirm": "{name} verwijderen? Hiermee worden ook al hun metingen en notities definitief verwijderd.",
+    "deleteError": "{name} kon niet volledig worden verwijderd. Een deel van de gegevens is mogelijk al verwijderd. Probeer het opnieuw."
   },
   "tracker": {
     "tapToStart": "Tik om te starten",
@@ -175,9 +182,9 @@
     "languageSection": "Taal",
     "languageDesc": "Kies de taal die in de hele app wordt gebruikt.",
     "dataSection": "Gegevens",
-    "dataDesc": "Je huisdierprofielen en metingen worden lokaal op dit apparaat opgeslagen met IndexedDB. Exporteer ze om een back-up te maken of over te zetten naar een ander apparaat.",
+    "dataDesc": "Je huisdierprofielen, metingen en notities worden lokaal op dit apparaat opgeslagen met IndexedDB. Exporteer ze om een back-up te maken of over te zetten naar een ander apparaat.",
     "exportName": "Gegevens exporteren",
-    "exportDesc": "Download alle huisdieren en metingen als JSON",
+    "exportDesc": "Download alle huisdieren, metingen en notities als JSON",
     "exported": "✓ Geëxporteerd",
     "export": "Exporteren",
     "importName": "Gegevens importeren",
@@ -189,7 +196,7 @@
     "importError": "Importeren is mislukt. Je bestaande gegevens zijn niet gewijzigd.",
     "exportError": "Exporteren is mislukt. Probeer het opnieuw.",
     "importSkipped": "1 beschadigd record in het bestand wordt overgeslagen. | {n} beschadigde records in het bestand worden overgeslagen.",
-    "importConfirm": "{pets} huisdier(en) en {readings} meting(en) importeren? Hiermee worden alle bestaande gegevens op dit apparaat overschreven.",
+    "importConfirm": "{pets} huisdier(en), {readings} meting(en) en {notes} notitie(s) importeren? Hiermee worden alle bestaande gegevens op dit apparaat overschreven.",
     "aboutSection": "Over",
     "version": "Versie",
     "aboutText": "CardiPaw helpt je de rustademhalingsfrequentie (RAF) van je huisdier bij te houden — een belangrijke gezondheidsindicator voor huisdieren met hartaandoeningen zoals HCM.",
@@ -244,7 +251,7 @@
     "selectAtLeastOne": "Selecteer minstens één maand om te exporteren.",
     "generating": "Genereren…",
     "export": "Pdf exporteren",
-    "exportError": "De pdf kon niet worden gemaakt. Controleer je verbinding, laad de app opnieuw en probeer het nog eens."
+    "exportError": "De pdf kon niet worden gemaakt. Probeer het opnieuw. Lukt het steeds niet, sluit de app dan en open hem opnieuw."
   },
   "shareModal": {
     "title": "Delen",
@@ -281,7 +288,7 @@
     "bold": "Vet",
     "italic": "Cursief",
     "bulletList": "Opsommingslijst",
-    "loadError": "De editor kon niet worden geladen. Controleer je verbinding en laad de app opnieuw."
+    "loadError": "De editor kon niet worden geladen. Sluit de app en open hem opnieuw om het nog eens te proberen."
   },
   "onboarding": {
     "step1Title": "Laat je huisdier rusten of slapen",

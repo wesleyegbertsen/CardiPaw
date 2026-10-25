@@ -232,7 +232,7 @@ function formatDate(iso: string) {
 
 .rate-badge.danger {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .chevron {

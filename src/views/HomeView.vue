@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nextTick, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePetsStore } from '../stores/pets';
 import PetCard from '../components/PetCard.vue';
@@ -7,6 +8,19 @@ import LocalePicker from '../components/LocalePicker.vue';
 
 const petsStore = usePetsStore();
 const router = useRouter();
+
+const retryBtn = ref<HTMLButtonElement | null>(null);
+
+async function retryLoad() {
+  try {
+    await petsStore.loadPets();
+  } catch (e) {
+    console.error('Loading pets failed', e);
+    // The spinner replaced the button while loading; put focus back on the new one.
+    await nextTick();
+    retryBtn.value?.focus();
+  }
+}
 </script>
 
 <template>
@@ -40,8 +54,9 @@ const router = useRouter();
         </div>
       </template>
 
-      <div v-else-if="petsStore.loadError" class="empty-state" role="alert">
-        <p>{{ $t('home.loadError') }}</p>
+      <div v-else-if="petsStore.loadError" class="empty-state">
+        <p role="alert">{{ $t('home.loadError') }}</p>
+        <button ref="retryBtn" type="button" class="btn-retry" @click="retryLoad">{{ $t('common.retry') }}</button>
       </div>
 
       <div v-else class="empty-state">
@@ -60,6 +75,17 @@ const router = useRouter();
 </template>
 
 <style scoped>
+.btn-retry {
+  margin-top: 16px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 44px;
+}
+
 .home {
   min-height: 100%;
   position: relative;

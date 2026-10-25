@@ -64,7 +64,8 @@ async function handleExport() {
   try {
     await generatePdf(props.pet, props.readings, selectedMonths.value, newestFirst.value, includeNotes.value);
   } catch (err) {
-    // e.g. the on-demand jsPDF chunk could not be fetched; keep the dialog open
+    // e.g. the on-demand jsPDF chunk could not be fetched; keep the dialog open so Export
+    // can be tried again (a failed chunk may only load after the app is reopened)
     console.error('PDF export failed', err);
     exportFailed.value = true;
     return;
@@ -403,7 +404,7 @@ async function handleExport() {
 
 .error-msg {
   font-size: 13px;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   background: var(--color-danger-bg);
   padding: 10px 14px;
   border-radius: var(--radius-sm);

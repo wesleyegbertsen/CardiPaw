@@ -28,11 +28,17 @@ const showDeleteDialog = ref(false);
 const safeNotesHtml = computed(() => richTextToSafeHtml(reading.value?.notes ?? ''));
 
 const loaded = ref(false);
+const loadError = ref(false);
+const deleting = ref(false);
+const deleteError = ref(false);
 
 onMounted(async () => {
   try {
     await petsStore.loadPets();
     await readingsStore.loadReadingsForPet(petId);
+  } catch (e) {
+    console.error('Loading reading failed', e);
+    loadError.value = true;
   } finally {
     loaded.value = true;
   }
@@ -43,9 +49,20 @@ function goBack() {
 }
 
 async function confirmDelete() {
-  if (!reading.value) return;
-  await readingsStore.removeReading(reading.value.id, petId);
-  router.push({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
+  if (!reading.value || deleting.value) return;
+  // Close first, so the dialog hands focus back to the delete button.
+  showDeleteDialog.value = false;
+  deleting.value = true;
+  deleteError.value = false;
+  try {
+    await readingsStore.removeReading(reading.value.id, petId);
+    router.push({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
+  } catch (e) {
+    console.error('Deleting reading failed', e);
+    deleteError.value = true;
+  } finally {
+    deleting.value = false;
+  }
 }
 
 function formatDate(iso: string) {
@@ -101,6 +118,7 @@ function formatDate(iso: string) {
     </header>
 
     <div v-if="reading" class="reading-body">
+      <p v-if="deleteError" class="save-error" role="alert">{{ $t('common.deleteError') }}</p>
       <div class="reading-card">
         <p class="reading-date">{{ formatDate(reading.date) }}</p>
 
@@ -146,6 +164,8 @@ function formatDate(iso: string) {
       </div>
     </div>
 
+    <p v-else-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
+
     <div v-else-if="loaded" class="not-found">{{ $t('reading.notFound') }}</div>
 
     <ConfirmDialog
@@ -158,6 +178,20 @@ function formatDate(iso: string) {
 </template>
 
 <style scoped>
+.save-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.load-error {
+  margin: 16px;
+}
+
 .reading-view {
   min-height: 100%;
   display: flex;
@@ -290,7 +324,7 @@ function formatDate(iso: string) {
 
 .rate-badge.danger {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .source-row {

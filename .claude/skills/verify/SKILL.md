@@ -25,8 +25,8 @@ const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 ## Routes and gotchas
 
 - Router uses **hash history**: tracker lives at `/#/pets/<id>/track`.
-  Any pet id works — the tracker view renders even for unknown ids, so
-  you don't need to create a pet first for tracker-only checks.
+  The tracker needs a real pet: an unknown id redirects to Home. Add one
+  first (Home → `+` → name → Save) and take its id from the URL.
 - **Hash-only `page.goto` does NOT remount the view.** Navigating from
   `/#/pets/a/track` to `/#/pets/b/track` reuses the same component
   instance (and `TrackerView` captures `route.params.id` once in setup).

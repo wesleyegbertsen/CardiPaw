@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { blockStorage } from '../test/blockStorage';
 
 const STORAGE_KEY = 'cardipaw-onboarding-seen';
 
@@ -30,5 +31,16 @@ describe('useOnboarding', () => {
     first.markSeen();
     expect(second.hasSeenOnboarding.value).toBe(true);
     expect(localStorage.getItem(STORAGE_KEY)).toBe('1');
+  });
+
+  it('loads and marks seen for this session when site data is blocked', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    blockStorage();
+    const useOnboarding = await load();
+    const { hasSeenOnboarding, markSeen } = useOnboarding();
+    expect(hasSeenOnboarding.value).toBe(false);
+    markSeen();
+    expect(hasSeenOnboarding.value).toBe(true);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Could not save'), expect.any(DOMException));
   });
 });

@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import EditReadingView from './EditReadingView.vue';
 import { useReadingsStore } from '../stores/readings';
+import * as db from '../services/db';
 import { mountView, settle } from '../test/mountView';
+import { createTestI18n } from '../test/i18n';
 import { makePet, makeReading } from '../test/fixtures';
 import type { Reading } from '../types';
 
@@ -151,5 +153,50 @@ describe('EditReadingView', () => {
       name: 'reading',
       params: { id: 'pet-1', readingId: 'reading-1' },
     });
+  });
+
+  it('reports a failed save and keeps the edits', async () => {
+    vi.spyOn(db, 'saveReading').mockRejectedValueOnce(new Error('quota'));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper, rate, submit, replace } = await mountEdit();
+    await rate.setValue('28');
+    await wrapper.get('form').trigger('submit');
+    await settle();
+    expect(wrapper.get('.save-error').text()).toBe('This could not be saved. Please try again.');
+    expect(error).toHaveBeenCalledWith('Saving reading failed', expect.any(Error));
+    expect(replace).not.toHaveBeenCalled();
+    expect(rate.element.value).toBe('28');
+    expect(submit.element.disabled).toBe(false);
+  });
+
+  it('reports a failed load', async () => {
+    vi.spyOn(db, 'getReadingsForPet').mockRejectedValueOnce(new Error('idb broken'));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper, push } = await mountView(EditReadingView, location, { pets: [makePet()] });
+    expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+    expect(error).toHaveBeenCalledWith('Loading reading failed', expect.any(Error));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('hides the form when loading fails for a reading cached from an earlier visit', async () => {
+    const cached = makeReading({ restState: 'resting', notes: '<p>Calm</p>' });
+    // The first visit caches the reading. It stays mounted: unmounting the router's last
+    // app resets the current route, which the second mount would then read as empty.
+    const first = await mountEdit(cached);
+
+    vi.spyOn(db, 'getReadingsForPet').mockRejectedValueOnce(new Error('idb broken'));
+    const save = vi.spyOn(db, 'saveReading');
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const wrapper = mount(EditReadingView, {
+      attachTo: document.body,
+      global: { plugins: [first.pinia, first.router, createTestI18n()] },
+    });
+    await settle();
+
+    expect(useReadingsStore().getReadingsForPet('pet-1')).toEqual([cached]);
+    expect(error).toHaveBeenCalledWith('Loading reading failed', expect.any(Error));
+    expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+    expect(wrapper.find('form').exists()).toBe(false);
+    expect(save).not.toHaveBeenCalled();
   });
 });

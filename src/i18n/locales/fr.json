@@ -8,7 +8,12 @@
     "saving": "Enregistrement…",
     "saveChanges": "Enregistrer les modifications",
     "back": "Retour",
-    "breathsPerMin": "resp./min"
+    "breathsPerMin": "resp./min",
+    "saveError": "L'enregistrement a échoué. Veuillez réessayer.",
+    "loadError": "Le chargement a échoué. Revenez en arrière et réessayez. Vos données n'ont pas été supprimées.",
+    "deleteError": "La suppression a échoué. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "loading": "Chargement…"
   },
   "nav": {
     "home": "Accueil",
@@ -53,7 +58,7 @@
     "yourPets": "Vos animaux",
     "noPetsTitle": "Aucun animal",
     "noPetsBody": "Ajoutez votre premier animal pour commencer à suivre sa fréquence respiratoire au repos.",
-    "loadError": "Vos animaux n'ont pas pu être chargés. Rechargez l'application pour réessayer. Vos données n'ont pas été supprimées.",
+    "loadError": "Vos animaux n'ont pas pu être chargés. Vos données n'ont pas été supprimées.",
     "addPet": "Ajouter un animal",
     "themeDark": "Sombre",
     "themeLight": "Clair",
@@ -63,7 +68,8 @@
   },
   "petCard": {
     "viewProfile": "Voir le profil de {name}",
-    "startTracking": "Commencer le suivi de {name}"
+    "startTracking": "Commencer le suivi de {name}",
+    "readingsError": "Les mesures n'ont pas pu être chargées"
   },
   "petDetail": {
     "share": "Partager",
@@ -83,7 +89,8 @@
     "thisWeek": "Cette semaine",
     "thisMonth": "Ce mois-ci",
     "thisYear": "Cette année",
-    "deleteConfirm": "Supprimer {name} ? Toutes ses mesures seront également supprimées définitivement."
+    "deleteConfirm": "Supprimer {name} ? Toutes ses mesures et ses notes seront également supprimées définitivement.",
+    "deleteError": "La suppression de {name} n'a pas pu être terminée. Certaines de ses données ont peut-être déjà été effacées. Veuillez réessayer."
   },
   "tracker": {
     "tapToStart": "Appuyez pour commencer",
@@ -175,9 +182,9 @@
     "languageSection": "Langue",
     "languageDesc": "Choisissez la langue utilisée dans toute l'application.",
     "dataSection": "Données",
-    "dataDesc": "Vos profils d'animaux et vos mesures sont stockés localement sur cet appareil via IndexedDB. Exportez-les pour les sauvegarder ou les transférer sur un autre appareil.",
+    "dataDesc": "Vos profils d'animaux, vos mesures et vos notes sont stockés localement sur cet appareil via IndexedDB. Exportez-les pour les sauvegarder ou les transférer sur un autre appareil.",
     "exportName": "Exporter les données",
-    "exportDesc": "Télécharger tous les animaux et mesures au format JSON",
+    "exportDesc": "Télécharger tous les animaux, mesures et notes au format JSON",
     "exported": "✓ Exporté",
     "export": "Exporter",
     "importName": "Importer des données",
@@ -189,7 +196,7 @@
     "importError": "L'importation a échoué. Vos données existantes n'ont pas été modifiées.",
     "exportError": "L'exportation a échoué. Veuillez réessayer.",
     "importSkipped": "1 enregistrement endommagé du fichier sera ignoré. | {n} enregistrements endommagés du fichier seront ignorés.",
-    "importConfirm": "Importer {pets} animal(aux) et {readings} mesure(s) ? Toutes les données actuelles de cet appareil seront écrasées.",
+    "importConfirm": "Importer {pets} animal(aux), {readings} mesure(s) et {notes} note(s) ? Toutes les données actuelles de cet appareil seront écrasées.",
     "aboutSection": "À propos",
     "version": "Version",
     "aboutText": "CardiPaw vous aide à suivre la fréquence respiratoire au repos (FRR) de votre animal — un indicateur de santé important pour les animaux atteints de maladies cardiaques comme la CMH.",
@@ -244,7 +251,7 @@
     "selectAtLeastOne": "Sélectionnez au moins un mois à exporter.",
     "generating": "Génération…",
     "export": "Exporter en PDF",
-    "exportError": "Le PDF n'a pas pu être créé. Vérifiez votre connexion, rechargez l'application et réessayez."
+    "exportError": "Le PDF n'a pas pu être créé. Veuillez réessayer. Si le problème persiste, fermez puis rouvrez l'application."
   },
   "shareModal": {
     "title": "Partager",
@@ -281,7 +288,7 @@
     "bold": "Gras",
     "italic": "Italique",
     "bulletList": "Liste à puces",
-    "loadError": "L'éditeur n'a pas pu être chargé. Vérifiez votre connexion et rechargez l'application."
+    "loadError": "L'éditeur n'a pas pu être chargé. Fermez puis rouvrez l'application pour réessayer."
   },
   "onboarding": {
     "step1Title": "Laissez votre animal se reposer ou s'endormir",

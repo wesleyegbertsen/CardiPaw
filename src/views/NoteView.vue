@@ -25,11 +25,19 @@ const note = computed(() =>
 const showDeleteDialog = ref(false);
 
 const loaded = ref(false);
+const loadError = ref(false);
+const pinning = ref(false);
+const deleting = ref(false);
+const pinError = ref(false);
+const deleteError = ref(false);
 
 onMounted(async () => {
   try {
     await petsStore.loadPets();
     await notesStore.loadNotesForPet(petId);
+  } catch (e) {
+    console.error('Loading note failed', e);
+    loadError.value = true;
   } finally {
     loaded.value = true;
   }
@@ -40,18 +48,40 @@ function goBack() {
 }
 
 async function togglePin() {
-  if (!note.value) return;
-  await notesStore.updateNote({
-    ...note.value,
-    pinnedAt: note.value.pinnedAt ? undefined : new Date().toISOString(),
-    modifiedAt: note.value.modifiedAt,
-  });
+  if (!note.value || pinning.value || deleting.value) return;
+  pinning.value = true;
+  pinError.value = false;
+  deleteError.value = false;
+  try {
+    await notesStore.updateNote({
+      ...note.value,
+      pinnedAt: note.value.pinnedAt ? undefined : new Date().toISOString(),
+      modifiedAt: note.value.modifiedAt,
+    });
+  } catch (e) {
+    console.error('Pinning note failed', e);
+    pinError.value = true;
+  } finally {
+    pinning.value = false;
+  }
 }
 
 async function confirmDelete() {
-  if (!note.value) return;
-  await notesStore.removeNote(note.value.id, petId);
-  router.push({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
+  if (!note.value || deleting.value || pinning.value) return;
+  // Close first, so the dialog hands focus back to the delete button.
+  showDeleteDialog.value = false;
+  deleting.value = true;
+  pinError.value = false;
+  deleteError.value = false;
+  try {
+    await notesStore.removeNote(note.value.id, petId);
+    router.push({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
+  } catch (e) {
+    console.error('Deleting note failed', e);
+    deleteError.value = true;
+  } finally {
+    deleting.value = false;
+  }
 }
 
 function formatDate(iso: string) {
@@ -118,6 +148,8 @@ const safeContentHtml = computed(() => richTextToSafeHtml(note.value?.content ??
     </header>
 
     <div v-if="note" class="note-body">
+      <p v-if="deleteError" class="save-error" role="alert">{{ $t('common.deleteError') }}</p>
+      <p v-else-if="pinError" class="save-error" role="alert">{{ $t('common.saveError') }}</p>
       <div class="note-card">
         <h1 class="note-title">{{ note.title }}</h1>
         <div class="note-dates">
@@ -146,6 +178,8 @@ const safeContentHtml = computed(() => richTextToSafeHtml(note.value?.content ??
       </div>
     </div>
 
+    <p v-else-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
+
     <div v-else-if="loaded" class="not-found">{{ $t('note.notFound') }}</div>
 
     <ConfirmDialog
@@ -158,6 +192,20 @@ const safeContentHtml = computed(() => richTextToSafeHtml(note.value?.content ??
 </template>
 
 <style scoped>
+.save-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.load-error {
+  margin: 16px;
+}
+
 .note-view {
   min-height: 100%;
   display: flex;

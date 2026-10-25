@@ -8,7 +8,12 @@
     "saving": "Saving…",
     "saveChanges": "Save changes",
     "back": "Go back",
-    "breathsPerMin": "breaths/min"
+    "breathsPerMin": "breaths/min",
+    "saveError": "This could not be saved. Please try again.",
+    "loadError": "This could not be loaded. Go back and try again. Your data has not been deleted.",
+    "deleteError": "This could not be deleted. Please try again.",
+    "retry": "Try again",
+    "loading": "Loading…"
   },
   "nav": {
     "home": "Home",
@@ -53,7 +58,7 @@
     "yourPets": "Your pets",
     "noPetsTitle": "No pets yet",
     "noPetsBody": "Add your first pet to start tracking their resting respiratory rate.",
-    "loadError": "Your pets could not be loaded. Reload the app to try again. Your data has not been deleted.",
+    "loadError": "Your pets could not be loaded. Your data has not been deleted.",
     "addPet": "Add pet",
     "themeDark": "Dark",
     "themeLight": "Light",
@@ -63,7 +68,8 @@
   },
   "petCard": {
     "viewProfile": "View {name}'s profile",
-    "startTracking": "Start tracking {name}"
+    "startTracking": "Start tracking {name}",
+    "readingsError": "Readings could not be loaded"
   },
   "petDetail": {
     "share": "Share",
@@ -83,7 +89,8 @@
     "thisWeek": "This week",
     "thisMonth": "This month",
     "thisYear": "This year",
-    "deleteConfirm": "Delete {name}? This will permanently remove all their readings too."
+    "deleteConfirm": "Delete {name}? This will permanently remove all their readings and notes too.",
+    "deleteError": "{name} could not be fully deleted. Some of their data may already be gone. Please try again."
   },
   "tracker": {
     "tapToStart": "Tap to start",
@@ -175,9 +182,9 @@
     "languageSection": "Language",
     "languageDesc": "Choose the language used throughout the app.",
     "dataSection": "Data",
-    "dataDesc": "Your pet profiles and readings are stored locally on this device using IndexedDB. Export them to back up or transfer to another device.",
+    "dataDesc": "Your pet profiles, readings and notes are stored locally on this device using IndexedDB. Export them to back up or transfer to another device.",
     "exportName": "Export data",
-    "exportDesc": "Download all pets and readings as JSON",
+    "exportDesc": "Download all pets, readings and notes as JSON",
     "exported": "✓ Exported",
     "export": "Export",
     "importName": "Import data",
@@ -189,7 +196,7 @@
     "importError": "Import failed. Your existing data has not been changed.",
     "exportError": "Export failed. Please try again.",
     "importSkipped": "1 damaged record in the file will be skipped. | {n} damaged records in the file will be skipped.",
-    "importConfirm": "Import {pets} pet(s) and {readings} reading(s)? This will overwrite all existing data on this device.",
+    "importConfirm": "Import {pets} pet(s), {readings} reading(s) and {notes} note(s)? This will overwrite all existing data on this device.",
     "aboutSection": "About",
     "version": "Version",
     "aboutText": "CardiPaw helps you track your pet's resting respiratory rate (RRR) — an important health indicator for pets with heart conditions like HCM.",
@@ -244,7 +251,7 @@
     "selectAtLeastOne": "Select at least one month to export.",
     "generating": "Generating…",
     "export": "Export PDF",
-    "exportError": "The PDF could not be created. Check your connection, reload the app and try again."
+    "exportError": "The PDF could not be created. Please try again. If it keeps failing, close and reopen the app."
   },
   "shareModal": {
     "title": "Share",
@@ -281,7 +288,7 @@
     "bold": "Bold",
     "italic": "Italic",
     "bulletList": "Bullet list",
-    "loadError": "The editor could not be loaded. Check your connection and reload the app."
+    "loadError": "The editor could not be loaded. Close and reopen the app to try again."
   },
   "onboarding": {
     "step1Title": "Get your pet resting or sleeping",

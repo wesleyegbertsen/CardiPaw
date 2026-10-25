@@ -1,4 +1,5 @@
 import { ref, watch } from 'vue';
+import { readStorage, writeStorage } from '../utils/storage';
 
 const STORAGE_KEY = 'cardipaw-tracker-prefs';
 
@@ -9,7 +10,7 @@ interface TrackerPrefs {
 
 function loadAll(): Record<string, TrackerPrefs> {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
+    const parsed: unknown = JSON.parse(readStorage(STORAGE_KEY) ?? '{}');
     // "null" would throw on lookup, and an array would silently drop every saved change.
     return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
       ? (parsed as Record<string, TrackerPrefs>)
@@ -30,7 +31,7 @@ export function useTrackerPrefs(petId: string) {
       soundEnabled: soundEnabled.value,
       vibrationEnabled: vibrationEnabled.value,
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    writeStorage(STORAGE_KEY, JSON.stringify(all));
   });
 
   return { soundEnabled, vibrationEnabled };

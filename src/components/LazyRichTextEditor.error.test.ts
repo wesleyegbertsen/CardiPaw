@@ -30,7 +30,7 @@ describe('LazyRichTextEditor when the chunk fails', () => {
       expect(wrapper.find('[role="alert"]').exists()).toBe(true);
     });
     expect(wrapper.get('[role="alert"]').text()).toBe(
-      'The editor could not be loaded. Check your connection and reload the app.',
+      'The editor could not be loaded. Close and reopen the app to try again.',
     );
     expect(wrapper.find('div[aria-hidden="true"]').exists()).toBe(false);
   });

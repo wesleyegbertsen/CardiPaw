@@ -8,7 +8,12 @@
     "saving": "Wird gespeichert…",
     "saveChanges": "Änderungen speichern",
     "back": "Zurück",
-    "breathsPerMin": "Atemz./Min"
+    "breathsPerMin": "Atemz./Min",
+    "saveError": "Das konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    "loadError": "Das konnte nicht geladen werden. Geh zurück und versuche es erneut. Deine Daten wurden nicht gelöscht.",
+    "deleteError": "Das konnte nicht gelöscht werden. Bitte versuche es erneut.",
+    "retry": "Erneut versuchen",
+    "loading": "Wird geladen…"
   },
   "nav": {
     "home": "Start",
@@ -53,7 +58,7 @@
     "yourPets": "Deine Tiere",
     "noPetsTitle": "Noch keine Tiere",
     "noPetsBody": "Füge dein erstes Tier hinzu, um die Ruhe-Atemfrequenz zu verfolgen.",
-    "loadError": "Deine Haustiere konnten nicht geladen werden. Lade die App neu und versuche es erneut. Deine Daten wurden nicht gelöscht.",
+    "loadError": "Deine Tiere konnten nicht geladen werden. Deine Daten wurden nicht gelöscht.",
     "addPet": "Tier hinzufügen",
     "themeDark": "Dunkel",
     "themeLight": "Hell",
@@ -63,7 +68,8 @@
   },
   "petCard": {
     "viewProfile": "Profil von {name} ansehen",
-    "startTracking": "Messung für {name} starten"
+    "startTracking": "Messung für {name} starten",
+    "readingsError": "Messungen konnten nicht geladen werden"
   },
   "petDetail": {
     "share": "Teilen",
@@ -83,7 +89,8 @@
     "thisWeek": "Diese Woche",
     "thisMonth": "Dieser Monat",
     "thisYear": "Dieses Jahr",
-    "deleteConfirm": "{name} löschen? Dadurch werden auch alle Messungen dieses Tieres dauerhaft entfernt."
+    "deleteConfirm": "{name} löschen? Dadurch werden auch alle Messungen und Notizen dieses Tieres dauerhaft entfernt.",
+    "deleteError": "{name} konnte nicht vollständig gelöscht werden. Einige Daten wurden möglicherweise bereits gelöscht. Bitte versuche es erneut."
   },
   "tracker": {
     "tapToStart": "Zum Starten tippen",
@@ -175,9 +182,9 @@
     "languageSection": "Sprache",
     "languageDesc": "Wähle die Sprache, die in der gesamten App verwendet wird.",
     "dataSection": "Daten",
-    "dataDesc": "Deine Tierprofile und Messungen werden lokal auf diesem Gerät mit IndexedDB gespeichert. Exportiere sie, um ein Backup zu erstellen oder auf ein anderes Gerät zu übertragen.",
+    "dataDesc": "Deine Tierprofile, Messungen und Notizen werden lokal auf diesem Gerät mit IndexedDB gespeichert. Exportiere sie, um ein Backup zu erstellen oder auf ein anderes Gerät zu übertragen.",
     "exportName": "Daten exportieren",
-    "exportDesc": "Alle Tiere und Messungen als JSON herunterladen",
+    "exportDesc": "Alle Tiere, Messungen und Notizen als JSON herunterladen",
     "exported": "✓ Exportiert",
     "export": "Exportieren",
     "importName": "Daten importieren",
@@ -189,7 +196,7 @@
     "importError": "Import fehlgeschlagen. Deine vorhandenen Daten wurden nicht geändert.",
     "exportError": "Export fehlgeschlagen. Bitte versuche es erneut.",
     "importSkipped": "1 beschädigter Eintrag in der Datei wird übersprungen. | {n} beschädigte Einträge in der Datei werden übersprungen.",
-    "importConfirm": "{pets} Tier(e) und {readings} Messung(en) importieren? Dadurch werden alle vorhandenen Daten auf diesem Gerät überschrieben.",
+    "importConfirm": "{pets} Tier(e), {readings} Messung(en) und {notes} Notiz(en) importieren? Dadurch werden alle vorhandenen Daten auf diesem Gerät überschrieben.",
     "aboutSection": "Über",
     "version": "Version",
     "aboutText": "CardiPaw hilft dir, die Ruhe-Atemfrequenz (RAF) deines Tieres zu verfolgen — ein wichtiger Gesundheitsindikator für Tiere mit Herzerkrankungen wie HCM.",
@@ -244,7 +251,7 @@
     "selectAtLeastOne": "Wähle mindestens einen Monat zum Exportieren aus.",
     "generating": "Wird erstellt…",
     "export": "PDF exportieren",
-    "exportError": "Das PDF konnte nicht erstellt werden. Prüfe deine Verbindung, lade die App neu und versuche es erneut."
+    "exportError": "Das PDF konnte nicht erstellt werden. Bitte versuche es erneut. Wenn es weiterhin nicht klappt, schließe die App und öffne sie erneut."
   },
   "shareModal": {
     "title": "Teilen",
@@ -281,7 +288,7 @@
     "bold": "Fett",
     "italic": "Kursiv",
     "bulletList": "Aufzählung",
-    "loadError": "Der Editor konnte nicht geladen werden. Prüfe deine Verbindung und lade die App neu."
+    "loadError": "Der Editor konnte nicht geladen werden. Schließe die App und öffne sie erneut, um es noch einmal zu versuchen."
   },
   "onboarding": {
     "step1Title": "Lass dein Tier ruhen oder schlafen",

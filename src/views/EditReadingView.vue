@@ -27,13 +27,21 @@ const editRate = ref(0);
 const editRestState = ref<'resting' | 'sleeping' | undefined>(undefined);
 const editNotes = ref('');
 const saving = ref(false);
+const saveError = ref(false);
+const loadError = ref(false);
 // v-model.number yields '' when the field is cleared; never store that as the rate.
 // Guided results (taps×2) can exceed 200, so an unchanged stored rate stays saveable.
 const rateValid = computed(() => isValidRate(editRate.value) || editRate.value === reading.value?.rate);
 
 onMounted(async () => {
-  await petsStore.loadPets();
-  await readingsStore.loadReadingsForPet(petId);
+  try {
+    await petsStore.loadPets();
+    await readingsStore.loadReadingsForPet(petId);
+  } catch (e) {
+    console.error('Loading reading failed', e);
+    loadError.value = true;
+    return;
+  }
   if (!reading.value) {
     router.push({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
     return;
@@ -48,8 +56,9 @@ function goBack() {
 }
 
 async function saveEdit() {
-  if (!reading.value || saving.value || !rateValid.value) return;
+  if (!reading.value || loadError.value || saving.value || !rateValid.value) return;
   saving.value = true;
+  saveError.value = false;
   try {
     const updated: Reading = {
       ...reading.value,
@@ -59,6 +68,9 @@ async function saveEdit() {
     };
     await readingsStore.updateReading(updated);
     router.replace({ name: 'reading', params: { id: petId, readingId } });
+  } catch (e) {
+    console.error('Saving reading failed', e);
+    saveError.value = true;
   } finally {
     saving.value = false;
   }
@@ -95,7 +107,9 @@ function formatDate(iso: string) {
       <div class="header-actions"></div>
     </header>
 
-    <form v-if="reading" class="form" novalidate @submit.prevent="saveEdit">
+    <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
+
+    <form v-if="reading && !loadError" class="form" novalidate @submit.prevent="saveEdit">
       <div class="reading-meta-row">
         <p class="reading-date">{{ formatDate(reading.date) }}</p>
         <span class="source-chip" :class="reading.source === 'manual' ? 'manual' : 'guided'">
@@ -143,6 +157,8 @@ function formatDate(iso: string) {
         <RichTextEditor v-model="editNotes" />
       </div>
 
+      <p v-if="saveError" class="save-error" role="alert">{{ $t('common.saveError') }}</p>
+
       <button type="submit" class="submit-btn" :disabled="saving || !rateValid">
         {{ saving ? $t('common.saving') : $t('common.saveChanges') }}
       </button>
@@ -151,6 +167,20 @@ function formatDate(iso: string) {
 </template>
 
 <style scoped>
+.save-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.load-error {
+  margin: 16px;
+}
+
 .reading-view {
   min-height: 100%;
   display: flex;
@@ -301,7 +331,7 @@ function formatDate(iso: string) {
 
 .rate-badge.danger {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .rest-state-row {

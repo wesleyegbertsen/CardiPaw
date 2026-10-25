@@ -4,7 +4,7 @@ import { enableAutoUnmount, flushPromises, type VueWrapper } from '@vue/test-uti
 import SettingsView from './SettingsView.vue';
 import * as backup from '../services/backup';
 import { mountView, settle } from '../test/mountView';
-import { makePet, makeReading } from '../test/fixtures';
+import { makeNote, makePet, makeReading } from '../test/fixtures';
 
 // Keep parsing and validation real; only the IndexedDB-touching calls are faked.
 vi.mock('../services/backup', async (importOriginal) => {
@@ -36,7 +36,7 @@ const backupText = (extra: object = {}) =>
     exportedAt: '',
     pets: [makePet()],
     readings: [makeReading(), makeReading({ id: 'r2' })],
-    notes: [],
+    notes: [makeNote()],
     ...extra,
   });
 
@@ -47,11 +47,17 @@ describe('SettingsView', () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it('says the data and the export include notes', async () => {
+    const { wrapper } = await mountView(SettingsView, '/settings');
+    expect(wrapper.text()).toContain('Your pet profiles, readings and notes are stored locally');
+    expect(wrapper.text()).toContain('Download all pets, readings and notes as JSON');
+  });
+
   describe('import', () => {
     it('asks to confirm with the counts, then imports', async () => {
       const { wrapper } = await mountView(SettingsView, '/settings');
       const input = await pickFile(wrapper, backupText());
-      expect(dialogMessage()?.textContent).toContain('Import 1 pet(s) and 2 reading(s)?');
+      expect(dialogMessage()?.textContent).toContain('Import 1 pet(s), 2 reading(s) and 1 note(s)?');
       expect(input.value).toBe('');
 
       clickInBody('.btn-confirm');

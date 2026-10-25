@@ -1,10 +1,13 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, type VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import PetDetailView from './PetDetailView.vue';
 import { usePetsStore } from '../stores/pets';
 import { mountView, settle, type MountViewOptions } from '../test/mountView';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
+import { deferred } from '../test/deferred';
+import { createTestI18n } from '../test/i18n';
+import * as db from '../services/db';
 import type { Reading } from '../types';
 
 // Chart.js needs a canvas; the view's job is to hand the chart the right readings.
@@ -103,6 +106,106 @@ describe('PetDetailView', () => {
       expect(usePetsStore().pets).toHaveLength(1);
       expect(push).not.toHaveBeenCalled();
     });
+    it('reports a failed delete, keeps the pet and returns focus', async () => {
+      vi.spyOn(db, 'deletePet').mockRejectedValueOnce(new Error('quota'));
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper, push } = await mountDetail('/pets/pet-1');
+      const remove = wrapper.get('.icon-btn.danger');
+      (remove.element as HTMLElement).focus();
+      await remove.trigger('click');
+      document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
+      await settle();
+
+      expect(document.body.querySelector('[role="alertdialog"]')).toBeNull();
+      expect(document.activeElement).toBe(remove.element);
+      expect(wrapper.get('[role="alert"]').text()).toContain('could not be fully deleted');
+      expect(usePetsStore().pets).toHaveLength(1);
+      expect(error).toHaveBeenCalledWith('Deleting pet failed', expect.any(Error));
+      expect(push).not.toHaveBeenCalled();
+    });
+
+    it('deletes on a retry after a failed delete', async () => {
+      vi.spyOn(db, 'deletePet').mockRejectedValueOnce(new Error('quota'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper, push } = await mountDetail('/pets/pet-1');
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await wrapper.get('.icon-btn.danger').trigger('click');
+        document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
+        await settle();
+      }
+      expect(usePetsStore().pets).toEqual([]);
+      expect(push).toHaveBeenCalledWith({ name: 'home' });
+    });
+
+    it('deletes once when confirm is clicked twice', async () => {
+      const pending = deferred<void>();
+      const deletePet = vi.spyOn(db, 'deletePet').mockReturnValue(pending.promise);
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      await wrapper.get('.icon-btn.danger').trigger('click');
+      const confirm = document.body.querySelector<HTMLButtonElement>('.btn-confirm')!;
+      confirm.click();
+      confirm.click();
+      pending.resolve();
+      await settle();
+      expect(deletePet).toHaveBeenCalledTimes(1);
+    });
+
+    it('warns that notes are deleted too', async () => {
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      await wrapper.get('.icon-btn.danger').trigger('click');
+      expect(document.body.querySelector('[role="alertdialog"] .message')!.textContent).toContain(
+        'readings and notes',
+      );
+    });
+  });
+
+  it('shows an error with a way back when the pet cannot load', async () => {
+    vi.spyOn(db, 'getAllPets').mockRejectedValueOnce(new Error('idb broken'));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper, push } = await mountDetail('/pets/pet-1');
+    expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+    expect(push).not.toHaveBeenCalled();
+    await wrapper.get('.back-btn').trigger('click');
+    expect(push).toHaveBeenCalledWith({ name: 'home' });
+    expect(error).toHaveBeenCalledWith('Loading pet failed', expect.any(Error));
+  });
+
+  it.each([
+    ['readings', 'getReadingsForPet'],
+    ['notes', 'getNotesForPet'],
+  ] as const)('shows the pet with an alert when its %s fail to load', async (what, method) => {
+    vi.spyOn(db, method).mockRejectedValueOnce(new Error('idb broken'));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { wrapper, push } = await mountDetail('/pets/pet-1', {
+      readings: [makeReading()],
+      notes: [makeNote()],
+    });
+    expect(wrapper.find('.icon-btn.danger').exists()).toBe(true);
+    expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+    expect(error).toHaveBeenCalledWith(`Loading ${what} failed`, expect.any(Error));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('keeps showing a cached pet with an alert when the pets fail to load', async () => {
+    // The first visit caches the pet. It stays mounted: unmounting the router's last
+    // app resets the current route, which the second mount would then read as empty.
+    const first = await mountDetail('/pets/pet-1', { readings: [makeReading()] });
+
+    vi.spyOn(db, 'getAllPets').mockRejectedValueOnce(new Error('idb broken'));
+    const getReadings = vi.spyOn(db, 'getReadingsForPet');
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const wrapper = mount(PetDetailView, {
+      attachTo: document.body,
+      global: { plugins: [first.pinia, first.router, createTestI18n()] },
+    });
+    await settle();
+
+    expect(error).toHaveBeenCalledWith('Loading pet failed', expect.any(Error));
+    expect(wrapper.find('.icon-btn.danger').exists()).toBe(true);
+    expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+    expect(getReadings).toHaveBeenCalledWith('pet-1');
+    expect(tabs(wrapper)[1].get('.tab-count').text()).toBe('1');
+    expect(first.push).not.toHaveBeenCalled();
   });
 
   describe('chart', () => {
