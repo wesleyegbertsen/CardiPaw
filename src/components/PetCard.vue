@@ -134,7 +134,7 @@ function startTracking() {
       <p v-else class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
     </div>
 
-    <div v-if="hasSparklineData" class="sparkline-wrap">
+    <div v-if="hasSparklineData && !readingsError" class="sparkline-wrap">
       <Line :data="chartData" :options="(chartOptions as any)" />
     </div>
 

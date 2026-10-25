@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { createPinia } from 'pinia';
 import PetCard from './PetCard.vue';
+import { useReadingsStore } from '../stores/readings';
 import * as db from '../services/db';
 import { createTestI18n } from '../test/i18n';
 import { makePet, makeReading } from '../test/fixtures';
@@ -18,12 +19,12 @@ enableAutoUnmount(afterEach);
 const profile = { name: 'pet', params: { id: 'pet-1' } };
 const tracker = { name: 'tracker', params: { id: 'pet-1' } };
 
-async function mountCard(name = 'Ace', readings: Reading[] = []) {
+async function mountCard(name = 'Ace', readings: Reading[] = [], pinia = createPinia()) {
   await db.importAllData({ version: 1, exportedAt: '', pets: [], readings, notes: [] });
   const wrapper = mount(PetCard, {
     props: { pet: makePet({ name }) },
     attachTo: document.body,
-    global: { plugins: [createPinia(), createTestI18n()] },
+    global: { plugins: [pinia, createTestI18n()] },
   });
   await flushPromises();
   return wrapper;
@@ -114,6 +115,20 @@ describe('PetCard', () => {
       expect(data.datasets[0].data).toEqual([null, null, null, null, 3, null, 23]);
       const options = line.props('options') as { scales: { y: { min: number; max: number } } };
       expect(options.scales.y).toMatchObject({ min: 0, max: 28 });
+    });
+
+    it('stays hidden next to the error when a reload fails over cached readings', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const pinia = createPinia();
+      // Readings cached by an earlier visit, so the sparkline would have data to draw.
+      useReadingsStore(pinia).readingsByPet['pet-1'] = [
+        makeReading({ id: 'a', date: '2024-03-13T08:00:00.000Z', rate: 20 }),
+        makeReading({ id: 'b', date: '2024-03-15T08:00:00.000Z', rate: 25 }),
+      ];
+      vi.spyOn(db, 'getReadingsForPet').mockRejectedValueOnce(new Error('blocked'));
+      const wrapper = await mountCard('Ace', [], pinia);
+      expect(wrapper.get('.readings-error').text()).toBe('Readings could not be loaded');
+      expect(wrapper.find('.sparkline-wrap').exists()).toBe(false);
     });
   });
 });
