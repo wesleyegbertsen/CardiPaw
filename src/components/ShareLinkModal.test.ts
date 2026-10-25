@@ -93,6 +93,8 @@ describe('ShareLinkModal', () => {
     expect(alert()?.textContent?.trim()).toBe(
       'The share link could not be created. Please try again.',
     );
+    // Styled as an error, not as the long-link warning.
+    expect(alert()?.className).toBe('encode-error');
     expect(linkPreview().value).toBe('');
     expect(copyButton().disabled).toBe(true);
     expect(error).toHaveBeenCalled();

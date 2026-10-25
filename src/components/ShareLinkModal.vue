@@ -151,7 +151,7 @@ async function nativeShare() {
 
         <div v-else class="link-section">
           <input class="link-preview" :value="shareUrl" :aria-label="$t('shareModal.title')" readonly @focus="($event.target as HTMLInputElement).select()" />
-          <p v-if="encodeFailed" class="length-warning" role="alert">{{ $t('shareModal.encodeError') }}</p>
+          <p v-if="encodeFailed" class="encode-error" role="alert">{{ $t('shareModal.encodeError') }}</p>
           <p v-if="isLongUrl" class="length-warning">
             {{ $t('shareModal.lengthWarning') }}
           </p>
@@ -333,7 +333,8 @@ async function nativeShare() {
   text-overflow: ellipsis;
 }
 
-.length-warning {
+.length-warning,
+.encode-error {
   font-size: 12px;
   line-height: 1.5;
   color: var(--color-warning);
@@ -341,6 +342,11 @@ async function nativeShare() {
   border-radius: var(--radius-sm);
   padding: 8px 12px;
   margin: 0;
+}
+
+.encode-error {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
 }
 
 .dialog-footer {
