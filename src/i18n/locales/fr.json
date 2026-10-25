@@ -8,7 +8,9 @@
     "saving": "Enregistrement…",
     "saveChanges": "Enregistrer les modifications",
     "back": "Retour",
-    "breathsPerMin": "resp./min"
+    "breathsPerMin": "resp./min",
+    "saveError": "L'enregistrement a échoué. Veuillez réessayer.",
+    "loadError": "Le chargement a échoué. Revenez en arrière et réessayez. Vos données n'ont pas été supprimées."
   },
   "nav": {
     "home": "Accueil",

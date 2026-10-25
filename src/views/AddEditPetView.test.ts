@@ -6,6 +6,8 @@ import AddEditPetView from './AddEditPetView.vue';
 import { usePetsStore } from '../stores/pets';
 import { mountView, settle } from '../test/mountView';
 import { makePet } from '../test/fixtures';
+import { deferred } from '../test/deferred';
+import * as db from '../services/db';
 import type { Pet } from '../types';
 
 enableAutoUnmount(afterEach);
@@ -145,6 +147,37 @@ describe('AddEditPetView', () => {
       expect(addPet).not.toHaveBeenCalled();
     });
 
+    it('reports a failed save, stays on the form and saves on retry', async () => {
+      vi.spyOn(db, 'savePet').mockRejectedValueOnce(new Error('quota'));
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper, fill, submit, push } = await mountForm('/pets/add');
+      await fill(required);
+      await wrapper.get('form').trigger('submit');
+      await settle();
+
+      expect(wrapper.get('.save-error').text()).toBe('This could not be saved. Please try again.');
+      expect(error).toHaveBeenCalledWith('Saving pet failed', expect.any(Error));
+      expect(push).not.toHaveBeenCalled();
+      expect(submit.element.disabled).toBe(false);
+
+      await wrapper.get('form').trigger('submit');
+      await settle();
+      expect(wrapper.find('.save-error').exists()).toBe(false);
+      expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: usePetsStore().pets[0].id } });
+    });
+
+    it('adds one pet when the form is submitted twice', async () => {
+      const pending = deferred<void>();
+      const savePet = vi.spyOn(db, 'savePet').mockReturnValueOnce(pending.promise);
+      const { wrapper, fill } = await mountForm('/pets/add');
+      await fill(required);
+      await wrapper.get('form').trigger('submit');
+      await wrapper.get('form').trigger('submit');
+      pending.resolve();
+      await settle();
+      expect(savePet).toHaveBeenCalledTimes(1);
+    });
+
     it('goes home on back', async () => {
       const { wrapper, push } = await mountForm('/pets/add');
       await wrapper.get('.back-btn').trigger('click');
@@ -194,6 +227,20 @@ describe('AddEditPetView', () => {
       await fill({ '#normal-ceiling': '251' });
       expect(error()).toBe('Ceilings must be whole numbers from 1 to 200.');
       expect(submit.element.disabled).toBe(true);
+    });
+
+    it('reports a failed load and never claims a save', async () => {
+      vi.spyOn(db, 'getAllPets').mockRejectedValueOnce(new Error('idb broken'));
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper, fill, submit, push } = await mountForm('/pets/pet-1/edit', [pet]);
+      expect(wrapper.get('.load-error').text()).toContain('could not be loaded');
+      expect(error).toHaveBeenCalledWith('Loading pet failed', expect.any(Error));
+
+      await fill(required);
+      expect(submit.element.disabled).toBe(true);
+      await wrapper.get('form').trigger('submit');
+      await settle();
+      expect(push).not.toHaveBeenCalled();
     });
 
     it('goes home for an unknown pet', async () => {

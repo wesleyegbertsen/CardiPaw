@@ -8,7 +8,9 @@
     "saving": "Wird gespeichert…",
     "saveChanges": "Änderungen speichern",
     "back": "Zurück",
-    "breathsPerMin": "Atemz./Min"
+    "breathsPerMin": "Atemz./Min",
+    "saveError": "Das konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    "loadError": "Das konnte nicht geladen werden. Geh zurück und versuche es erneut. Deine Daten wurden nicht gelöscht."
   },
   "nav": {
     "home": "Start",

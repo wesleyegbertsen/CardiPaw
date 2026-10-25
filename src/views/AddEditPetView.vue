@@ -26,6 +26,9 @@ const photo = ref<string | null>(null);
 const normalCeiling = ref<number | ''>('');
 const elevatedCeiling = ref<number | ''>('');
 const saving = ref(false);
+const saveError = ref(false);
+// Without the pet loaded, updatePet has nothing to update: never offer a save that does nothing.
+const loadError = ref(false);
 // Ceilings restored from a backup are only type-checked; keep them saveable unchanged.
 const stored = ref<{ normal?: number; elevated?: number }>({});
 const ceilingOk = (v: number | '', old?: number) => v === '' || isValidRate(v) || v === old;
@@ -51,7 +54,13 @@ const elevatedA11y = computed(() => ceilingA11y(elevatedOutOfRange.value));
 
 onMounted(async () => {
   if (isEdit) {
-    await petsStore.loadPets();
+    try {
+      await petsStore.loadPets();
+    } catch (e) {
+      console.error('Loading pet failed', e);
+      loadError.value = true;
+      return;
+    }
     const pet = petsStore.getPetById(petId);
     if (!pet) {
       router.replace({ name: 'home' });
@@ -68,8 +77,9 @@ onMounted(async () => {
 });
 
 async function submit() {
-  if (!name.value.trim() || !birthdate.value || thresholdError.value) return;
+  if (saving.value || loadError.value || !name.value.trim() || !birthdate.value || thresholdError.value) return;
   saving.value = true;
+  saveError.value = false;
   try {
     if (isEdit) {
       await petsStore.updatePet(petId, {
@@ -92,6 +102,9 @@ async function submit() {
       });
       router.push({ name: 'pet', params: { id: pet.id } });
     }
+  } catch (e) {
+    console.error('Saving pet failed', e);
+    saveError.value = true;
   } finally {
     saving.value = false;
   }
@@ -118,6 +131,8 @@ function goBack() {
       <h1 class="page-title">{{ isEdit ? $t('addEditPet.titleEdit') : $t('addEditPet.titleAdd') }}</h1>
       <div class="header-spacer"></div>
     </header>
+
+    <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
 
     <form class="form" novalidate @submit.prevent="submit">
       <div class="photo-row">
@@ -192,10 +207,12 @@ function goBack() {
         <p class="threshold-hint">{{ $t('addEditPet.thresholdHint', { normal: DEFAULT_NORMAL_CEILING, elevated: DEFAULT_ELEVATED_CEILING }) }}</p>
       </div>
 
+      <p v-if="saveError" class="save-error" role="alert">{{ $t('common.saveError') }}</p>
+
       <button
         type="submit"
         class="submit-btn"
-        :disabled="saving || !name.trim() || !birthdate || !!thresholdError"
+        :disabled="saving || loadError || !name.trim() || !birthdate || !!thresholdError"
       >
         {{ saving ? $t('common.saving') : (isEdit ? $t('common.saveChanges') : $t('addEditPet.submitAdd')) }}
       </button>
@@ -204,6 +221,20 @@ function goBack() {
 </template>
 
 <style scoped>
+.save-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.load-error {
+  margin: 16px 16px 0;
+}
+
 .page {
   min-height: 100%;
   background: var(--color-bg);

@@ -8,7 +8,9 @@
     "saving": "Opslaan…",
     "saveChanges": "Wijzigingen opslaan",
     "back": "Terug",
-    "breathsPerMin": "ademh./min"
+    "breathsPerMin": "ademh./min",
+    "saveError": "Dit kon niet worden opgeslagen. Probeer het opnieuw.",
+    "loadError": "Dit kon niet worden geladen. Ga terug en probeer het opnieuw. Je gegevens zijn niet verwijderd."
   },
   "nav": {
     "home": "Start",

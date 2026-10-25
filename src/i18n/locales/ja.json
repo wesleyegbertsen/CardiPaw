@@ -8,7 +8,9 @@
     "saving": "保存中…",
     "saveChanges": "変更を保存",
     "back": "戻る",
-    "breathsPerMin": "回/分"
+    "breathsPerMin": "回/分",
+    "saveError": "保存できませんでした。もう一度お試しください。",
+    "loadError": "読み込めませんでした。前の画面に戻って、もう一度お試しください。データは削除されていません。"
   },
   "nav": {
     "home": "ホーム",
