@@ -67,7 +67,8 @@
   },
   "petCard": {
     "viewProfile": "Voir le profil de {name}",
-    "startTracking": "Commencer le suivi de {name}"
+    "startTracking": "Commencer le suivi de {name}",
+    "readingsError": "Les mesures n'ont pas pu être chargées"
   },
   "petDetail": {
     "share": "Partager",

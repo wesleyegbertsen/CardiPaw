@@ -67,7 +67,8 @@
   },
   "petCard": {
     "viewProfile": "View {name}'s profile",
-    "startTracking": "Start tracking {name}"
+    "startTracking": "Start tracking {name}",
+    "readingsError": "Readings could not be loaded"
   },
   "petDetail": {
     "share": "Share",

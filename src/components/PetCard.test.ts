@@ -61,6 +61,26 @@ describe('PetCard', () => {
     expect(push.mock.calls).toEqual([[tracker]]);
   });
 
+  it('says the readings could not be loaded instead of "No readings yet"', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failure = new Error('blocked');
+    vi.spyOn(db, 'getReadingsForPet').mockRejectedValueOnce(failure);
+    const wrapper = await mountCard();
+    expect(wrapper.text()).not.toContain('No readings yet');
+    const message = wrapper.get('.readings-error');
+    expect(message.text()).toBe('Readings could not be loaded');
+    // The card is a role="button" with its own label, so its text is not read out; describe it.
+    expect(wrapper.get('.pet-card').attributes('aria-describedby')).toBe(message.attributes('id'));
+    expect(error).toHaveBeenCalledWith('Loading readings failed', failure);
+  });
+
+  it('has no description while the readings load fine', async () => {
+    const wrapper = await mountCard();
+    expect(wrapper.find('.readings-error').exists()).toBe(false);
+    expect(wrapper.get('.pet-card').attributes('aria-describedby')).toBeUndefined();
+    expect(wrapper.get('.last-measured').text()).toBe('No readings yet');
+  });
+
   it('shows a safe initial for blank and emoji names', async () => {
     expect((await mountCard('')).get('.placeholder-initial').text()).toBe('?');
     expect((await mountCard('🐱Mimi')).get('.placeholder-initial').text()).toBe('🐱');

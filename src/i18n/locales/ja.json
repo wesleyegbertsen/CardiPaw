@@ -67,7 +67,8 @@
   },
   "petCard": {
     "viewProfile": "{name}のプロフィールを見る",
-    "startTracking": "{name}の記録を開始"
+    "startTracking": "{name}の記録を開始",
+    "readingsError": "測定値を読み込めませんでした"
   },
   "petDetail": {
     "share": "共有",

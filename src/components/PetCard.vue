@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref, useId } from 'vue';
 import { useRouter } from 'vue-router';
 import { Line } from 'vue-chartjs';
 import {
@@ -26,7 +26,16 @@ const readingsStore = useReadingsStore();
 const birthdateRef = computed(() => props.pet.birthdate);
 const ageDisplay = useAgeCalculator(birthdateRef);
 
-onMounted(() => readingsStore.loadReadingsForPet(props.pet.id));
+// Without this, a failed load would look like a pet with no readings.
+const readingsError = ref(false);
+const readingsErrorId = useId();
+
+onMounted(() => {
+  readingsStore.loadReadingsForPet(props.pet.id).catch((e) => {
+    console.error('Loading readings failed', e);
+    readingsError.value = true;
+  });
+});
 
 const readings = computed(() => readingsStore.getReadingsForPet(props.pet.id));
 const lastMeasured = useLastMeasured(readings);
@@ -109,7 +118,7 @@ function startTracking() {
 </script>
 
 <template>
-  <div class="pet-card" @click="navigate" role="button" tabindex="0" @keydown.enter.self="navigate" @keydown.space.self.prevent="navigate" :aria-label="$t('petCard.viewProfile', { name: pet.name })">
+  <div class="pet-card" @click="navigate" role="button" tabindex="0" @keydown.enter.self="navigate" @keydown.space.self.prevent="navigate" :aria-label="$t('petCard.viewProfile', { name: pet.name })" :aria-describedby="readingsError ? readingsErrorId : undefined">
     <div class="photo-wrap">
       <img v-if="pet.photo" :src="pet.photo" :alt="pet.name" class="photo" />
       <div v-else class="photo-placeholder">
@@ -121,7 +130,8 @@ function startTracking() {
       <h3 class="name">{{ pet.name }}</h3>
       <span class="badge" :class="pet.species">{{ $t('species.' + pet.species) }}</span>
       <p class="age">{{ ageDisplay }}</p>
-      <p class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
+      <p v-if="readingsError" :id="readingsErrorId" class="last-measured readings-error">{{ $t('petCard.readingsError') }}</p>
+      <p v-else class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
     </div>
 
     <div v-if="hasSparklineData" class="sparkline-wrap">
@@ -242,6 +252,10 @@ function startTracking() {
 
 .last-measured.stale {
   color: #d97706;
+}
+
+.last-measured.readings-error {
+  color: var(--color-danger-text);
 }
 
 .sparkline-wrap {
