@@ -12,7 +12,8 @@
     "saveError": "This could not be saved. Please try again.",
     "loadError": "This could not be loaded. Go back and try again. Your data has not been deleted.",
     "deleteError": "This could not be deleted. Please try again.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "loading": "Loading…"
   },
   "nav": {
     "home": "Home",

@@ -380,10 +380,34 @@ onUnmounted(() => {
       </div>
     </div>
     </div>
+
+    <div v-else class="loading" role="status">
+      <div class="spinner" aria-hidden="true"></div>
+      <span class="sr-only">{{ $t('common.loading') }}</span>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .tracker {
   min-height: 100%;
   display: flex;

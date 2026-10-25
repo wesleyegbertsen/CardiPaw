@@ -12,7 +12,8 @@
     "saveError": "Dit kon niet worden opgeslagen. Probeer het opnieuw.",
     "loadError": "Dit kon niet worden geladen. Ga terug en probeer het opnieuw. Je gegevens zijn niet verwijderd.",
     "deleteError": "Dit kon niet worden verwijderd. Probeer het opnieuw.",
-    "retry": "Opnieuw proberen"
+    "retry": "Opnieuw proberen",
+    "loading": "Laden…"
   },
   "nav": {
     "home": "Start",

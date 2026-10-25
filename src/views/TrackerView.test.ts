@@ -293,6 +293,18 @@ describe('TrackerView', () => {
       expect(addReading).toHaveBeenCalledWith(expect.objectContaining({ petId: pet.id, rate: 42 }));
     });
 
+    it('shows a loading status instead of an empty body until the pet has loaded', async () => {
+      const load = deferred<Pet[]>();
+      const { wrapper } = await mountTracker({ stored: load.promise });
+      expect(wrapper.get('[role="status"]').text()).toBe('Loading…');
+      expect(wrapper.find('.heart-btn').exists()).toBe(false);
+
+      load.resolve([pet]);
+      await flushPromises();
+      expect(wrapper.find('[role="status"]').exists()).toBe(false);
+      expect(wrapper.find('.heart-btn').exists()).toBe(true);
+    });
+
     it('shows a load error with a way back instead of the tracker when loading fails', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       const failure = new Error('blocked');
