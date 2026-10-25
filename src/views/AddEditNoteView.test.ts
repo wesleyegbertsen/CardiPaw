@@ -117,12 +117,14 @@ describe('AddEditNoteView', () => {
       vi.spyOn(db, 'getNotesForPet').mockImplementationOnce(
         () => new Promise<Note[]>((r) => (finishLoad = r)),
       );
-      const { wrapper } = await mountNote(location, [makeNote()]);
+      const { wrapper, submit } = await mountNote(location, [makeNote()]);
       const notes = useNotesStore();
       const addNote = vi.spyOn(notes, 'addNote');
       const updateNote = vi.spyOn(notes, 'updateNote');
 
       await wrapper.get('#note-title').setValue('Typed early');
+      // Save looks unavailable rather than silently doing nothing.
+      expect(submit.element.disabled).toBe(true);
       await wrapper.get('form').trigger('submit');
       await flushPromises();
       expect(addNote).not.toHaveBeenCalled();
@@ -130,6 +132,7 @@ describe('AddEditNoteView', () => {
 
       finishLoad([makeNote()]);
       await settle();
+      expect(submit.element.disabled).toBe(false);
       expect(await db.getAllNotes()).toEqual([makeNote()]);
     });
   });
