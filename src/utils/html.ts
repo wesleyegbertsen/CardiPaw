@@ -1,4 +1,5 @@
 import createDOMPurify, { type DOMPurify } from 'dompurify';
+import { isRichText } from './richText';
 
 /**
  * Tags the rich text editor (TipTap StarterKit) can produce. Anything else is
@@ -12,12 +13,6 @@ const ALLOWED_ATTR = ['href', 'start', 'type'];
 
 /** Only web, mail and phone links survive; `javascript:`, `data:` etc. are dropped. */
 const ALLOWED_URI_REGEXP = /^(?:https?:|mailto:|tel:)/i;
-
-/**
- * TipTap's getHTML() always starts with one of these block tags. Anything else is
- * legacy plain text, even if it happens to start with `<` (e.g. "<3 after walk").
- */
-const RICH_TEXT_START = /^<(?:p|ul|ol)[\s/>]/i;
 
 let purifier: DOMPurify | null = null;
 
@@ -74,7 +69,7 @@ function plainTextToHtml(text: string): string {
 export function richTextToSafeHtml(raw: string): string {
   // Stored records aren't guaranteed to match their types (e.g. a hand-edited backup).
   if (typeof raw !== 'string') return '';
-  if (!RICH_TEXT_START.test(raw.trimStart())) return plainTextToHtml(raw);
+  if (!isRichText(raw)) return plainTextToHtml(raw);
 
   const dompurify = getPurifier();
   // DOMPurify returns its input unchanged when it can't run; fail closed instead.

@@ -1,5 +1,6 @@
 import { computed, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { calendarAge } from '../utils/age';
 
 export function useAgeCalculator(birthdate: Ref<string>) {
   const { t } = useI18n();
@@ -7,26 +8,8 @@ export function useAgeCalculator(birthdate: Ref<string>) {
   return computed(() => {
     if (!birthdate.value) return '';
 
-    const born = new Date(birthdate.value + 'T00:00:00');
     const now = new Date();
-
-    let years = now.getFullYear() - born.getFullYear();
-    let months = now.getMonth() - born.getMonth();
-
-    if (months < 0) {
-      years--;
-      months += 12;
-    }
-
-    if (now.getDate() < born.getDate()) {
-      months--;
-      if (months < 0) {
-        years--;
-        months += 12;
-      }
-    }
-
-    const totalMonths = years * 12 + months;
+    const { years, months, totalMonths, born } = calendarAge(birthdate.value, now);
 
     if (totalMonths < 2) {
       const msPerWeek = 7 * 24 * 3600 * 1000;
