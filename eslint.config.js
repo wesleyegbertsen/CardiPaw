@@ -32,6 +32,25 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
   },
 
+  // Claude Code workflow scripts: the Workflow runtime provides these globals and
+  // runs the body inside an async function (so top-level await/return are allowed).
+  {
+    files: ['.claude/workflows/**/*.js'],
+    languageOptions: {
+      parserOptions: { ecmaFeatures: { globalReturn: true } },
+      globals: {
+        agent: 'readonly',
+        parallel: 'readonly',
+        pipeline: 'readonly',
+        phase: 'readonly',
+        log: 'readonly',
+        args: 'readonly',
+        budget: 'readonly',
+        workflow: 'readonly',
+      },
+    },
+  },
+
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
