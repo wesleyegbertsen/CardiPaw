@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
-import { forgetTrackerPrefs, useTrackerPrefs } from './useTrackerPrefs';
+import { forgetTrackerPrefs, pruneTrackerPrefs, useTrackerPrefs } from './useTrackerPrefs';
 import { blockStorage, failStorageWrites } from '../test/blockStorage';
 
 const STORAGE_KEY = 'cardipaw-tracker-prefs';
@@ -106,6 +106,38 @@ describe('useTrackerPrefs', () => {
       );
       blockStorage();
       expect(() => forgetTrackerPrefs('a')).not.toThrow();
+    });
+  });
+
+  describe('pruneTrackerPrefs', () => {
+    const prefsA = { soundEnabled: false, vibrationEnabled: true };
+    const prefsB = { soundEnabled: true, vibrationEnabled: false };
+
+    it('keeps the listed pets’ prefs and drops the rest', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ a: prefsA, b: prefsB }));
+      pruneTrackerPrefs(['b', 'c']);
+      expect(stored()).toEqual({ b: prefsB });
+    });
+
+    it('does not write when every saved pet is kept', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ b: prefsB }));
+      const setItem = vi.spyOn(localStorage, 'setItem');
+      pruneTrackerPrefs(['a', 'b']);
+      expect(setItem).not.toHaveBeenCalled();
+      expect(stored()).toEqual({ b: prefsB });
+    });
+
+    it('does not throw when storage is blocked or full', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ a: prefsA }));
+      failStorageWrites();
+      expect(() => pruneTrackerPrefs([])).not.toThrow();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Could not save'),
+        expect.any(DOMException),
+      );
+      blockStorage();
+      expect(() => pruneTrackerPrefs([])).not.toThrow();
     });
   });
 });

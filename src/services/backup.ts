@@ -216,7 +216,7 @@ export async function downloadBackup(): Promise<void> {
 export async function importBackup(payload: unknown): Promise<void> {
   const { data } = validateBackup(payload);
   await db.importAllData(data);
-  resetPetData();
+  resetPetData(data.pets.map((p) => p.id));
   const petsStore = usePetsStore();
   petsStore.$reset();
   try {
