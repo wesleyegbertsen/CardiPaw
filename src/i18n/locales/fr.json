@@ -86,7 +86,8 @@
     "thisWeek": "Cette semaine",
     "thisMonth": "Ce mois-ci",
     "thisYear": "Cette année",
-    "deleteConfirm": "Supprimer {name} ? Toutes ses mesures seront également supprimées définitivement."
+    "deleteConfirm": "Supprimer {name} ? Toutes ses mesures seront également supprimées définitivement.",
+    "deleteError": "La suppression de {name} n'a pas pu être terminée. Certaines de ses données ont peut-être déjà été effacées. Veuillez réessayer."
   },
   "tracker": {
     "tapToStart": "Appuyez pour commencer",

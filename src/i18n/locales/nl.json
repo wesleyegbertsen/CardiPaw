@@ -86,7 +86,8 @@
     "thisWeek": "Deze week",
     "thisMonth": "Deze maand",
     "thisYear": "Dit jaar",
-    "deleteConfirm": "{name} verwijderen? Hiermee worden ook al hun metingen definitief verwijderd."
+    "deleteConfirm": "{name} verwijderen? Hiermee worden ook al hun metingen definitief verwijderd.",
+    "deleteError": "{name} kon niet volledig worden verwijderd. Een deel van de gegevens is mogelijk al verwijderd. Probeer het opnieuw."
   },
   "tracker": {
     "tapToStart": "Tik om te starten",

@@ -86,7 +86,8 @@
     "thisWeek": "今週",
     "thisMonth": "今月",
     "thisYear": "今年",
-    "deleteConfirm": "{name}を削除しますか？すべての測定値も完全に削除されます。"
+    "deleteConfirm": "{name}を削除しますか？すべての測定値も完全に削除されます。",
+    "deleteError": "{name}を完全には削除できませんでした。一部のデータはすでに削除されている可能性があります。もう一度お試しください。"
   },
   "tracker": {
     "tapToStart": "タップして開始",
