@@ -25,7 +25,11 @@ const pendingPayload = shallowRef<ValidatedBackup | null>(null);
 const importConfirmMessage = computed(() => {
   const pending = pendingPayload.value;
   if (!pending) return '';
-  const message = t('settings.importConfirm', { pets: pending.data.pets.length, readings: pending.data.readings.length });
+  const message = t('settings.importConfirm', {
+    pets: pending.data.pets.length,
+    readings: pending.data.readings.length,
+    notes: pending.data.notes.length,
+  });
   return pending.skipped > 0
     ? `${message} ${t('settings.importSkipped', pending.skipped)}`
     : message;

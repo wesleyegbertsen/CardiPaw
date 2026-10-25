@@ -86,7 +86,7 @@
     "thisWeek": "Diese Woche",
     "thisMonth": "Dieser Monat",
     "thisYear": "Dieses Jahr",
-    "deleteConfirm": "{name} löschen? Dadurch werden auch alle Messungen dieses Tieres dauerhaft entfernt.",
+    "deleteConfirm": "{name} löschen? Dadurch werden auch alle Messungen und Notizen dieses Tieres dauerhaft entfernt.",
     "deleteError": "{name} konnte nicht vollständig gelöscht werden. Einige Daten wurden möglicherweise bereits gelöscht. Bitte versuche es erneut."
   },
   "tracker": {
@@ -193,7 +193,7 @@
     "importError": "Import fehlgeschlagen. Deine vorhandenen Daten wurden nicht geändert.",
     "exportError": "Export fehlgeschlagen. Bitte versuche es erneut.",
     "importSkipped": "1 beschädigter Eintrag in der Datei wird übersprungen. | {n} beschädigte Einträge in der Datei werden übersprungen.",
-    "importConfirm": "{pets} Tier(e) und {readings} Messung(en) importieren? Dadurch werden alle vorhandenen Daten auf diesem Gerät überschrieben.",
+    "importConfirm": "{pets} Tier(e), {readings} Messung(en) und {notes} Notiz(en) importieren? Dadurch werden alle vorhandenen Daten auf diesem Gerät überschrieben.",
     "aboutSection": "Über",
     "version": "Version",
     "aboutText": "CardiPaw hilft dir, die Ruhe-Atemfrequenz (RAF) deines Tieres zu verfolgen — ein wichtiger Gesundheitsindikator für Tiere mit Herzerkrankungen wie HCM.",

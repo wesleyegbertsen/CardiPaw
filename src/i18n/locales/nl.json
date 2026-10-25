@@ -86,7 +86,7 @@
     "thisWeek": "Deze week",
     "thisMonth": "Deze maand",
     "thisYear": "Dit jaar",
-    "deleteConfirm": "{name} verwijderen? Hiermee worden ook al hun metingen definitief verwijderd.",
+    "deleteConfirm": "{name} verwijderen? Hiermee worden ook al hun metingen en notities definitief verwijderd.",
     "deleteError": "{name} kon niet volledig worden verwijderd. Een deel van de gegevens is mogelijk al verwijderd. Probeer het opnieuw."
   },
   "tracker": {
@@ -193,7 +193,7 @@
     "importError": "Importeren is mislukt. Je bestaande gegevens zijn niet gewijzigd.",
     "exportError": "Exporteren is mislukt. Probeer het opnieuw.",
     "importSkipped": "1 beschadigd record in het bestand wordt overgeslagen. | {n} beschadigde records in het bestand worden overgeslagen.",
-    "importConfirm": "{pets} huisdier(en) en {readings} meting(en) importeren? Hiermee worden alle bestaande gegevens op dit apparaat overschreven.",
+    "importConfirm": "{pets} huisdier(en), {readings} meting(en) en {notes} notitie(s) importeren? Hiermee worden alle bestaande gegevens op dit apparaat overschreven.",
     "aboutSection": "Over",
     "version": "Versie",
     "aboutText": "CardiPaw helpt je de rustademhalingsfrequentie (RAF) van je huisdier bij te houden — een belangrijke gezondheidsindicator voor huisdieren met hartaandoeningen zoals HCM.",

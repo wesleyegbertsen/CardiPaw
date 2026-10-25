@@ -135,6 +135,14 @@ describe('PetDetailView', () => {
       await settle();
       expect(deletePet).toHaveBeenCalledTimes(1);
     });
+
+    it('warns that notes are deleted too', async () => {
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      await wrapper.get('.icon-btn.danger').trigger('click');
+      expect(document.body.querySelector('[role="alertdialog"] .message')!.textContent).toContain(
+        'readings and notes',
+      );
+    });
   });
 
   it('shows an error with a way back when the pet cannot load', async () => {

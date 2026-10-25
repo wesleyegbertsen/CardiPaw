@@ -86,7 +86,7 @@
     "thisWeek": "Cette semaine",
     "thisMonth": "Ce mois-ci",
     "thisYear": "Cette année",
-    "deleteConfirm": "Supprimer {name} ? Toutes ses mesures seront également supprimées définitivement.",
+    "deleteConfirm": "Supprimer {name} ? Toutes ses mesures et ses notes seront également supprimées définitivement.",
     "deleteError": "La suppression de {name} n'a pas pu être terminée. Certaines de ses données ont peut-être déjà été effacées. Veuillez réessayer."
   },
   "tracker": {
@@ -193,7 +193,7 @@
     "importError": "L'importation a échoué. Vos données existantes n'ont pas été modifiées.",
     "exportError": "L'exportation a échoué. Veuillez réessayer.",
     "importSkipped": "1 enregistrement endommagé du fichier sera ignoré. | {n} enregistrements endommagés du fichier seront ignorés.",
-    "importConfirm": "Importer {pets} animal(aux) et {readings} mesure(s) ? Toutes les données actuelles de cet appareil seront écrasées.",
+    "importConfirm": "Importer {pets} animal(aux), {readings} mesure(s) et {notes} note(s) ? Toutes les données actuelles de cet appareil seront écrasées.",
     "aboutSection": "À propos",
     "version": "Version",
     "aboutText": "CardiPaw vous aide à suivre la fréquence respiratoire au repos (FRR) de votre animal — un indicateur de santé important pour les animaux atteints de maladies cardiaques comme la CMH.",

@@ -51,7 +51,7 @@ describe('SettingsView', () => {
     it('asks to confirm with the counts, then imports', async () => {
       const { wrapper } = await mountView(SettingsView, '/settings');
       const input = await pickFile(wrapper, backupText());
-      expect(dialogMessage()?.textContent).toContain('Import 1 pet(s) and 2 reading(s)?');
+      expect(dialogMessage()?.textContent).toContain('Import 1 pet(s), 2 reading(s) and 0 note(s)?');
       expect(input.value).toBe('');
 
       clickInBody('.btn-confirm');
