@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
 import { localMonthKey } from '../utils/date';
@@ -24,6 +24,7 @@ const selectedMonths = ref<string[]>([...availableMonths.value]);
 const newestFirst = ref(true);
 const includeNotes = ref(false);
 const exportFailed = ref(false);
+const notesLabelId = useId();
 
 // Fetch jsPDF while the user picks months, so Export doesn't wait for the download.
 onMounted(preloadPdfLibrary);
@@ -110,12 +111,13 @@ async function handleExport() {
           </div>
 
           <div class="option-row">
-            <span class="export-option-label">{{ $t('pdfModal.includeNotes') }}</span>
+            <span :id="notesLabelId" class="export-option-label">{{ $t('pdfModal.includeNotes') }}</span>
             <button
               class="slide-toggle"
               :class="{ on: includeNotes, disabled: isGenerating }"
               role="switch"
               :aria-checked="includeNotes"
+              :aria-labelledby="notesLabelId"
               :disabled="isGenerating"
               @click="includeNotes = !includeNotes"
             />

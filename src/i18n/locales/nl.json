@@ -253,6 +253,7 @@
     "selectAll": "Alles selecteren",
     "selectAtLeastOne": "Selecteer minstens één maand om te delen.",
     "lengthWarning": "Deze link is erg lang en wordt mogelijk ingekort door sommige e-mail- of chat-apps. Overweeg minder maanden te selecteren.",
+    "encodeError": "De deellink kon niet worden gemaakt. Probeer het opnieuw.",
     "shareNative": "Delen…",
     "copied": "Gekopieerd!",
     "copyLink": "Link kopiëren"

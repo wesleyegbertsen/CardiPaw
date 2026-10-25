@@ -253,6 +253,7 @@
     "selectAll": "Select all",
     "selectAtLeastOne": "Select at least one month to share.",
     "lengthWarning": "This link is very long and may be truncated by some email or chat apps. Consider selecting fewer months.",
+    "encodeError": "The share link could not be created. Please try again.",
     "shareNative": "Share…",
     "copied": "Copied!",
     "copyLink": "Copy link"

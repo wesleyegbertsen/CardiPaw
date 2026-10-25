@@ -253,6 +253,7 @@
     "selectAll": "Tout sélectionner",
     "selectAtLeastOne": "Sélectionnez au moins un mois à partager.",
     "lengthWarning": "Ce lien est très long et peut être tronqué par certaines applications de messagerie ou de chat. Envisagez de sélectionner moins de mois.",
+    "encodeError": "Le lien de partage n'a pas pu être créé. Veuillez réessayer.",
     "shareNative": "Partager…",
     "copied": "Copié !",
     "copyLink": "Copier le lien"
