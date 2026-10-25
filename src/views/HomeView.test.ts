@@ -32,6 +32,17 @@ describe('HomeView', () => {
     expect(wrapper.text()).not.toContain('No pets yet');
   });
 
+  it('still lists a pet added after the load failed', async () => {
+    vi.spyOn(db, 'getAllPets').mockRejectedValue(new Error('idb broken'));
+    const { wrapper } = await mountHome(() => usePetsStore().loadPets());
+    await usePetsStore().addPet({ name: 'Luna', species: 'cat', birthdate: '2020-05-01', photo: null });
+    await settle();
+    expect(usePetsStore().loadError).toBe(true);
+    expect(wrapper.findAll('.pet-card')).toHaveLength(1);
+    expect(wrapper.text()).toContain('Luna');
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+  });
+
   it('shows the empty state when there are no pets', async () => {
     vi.spyOn(db, 'getAllPets').mockResolvedValue([]);
     const { wrapper } = await mountHome(() => usePetsStore().loadPets());

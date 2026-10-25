@@ -32,16 +32,17 @@ const router = useRouter();
         <div class="spinner"></div>
       </div>
 
-      <div v-else-if="petsStore.loadError" class="empty-state" role="alert">
-        <p>{{ $t('home.loadError') }}</p>
-      </div>
-
+      <!-- Pets added after a failed load are still shown; the error only replaces the empty state. -->
       <template v-else-if="petsStore.pets.length > 0">
         <h2 class="section-title">{{ $t('home.yourPets') }}</h2>
         <div class="pet-list">
           <PetCard v-for="pet in petsStore.pets" :key="pet.id" :pet="pet" />
         </div>
       </template>
+
+      <div v-else-if="petsStore.loadError" class="empty-state" role="alert">
+        <p>{{ $t('home.loadError') }}</p>
+      </div>
 
       <div v-else class="empty-state">
         <div class="empty-icon">🐾</div>
