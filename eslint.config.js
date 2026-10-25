@@ -47,6 +47,25 @@ export default defineConfig(
     },
   },
 
+  // The pets store must not reach into other stores' caches directly; per-pet
+  // caches are cleared through ./petData so none is missed.
+  {
+    files: ['src/stores/pets.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['./readings', './notes'],
+              message: 'Clear per-pet caches through ./petData.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Turn off stylistic rules that Prettier owns. Must stay last.
   prettier,
 );
