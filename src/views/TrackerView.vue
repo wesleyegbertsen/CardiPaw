@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
@@ -9,7 +9,7 @@ import { useTrackerPrefs } from '../composables/useTrackerPrefs';
 import { useOnboarding } from '../composables/useOnboarding';
 import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
 import OnboardingModal from '../components/OnboardingModal.vue';
-import { getRateStatus } from '../utils/rateStatus';
+import { getRateStatus, isValidRate } from '../utils/rateStatus';
 
 const route = useRoute();
 const router = useRouter();
@@ -46,6 +46,10 @@ const saving = ref(false);
 const restState = ref<'resting' | 'sleeping' | undefined>(undefined);
 const notes = ref('');
 const manualRate = ref(0);
+const manualValid = computed(() => isValidRate(manualRate.value));
+const saveError = ref(false);
+const soundLabelId = useId();
+const vibrationLabelId = useId();
 const isManualMode = computed(() => mode.value === 'manual');
 const heartRef = ref<HTMLButtonElement | null>(null);
 const resultRef = ref<HTMLElement | null>(null);
@@ -114,8 +118,9 @@ function triggerPulse() {
 }
 
 async function saveReading() {
-  if (saving.value) return;
+  if (saving.value || (mode.value === 'manual' && !manualValid.value)) return;
   saving.value = true;
+  saveError.value = false;
   try {
     const isManual = mode.value === 'manual';
     await readingsStore.addReading({
@@ -128,6 +133,9 @@ async function saveReading() {
       source: isManual ? 'manual' : undefined,
     });
     router.push({ name: 'pet', params: { id: petId } });
+  } catch (e) {
+    console.error('Saving reading failed', e);
+    saveError.value = true;
   } finally {
     saving.value = false;
   }
@@ -204,7 +212,7 @@ onUnmounted(() => {
         <span
           class="rate-badge"
           :class="getRateStatus(manualRate, pet).cssClass"
-          :style="{ visibility: manualRate > 0 ? 'visible' : 'hidden' }"
+          :style="{ visibility: manualValid ? 'visible' : 'hidden' }"
         >{{ $t('status.' + getRateStatus(manualRate, pet).cssClass) }}</span>
       </div>
 
@@ -227,7 +235,8 @@ onUnmounted(() => {
       </div>
 
       <div class="done-actions">
-        <button class="btn-save" @click="saveReading" :disabled="saving || manualRate < 1">
+        <p v-if="saveError" class="save-error" role="alert">{{ $t('tracker.saveError') }}</p>
+        <button class="btn-save" @click="saveReading" :disabled="saving || !manualValid">
           {{ saving ? $t('common.saving') : $t('tracker.saveReading') }}
         </button>
         <button class="btn-discard" @click="discard">{{ $t('common.discard') }}</button>
@@ -276,22 +285,24 @@ onUnmounted(() => {
           <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
           <p class="timer-note">{{ $t('tracker.measurement30') }}</p>
           <div class="option-row" @click.stop>
-            <span class="toggle-label">{{ $t('tracker.sound') }}</span>
+            <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
             <button
               class="slide-toggle"
               :class="{ on: soundEnabled }"
               role="switch"
               :aria-checked="soundEnabled"
+              :aria-labelledby="soundLabelId"
               @click="soundEnabled = !soundEnabled"
             />
           </div>
           <div v-if="hapticsSupported" class="option-row" @click.stop>
-            <span class="toggle-label">{{ $t('tracker.vibration') }}</span>
+            <span :id="vibrationLabelId" class="toggle-label">{{ $t('tracker.vibration') }}</span>
             <button
               class="slide-toggle"
               :class="{ on: vibrationEnabled }"
               role="switch"
               :aria-checked="vibrationEnabled"
+              :aria-labelledby="vibrationLabelId"
               @click="vibrationEnabled = !vibrationEnabled"
             />
           </div>
@@ -337,6 +348,7 @@ onUnmounted(() => {
       </div>
 
       <div class="done-actions">
+        <p v-if="saveError" class="save-error" role="alert">{{ $t('tracker.saveError') }}</p>
         <button class="btn-save" @click="saveReading" :disabled="saving">
           {{ saving ? $t('common.saving') : $t('tracker.saveResult') }}
         </button>
@@ -642,6 +654,16 @@ onUnmounted(() => {
   gap: 12px;
   width: 100%;
   max-width: 320px;
+}
+
+.save-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  text-align: center;
 }
 
 .btn-save {

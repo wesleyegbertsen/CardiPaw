@@ -100,6 +100,7 @@
     "basedOn": "30秒間で{n}回の呼吸に基づく",
     "saveReading": "測定値を保存",
     "saveResult": "結果を保存",
+    "saveError": "測定を保存できませんでした。もう一度お試しください。",
     "tryAgain": "やり直す"
   },
   "addEditPet": {

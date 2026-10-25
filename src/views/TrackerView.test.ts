@@ -132,6 +132,58 @@ describe('TrackerView', () => {
     expect(router.currentRoute.value.name).toBe('pet');
   });
 
+  it.each(['0', '12.5', '250'])('blocks saving a manual rate of %s', async (value) => {
+    const { wrapper, addReading } = await mountTracker();
+    await wrapper.findAll('.mode-pill')[1].trigger('click');
+    await wrapper.get('.manual-rate-input').setValue(value);
+    const save = wrapper.get<HTMLButtonElement>('.btn-save');
+    expect(save.element.disabled).toBe(true);
+    expect(wrapper.get<HTMLElement>('.manual-body .rate-badge').element.style.visibility).toBe(
+      'hidden',
+    );
+    save.element.click();
+    await flushPromises();
+    expect(addReading).not.toHaveBeenCalled();
+  });
+
+  it.each(['guided', 'manual'])('reports a failed %s save and lets the user retry', async (mode) => {
+    const { wrapper, addReading } = await mountTracker();
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    addReading.mockRejectedValueOnce(new Error('quota exceeded'));
+    if (mode === 'manual') {
+      await wrapper.findAll('.mode-pill')[1].trigger('click');
+      await wrapper.get('.manual-rate-input').setValue('42');
+    } else {
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(30_000);
+    }
+    const push = vi.spyOn(router, 'push');
+
+    await wrapper.get('.btn-save').trigger('click');
+    await flushPromises();
+    expect(push).not.toHaveBeenCalled();
+    expect(wrapper.get('[role="alert"]').text()).toBe(
+      'The reading could not be saved. Please try again.',
+    );
+    expect(wrapper.get<HTMLButtonElement>('.btn-save').element.disabled).toBe(false);
+    expect(error).toHaveBeenCalled();
+
+    await wrapper.get('.btn-save').trigger('click');
+    await flushPromises();
+    expect(addReading).toHaveBeenCalledTimes(2);
+    expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
+    error.mockRestore();
+  });
+
+  it('names the sound and vibration switches', async () => {
+    const { wrapper } = await mountTracker();
+    const names = wrapper.findAll('[role="switch"]').map((s) => {
+      const id = s.attributes('aria-labelledby');
+      return id ? document.getElementById(id)?.textContent : undefined;
+    });
+    expect(names).toEqual(['Sound', 'Vibration']);
+  });
+
   it('saves only once when Save is clicked twice in a row', async () => {
     const { wrapper, addReading } = await mountTracker();
     await wrapper.get('.heart-btn').trigger('click');

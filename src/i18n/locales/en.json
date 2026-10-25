@@ -100,6 +100,7 @@
     "basedOn": "Based on {n} breath in 30 seconds | Based on {n} breaths in 30 seconds",
     "saveReading": "Save reading",
     "saveResult": "Save result",
+    "saveError": "The reading could not be saved. Please try again.",
     "tryAgain": "Try again"
   },
   "addEditPet": {

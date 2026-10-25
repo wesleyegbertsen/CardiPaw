@@ -100,6 +100,7 @@
     "basedOn": "Basé sur {n} respiration en 30 secondes | Basé sur {n} respirations en 30 secondes",
     "saveReading": "Enregistrer la mesure",
     "saveResult": "Enregistrer le résultat",
+    "saveError": "La mesure n'a pas pu être enregistrée. Veuillez réessayer.",
     "tryAgain": "Réessayer"
   },
   "addEditPet": {

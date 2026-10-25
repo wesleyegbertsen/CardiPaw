@@ -100,6 +100,7 @@
     "basedOn": "Basierend auf {n} Atemzug in 30 Sekunden | Basierend auf {n} Atemzügen in 30 Sekunden",
     "saveReading": "Messung speichern",
     "saveResult": "Ergebnis speichern",
+    "saveError": "Die Messung konnte nicht gespeichert werden. Bitte versuche es erneut.",
     "tryAgain": "Erneut versuchen"
   },
   "addEditPet": {

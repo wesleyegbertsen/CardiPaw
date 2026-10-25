@@ -100,6 +100,7 @@
     "basedOn": "Op basis van {n} ademhaling in 30 seconden | Op basis van {n} ademhalingen in 30 seconden",
     "saveReading": "Meting opslaan",
     "saveResult": "Resultaat opslaan",
+    "saveError": "De meting kon niet worden opgeslagen. Probeer het opnieuw.",
     "tryAgain": "Opnieuw proberen"
   },
   "addEditPet": {
