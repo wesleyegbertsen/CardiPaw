@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
 import { localDayKey, localMonthKey } from '../utils/date';
+import { petInitial } from '../utils/petInitial';
 import { getChartWindow, weekOffsetOf, type ChartRange } from '../utils/chartWindow';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
@@ -365,7 +366,7 @@ async function deletePet() {
       <div class="pet-avatar">
         <img v-if="pet.photo" :src="pet.photo" :alt="pet.name" class="avatar-img" />
         <div v-else class="avatar-placeholder">
-          <span>{{ pet.name[0].toUpperCase() }}</span>
+          <span>{{ petInitial(pet.name) }}</span>
         </div>
       </div>
       <h1 class="pet-name">{{ pet.name }}</h1>

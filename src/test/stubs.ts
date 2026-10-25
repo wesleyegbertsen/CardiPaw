@@ -27,3 +27,23 @@ export function lazyEditorStubModule() {
     }),
   };
 }
+
+/**
+ * Module factory for `vue-chartjs`: a `Line` that renders a bare canvas and keeps its
+ * props, so tests can read what would be drawn without Chart.js needing a canvas:
+ *
+ *   vi.mock('vue-chartjs', async () => (await import('../test/stubs')).recordingLineStub());
+ *   wrapper.findComponent({ name: 'LineChartStub' }).props('data')
+ */
+export function recordingLineStub() {
+  return {
+    Line: defineComponent({
+      name: 'LineChartStub',
+      props: {
+        data: { type: Object, required: true },
+        options: { type: Object, default: () => ({}) },
+      },
+      setup: () => () => h('canvas'),
+    }),
+  };
+}
