@@ -34,9 +34,17 @@ const importError = ref('');
 const exportSuccess = ref(false);
 const importSuccess = ref(false);
 const importing = ref(false);
+const exportError = ref(false);
 
 async function exportData() {
-  await downloadBackup();
+  exportError.value = false;
+  try {
+    await downloadBackup();
+  } catch (e) {
+    console.error('Backup export failed', e);
+    exportError.value = true;
+    return;
+  }
   exportSuccess.value = true;
   setTimeout(() => { exportSuccess.value = false; }, 3000);
 }
@@ -175,7 +183,8 @@ function cancelImport() {
           @change="onImportFileChange"
         />
 
-        <p v-if="importError" class="error-msg">{{ importError }}</p>
+        <p v-if="exportError" class="error-msg" role="alert">{{ $t('settings.exportError') }}</p>
+        <p v-if="importError" class="error-msg" role="alert">{{ importError }}</p>
       </section>
 
       <section class="section about-section">

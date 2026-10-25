@@ -185,6 +185,7 @@
     "invalidFormat": "Invalid file format. Please select a CardiPaw export file.",
     "readError": "Could not read the file. Make sure it is a valid JSON export.",
     "importError": "Import failed. Your existing data has not been changed.",
+    "exportError": "Export failed. Please try again.",
     "importSkipped": "1 damaged record in the file will be skipped. | {n} damaged records in the file will be skipped.",
     "importConfirm": "Import {pets} pet(s) and {readings} reading(s)? This will overwrite all existing data on this device.",
     "aboutSection": "About",

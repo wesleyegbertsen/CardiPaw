@@ -185,6 +185,7 @@
     "invalidFormat": "Ongeldig bestandsformaat. Selecteer een CardiPaw-exportbestand.",
     "readError": "Het bestand kon niet worden gelezen. Zorg dat het een geldige JSON-export is.",
     "importError": "Importeren is mislukt. Je bestaande gegevens zijn niet gewijzigd.",
+    "exportError": "Exporteren is mislukt. Probeer het opnieuw.",
     "importSkipped": "1 beschadigd record in het bestand wordt overgeslagen. | {n} beschadigde records in het bestand worden overgeslagen.",
     "importConfirm": "{pets} huisdier(en) en {readings} meting(en) importeren? Hiermee worden alle bestaande gegevens op dit apparaat overschreven.",
     "aboutSection": "Over",
