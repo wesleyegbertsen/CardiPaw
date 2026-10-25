@@ -90,7 +90,7 @@
     "thisMonth": "Ce mois-ci",
     "thisYear": "Cette année",
     "deleteConfirm": "Supprimer {name} ? Toutes ses mesures et ses notes seront également supprimées définitivement.",
-    "deleteError": "La suppression de {name} n'a pas pu être terminée. Certaines de ses données ont peut-être déjà été effacées. Veuillez réessayer."
+    "deleteError": "La suppression de {name} a échoué. Vos données n'ont pas été modifiées. Veuillez réessayer."
   },
   "tracker": {
     "tapToStart": "Appuyez pour commencer",

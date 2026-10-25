@@ -118,7 +118,7 @@ describe('PetDetailView', () => {
 
       expect(document.body.querySelector('[role="alertdialog"]')).toBeNull();
       expect(document.activeElement).toBe(remove.element);
-      expect(wrapper.get('[role="alert"]').text()).toContain('could not be fully deleted');
+      expect(wrapper.get('[role="alert"]').text()).toContain('could not be deleted. Your data has not been changed.');
       expect(usePetsStore().pets).toHaveLength(1);
       expect(error).toHaveBeenCalledWith('Deleting pet failed', expect.any(Error));
       expect(push).not.toHaveBeenCalled();
