@@ -31,7 +31,7 @@ const editor = useEditor({
       strike: false,
     }),
     Placeholder.configure({
-      placeholder: resolvedPlaceholder(),
+      placeholder: () => resolvedPlaceholder(),
     }),
   ],
   content: props.modelValue,
@@ -58,14 +58,9 @@ watch(
   }
 );
 
-// TipTap initialises the placeholder once, so push updates when the locale changes.
+// The placeholder is read on every redraw; an empty transaction makes TipTap redraw it.
 watch(locale, () => {
-  if (!editor.value) return;
-  const ext = editor.value.extensionManager.extensions.find(e => e.name === 'placeholder');
-  if (ext) {
-    ext.options.placeholder = resolvedPlaceholder();
-    editor.value.view.dispatch(editor.value.state.tr);
-  }
+  editor.value?.view.dispatch(editor.value.state.tr);
 });
 
 onBeforeUnmount(() => {
