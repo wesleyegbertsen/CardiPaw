@@ -10,7 +10,8 @@
     "back": "Go back",
     "breathsPerMin": "breaths/min",
     "saveError": "This could not be saved. Please try again.",
-    "loadError": "This could not be loaded. Go back and try again. Your data has not been deleted."
+    "loadError": "This could not be loaded. Go back and try again. Your data has not been deleted.",
+    "deleteError": "This could not be deleted. Please try again."
   },
   "nav": {
     "home": "Home",

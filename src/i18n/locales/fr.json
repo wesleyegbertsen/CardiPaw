@@ -10,7 +10,8 @@
     "back": "Retour",
     "breathsPerMin": "resp./min",
     "saveError": "L'enregistrement a échoué. Veuillez réessayer.",
-    "loadError": "Le chargement a échoué. Revenez en arrière et réessayez. Vos données n'ont pas été supprimées."
+    "loadError": "Le chargement a échoué. Revenez en arrière et réessayez. Vos données n'ont pas été supprimées.",
+    "deleteError": "La suppression a échoué. Veuillez réessayer."
   },
   "nav": {
     "home": "Accueil",
