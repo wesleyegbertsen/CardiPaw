@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 import type { Pet } from '../types';
 import { localDayKey } from '../utils/date';
+import { petInitial } from '../utils/petInitial';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
 import { useReadingsStore } from '../stores/readings';
@@ -108,11 +109,11 @@ function startTracking() {
 </script>
 
 <template>
-  <div class="pet-card" @click="navigate" role="button" tabindex="0" @keydown.enter="navigate" @keydown.space.prevent="navigate" :aria-label="$t('petCard.viewProfile', { name: pet.name })">
+  <div class="pet-card" @click="navigate" role="button" tabindex="0" @keydown.enter.self="navigate" @keydown.space.self.prevent="navigate" :aria-label="$t('petCard.viewProfile', { name: pet.name })">
     <div class="photo-wrap">
       <img v-if="pet.photo" :src="pet.photo" :alt="pet.name" class="photo" />
       <div v-else class="photo-placeholder">
-        <span class="placeholder-initial">{{ pet.name[0].toUpperCase() }}</span>
+        <span class="placeholder-initial">{{ petInitial(pet.name) }}</span>
       </div>
     </div>
 

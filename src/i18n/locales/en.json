@@ -53,6 +53,7 @@
     "yourPets": "Your pets",
     "noPetsTitle": "No pets yet",
     "noPetsBody": "Add your first pet to start tracking their resting respiratory rate.",
+    "loadError": "Your pets could not be loaded. Reload the app to try again. Your data has not been deleted.",
     "addPet": "Add pet",
     "themeDark": "Dark",
     "themeLight": "Light",
@@ -99,6 +100,7 @@
     "basedOn": "Based on {n} breath in 30 seconds | Based on {n} breaths in 30 seconds",
     "saveReading": "Save reading",
     "saveResult": "Save result",
+    "saveError": "The reading could not be saved. Please try again.",
     "tryAgain": "Try again"
   },
   "addEditPet": {
@@ -115,6 +117,7 @@
     "elevatedCeiling": "Elevated ceiling",
     "thresholdHint": "Leave blank to use the defaults ({normal} / {elevated} breaths/min).",
     "thresholdError": "Elevated ceiling must be higher than normal ceiling ({normal}).",
+    "thresholdRange": "Ceilings must be whole numbers from 1 to 200.",
     "submitAdd": "Add pet"
   },
   "datePicker": {
@@ -184,6 +187,7 @@
     "invalidFormat": "Invalid file format. Please select a CardiPaw export file.",
     "readError": "Could not read the file. Make sure it is a valid JSON export.",
     "importError": "Import failed. Your existing data has not been changed.",
+    "exportError": "Export failed. Please try again.",
     "importSkipped": "1 damaged record in the file will be skipped. | {n} damaged records in the file will be skipped.",
     "importConfirm": "Import {pets} pet(s) and {readings} reading(s)? This will overwrite all existing data on this device.",
     "aboutSection": "About",
@@ -250,6 +254,7 @@
     "selectAll": "Select all",
     "selectAtLeastOne": "Select at least one month to share.",
     "lengthWarning": "This link is very long and may be truncated by some email or chat apps. Consider selecting fewer months.",
+    "encodeError": "The share link could not be created. Please try again.",
     "shareNative": "Share…",
     "copied": "Copied!",
     "copyLink": "Copy link"

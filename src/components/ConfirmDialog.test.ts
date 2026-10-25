@@ -1,14 +1,19 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { afterEach, describe, expect, it } from 'vitest';
+import { enableAutoUnmount, mount } from '@vue/test-utils';
 import ConfirmDialog from './ConfirmDialog.vue';
+import { createTestI18n } from '../test/i18n';
+
+// useModal tracks open dialogs in module state; don't let one test's dialog outlive it.
+enableAutoUnmount(afterEach);
 
 function mountDialog() {
   return mount(ConfirmDialog, {
+    attachTo: document.body,
     props: { message: 'Delete this reading?' },
     global: {
+      plugins: [createTestI18n()],
       stubs: { teleport: true },
-      mocks: { $t: (key: string) => key },
     },
   });
 }
@@ -16,6 +21,12 @@ function mountDialog() {
 describe('ConfirmDialog', () => {
   it('shows the message as text', () => {
     expect(mountDialog().get('.message').text()).toBe('Delete this reading?');
+  });
+
+  it('labels both buttons', () => {
+    const wrapper = mountDialog();
+    expect(wrapper.get('.btn-cancel').text()).toBe('Cancel');
+    expect(wrapper.get('.btn-confirm').text()).toBe('Confirm');
   });
 
   it('emits confirm from the confirm button', async () => {
@@ -37,5 +48,17 @@ describe('ConfirmDialog', () => {
     const wrapper = mountDialog();
     await wrapper.get('.dialog').trigger('click');
     expect(wrapper.emitted('cancel')).toBeUndefined();
+  });
+
+  it('starts with focus on Cancel so Enter cannot confirm by accident', () => {
+    const wrapper = mountDialog();
+    expect(document.activeElement).toBe(wrapper.get('.btn-cancel').element);
+  });
+
+  it('emits cancel on Escape', () => {
+    const wrapper = mountDialog();
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+    expect(wrapper.emitted('cancel')).toHaveLength(1);
+    expect(wrapper.emitted('confirm')).toBeUndefined();
   });
 });

@@ -86,7 +86,7 @@ function toPet(value: unknown): Pet | null {
     birthdate: isDay(birthdate) ? birthdate : '',
     createdAt: isTimestamp(createdAt) ? toUtc(createdAt) : new Date().toISOString(),
   };
-  // Ceilings are only type-checked: the pet form itself allows any number here.
+  // Ceilings are only type-checked: the pet form bounds new values only, and a user's own export must always restore.
   if (isFiniteNumber(normalCeiling)) pet.normalCeiling = normalCeiling;
   if (isFiniteNumber(elevatedCeiling)) pet.elevatedCeiling = elevatedCeiling;
   return pet;

@@ -53,6 +53,7 @@
     "yourPets": "あなたのペット",
     "noPetsTitle": "ペットがいません",
     "noPetsBody": "最初のペットを追加して安静時呼吸数の記録を始めましょう。",
+    "loadError": "ペットを読み込めませんでした。アプリを再読み込みしてください。データは削除されていません。",
     "addPet": "ペットを追加",
     "themeDark": "ダーク",
     "themeLight": "ライト",
@@ -99,6 +100,7 @@
     "basedOn": "30秒間で{n}回の呼吸に基づく",
     "saveReading": "測定値を保存",
     "saveResult": "結果を保存",
+    "saveError": "測定値を保存できませんでした。もう一度お試しください。",
     "tryAgain": "やり直す"
   },
   "addEditPet": {
@@ -115,6 +117,7 @@
     "elevatedCeiling": "高め上限",
     "thresholdHint": "空白のままにするとデフォルト値（{normal} / {elevated} 回/分）が使用されます。",
     "thresholdError": "高め上限は正常上限（{normal}）より大きくする必要があります。",
+    "thresholdRange": "上限は1〜200の整数で入力してください。",
     "submitAdd": "ペットを追加"
   },
   "datePicker": {
@@ -184,6 +187,7 @@
     "invalidFormat": "ファイル形式が無効です。CardiPawのエクスポートファイルを選択してください。",
     "readError": "ファイルを読み込めません。有効なJSONエクスポートファイルであることを確認してください。",
     "importError": "インポートに失敗しました。既存のデータは変更されていません。",
+    "exportError": "エクスポートに失敗しました。もう一度お試しください。",
     "importSkipped": "ファイル内の破損した{n}件のレコードはスキップされます。",
     "importConfirm": "{pets}匹のペットと{readings}件の測定値をインポートしますか？このデバイスの現在のデータはすべて上書きされます。",
     "aboutSection": "アプリについて",
@@ -250,6 +254,7 @@
     "selectAll": "すべて選択",
     "selectAtLeastOne": "共有する月を少なくとも1つ選択してください。",
     "lengthWarning": "このリンクは非常に長く、一部のメッセージアプリやチャットアプリで切り詰められる可能性があります。月数を減らすことをご検討ください。",
+    "encodeError": "共有リンクを作成できませんでした。もう一度お試しください。",
     "shareNative": "共有…",
     "copied": "コピーしました！",
     "copyLink": "リンクをコピー"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
@@ -51,18 +51,28 @@ function countReadings(monthKey: string): number {
 }
 
 const shareUrl = ref('');
+const encodeFailed = ref(false);
 let encodeToken = 0;
 
 watch(
   selectedMonths,
   async (months) => {
     const token = ++encodeToken;
-    if (months.length === 0) {
-      shareUrl.value = '';
+    // Never leave the previous link up while the new one is encoded: Copy would share deselected months.
+    shareUrl.value = '';
+    encodeFailed.value = false;
+    if (months.length === 0) return;
+    const payload = buildSharePayload(props.pet, props.readings, months);
+    let encoded: string;
+    try {
+      encoded = await encodeShare(payload);
+    } catch (e) {
+      if (token === encodeToken) {
+        console.error('Share link encoding failed', e);
+        encodeFailed.value = true;
+      }
       return;
     }
-    const payload = buildSharePayload(props.pet, props.readings, months);
-    const encoded = await encodeShare(payload);
     if (token !== encodeToken) return; // a newer selection superseded this one
     const href = router.resolve({ name: 'share', query: { d: encoded } }).href;
     shareUrl.value = new URL(href, window.location.href).href;
@@ -76,6 +86,7 @@ const isLongUrl = computed(() => shareUrl.value.length > 8000);
 const canNativeShare = typeof navigator.share === 'function';
 const copied = ref(false);
 let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 async function copyLink() {
   if (!shareUrl.value) return;
@@ -139,7 +150,8 @@ async function nativeShare() {
         </p>
 
         <div v-else class="link-section">
-          <input class="link-preview" :value="shareUrl" readonly @focus="($event.target as HTMLInputElement).select()" />
+          <input class="link-preview" :value="shareUrl" :aria-label="$t('shareModal.title')" readonly @focus="($event.target as HTMLInputElement).select()" />
+          <p v-if="encodeFailed" class="encode-error" role="alert">{{ $t('shareModal.encodeError') }}</p>
           <p v-if="isLongUrl" class="length-warning">
             {{ $t('shareModal.lengthWarning') }}
           </p>
@@ -321,7 +333,8 @@ async function nativeShare() {
   text-overflow: ellipsis;
 }
 
-.length-warning {
+.length-warning,
+.encode-error {
   font-size: 12px;
   line-height: 1.5;
   color: var(--color-warning);
@@ -329,6 +342,11 @@ async function nativeShare() {
   border-radius: var(--radius-sm);
   padding: 8px 12px;
   margin: 0;
+}
+
+.encode-error {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
 }
 
 .dialog-footer {

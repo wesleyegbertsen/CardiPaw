@@ -13,6 +13,7 @@ import {
 import type { Pet, Reading } from '../types';
 import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
 import { localDayKey, localMonthKey } from '../utils/date';
+import { aggregateByDay, formatPdfAge, htmlToPlainText, type Translator } from '../utils/pdfText';
 import { currentLocale } from '../i18n';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
@@ -41,22 +42,6 @@ const MB = 20;   // margin bottom (leave room for footer)
 const PW = 210;  // page width (A4 mm)
 const PH = 297;  // page height (A4 mm)
 const UW = PW - ML - MR; // usable width = 182mm
-
-function aggregateByDay(readings: Reading[], monthKey: string): { date: string; rate: number }[] {
-  const inMonth = readings.filter(r => localMonthKey(r.date) === monthKey);
-  const groups = new Map<string, number[]>();
-  for (const r of inMonth) {
-    const day = localDayKey(r.date);
-    if (!groups.has(day)) groups.set(day, []);
-    groups.get(day)!.push(r.rate);
-  }
-  return [...groups.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, rates]) => ({
-      date: `${day}T12:00:00`,
-      rate: Math.round(rates.reduce((s, r) => s + r, 0) / rates.length),
-    }));
-}
 
 function renderChartToDataUrl(
   dailyAverages: { date: string; rate: number }[],
@@ -127,20 +112,6 @@ function renderChartToDataUrl(
   return dataUrl;
 }
 
-type Translator = ReturnType<typeof useI18n>['t'];
-
-function calcAge(birthdate: string, t: Translator): string {
-  const birth = new Date(birthdate);
-  const now = new Date();
-  const totalMonths =
-    (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-  if (totalMonths < 12) return t('pdf.ageMonths', totalMonths);
-  const y = Math.floor(totalMonths / 12);
-  const m = totalMonths % 12;
-  if (m === 0) return t('pdf.ageYears', y);
-  return t('pdf.ageYearMonth', { y, m });
-}
-
 let cachedJaFont: { regular: string; bold: string } | null = null;
 
 async function loadJaFont(): Promise<{ regular: string; bold: string }> {
@@ -187,26 +158,6 @@ function drawTableHeader(doc: jsPDF, curY: number, t: Translator, fontFamily: st
   doc.text(t('pdf.statusHeader'), ML + 100, curY + 5);
   doc.text(t('pdf.restHeader'), ML + 130, curY + 5);
   doc.text(t('pdf.sourceHeader'), ML + 160, curY + 5);
-}
-
-function htmlToPlainText(html: string): string {
-  return html
-    .replace(/(<p>\s*<\/p>)+$/gi, '')          // strip trailing empty paragraphs
-    .replace(/<li[^>]*>\s*<p[^>]*>/gi, '- ')   // tiptap: <li><p> → dash prefix
-    .replace(/<\/p>\s*<\/li>/gi, '\n')          // tiptap: </p></li> → newline
-    .replace(/<li[^>]*>/gi, '- ')               // fallback bare <li>
-    .replace(/<\/li>/gi, '\n')                  // fallback bare </li>
-    .replace(/<\/p>/gi, '\n')                   // </p> → newline
-    .replace(/<\/h[1-6]>/gi, '\n')              // headings
-    .replace(/<br\s*\/?>/gi, '\n')              // line breaks
-    .replace(/<[^>]+>/g, '')                    // strip remaining tags
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/\n{3,}/g, '\n\n')                 // collapse excess blank lines
-    .trim();
 }
 
 const loadPdfLibrary = () => import('jspdf');
@@ -263,7 +214,7 @@ export function usePdfExport() {
       doc.setTextColor('#6b7280');
       // An imported pet can have an empty birthdate (see services/backup.ts).
       const species = t('species.' + pet.species);
-      const speciesAge = pet.birthdate ? `${species} · ${calcAge(pet.birthdate, t)}` : species;
+      const speciesAge = pet.birthdate ? `${species} · ${formatPdfAge(pet.birthdate, t)}` : species;
       doc.text(speciesAge, textX, curY + 14);
 
       doc.setFontSize(9);

@@ -144,6 +144,36 @@ describe('CRUD helpers', () => {
     expect(await db.getAllReadings()).toEqual([reading('r3', 'b')]);
     expect(await db.getAllNotes()).toEqual([note('n2', 'b')]);
   });
+
+  it('deletes only the targeted reading or note', async () => {
+    await Promise.all([
+      db.saveReading(reading('r1', 'a')),
+      db.saveReading(reading('r2', 'a')),
+      db.saveNote(note('n1', 'a')),
+      db.saveNote(note('n2', 'a')),
+    ]);
+
+    await db.deleteReading('r1');
+    await db.deleteNote('n2');
+
+    expect(await db.getAllReadings()).toEqual([reading('r2', 'a')]);
+    expect(await db.getAllNotes()).toEqual([note('n1', 'a')]);
+  });
+
+  it('returns each pet’s own readings and notes', async () => {
+    await Promise.all([
+      db.saveReading(reading('r1', 'a')),
+      db.saveReading(reading('r2', 'b')),
+      db.saveReading(reading('r3', 'a')),
+      db.saveNote(note('n1', 'b')),
+    ]);
+
+    expect(byId(await db.getReadingsForPet('a'))).toEqual([reading('r1', 'a'), reading('r3', 'a')]);
+    expect(await db.getReadingsForPet('b')).toEqual([reading('r2', 'b')]);
+    expect(await db.getReadingsForPet('c')).toEqual([]);
+    expect(await db.getNotesForPet('a')).toEqual([]);
+    expect(await db.getNotesForPet('b')).toEqual([note('n1', 'b')]);
+  });
 });
 
 describe('exportAllData / importAllData', () => {
@@ -189,5 +219,88 @@ describe('exportAllData / importAllData', () => {
     expect(await other.getAllPets()).toEqual(exported.pets);
     expect(await other.getAllReadings()).toEqual(exported.readings);
     expect(await other.getAllNotes()).toEqual(exported.notes);
+  });
+
+  describe('rolls back and keeps existing data when a record cannot be stored', () => {
+    const existing = async () => {
+      await db.savePet(pet('old'));
+      await db.saveReading(reading('old-r', 'old'));
+      await db.saveNote(note('old-n', 'old'));
+    };
+
+    const expectExistingKept = async () => {
+      expect(await db.getAllPets()).toEqual([pet('old')]);
+      expect(await db.getAllReadings()).toEqual([reading('old-r', 'old')]);
+      expect(await db.getAllNotes()).toEqual([note('old-n', 'old')]);
+    };
+
+    it('in the first store (a pet without an id)', async () => {
+      await existing();
+      const { id: _id, ...noId } = pet('a');
+      await expect(
+        db.importAllData({
+          version: 1,
+          exportedAt: '',
+          pets: [noId as Pet],
+          readings: [],
+          notes: [],
+        }),
+      ).rejects.toThrow();
+      await expectExistingKept();
+    });
+
+    it('in a later store (a reading without an id)', async () => {
+      await existing();
+      const { id: _id, ...noId } = reading('r1', 'a');
+      await expect(
+        db.importAllData({
+          version: 1,
+          exportedAt: '',
+          pets: [pet('a')],
+          readings: [reading('r0', 'a'), noId as Reading],
+          notes: [note('n1', 'a')],
+        }),
+      ).rejects.toThrow();
+      await expectExistingKept();
+    });
+
+    it('in the last store (a note without an id)', async () => {
+      await existing();
+      const { id: _id, ...noId } = note('n1', 'a');
+      await expect(
+        db.importAllData({
+          version: 1,
+          exportedAt: '',
+          pets: [pet('a')],
+          readings: [reading('r1', 'a')],
+          notes: [noId as Note],
+        }),
+      ).rejects.toThrow();
+      await expectExistingKept();
+    });
+  });
+});
+
+describe('closeAndDeleteDatabase', () => {
+  it('refuses to run outside dev mode', async () => {
+    vi.stubEnv('DEV', false);
+    const db = await freshDb();
+    await db.savePet(pet('a'));
+    await expect(db.closeAndDeleteDatabase()).rejects.toThrow(/dev mode/);
+    expect(await db.getAllPets()).toEqual([pet('a')]);
+  });
+
+  it('deletes everything in dev mode, and the next call reopens an empty database', async () => {
+    vi.stubEnv('DEV', true);
+    const db = await freshDb();
+    await db.savePet(pet('a'));
+    await db.saveReading(reading('r1', 'a'));
+
+    await db.closeAndDeleteDatabase();
+
+    expect(await db.getAllPets()).toEqual([]);
+    expect(await db.getAllReadings()).toEqual([]);
+    await db.savePet(pet('b'));
+    expect(await db.getAllPets()).toEqual([pet('b')]);
   });
 });

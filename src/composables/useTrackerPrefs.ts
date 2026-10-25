@@ -9,8 +9,11 @@ interface TrackerPrefs {
 
 function loadAll(): Record<string, TrackerPrefs> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
+    // "null" would throw on lookup, and an array would silently drop every saved change.
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as Record<string, TrackerPrefs>)
+      : {};
   } catch {
     return {};
   }

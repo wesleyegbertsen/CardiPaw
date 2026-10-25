@@ -53,6 +53,7 @@
     "yourPets": "Vos animaux",
     "noPetsTitle": "Aucun animal",
     "noPetsBody": "Ajoutez votre premier animal pour commencer à suivre sa fréquence respiratoire au repos.",
+    "loadError": "Vos animaux n'ont pas pu être chargés. Rechargez l'application pour réessayer. Vos données n'ont pas été supprimées.",
     "addPet": "Ajouter un animal",
     "themeDark": "Sombre",
     "themeLight": "Clair",
@@ -99,6 +100,7 @@
     "basedOn": "Basé sur {n} respiration en 30 secondes | Basé sur {n} respirations en 30 secondes",
     "saveReading": "Enregistrer la mesure",
     "saveResult": "Enregistrer le résultat",
+    "saveError": "La mesure n'a pas pu être enregistrée. Veuillez réessayer.",
     "tryAgain": "Réessayer"
   },
   "addEditPet": {
@@ -115,6 +117,7 @@
     "elevatedCeiling": "Plafond élevé",
     "thresholdHint": "Laissez vide pour utiliser les valeurs par défaut ({normal} / {elevated} resp./min).",
     "thresholdError": "Le plafond élevé doit être supérieur au plafond normal ({normal}).",
+    "thresholdRange": "Les plafonds doivent être des nombres entiers de 1 à 200.",
     "submitAdd": "Ajouter l'animal"
   },
   "datePicker": {
@@ -184,6 +187,7 @@
     "invalidFormat": "Format de fichier invalide. Veuillez sélectionner un fichier d'export CardiPaw.",
     "readError": "Impossible de lire le fichier. Assurez-vous qu'il s'agit d'un export JSON valide.",
     "importError": "L'importation a échoué. Vos données existantes n'ont pas été modifiées.",
+    "exportError": "L'exportation a échoué. Veuillez réessayer.",
     "importSkipped": "1 enregistrement endommagé du fichier sera ignoré. | {n} enregistrements endommagés du fichier seront ignorés.",
     "importConfirm": "Importer {pets} animal(aux) et {readings} mesure(s) ? Toutes les données actuelles de cet appareil seront écrasées.",
     "aboutSection": "À propos",
@@ -250,6 +254,7 @@
     "selectAll": "Tout sélectionner",
     "selectAtLeastOne": "Sélectionnez au moins un mois à partager.",
     "lengthWarning": "Ce lien est très long et peut être tronqué par certaines applications de messagerie ou de chat. Envisagez de sélectionner moins de mois.",
+    "encodeError": "Le lien de partage n'a pas pu être créé. Veuillez réessayer.",
     "shareNative": "Partager…",
     "copied": "Copié !",
     "copyLink": "Copier le lien"

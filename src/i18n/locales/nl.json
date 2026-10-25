@@ -53,6 +53,7 @@
     "yourPets": "Jouw huisdieren",
     "noPetsTitle": "Nog geen huisdieren",
     "noPetsBody": "Voeg je eerste huisdier toe om de rustademhalingsfrequentie bij te houden.",
+    "loadError": "Je huisdieren konden niet worden geladen. Laad de app opnieuw om het nog eens te proberen. Je gegevens zijn niet verwijderd.",
     "addPet": "Huisdier toevoegen",
     "themeDark": "Donker",
     "themeLight": "Licht",
@@ -99,6 +100,7 @@
     "basedOn": "Op basis van {n} ademhaling in 30 seconden | Op basis van {n} ademhalingen in 30 seconden",
     "saveReading": "Meting opslaan",
     "saveResult": "Resultaat opslaan",
+    "saveError": "De meting kon niet worden opgeslagen. Probeer het opnieuw.",
     "tryAgain": "Opnieuw proberen"
   },
   "addEditPet": {
@@ -115,6 +117,7 @@
     "elevatedCeiling": "Bovengrens verhoogd",
     "thresholdHint": "Laat leeg om de standaardwaarden te gebruiken ({normal} / {elevated} ademh./min).",
     "thresholdError": "De bovengrens voor verhoogd moet hoger zijn dan de bovengrens voor normaal ({normal}).",
+    "thresholdRange": "Bovengrenzen moeten hele getallen van 1 tot 200 zijn.",
     "submitAdd": "Huisdier toevoegen"
   },
   "datePicker": {
@@ -184,6 +187,7 @@
     "invalidFormat": "Ongeldig bestandsformaat. Selecteer een CardiPaw-exportbestand.",
     "readError": "Het bestand kon niet worden gelezen. Zorg dat het een geldige JSON-export is.",
     "importError": "Importeren is mislukt. Je bestaande gegevens zijn niet gewijzigd.",
+    "exportError": "Exporteren is mislukt. Probeer het opnieuw.",
     "importSkipped": "1 beschadigd record in het bestand wordt overgeslagen. | {n} beschadigde records in het bestand worden overgeslagen.",
     "importConfirm": "{pets} huisdier(en) en {readings} meting(en) importeren? Hiermee worden alle bestaande gegevens op dit apparaat overschreven.",
     "aboutSection": "Over",
@@ -250,6 +254,7 @@
     "selectAll": "Alles selecteren",
     "selectAtLeastOne": "Selecteer minstens één maand om te delen.",
     "lengthWarning": "Deze link is erg lang en wordt mogelijk ingekort door sommige e-mail- of chat-apps. Overweeg minder maanden te selecteren.",
+    "encodeError": "De deellink kon niet worden gemaakt. Probeer het opnieuw.",
     "shareNative": "Delen…",
     "copied": "Gekopieerd!",
     "copyLink": "Link kopiëren"

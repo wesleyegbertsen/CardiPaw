@@ -32,15 +32,16 @@ const sections = computed(() => {
 
 watch(() => props.notes.length, () => { visibleCount.value = PAGE; });
 
-watch(hasMore, (val) => {
-  if (!val) observer?.disconnect();
-});
-
 onMounted(() => {
   observer = new IntersectionObserver(([entry]) => {
     if (entry.isIntersecting) visibleCount.value += PAGE;
   });
-  if (sentinel.value) observer.observe(sentinel.value);
+  // The sentinel only exists while there is more to show (and not while the list is
+  // empty), so follow it instead of observing just the element present at mount.
+  watch(sentinel, (el, old) => {
+    if (old) observer?.unobserve(old);
+    if (el) observer?.observe(el);
+  }, { immediate: true, flush: 'post' });
 });
 
 onUnmounted(() => observer?.disconnect());

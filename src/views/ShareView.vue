@@ -23,9 +23,11 @@ const payload = ref<SharePayload | null>(null);
 
 // Re-decode whenever the query changes: hash-only navigation between share
 // links reuses the mounted component, so onMounted alone would show stale data
+let decodeToken = 0;
 watch(
   () => route.query.d,
   async (d) => {
+    const token = ++decodeToken;
     if (route.name !== 'share') return;
     state.value = 'loading';
     payload.value = null;
@@ -34,9 +36,12 @@ watch(
       return;
     }
     try {
-      payload.value = await decodeShare(d);
+      const decoded = await decodeShare(d);
+      if (token !== decodeToken) return; // a newer link superseded this one
+      payload.value = decoded;
       state.value = 'ready';
     } catch {
+      if (token !== decodeToken) return;
       state.value = 'error';
     }
   },

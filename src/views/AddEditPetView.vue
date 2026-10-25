@@ -6,7 +6,7 @@ import { usePetsStore } from '../stores/pets';
 import PetPhotoUpload from '../components/PetPhotoUpload.vue';
 import DatePicker from '../components/DatePicker.vue';
 import type { Species } from '../types';
-import { DEFAULT_NORMAL_CEILING, DEFAULT_ELEVATED_CEILING } from '../utils/rateStatus';
+import { DEFAULT_NORMAL_CEILING, DEFAULT_ELEVATED_CEILING, isValidRate } from '../utils/rateStatus';
 
 const route = useRoute();
 const router = useRouter();
@@ -26,26 +26,44 @@ const photo = ref<string | null>(null);
 const normalCeiling = ref<number | ''>('');
 const elevatedCeiling = ref<number | ''>('');
 const saving = ref(false);
+// Ceilings restored from a backup are only type-checked; keep them saveable unchanged.
+const stored = ref<{ normal?: number; elevated?: number }>({});
+const ceilingOk = (v: number | '', old?: number) => v === '' || isValidRate(v) || v === old;
 const thresholdError = computed(() => {
+  if (!ceilingOk(normalCeiling.value, stored.value.normal) || !ceilingOk(elevatedCeiling.value, stored.value.elevated))
+    return t('addEditPet.thresholdRange');
   const effectiveNormal   = typeof normalCeiling.value   === 'number' ? normalCeiling.value   : DEFAULT_NORMAL_CEILING;
   const effectiveElevated = typeof elevatedCeiling.value === 'number' ? elevatedCeiling.value : DEFAULT_ELEVATED_CEILING;
   return effectiveElevated <= effectiveNormal
     ? t('addEditPet.thresholdError', { normal: effectiveNormal })
     : '';
 });
+const thresholdErrorId = 'threshold-error';
+// A range error marks only the ceiling that is out of range; the comparison error involves both.
+const normalOutOfRange = computed(() => !ceilingOk(normalCeiling.value, stored.value.normal));
+const elevatedOutOfRange = computed(() => !ceilingOk(elevatedCeiling.value, stored.value.elevated));
+const ceilingA11y = (outOfRange: boolean) =>
+  thresholdError.value && (outOfRange || (!normalOutOfRange.value && !elevatedOutOfRange.value))
+    ? { 'aria-invalid': 'true' as const, 'aria-describedby': thresholdErrorId }
+    : {};
+const normalA11y = computed(() => ceilingA11y(normalOutOfRange.value));
+const elevatedA11y = computed(() => ceilingA11y(elevatedOutOfRange.value));
 
 onMounted(async () => {
   if (isEdit) {
     await petsStore.loadPets();
     const pet = petsStore.getPetById(petId);
-    if (pet) {
-      name.value = pet.name;
-      species.value = pet.species;
-      birthdate.value = pet.birthdate;
-      photo.value = pet.photo;
-      normalCeiling.value = pet.normalCeiling ?? '';
-      elevatedCeiling.value = pet.elevatedCeiling ?? '';
+    if (!pet) {
+      router.replace({ name: 'home' });
+      return;
     }
+    stored.value = { normal: pet.normalCeiling, elevated: pet.elevatedCeiling };
+    name.value = pet.name;
+    species.value = pet.species;
+    birthdate.value = pet.birthdate;
+    photo.value = pet.photo;
+    normalCeiling.value = pet.normalCeiling ?? '';
+    elevatedCeiling.value = pet.elevatedCeiling ?? '';
   }
 });
 
@@ -153,9 +171,10 @@ function goBack() {
               min="1"
               max="199"
               :placeholder="String(DEFAULT_NORMAL_CEILING)"
+              v-bind="normalA11y"
             />
           </div>
-          <div class="threshold-input-group" :data-error="thresholdError || undefined">
+          <div class="threshold-input-group">
             <label class="threshold-sub-label" for="elevated-ceiling">{{ $t('addEditPet.elevatedCeiling') }}</label>
             <input
               id="elevated-ceiling"
@@ -165,9 +184,11 @@ function goBack() {
               :min="typeof normalCeiling === 'number' ? normalCeiling + 1 : DEFAULT_NORMAL_CEILING + 1"
               max="200"
               :placeholder="String(DEFAULT_ELEVATED_CEILING)"
+              v-bind="elevatedA11y"
             />
           </div>
         </div>
+        <p v-if="thresholdError" :id="thresholdErrorId" class="threshold-error" role="alert">{{ thresholdError }}</p>
         <p class="threshold-hint">{{ $t('addEditPet.thresholdHint', { normal: DEFAULT_NORMAL_CEILING, elevated: DEFAULT_ELEVATED_CEILING }) }}</p>
       </div>
 
@@ -326,10 +347,9 @@ function goBack() {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  position: relative;
 }
 
-.threshold-input-group[data-error] .input {
+.threshold-input-group .input[aria-invalid='true'] {
   border-color: var(--color-danger);
   border-width: 2px;
   padding-right: 36px;
@@ -339,26 +359,13 @@ function goBack() {
   background-size: 18px;
 }
 
-.threshold-input-group[data-error]::after {
-  content: attr(data-error);
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  background: var(--color-danger);
-  color: #fff;
-  font-size: 11px;
-  line-height: 1.4;
-  padding: 5px 9px;
+.threshold-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  padding: 10px 14px;
   border-radius: var(--radius-sm);
-  max-width: min(360px, 90vw);
-  pointer-events: none;
-  display: none;
-  z-index: 10;
-}
-
-.threshold-input-group[data-error]:hover::after,
-.threshold-input-group[data-error]:focus-within::after {
-  display: block;
 }
 
 .threshold-sub-label {

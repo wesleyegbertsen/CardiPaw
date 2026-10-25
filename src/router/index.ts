@@ -1,4 +1,9 @@
-import { createRouter, createWebHashHistory, type RouteComponent } from 'vue-router';
+import {
+  createRouter,
+  createWebHashHistory,
+  type RouteComponent,
+  type RouteRecordRaw,
+} from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 
 // Home is the entry screen and stays in the main bundle; every other view is its own
@@ -27,23 +32,22 @@ const AddEditNoteView = lazyView(() => import('../views/AddEditNoteView.vue'));
 const SettingsView = lazyView(() => import('../views/SettingsView.vue'));
 const ShareView = lazyView(() => import('../views/ShareView.vue'));
 
-export const router = createRouter({
-  history: createWebHashHistory(),
-  routes: [
-    { path: '/', name: 'home', component: HomeView },
-    { path: '/pets/add', name: 'pet-add', component: AddEditPetView },
-    { path: '/pets/:id', name: 'pet', component: PetDetailView },
-    { path: '/pets/:id/edit', name: 'pet-edit', component: AddEditPetView },
-    { path: '/pets/:id/track', name: 'tracker', component: TrackerView },
-    { path: '/pets/:id/readings/:readingId', name: 'reading', component: ReadingView },
-    { path: '/pets/:id/readings/:readingId/edit', name: 'reading-edit', component: EditReadingView },
-    { path: '/pets/:id/notes/add', name: 'note-add', component: AddEditNoteView },
-    { path: '/pets/:id/notes/:noteId', name: 'note', component: NoteView },
-    { path: '/pets/:id/notes/:noteId/edit', name: 'note-edit', component: AddEditNoteView },
-    { path: '/settings', name: 'settings', component: SettingsView },
-    { path: '/share', name: 'share', component: ShareView },
-  ],
-});
+export const routes = [
+  { path: '/', name: 'home', component: HomeView },
+  { path: '/pets/add', name: 'pet-add', component: AddEditPetView },
+  { path: '/pets/:id', name: 'pet', component: PetDetailView },
+  { path: '/pets/:id/edit', name: 'pet-edit', component: AddEditPetView },
+  { path: '/pets/:id/track', name: 'tracker', component: TrackerView },
+  { path: '/pets/:id/readings/:readingId', name: 'reading', component: ReadingView },
+  { path: '/pets/:id/readings/:readingId/edit', name: 'reading-edit', component: EditReadingView },
+  { path: '/pets/:id/notes/add', name: 'note-add', component: AddEditNoteView },
+  { path: '/pets/:id/notes/:noteId', name: 'note', component: NoteView },
+  { path: '/pets/:id/notes/:noteId/edit', name: 'note-edit', component: AddEditNoteView },
+  { path: '/settings', name: 'settings', component: SettingsView },
+  { path: '/share', name: 'share', component: ShareView },
+] satisfies RouteRecordRaw[];
+
+export const router = createRouter({ history: createWebHashHistory(), routes });
 
 // A view chunk can fail to load, e.g. when a deploy replaced the hashed files and this tab
 // still runs the previous index.html. Reload at the target route so the browser picks up the

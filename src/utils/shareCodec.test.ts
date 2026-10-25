@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildSharePayload, decodeShare, encodeShare, ShareDecodeError } from './shareCodec';
 import type { Pet, Reading, SharePayload } from '../types';
+import { stubTimezone } from '../test/timezone';
 
 const pet: Pet = {
   id: 'pet-1',
@@ -85,6 +86,26 @@ describe('buildSharePayload', () => {
     const defaults = buildSharePayload(pet, readings, ['2026-03']);
     expect(defaults.pet).not.toHaveProperty('normalCeiling');
     expect(defaults.pet).not.toHaveProperty('elevatedCeiling');
+  });
+
+  it('truncates reading times to the minute in UTC', () => {
+    const built = buildSharePayload(
+      pet,
+      [reading('a', '2026-03-10T12:34:56.789Z', 26)],
+      ['2026-03'],
+    );
+    expect(built.readings[0].date).toBe('2026-03-10T12:34Z');
+  });
+
+  it('selects months by the sharer’s local calendar', () => {
+    stubTimezone('America/New_York');
+    // 02:00 UTC on March 1 is still February 29 in New York.
+    const built = buildSharePayload(
+      pet,
+      [reading('a', '2024-03-01T02:00:00.000Z', 26)],
+      ['2024-02'],
+    );
+    expect(built.readings).toHaveLength(1);
   });
 
   it('does not reorder the caller’s readings array', () => {
@@ -174,9 +195,40 @@ describe('encodeShare / decodeShare', () => {
       'a reading with an unknown source',
       { ...samplePayload, readings: [{ date: '2026-03-14T08:30Z', rate: 22, source: 'import' }] },
     ],
+    ['an unparseable sharedAt', { ...samplePayload, sharedAt: 'garbage' }],
+    ['an unparseable reading date', { ...samplePayload, readings: [{ date: 'nope', rate: 22 }] }],
+    [
+      'a reading date without a time',
+      { ...samplePayload, readings: [{ date: 'March 5', rate: 22 }] },
+    ],
+    ['a bare-number reading date', { ...samplePayload, readings: [{ date: '1', rate: 22 }] }],
+    [
+      'a non-numeric ceiling',
+      { ...samplePayload, pet: { ...samplePayload.pet, normalCeiling: '30' } },
+    ],
   ])('rejects a snapshot with %s', async (_name, value) => {
     const encoded = await encodeRaw(JSON.stringify(value));
     await expect(decodeShare(encoded)).rejects.toBeInstanceOf(ShareDecodeError);
+  });
+
+  it('rejects a snapshot with a rate that overflows to Infinity', async () => {
+    // JSON.stringify cannot produce this, but a hand-made link can.
+    const json = JSON.stringify(samplePayload).replace('"rate":22', '"rate":1e999');
+    expect(json).toContain('1e999');
+    await expect(decodeShare(await encodeRaw(json))).rejects.toBeInstanceOf(ShareDecodeError);
+  });
+
+  it('shows an unknown age instead of rejecting a malformed birthdate', async () => {
+    const legacy = { ...samplePayload, pet: { ...samplePayload.pet, birthdate: '20245-01-01' } };
+    const decoded = await decodeShare(await encodeRaw(JSON.stringify(legacy)));
+    expect(decoded.pet.birthdate).toBe('');
+    expect(decoded.readings).toHaveLength(samplePayload.readings.length);
+  });
+
+  it('reads offset-less dates from older links as UTC', async () => {
+    const legacy = { ...samplePayload, readings: [{ date: '2026-03-14T10:00', rate: 22 }] };
+    const decoded = await decodeShare(await encodeRaw(JSON.stringify(legacy)));
+    expect(decoded.readings[0].date).toBe('2026-03-14T10:00Z');
   });
 
   it('gives decode failures a stable error name', async () => {

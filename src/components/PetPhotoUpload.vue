@@ -22,14 +22,18 @@ async function onFileChange(event: Event) {
   const reader = new FileReader();
   reader.onload = async (e) => {
     const dataUrl = e.target?.result as string;
-    const resized = await resizeImage(dataUrl);
-    emit('update:modelValue', resized);
+    try {
+      emit('update:modelValue', await resizeImage(dataUrl));
+    } catch (e) {
+      // Not an image the browser can decode (e.g. HEIC on desktop): keep the current photo.
+      console.warn('Photo rejected', e);
+    }
   };
   reader.readAsDataURL(file);
 }
 
 function resizeImage(dataUrl: string, maxSize = 400): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
@@ -39,6 +43,7 @@ function resizeImage(dataUrl: string, maxSize = 400): Promise<string> {
       canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
       resolve(canvas.toDataURL('image/jpeg', 0.7));
     };
+    img.onerror = () => reject(new Error('Image could not be decoded'));
     img.src = dataUrl;
   });
 }

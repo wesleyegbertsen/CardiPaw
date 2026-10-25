@@ -34,7 +34,8 @@ function parseISO(value: string | undefined): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!m) return null;
   const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return Number.isNaN(date.getTime()) ? null : date;
+  // Date rolls impossible days over (2024-13-40 becomes 2025-02-09); treat those as invalid.
+  return toISO(date.getFullYear(), date.getMonth(), date.getDate()) === value ? date : null;
 }
 
 function toISO(year: number, month: number, day: number): string {

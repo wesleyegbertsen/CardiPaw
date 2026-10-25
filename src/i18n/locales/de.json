@@ -53,6 +53,7 @@
     "yourPets": "Deine Tiere",
     "noPetsTitle": "Noch keine Tiere",
     "noPetsBody": "Füge dein erstes Tier hinzu, um die Ruhe-Atemfrequenz zu verfolgen.",
+    "loadError": "Deine Haustiere konnten nicht geladen werden. Lade die App neu und versuche es erneut. Deine Daten wurden nicht gelöscht.",
     "addPet": "Tier hinzufügen",
     "themeDark": "Dunkel",
     "themeLight": "Hell",
@@ -99,6 +100,7 @@
     "basedOn": "Basierend auf {n} Atemzug in 30 Sekunden | Basierend auf {n} Atemzügen in 30 Sekunden",
     "saveReading": "Messung speichern",
     "saveResult": "Ergebnis speichern",
+    "saveError": "Die Messung konnte nicht gespeichert werden. Bitte versuche es erneut.",
     "tryAgain": "Erneut versuchen"
   },
   "addEditPet": {
@@ -115,6 +117,7 @@
     "elevatedCeiling": "Obergrenze erhöht",
     "thresholdHint": "Leer lassen, um die Standardwerte zu verwenden ({normal} / {elevated} Atemz./Min).",
     "thresholdError": "Die Obergrenze für „erhöht“ muss höher sein als die Obergrenze für „normal“ ({normal}).",
+    "thresholdRange": "Obergrenzen müssen ganze Zahlen von 1 bis 200 sein.",
     "submitAdd": "Tier hinzufügen"
   },
   "datePicker": {
@@ -184,6 +187,7 @@
     "invalidFormat": "Ungültiges Dateiformat. Bitte wähle eine CardiPaw-Exportdatei.",
     "readError": "Die Datei konnte nicht gelesen werden. Stelle sicher, dass es sich um einen gültigen JSON-Export handelt.",
     "importError": "Import fehlgeschlagen. Deine vorhandenen Daten wurden nicht geändert.",
+    "exportError": "Export fehlgeschlagen. Bitte versuche es erneut.",
     "importSkipped": "1 beschädigter Eintrag in der Datei wird übersprungen. | {n} beschädigte Einträge in der Datei werden übersprungen.",
     "importConfirm": "{pets} Tier(e) und {readings} Messung(en) importieren? Dadurch werden alle vorhandenen Daten auf diesem Gerät überschrieben.",
     "aboutSection": "Über",
@@ -250,6 +254,7 @@
     "selectAll": "Alle auswählen",
     "selectAtLeastOne": "Wähle mindestens einen Monat zum Teilen aus.",
     "lengthWarning": "Dieser Link ist sehr lang und wird von manchen E-Mail- oder Chat-Apps möglicherweise gekürzt. Wähle ggf. weniger Monate aus.",
+    "encodeError": "Der Link zum Teilen konnte nicht erstellt werden. Bitte versuche es erneut.",
     "shareNative": "Teilen…",
     "copied": "Kopiert!",
     "copyLink": "Link kopieren"

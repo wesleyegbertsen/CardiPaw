@@ -58,6 +58,8 @@ export async function decodeShare(encoded: string): Promise<SharePayload> {
   }
   return {
     ...payload,
+    // Older versions accepted malformed birthdates; show "unknown age" rather than refuse the link.
+    pet: { ...payload.pet, birthdate: isShareDay(payload.pet.birthdate) ? payload.pet.birthdate : '' },
     readings: payload.readings.map((r) => ({ ...r, date: fromShareDate(r.date) })),
   };
 }
@@ -98,19 +100,39 @@ function fromBase64Url(encoded: string): Uint8Array {
   return bytes;
 }
 
+const SHARE_DAY = /^\d{4}-\d{2}-\d{2}$/;
+// Every app version wrote reading times as YYYY-MM-DDTHH:MM…; Date.parse alone also accepts "1" or "March 5".
+const SHARE_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+function isShareDay(s: unknown): s is string {
+  return typeof s === 'string' && SHARE_DAY.test(s) && !Number.isNaN(Date.parse(s));
+}
+
+function isOptionalFinite(n: unknown): boolean {
+  return n === undefined || (typeof n === 'number' && Number.isFinite(n));
+}
+
 function isSharePayload(value: unknown): value is SharePayload {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
-  if (v.v !== 1 || typeof v.sharedAt !== 'string') return false;
+  if (v.v !== 1 || !isShareDay(v.sharedAt)) return false;
   const pet = v.pet as Record<string, unknown> | undefined;
   if (!pet || typeof pet !== 'object') return false;
   if (typeof pet.name !== 'string' || typeof pet.birthdate !== 'string') return false;
   if (pet.species !== 'cat' && pet.species !== 'dog') return false;
+  if (!isOptionalFinite(pet.normalCeiling) || !isOptionalFinite(pet.elevatedCeiling)) return false;
   if (!Array.isArray(v.readings)) return false;
   return v.readings.every((r) => {
     if (typeof r !== 'object' || r === null) return false;
     const reading = r as Record<string, unknown>;
-    if (typeof reading.date !== 'string' || typeof reading.rate !== 'number') return false;
+    if (
+      typeof reading.date !== 'string' ||
+      !SHARE_DATE_TIME.test(reading.date) ||
+      Number.isNaN(Date.parse(fromShareDate(reading.date)))
+    ) {
+      return false;
+    }
+    if (typeof reading.rate !== 'number' || !Number.isFinite(reading.rate)) return false;
     return (
       reading.restState === undefined ||
       reading.restState === 'resting' ||
