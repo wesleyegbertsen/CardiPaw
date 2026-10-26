@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { nextTick } from 'vue';
 import { enableAutoUnmount, mount, RouterLinkStub } from '@vue/test-utils';

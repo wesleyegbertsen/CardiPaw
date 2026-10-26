@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import EditReadingView from './EditReadingView.vue';

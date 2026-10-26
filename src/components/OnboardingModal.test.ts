@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { afterEach, describe, expect, it } from 'vitest';
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import OnboardingModal from './OnboardingModal.vue';

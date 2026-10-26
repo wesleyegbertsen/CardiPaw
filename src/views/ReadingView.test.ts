@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { enableAutoUnmount } from '@vue/test-utils';
 import ReadingView from './ReadingView.vue';

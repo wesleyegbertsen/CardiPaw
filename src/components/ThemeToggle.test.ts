@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { enableAutoUnmount, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';

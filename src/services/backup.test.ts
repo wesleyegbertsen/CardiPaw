@@ -1,5 +1,3 @@
-// @vitest-environment happy-dom
-import 'fake-indexeddb/auto';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BackupError, exportBackup, importBackup, parseBackup, validateBackup } from './backup';

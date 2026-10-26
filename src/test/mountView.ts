@@ -1,4 +1,3 @@
-import 'fake-indexeddb/auto';
 import { vi } from 'vitest';
 import { defineComponent, h, type Component } from 'vue';
 import { flushPromises, mount, type Stubs } from '@vue/test-utils';
@@ -12,7 +11,7 @@ import type { Note, Pet, Reading } from '../types';
 
 /**
  * Helpers for mounting a whole view against the real stores, a real router and
- * fake-indexeddb. Needs a DOM environment (`// @vitest-environment happy-dom`).
+ * fake-indexeddb (src/test/setup.ts). Runs in the dom vitest project.
  *
  * - Call `enableAutoUnmount(afterEach)` in the test file; mounted views attach to
  *   `document.body`.

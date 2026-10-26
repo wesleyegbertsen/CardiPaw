@@ -259,7 +259,7 @@ npm run check-locale  # key parity of every locale against en.json
 npm run build
 ```
 
-CI runs all of these, plus `npm audit --omit=dev --audit-level=high`, on every PR and every push to `main`, and the Release workflow runs them again before it deploys. Tests live next to the code they cover as `*.test.ts` and use [Vitest](https://vitest.dev/); IndexedDB is provided by [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) and components are mounted with [Vue Test Utils](https://test-utils.vuejs.org/).
+CI runs all of these, plus `npm audit --omit=dev --audit-level=high`, on every PR and every push to `main`, and the Release workflow runs them again before it deploys. Tests live next to the code they cover as `*.test.ts` and use [Vitest](https://vitest.dev/); IndexedDB is provided by [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) and components are mounted with [Vue Test Utils](https://test-utils.vuejs.org/). Tests run in [happy-dom](https://github.com/capricorn86/happy-dom), except the pure-logic files listed in the `node` project in `vitest.config.ts`, which run in plain Node.
 
 A Prettier config is included for new code (`npm run format:check`, `npm run format`). The existing code has not been reformatted yet, so CI does not enforce it.
 
