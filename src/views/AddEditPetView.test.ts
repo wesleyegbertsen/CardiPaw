@@ -61,6 +61,15 @@ describe('AddEditPetView', () => {
       expect(labelText('[role="group"]')).toBe('RRR thresholds (optional)');
     });
 
+    it('groups the species radios under one name and hides the icons', async () => {
+      const { wrapper } = await mountForm('/pets/add');
+      const radios = wrapper.findAll('.species-option input[type="radio"]');
+      expect(radios.map((r) => r.attributes('name'))).toEqual(['species', 'species']);
+      const icons = wrapper.findAll('.species-icon');
+      expect(icons).toHaveLength(2);
+      icons.forEach((icon) => expect(icon.attributes('aria-hidden')).toBe('true'));
+    });
+
     it('needs a name and a birthdate', async () => {
       const { submit, fill } = await mountForm('/pets/add');
       expect(submit.element.disabled).toBe(true);

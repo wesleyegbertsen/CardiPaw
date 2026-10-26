@@ -156,13 +156,13 @@ function goBack() {
         <span id="pet-species-label" class="label">{{ $t('addEditPet.species') }}</span>
         <div class="species-radios" role="radiogroup" aria-labelledby="pet-species-label">
           <label class="species-option" :class="{ selected: species === 'cat' }">
-            <input type="radio" v-model="species" value="cat" class="sr-only" />
-            <span class="species-icon">🐱</span>
+            <input type="radio" v-model="species" name="species" value="cat" class="sr-only" />
+            <span class="species-icon" aria-hidden="true">🐱</span>
             <span>{{ $t('species.cat') }}</span>
           </label>
           <label class="species-option" :class="{ selected: species === 'dog' }">
-            <input type="radio" v-model="species" value="dog" class="sr-only" />
-            <span class="species-icon">🐶</span>
+            <input type="radio" v-model="species" name="species" value="dog" class="sr-only" />
+            <span class="species-icon" aria-hidden="true">🐶</span>
             <span>{{ $t('species.dog') }}</span>
           </label>
         </div>
@@ -336,6 +336,12 @@ function goBack() {
   border-color: var(--color-primary);
   color: var(--color-primary);
   background: var(--color-primary-light);
+}
+
+/* The radio itself is visually hidden, so its card shows keyboard focus */
+.species-option:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .species-icon {
