@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { defineComponent, h, type Component } from 'vue';
-import { flushPromises, mount, type Stubs } from '@vue/test-utils';
+import { flushPromises, mount, type ComponentMountingOptions, type Stubs } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type RouteLocationRaw } from 'vue-router';
 import { routes } from '../router';
@@ -45,9 +45,10 @@ export async function seed({ pets = [], readings = [], notes = [] }: SeedData = 
   await db.importAllData({ version: 1, exportedAt: '', pets, readings, notes });
 }
 
-export interface MountViewOptions extends SeedData {
+export interface MountViewOptions<C extends Component = Component> extends SeedData {
   stubs?: Stubs;
-  props?: Record<string, unknown>;
+  /** Checked against the props `component` declares. */
+  props?: ComponentMountingOptions<C>['props'];
 }
 
 /**
@@ -55,10 +56,10 @@ export interface MountViewOptions extends SeedData {
  * router already at `location`. `push` and `replace` are spies created before mounting,
  * so they also record navigation from `onMounted`.
  */
-export async function mountView(
-  component: Component,
+export async function mountView<C extends Component>(
+  component: C,
   location: RouteLocationRaw,
-  { stubs, props, ...data }: MountViewOptions = {},
+  { stubs, props, ...data }: MountViewOptions<C> = {},
 ) {
   await seed(data);
   const pinia = createPinia();
@@ -72,7 +73,8 @@ export async function mountView(
   const push = vi.spyOn(router, 'push');
   const replace = vi.spyOn(router, 'replace');
   installIntersectionObserver();
-  const wrapper = mount(component, {
+  // mount()'s overloads can't resolve a generic component; `props` is checked above.
+  const wrapper = mount(component as Component, {
     attachTo: document.body,
     props,
     global: { plugins: [pinia, router, createTestI18n()], stubs },
