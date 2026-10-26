@@ -9,6 +9,7 @@ import { useTrackerPrefs } from '../composables/useTrackerPrefs';
 import { useOnboarding } from '../composables/useOnboarding';
 import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
 import OnboardingModal from '../components/OnboardingModal.vue';
+import RestStateToggle from '../components/RestStateToggle.vue';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
 
 const route = useRoute();
@@ -51,8 +52,6 @@ const saveError = ref(false);
 const loadError = ref(false);
 const soundLabelId = useId();
 const vibrationLabelId = useId();
-// The manual and done bodies never render together, so their rest rows can share one id
-const restLabelId = useId();
 const isManualMode = computed(() => mode.value === 'manual');
 const heartRef = ref<HTMLButtonElement | null>(null);
 const resultRef = ref<HTMLElement | null>(null);
@@ -244,21 +243,7 @@ onUnmounted(() => {
         >{{ $t('status.' + getRateStatus(manualRate, pet).cssClass) }}</span>
       </div>
 
-      <div class="rest-state-row" role="group" :aria-labelledby="restLabelId">
-        <span :id="restLabelId" class="rest-state-label">{{ $t('restState.petWas') }}</span>
-        <button
-          class="rest-btn"
-          :class="{ active: restState === 'resting' }"
-          :aria-pressed="restState === 'resting'"
-          @click="restState = restState === 'resting' ? undefined : 'resting'"
-        >{{ $t('restState.resting') }}</button>
-        <button
-          class="rest-btn"
-          :class="{ active: restState === 'sleeping' }"
-          :aria-pressed="restState === 'sleeping'"
-          @click="restState = restState === 'sleeping' ? undefined : 'sleeping'"
-        >{{ $t('restState.sleeping') }}</button>
-      </div>
+      <RestStateToggle v-model="restState" />
 
       <div class="notes-wrapper">
         <RichTextEditor v-model="notes" :label="$t('reading.notesLabel')" />
@@ -359,21 +344,7 @@ onUnmounted(() => {
 
       <p class="result-note">{{ $t('tracker.basedOn', clickCount) }}</p>
 
-      <div class="rest-state-row" role="group" :aria-labelledby="restLabelId">
-        <span :id="restLabelId" class="rest-state-label">{{ $t('restState.petWas') }}</span>
-        <button
-          class="rest-btn"
-          :class="{ active: restState === 'resting' }"
-          :aria-pressed="restState === 'resting'"
-          @click="restState = restState === 'resting' ? undefined : 'resting'"
-        >{{ $t('restState.resting') }}</button>
-        <button
-          class="rest-btn"
-          :class="{ active: restState === 'sleeping' }"
-          :aria-pressed="restState === 'sleeping'"
-          @click="restState = restState === 'sleeping' ? undefined : 'sleeping'"
-        >{{ $t('restState.sleeping') }}</button>
-      </div>
+      <RestStateToggle v-model="restState" />
 
       <div class="notes-wrapper">
         <RichTextEditor v-model="notes" :label="$t('reading.notesLabel')" />
@@ -665,38 +636,6 @@ onUnmounted(() => {
 .result-note {
   font-size: 13px;
   color: var(--color-text-muted);
-}
-
-.rest-state-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 320px;
-}
-
-.rest-state-label {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-
-.rest-btn {
-  flex: 1;
-  height: 38px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-}
-
-.rest-btn.active {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .notes-wrapper {

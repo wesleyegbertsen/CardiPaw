@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useNotesStore } from '../stores/notes';
 import { usePetsStore } from '../stores/pets';
@@ -9,6 +9,7 @@ const route = useRoute();
 const router = useRouter();
 const notesStore = useNotesStore();
 const petsStore = usePetsStore();
+const contentLabelId = useId();
 
 const petId = route.params.id as string;
 const noteId = route.params.noteId as string | undefined;
@@ -143,8 +144,8 @@ async function save() {
       </div>
 
       <div class="field">
-        <span id="note-content-label" class="label">{{ $t('note.contentLabel') }}</span>
-        <RichTextEditor v-model="editContent" labelledby="note-content-label" />
+        <span :id="contentLabelId" class="label">{{ $t('note.contentLabel') }}</span>
+        <RichTextEditor v-model="editContent" :labelledby="contentLabelId" />
       </div>
 
       <p v-if="saveError" class="save-error" role="alert">{{ $t('common.saveError') }}</p>

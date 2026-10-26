@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { usePetsStore } from '../stores/pets';
@@ -12,6 +12,8 @@ const route = useRoute();
 const router = useRouter();
 const petsStore = usePetsStore();
 const { t } = useI18n();
+const speciesLabelId = useId();
+const thresholdsLabelId = useId();
 
 const isEdit = !!route.params.id;
 const petId = route.params.id as string;
@@ -153,8 +155,8 @@ function goBack() {
       </div>
 
       <div class="field">
-        <span id="pet-species-label" class="label">{{ $t('addEditPet.species') }}</span>
-        <div class="species-radios" role="radiogroup" aria-labelledby="pet-species-label">
+        <span :id="speciesLabelId" class="label">{{ $t('addEditPet.species') }}</span>
+        <div class="species-radios" role="radiogroup" :aria-labelledby="speciesLabelId">
           <label class="species-option" :class="{ selected: species === 'cat' }">
             <input type="radio" v-model="species" name="species" value="cat" class="sr-only" />
             <span class="species-icon" aria-hidden="true">🐱</span>
@@ -174,8 +176,8 @@ function goBack() {
       </div>
 
       <div class="field">
-        <span id="pet-thresholds-label" class="label"><abbr :title="$t('addEditPet.rrrTitle')">{{ $t('addEditPet.rrrAbbr') }}</abbr> {{ $t('addEditPet.thresholdsSuffix') }}</span>
-        <div class="threshold-inputs" role="group" aria-labelledby="pet-thresholds-label">
+        <span :id="thresholdsLabelId" class="label"><abbr :title="$t('addEditPet.rrrTitle')">{{ $t('addEditPet.rrrAbbr') }}</abbr> {{ $t('addEditPet.thresholdsSuffix') }}</span>
+        <div class="threshold-inputs" role="group" :aria-labelledby="thresholdsLabelId">
           <div class="threshold-input-group">
             <label class="threshold-sub-label" for="normal-ceiling">{{ $t('addEditPet.normalCeiling') }}</label>
             <input
