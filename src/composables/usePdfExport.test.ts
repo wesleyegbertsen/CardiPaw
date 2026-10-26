@@ -204,6 +204,11 @@ describe('usePdfExport', () => {
     ['ポチ', 'cardipaw-ポチ-2024-06-01.pdf'],
     ['Zoë', 'cardipaw-zoë-2024-06-01.pdf'],
     ['  Max & Ruby!  ', 'cardipaw-max-ruby-2024-06-01.pdf'],
+    ['Rex 2', 'cardipaw-rex-2-2024-06-01.pdf'],
+    // Typed with a combining diaeresis; saved precomposed (NFC).
+    ['Zoe\u0308', 'cardipaw-zo\u00eb-2024-06-01.pdf'],
+    // Devanagari vowel signs are combining marks, not letters.
+    ['मोती', 'cardipaw-मोती-2024-06-01.pdf'],
   ])('keeps letters from any script in the filename (%s)', async (name, file) => {
     const doc = await generate(makePet({ name }), readings, ['2024-03']);
     expect(doc.saved).toEqual([file]);
@@ -217,6 +222,11 @@ describe('usePdfExport', () => {
   it('shortens a long name in the filename to 50 characters', async () => {
     const doc = await generate(makePet({ name: 'a'.repeat(49) + ' bcd' }), readings, ['2024-03']);
     expect(doc.saved).toEqual([`cardipaw-${'a'.repeat(49)}-2024-06-01.pdf`]);
+  });
+
+  it('counts the 50 characters by code point, not by UTF-16 unit', async () => {
+    const doc = await generate(makePet({ name: '𠀀'.repeat(60) }), readings, ['2024-03']);
+    expect(doc.saved).toEqual([`cardipaw-${'𠀀'.repeat(50)}-2024-06-01.pdf`]);
   });
 
   it('dates the filename by the local day, not UTC', async () => {

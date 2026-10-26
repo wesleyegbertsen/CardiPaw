@@ -54,6 +54,15 @@ describe('App', () => {
       expect(wrapper.get('.probe').text()).not.toBe(first);
     });
 
+    it('starts a fresh form when switching notes of the same pet', async () => {
+      // Same pet id, different note id: keying by the pet alone would reuse the form.
+      const { wrapper, router } = await mountProbe('/pets/a/notes/n1/edit');
+      const first = wrapper.get('.probe').text();
+      await router.push('/pets/a/notes/n2/edit');
+      await settle();
+      expect(wrapper.get('.probe').text()).not.toBe(first);
+    });
+
     it('keeps the view when only the query changes, such as the pet tab', async () => {
       const { wrapper, router } = await mountProbe('/pets/a');
       const first = wrapper.get('.probe').text();
