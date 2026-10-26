@@ -99,6 +99,7 @@
     "tapForBreath": "Tap for each breath",
     "guided": "Guided",
     "manual": "Manual",
+    "modeLabel": "Measurement mode",
     "instruction": "Tap anywhere on the screen each time you see your pet's chest rise and fall.",
     "measurement30": "30-second measurement",
     "sound": "Sound",

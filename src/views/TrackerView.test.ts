@@ -250,6 +250,24 @@ describe('TrackerView', () => {
     expect(wrapper.get<HTMLTextAreaElement>('.notes-stub').element.value).toBe('<p>calm</p>');
   });
 
+  it('exposes the mode as pressed buttons in a labelled group', async () => {
+    const { wrapper } = await mountTracker();
+    const group = wrapper.get('.mode-toggle');
+    expect(group.attributes('role')).toBe('group');
+    expect(group.attributes('aria-label')).toBe('Measurement mode');
+    expect(wrapper.get('.mode-toggle-indicator').attributes('aria-hidden')).toBe('true');
+    const pressed = () => wrapper.findAll('.mode-pill').map((p) => p.attributes('aria-pressed'));
+    expect(pressed()).toEqual(['true', 'false']);
+    await wrapper.findAll('.mode-pill')[1].trigger('click');
+    expect(pressed()).toEqual(['false', 'true']);
+  });
+
+  it('labels the manual rate field', async () => {
+    const { wrapper } = await mountTracker();
+    await wrapper.findAll('.mode-pill')[1].trigger('click');
+    expect(wrapper.get('.manual-rate-input').attributes('aria-label')).toBe('Rate (breaths/min)');
+  });
+
   it('names the sound and vibration switches', async () => {
     const { wrapper } = await mountTracker();
     const names = wrapper.findAll('[role="switch"]').map((s) => {

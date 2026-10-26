@@ -99,6 +99,7 @@
     "tapForBreath": "呼吸ごとにタップ",
     "guided": "ガイド",
     "manual": "手動",
+    "modeLabel": "測定モード",
     "instruction": "ペットの胸が上がり下がりするたびに、画面のどこかをタップしてください。",
     "measurement30": "30秒間の測定",
     "sound": "音",

@@ -213,10 +213,10 @@ onUnmounted(() => {
     <div v-else-if="pet" class="tracker-main">
     <!-- Mode toggle: absolutely positioned so it overlays the body without affecting its height -->
     <div v-if="phase === 'idle'" class="mode-toggle-bar">
-      <div class="mode-toggle">
-        <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }"></div>
-        <button class="mode-pill" :class="{ active: !isManualMode }" @click="switchMode('guided')">{{ $t('tracker.guided') }}</button>
-        <button class="mode-pill" :class="{ active: isManualMode }" @click="switchMode('manual')">{{ $t('tracker.manual') }}</button>
+      <div class="mode-toggle" role="group" :aria-label="$t('tracker.modeLabel')">
+        <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }" aria-hidden="true"></div>
+        <button class="mode-pill" :class="{ active: !isManualMode }" :aria-pressed="!isManualMode" @click="switchMode('guided')">{{ $t('tracker.guided') }}</button>
+        <button class="mode-pill" :class="{ active: isManualMode }" :aria-pressed="isManualMode" @click="switchMode('manual')">{{ $t('tracker.manual') }}</button>
       </div>
     </div>
 
@@ -231,6 +231,7 @@ onUnmounted(() => {
           max="200"
           placeholder="0"
           inputmode="numeric"
+          :aria-label="$t('reading.rateLabel')"
           autofocus
         />
         <span class="manual-rate-unit">{{ $t('tracker.unitSpaced') }}</span>
