@@ -46,6 +46,15 @@ describe('useLastMeasured', () => {
     expect(lastMeasured([onMarch(21)])).toEqual({ label: 'Measured today', isStale: false });
   });
 
+  it('judges by the newest reading that is not dated after today', () => {
+    // A single future-dated reading must not hide that the pet has not been measured in 10 days.
+    vi.setSystemTime(new Date(2024, 2, 20, 9));
+    expect(lastMeasured([onMarch(25), onMarch(10)])).toEqual({
+      label: 'Last measured 1 week ago',
+      isStale: true,
+    });
+  });
+
   it('compares local calendar days, not 24-hour periods', () => {
     vi.setSystemTime(new Date(2024, 2, 20, 0, 5));
     expect(lastMeasured([onMarch(19, 23)]).label).toBe('Measured yesterday');
