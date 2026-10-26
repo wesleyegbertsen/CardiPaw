@@ -153,8 +153,8 @@ function goBack() {
       </div>
 
       <div class="field">
-        <label class="label">{{ $t('addEditPet.species') }}</label>
-        <div class="species-radios">
+        <span id="pet-species-label" class="label">{{ $t('addEditPet.species') }}</span>
+        <div class="species-radios" role="radiogroup" aria-labelledby="pet-species-label">
           <label class="species-option" :class="{ selected: species === 'cat' }">
             <input type="radio" v-model="species" value="cat" class="sr-only" />
             <span class="species-icon">🐱</span>
@@ -174,8 +174,8 @@ function goBack() {
       </div>
 
       <div class="field">
-        <label class="label"><abbr :title="$t('addEditPet.rrrTitle')">{{ $t('addEditPet.rrrAbbr') }}</abbr> {{ $t('addEditPet.thresholdsSuffix') }}</label>
-        <div class="threshold-inputs">
+        <span id="pet-thresholds-label" class="label"><abbr :title="$t('addEditPet.rrrTitle')">{{ $t('addEditPet.rrrAbbr') }}</abbr> {{ $t('addEditPet.thresholdsSuffix') }}</span>
+        <div class="threshold-inputs" role="group" aria-labelledby="pet-thresholds-label">
           <div class="threshold-input-group">
             <label class="threshold-sub-label" for="normal-ceiling">{{ $t('addEditPet.normalCeiling') }}</label>
             <input

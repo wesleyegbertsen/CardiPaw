@@ -49,6 +49,18 @@ const required = { '#pet-name': 'Luna', '.date-stub': '2020-05-01' };
 
 describe('AddEditPetView', () => {
   describe('adding', () => {
+    it('names the species and threshold groups', async () => {
+      const { wrapper } = await mountForm('/pets/add');
+      const labelText = (selector: string) => {
+        const id = wrapper.get(selector).attributes('aria-labelledby');
+        return id && document.getElementById(id)?.textContent;
+      };
+      expect(wrapper.findAll('[role="radiogroup"] input[type="radio"]')).toHaveLength(2);
+      expect(labelText('[role="radiogroup"]')).toBe('Species');
+      expect(wrapper.findAll('[role="group"] input[type="number"]')).toHaveLength(2);
+      expect(labelText('[role="group"]')).toBe('RRR thresholds (optional)');
+    });
+
     it('needs a name and a birthdate', async () => {
       const { submit, fill } = await mountForm('/pets/add');
       expect(submit.element.disabled).toBe(true);
