@@ -289,7 +289,10 @@ describe('encodeShare / decodeShare', () => {
   }
 
   it('rejects a link longer than 200 000 characters', async () => {
-    const payload = { ...samplePayload, pet: { ...samplePayload.pet, name: incompressible(270_000) } };
+    const payload = {
+      ...samplePayload,
+      pet: { ...samplePayload.pet, name: incompressible(270_000) },
+    };
     const encoded = await encodeRaw(JSON.stringify(payload));
     expect(encoded.length).toBeGreaterThan(200_000);
     await expect(decodeShare(encoded)).rejects.toThrow('The link is too long.');
@@ -297,7 +300,9 @@ describe('encodeShare / decodeShare', () => {
 
   it('checks the length cap at exactly 200 000 characters', async () => {
     // At the cap the length check passes and decoding fails; one more character trips the cap.
-    await expect(decodeShare('A'.repeat(200_000))).rejects.toThrow('The link could not be decoded.');
+    await expect(decodeShare('A'.repeat(200_000))).rejects.toThrow(
+      'The link could not be decoded.',
+    );
     await expect(decodeShare('A'.repeat(200_001))).rejects.toThrow('The link is too long.');
   });
 
@@ -312,10 +317,15 @@ describe('encodeShare / decodeShare', () => {
       let rate = rand() < 0.1 ? 100 + 2 * Math.floor(rand() * 100) : 10 + Math.floor(rand() * 90);
       if (i % 997 === 0) rate = 0;
       if (i % 1009 === 0) rate = 1000;
-      return reading(String(i), `${months[Math.floor((i * 240) / 10_000)]}-${pad(day)}T${time}.000Z`, rate, {
-        restState: rand() < 0.5 ? 'resting' : 'sleeping',
-        ...(rand() < 0.5 && { source: 'manual' as const }),
-      });
+      return reading(
+        String(i),
+        `${months[Math.floor((i * 240) / 10_000)]}-${pad(day)}T${time}.000Z`,
+        rate,
+        {
+          restState: rand() < 0.5 ? 'resting' : 'sleeping',
+          ...(rand() < 0.5 && { source: 'manual' as const }),
+        },
+      );
     });
     const built = buildSharePayload(pet, stored, months);
     expect(built.readings).toHaveLength(10_000);
@@ -353,7 +363,10 @@ describe('encodeShare / decodeShare', () => {
     const tooManyMonths = { ...samplePayload, readings: oneReadingPerMonth(241, 2000) };
     await expect(encodeShare(tooManyMonths)).rejects.toBeInstanceOf(ShareTooLargeError);
 
-    const tooLong = { ...samplePayload, pet: { ...samplePayload.pet, name: incompressible(270_000) } };
+    const tooLong = {
+      ...samplePayload,
+      pet: { ...samplePayload.pet, name: incompressible(270_000) },
+    };
     await expect(encodeShare(tooLong)).rejects.toBeInstanceOf(ShareTooLargeError);
   });
 

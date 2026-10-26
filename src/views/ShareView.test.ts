@@ -94,7 +94,9 @@ describe('ShareView', () => {
     expect(rows.map((r) => r.get('.row-rate').text().split(' ')[0])).toEqual(['22', '30', '18']);
     // Vue only reports duplicate keys when it patches a list, and this table is rebuilt for every
     // link, so check the keys themselves: duplicates would let a later update reuse the wrong row.
-    const keys = rows.map((r) => (r.element as Element & { __vnode: { key: unknown } }).__vnode.key);
+    const keys = rows.map(
+      (r) => (r.element as Element & { __vnode: { key: unknown } }).__vnode.key,
+    );
     expect(new Set(keys).size).toBe(3);
   });
 
