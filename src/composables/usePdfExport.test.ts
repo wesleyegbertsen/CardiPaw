@@ -197,7 +197,26 @@ describe('usePdfExport', () => {
 
   it('saves as cardipaw-<name>-<local date>.pdf', async () => {
     const doc = await generate(makePet({ name: 'Mr. Biscuit' }), readings, ['2024-03']);
-    expect(doc.saved).toEqual(['cardipaw-mr--biscuit-2024-06-01.pdf']);
+    expect(doc.saved).toEqual(['cardipaw-mr-biscuit-2024-06-01.pdf']);
+  });
+
+  it.each([
+    ['ポチ', 'cardipaw-ポチ-2024-06-01.pdf'],
+    ['Zoë', 'cardipaw-zoë-2024-06-01.pdf'],
+    ['  Max & Ruby!  ', 'cardipaw-max-ruby-2024-06-01.pdf'],
+  ])('keeps letters from any script in the filename (%s)', async (name, file) => {
+    const doc = await generate(makePet({ name }), readings, ['2024-03']);
+    expect(doc.saved).toEqual([file]);
+  });
+
+  it('leaves the name out of the filename when it has no letters or digits', async () => {
+    const doc = await generate(makePet({ name: '???' }), readings, ['2024-03']);
+    expect(doc.saved).toEqual(['cardipaw-2024-06-01.pdf']);
+  });
+
+  it('shortens a long name in the filename to 50 characters', async () => {
+    const doc = await generate(makePet({ name: 'a'.repeat(49) + ' bcd' }), readings, ['2024-03']);
+    expect(doc.saved).toEqual([`cardipaw-${'a'.repeat(49)}-2024-06-01.pdf`]);
   });
 
   it('dates the filename by the local day, not UTC', async () => {

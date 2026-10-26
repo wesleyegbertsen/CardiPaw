@@ -413,12 +413,22 @@ export function usePdfExport() {
       }
 
       const dateSlug = localDayKey(new Date());
-      const safeName = pet.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-      doc.save(`cardipaw-${safeName}-${dateSlug}.pdf`);
+      const nameSlug = fileNameSlug(pet.name);
+      doc.save(nameSlug ? `cardipaw-${nameSlug}-${dateSlug}.pdf` : `cardipaw-${dateSlug}.pdf`);
     } finally {
       isGenerating.value = false;
     }
   }
 
   return { isGenerating, generatePdf };
+}
+
+// Letters and digits in any script survive (ポチ, Zoë); every other run becomes one dash.
+function fileNameSlug(name: string): string {
+  const slug = name
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+  return Array.from(slug).slice(0, 50).join('').replace(/-+$/, '');
 }
