@@ -508,10 +508,10 @@ async function deletePet() {
       >
         <div :id="panelId('chart')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(0) }" role="tabpanel" :aria-labelledby="tabId('chart')">
           <div class="chart-controls">
-            <div class="range-toggle">
-              <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
-              <button :class="{ active: chartRange === 'month' }" @click="chartRange = 'month'">{{ $t('petDetail.rangeMonth') }}</button>
-              <button :class="{ active: chartRange === 'year' }" @click="chartRange = 'year'">{{ $t('petDetail.rangeYear') }}</button>
+            <div class="range-toggle" role="group" :aria-label="$t('petDetail.rangeLabel')">
+              <button :class="{ active: chartRange === 'week' }" :aria-pressed="chartRange === 'week'" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
+              <button :class="{ active: chartRange === 'month' }" :aria-pressed="chartRange === 'month'" @click="chartRange = 'month'">{{ $t('petDetail.rangeMonth') }}</button>
+              <button :class="{ active: chartRange === 'year' }" :aria-pressed="chartRange === 'year'" @click="chartRange = 'year'">{{ $t('petDetail.rangeYear') }}</button>
             </div>
             <div class="range-nav">
               <button class="nav-btn" @click="chartOffset--" :disabled="!canGoPrev" :aria-label="$t('petDetail.prevPeriod')">

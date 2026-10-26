@@ -320,6 +320,17 @@ describe('PetDetailView', () => {
       expect(next.attributes('disabled')).toBeDefined();
     });
 
+    it('exposes the selected range as pressed buttons in a labelled group', async () => {
+      const { wrapper, range } = await mountChart();
+      const group = wrapper.get('.range-toggle');
+      expect(group.attributes('role')).toBe('group');
+      expect(group.attributes('aria-label')).toBe('Time range');
+      const pressed = () => group.findAll('button').map((b) => b.attributes('aria-pressed'));
+      expect(pressed()).toEqual(['true', 'false', 'false']);
+      await range(1);
+      expect(pressed()).toEqual(['false', 'true', 'false']);
+    });
+
     it('disables future months and months without readings in the jump picker', async () => {
       const { wrapper, range, label } = await mountChart();
       await range(1);

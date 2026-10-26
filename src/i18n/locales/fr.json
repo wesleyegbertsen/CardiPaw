@@ -84,6 +84,7 @@
     "rangeWeek": "Semaine",
     "rangeMonth": "Mois",
     "rangeYear": "Année",
+    "rangeLabel": "Période",
     "prevPeriod": "Période précédente",
     "nextPeriod": "Période suivante",
     "thisWeek": "Cette semaine",
