@@ -164,6 +164,8 @@ const showJumpPicker = ref(false);
 const pickerYear = ref(new Date().getFullYear());
 const jumpPickerRef = ref<HTMLElement | null>(null);
 const rangeLabelBtnRef = ref<HTMLButtonElement | null>(null);
+const rangeLabelWrapRef = ref<HTMLElement | null>(null);
+const jumpPickerId = useId();
 
 
 watch(chartRange, () => {
@@ -311,6 +313,15 @@ function closeJumpPicker() {
   if (!showJumpPicker.value) return;
   showJumpPicker.value = false;
   rangeLabelBtnRef.value?.focus();
+}
+
+// Tabbing out closes the picker without moving focus. A null relatedTarget (a click on
+// something unfocusable; Safari never focuses clicked buttons) is left to the backdrop.
+function onJumpPickerFocusout(e: FocusEvent) {
+  const next = e.relatedTarget as Node | null;
+  if (showJumpPicker.value && next && !rangeLabelWrapRef.value?.contains(next)) {
+    showJumpPicker.value = false;
+  }
 }
 
 function jumpToYear(year: number) {
@@ -526,14 +537,20 @@ async function deletePet() {
                   <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                 </svg>
               </button>
-              <div class="range-label-wrap" @keydown.esc="closeJumpPicker">
-                <button ref="rangeLabelBtnRef" class="range-label-btn" :aria-expanded="showJumpPicker" @click="openJumpPicker">
+              <div ref="rangeLabelWrapRef" class="range-label-wrap" @keydown.esc="closeJumpPicker" @focusout="onJumpPickerFocusout">
+                <button
+                  ref="rangeLabelBtnRef"
+                  class="range-label-btn"
+                  :aria-expanded="showJumpPicker"
+                  :aria-controls="showJumpPicker ? jumpPickerId : undefined"
+                  @click="openJumpPicker"
+                >
                   {{ chartLabel }}
                   <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
                     <path d="M7 10l5 5 5-5z"/>
                   </svg>
                 </button>
-                <div v-if="showJumpPicker" class="jump-picker" :class="`picker-${chartRange}`">
+                <div v-if="showJumpPicker" :id="jumpPickerId" class="jump-picker" :class="`picker-${chartRange}`">
                   <div class="jump-picker-scroll" ref="jumpPickerRef">
                   <template v-if="chartRange === 'year'">
                     <button v-for="y in availableYears" :key="y"

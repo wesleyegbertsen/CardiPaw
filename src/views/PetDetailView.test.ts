@@ -343,10 +343,40 @@ describe('PetDetailView', () => {
       const current = wrapper.findAll('.jump-month-btn[aria-current="true"]');
       expect(current.map((m) => m.text())).toEqual(['Mar']);
 
-      await wrapper.findAll('.jump-month-btn')[1].trigger('keydown', { key: 'Escape' });
+      // A month button may be disabled before the readings load; the picker never is
+      await wrapper.get('.jump-picker').trigger('keydown', { key: 'Escape' });
       expect(wrapper.find('.jump-picker').exists()).toBe(false);
       expect(trigger.attributes('aria-expanded')).toBe('false');
       expect(document.activeElement).toBe(trigger.element);
+    });
+
+    it('ties the jump picker to its trigger while open', async () => {
+      const { wrapper, range } = await mountChart();
+      await range(1);
+      const trigger = wrapper.get('.range-label-btn');
+      expect(trigger.attributes('aria-controls')).toBeUndefined();
+      await trigger.trigger('click');
+      const id = wrapper.get('.jump-picker').attributes('id');
+      expect(id).toBeTruthy();
+      expect(trigger.attributes('aria-controls')).toBe(id);
+    });
+
+    it('closes the jump picker when focus leaves it, not inside or nowhere', async () => {
+      const { wrapper, range } = await mountChart();
+      await range(1);
+      const trigger = wrapper.get('.range-label-btn');
+      await trigger.trigger('click');
+      const month = wrapper.get('.jump-month-btn[aria-current]');
+      await month.trigger('focusout', { relatedTarget: trigger.element });
+      await month.trigger('focusout', { relatedTarget: null });
+      expect(wrapper.find('.jump-picker').exists()).toBe(true);
+
+      const outside = wrapper.get('.today-btn').element as HTMLElement;
+      outside.focus();
+      await month.trigger('focusout', { relatedTarget: outside });
+      expect(wrapper.find('.jump-picker').exists()).toBe(false);
+      expect(trigger.attributes('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(outside);
     });
 
     it.each([
