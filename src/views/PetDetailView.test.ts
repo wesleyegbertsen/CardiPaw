@@ -331,6 +331,37 @@ describe('PetDetailView', () => {
       expect(pressed()).toEqual(['false', 'true', 'false']);
     });
 
+    it('labels the jump picker and closes it with Escape', async () => {
+      const { wrapper, range } = await mountChart();
+      await range(1);
+      const trigger = wrapper.get('.range-label-btn');
+      expect(trigger.attributes('aria-expanded')).toBe('false');
+      await trigger.trigger('click');
+      expect(trigger.attributes('aria-expanded')).toBe('true');
+      const arrows = wrapper.findAll('.jump-nav-arrow').map((b) => b.attributes('aria-label'));
+      expect(arrows).toEqual(['Previous year', 'Next year']);
+      const current = wrapper.findAll('.jump-month-btn[aria-current="true"]');
+      expect(current.map((m) => m.text())).toEqual(['Mar']);
+
+      await wrapper.findAll('.jump-month-btn')[1].trigger('keydown', { key: 'Escape' });
+      expect(wrapper.find('.jump-picker').exists()).toBe(false);
+      expect(trigger.attributes('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(trigger.element);
+    });
+
+    it.each([
+      ['a pick', '.jump-month-btn[aria-current]'],
+      ['a backdrop click', '.jump-backdrop'],
+    ])('returns focus to the jump picker trigger on %s', async (_, target) => {
+      const { wrapper, range } = await mountChart();
+      await range(1);
+      const trigger = wrapper.get('.range-label-btn');
+      await trigger.trigger('click');
+      await wrapper.get(target).trigger('click');
+      expect(wrapper.find('.jump-picker').exists()).toBe(false);
+      expect(document.activeElement).toBe(trigger.element);
+    });
+
     it('disables future months and months without readings in the jump picker', async () => {
       const { wrapper, range, label } = await mountChart();
       await range(1);

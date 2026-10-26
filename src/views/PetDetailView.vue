@@ -163,6 +163,7 @@ const chartOffset = ref(0);
 const showJumpPicker = ref(false);
 const pickerYear = ref(new Date().getFullYear());
 const jumpPickerRef = ref<HTMLElement | null>(null);
+const rangeLabelBtnRef = ref<HTMLButtonElement | null>(null);
 
 
 watch(chartRange, () => {
@@ -306,20 +307,26 @@ function openJumpPicker() {
   }
 }
 
+function closeJumpPicker() {
+  if (!showJumpPicker.value) return;
+  showJumpPicker.value = false;
+  rangeLabelBtnRef.value?.focus();
+}
+
 function jumpToYear(year: number) {
   chartOffset.value = year - new Date().getFullYear();
-  showJumpPicker.value = false;
+  closeJumpPicker();
 }
 
 function jumpToMonth(monthIndex: number, year: number) {
   const now = new Date();
   chartOffset.value = (year - now.getFullYear()) * 12 + (monthIndex - now.getMonth());
-  showJumpPicker.value = false;
+  closeJumpPicker();
 }
 
 function jumpToWeekOffset(offset: number) {
   chartOffset.value = offset;
-  showJumpPicker.value = false;
+  closeJumpPicker();
 }
 
 function isFutureMonth(monthIndex: number, year: number): boolean {
@@ -519,8 +526,8 @@ async function deletePet() {
                   <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                 </svg>
               </button>
-              <div class="range-label-wrap">
-                <button class="range-label-btn" @click="openJumpPicker">
+              <div class="range-label-wrap" @keydown.esc="closeJumpPicker">
+                <button ref="rangeLabelBtnRef" class="range-label-btn" :aria-expanded="showJumpPicker" @click="openJumpPicker">
                   {{ chartLabel }}
                   <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
                     <path d="M7 10l5 5 5-5z"/>
@@ -531,18 +538,19 @@ async function deletePet() {
                   <template v-if="chartRange === 'year'">
                     <button v-for="y in availableYears" :key="y"
                       class="jump-year-btn" :class="{ active: y === chartWindow.start.getFullYear() }"
+                      :aria-current="y === chartWindow.start.getFullYear() ? 'true' : undefined"
                       @click="jumpToYear(y)">{{ y }}</button>
                   </template>
                   <template v-else-if="chartRange === 'month'">
                     <div class="jump-month-nav">
-                      <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[availableYears.length - 1]" @click="pickerYear--">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                      <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[availableYears.length - 1]" :aria-label="$t('datePicker.prevYear')" @click="pickerYear--">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
                           <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                         </svg>
                       </button>
                       <span class="jump-year-label">{{ pickerYear }}</span>
-                      <button class="jump-nav-arrow" :disabled="pickerYear >= new Date().getFullYear()" @click="pickerYear++">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                      <button class="jump-nav-arrow" :disabled="pickerYear >= new Date().getFullYear()" :aria-label="$t('datePicker.nextYear')" @click="pickerYear++">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
                           <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
                         </svg>
                       </button>
@@ -551,6 +559,7 @@ async function deletePet() {
                       <button v-for="(m, i) in MONTH_NAMES" :key="i"
                         class="jump-month-btn"
                         :class="{ active: isDisplayedMonth(i, pickerYear) }"
+                        :aria-current="isDisplayedMonth(i, pickerYear) ? 'true' : undefined"
                         :disabled="isFutureMonth(i, pickerYear) || hasNoReadingsInMonth(i, pickerYear)"
                         @click="jumpToMonth(i, pickerYear)">{{ m }}</button>
                     </div>
@@ -560,13 +569,14 @@ async function deletePet() {
                       <div v-if="item.type === 'header'" class="jump-week-year-header">{{ item.year }}</div>
                       <button v-else
                         class="jump-year-btn" :class="{ active: item.offset === chartOffset }"
+                        :aria-current="item.offset === chartOffset ? 'true' : undefined"
                         @click="jumpToWeekOffset(item.offset)">{{ weekLabel(item.offset) }}</button>
                     </template>
                   </template>
                   </div>
                 </div>
               </div>
-              <div v-if="showJumpPicker" class="jump-backdrop" @click="showJumpPicker = false" />
+              <div v-if="showJumpPicker" class="jump-backdrop" @click="closeJumpPicker" />
               <div class="range-right">
                 <button class="today-btn" :style="{ visibility: chartOffset !== 0 ? 'visible' : 'hidden' }" @click="chartOffset = 0">
                   {{ chartRange === 'week' ? $t('petDetail.thisWeek') : chartRange === 'month' ? $t('petDetail.thisMonth') : $t('petDetail.thisYear') }}
