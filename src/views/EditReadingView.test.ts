@@ -5,6 +5,7 @@ import EditReadingView from './EditReadingView.vue';
 import { useReadingsStore } from '../stores/readings';
 import * as db from '../services/db';
 import { mountView, settle } from '../test/mountView';
+import { deferred } from '../test/deferred';
 import { createTestI18n } from '../test/i18n';
 import { makePet, makeReading } from '../test/fixtures';
 import type { Reading } from '../types';
@@ -39,6 +40,16 @@ describe('EditReadingView', () => {
       params: { id: 'pet-1' },
       query: { tab: 'readings' },
     });
+  });
+
+  it('does not go to the pet’s readings after the user already left', async () => {
+    const load = deferred<Reading[]>();
+    vi.spyOn(db, 'getReadingsForPet').mockReturnValueOnce(load.promise);
+    const { push, wrapper } = await mountView(EditReadingView, location, { pets: [makePet()] });
+    wrapper.unmount();
+    load.resolve([]);
+    await settle();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('prefills the rate, rest state and notes', async () => {

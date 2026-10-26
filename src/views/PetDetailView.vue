@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
@@ -317,6 +317,11 @@ const loadError = ref(false);
 const deleting = ref(false);
 const deleteError = ref(false);
 
+let unmounted = false;
+onUnmounted(() => {
+  unmounted = true;
+});
+
 onMounted(async () => {
   try {
     await petsStore.loadPets();
@@ -326,6 +331,8 @@ onMounted(async () => {
     // A pet cached from an earlier visit can still be shown, with the alert.
     if (!pet.value) return;
   }
+  // The user may have left while the pets loaded; don't pull them back home from another page.
+  if (unmounted) return;
   if (!pet.value) {
     router.push({ name: 'home' });
     return;

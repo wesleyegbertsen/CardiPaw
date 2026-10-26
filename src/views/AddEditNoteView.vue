@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useNotesStore } from '../stores/notes';
 import { usePetsStore } from '../stores/pets';
@@ -30,6 +30,11 @@ const canSave = computed(() =>
   !saving.value && !loadError.value && !!editTitle.value.trim() && (!isEditMode.value || !!existingNote.value)
 );
 
+let unmounted = false;
+onUnmounted(() => {
+  unmounted = true;
+});
+
 onMounted(async () => {
   try {
     await petsStore.loadPets();
@@ -39,6 +44,8 @@ onMounted(async () => {
     loadError.value = true;
     return;
   }
+  // The user may have left while the note loaded; don't pull them away from another page.
+  if (unmounted) return;
   if (isEditMode.value) {
     if (!existingNote.value) {
       router.push({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });

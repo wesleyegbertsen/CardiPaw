@@ -250,6 +250,16 @@ describe('AddEditPetView', () => {
       expect(replace).toHaveBeenCalledWith({ name: 'home' });
     });
 
+    it('does not send the user home after they already left', async () => {
+      const load = deferred<Pet[]>();
+      vi.spyOn(db, 'getAllPets').mockReturnValueOnce(load.promise);
+      const { replace, wrapper } = await mountView(AddEditPetView, '/pets/missing/edit', { stubs });
+      wrapper.unmount();
+      load.resolve([]);
+      await settle();
+      expect(replace).not.toHaveBeenCalled();
+    });
+
     it('goes back to the pet', async () => {
       const { wrapper, push } = await mountForm('/pets/pet-1/edit', [pet]);
       await wrapper.get('.back-btn').trigger('click');
