@@ -15,8 +15,11 @@ export function useLastMeasured(readings: Ref<Reading[]>) {
     const lastStr  = localDayKey(readings.value[0].date); // sorted descending, [0] is newest
 
     const msPerDay = 86_400_000;
-    const diffDays = Math.round(
-      (new Date(todayStr).getTime() - new Date(lastStr).getTime()) / msPerDay
+    // Clamped at 0: a reading saved while the device clock was ahead (here, or on the
+    // device a backup came from) is dated after today.
+    const diffDays = Math.max(
+      0,
+      Math.round((new Date(todayStr).getTime() - new Date(lastStr).getTime()) / msPerDay),
     );
 
     let label: string;

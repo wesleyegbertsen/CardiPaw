@@ -40,6 +40,12 @@ describe('useLastMeasured', () => {
     expect(lastMeasured([onMarch(20 - days, 21)]).label).toBe(label);
   });
 
+  it('says today for a reading dated after today', () => {
+    // Saved while the device clock was ahead.
+    vi.setSystemTime(new Date(2024, 2, 20, 9));
+    expect(lastMeasured([onMarch(21)])).toEqual({ label: 'Measured today', isStale: false });
+  });
+
   it('compares local calendar days, not 24-hour periods', () => {
     vi.setSystemTime(new Date(2024, 2, 20, 0, 5));
     expect(lastMeasured([onMarch(19, 23)]).label).toBe('Measured yesterday');
