@@ -50,6 +50,9 @@ const activeTabIndex = computed(() => TABS.indexOf(activeTab.value));
 const tabsId = useId();
 const tabId = (tab: Tab) => `${tabsId}-tab-${tab}`;
 const panelId = (tab: Tab) => `${tabsId}-panel-${tab}`;
+// Panels are named by the tab text without its count
+const tabLabelId = (tab: Tab) => `${tabId(tab)}-label`;
+const titleId = `${tabsId}-title`;
 const tablistRef = ref<HTMLElement | null>(null);
 
 // WAI-ARIA tabs with automatic activation: arrows wrap, Home/End jump to the ends
@@ -447,7 +450,7 @@ async function deletePet() {
           <span>{{ petInitial(pet.name) }}</span>
         </div>
       </div>
-      <h1 class="pet-name">{{ pet.name }}</h1>
+      <h1 :id="titleId" class="pet-name">{{ pet.name }}</h1>
       <div class="pet-meta">
         <span class="badge" :class="pet.species">{{ $t('species.' + pet.species) }}</span>
         <span class="meta-dot">·</span>
@@ -465,7 +468,7 @@ async function deletePet() {
       </button>
     </div>
 
-    <div ref="tablistRef" class="tabs" role="tablist" @keydown="onTabKeydown">
+    <div ref="tablistRef" class="tabs" role="tablist" :aria-labelledby="titleId" @keydown="onTabKeydown">
       <button
         :id="tabId('chart')"
         class="tab"
@@ -475,7 +478,9 @@ async function deletePet() {
         :aria-controls="panelId('chart')"
         :tabindex="activeTab === 'chart' ? 0 : -1"
         @click="activeTab = 'chart'"
-      >{{ $t('petDetail.tabChart') }}</button>
+      >
+        <span :id="tabLabelId('chart')">{{ $t('petDetail.tabChart') }}</span>
+      </button>
       <button
         :id="tabId('readings')"
         class="tab"
@@ -486,7 +491,7 @@ async function deletePet() {
         :tabindex="activeTab === 'readings' ? 0 : -1"
         @click="activeTab = 'readings'"
       >
-        {{ $t('petDetail.tabReadings') }}
+        <span :id="tabLabelId('readings')">{{ $t('petDetail.tabReadings') }}</span>
         <span v-if="readings.length > 0" class="tab-count">{{ readings.length }}</span>
       </button>
       <button
@@ -499,7 +504,7 @@ async function deletePet() {
         :tabindex="activeTab === 'notes' ? 0 : -1"
         @click="activeTab = 'notes'"
       >
-        {{ $t('petDetail.tabNotes') }}
+        <span :id="tabLabelId('notes')">{{ $t('petDetail.tabNotes') }}</span>
         <span v-if="notes.length > 0" class="tab-count">{{ notes.length }}</span>
       </button>
       <div
@@ -524,7 +529,7 @@ async function deletePet() {
         :style="{ transform: `translateX(calc(${-trackIndex * 100}% + ${dragOffset}px))` }"
         @transitionend.self="isAnimating = false"
       >
-        <div :id="panelId('chart')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(0) }" role="tabpanel" :aria-labelledby="tabId('chart')">
+        <div :id="panelId('chart')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(0) }" role="tabpanel" :aria-labelledby="tabLabelId('chart')">
           <div class="chart-controls">
             <div class="range-toggle" role="group" :aria-label="$t('petDetail.rangeLabel')">
               <button :class="{ active: chartRange === 'week' }" :aria-pressed="chartRange === 'week'" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
@@ -608,10 +613,10 @@ async function deletePet() {
           </div>
           <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" :normal-ceiling="pet?.normalCeiling" />
         </div>
-        <div :id="panelId('readings')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(1) }" role="tabpanel" :aria-labelledby="tabId('readings')">
+        <div :id="panelId('readings')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(1) }" role="tabpanel" :aria-labelledby="tabLabelId('readings')" tabindex="0">
           <ReadingList :readings="readings" :pet="pet" />
         </div>
-        <div :id="panelId('notes')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(2) }" role="tabpanel" :aria-labelledby="tabId('notes')">
+        <div :id="panelId('notes')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(2) }" role="tabpanel" :aria-labelledby="tabLabelId('notes')" tabindex="0">
           <NoteList :notes="notes" :petId="petId" />
         </div>
       </div>
