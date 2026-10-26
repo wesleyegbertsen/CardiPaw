@@ -40,15 +40,28 @@ export function buildSharePayload(pet: Pet, readings: Reading[], months: string[
 
 export async function encodeShare(payload: SharePayload): Promise<string> {
   const json = new TextEncoder().encode(JSON.stringify(payload));
-  const compressed = await transform(json, new CompressionStream('deflate-raw'));
+  const compressed = await compress(json);
   return toBase64Url(compressed);
 }
 
+// Limits for links from strangers. Each sits well above anything the app
+// produces: 10 000 readings (about 13 years at two a day) encode to about
+// 86 000 characters and inflate to about 550 KB.
+const MAX_SHARE_PARAM_LENGTH = 100_000;
+const MAX_INFLATED_BYTES = 2_000_000;
+const MAX_SHARED_READINGS = 10_000;
+// Guided rates (taps × 2) have no upper bound and older links hold decimals, so no integer or 300 cap.
+const MAX_SHARED_RATE = 1000;
+const MAX_PET_NAME_LENGTH = 100;
+
 export async function decodeShare(encoded: string): Promise<SharePayload> {
+  if (encoded.length > MAX_SHARE_PARAM_LENGTH) {
+    throw new ShareDecodeError('The link is too long.');
+  }
   let payload: unknown;
   try {
     const compressed = fromBase64Url(encoded);
-    const json = await transform(compressed, new DecompressionStream('deflate-raw'));
+    const json = await inflate(compressed, MAX_INFLATED_BYTES);
     payload = JSON.parse(new TextDecoder().decode(json));
   } catch {
     throw new ShareDecodeError('The link could not be decoded.');
@@ -58,10 +71,44 @@ export async function decodeShare(encoded: string): Promise<SharePayload> {
   }
   return {
     ...payload,
-    // Older versions accepted malformed birthdates; show "unknown age" rather than refuse the link.
-    pet: { ...payload.pet, birthdate: isShareDay(payload.pet.birthdate) ? payload.pet.birthdate : '' },
+    pet: {
+      ...payload.pet,
+      name: Array.from(payload.pet.name).slice(0, MAX_PET_NAME_LENGTH).join(''),
+      // Older versions accepted malformed birthdates; show "unknown age" rather than refuse the link.
+      birthdate: isShareDay(payload.pet.birthdate) ? payload.pet.birthdate : '',
+    },
     readings: payload.readings.map((r) => ({ ...r, date: fromShareDate(r.date) })),
   };
+}
+
+// Stops reading once the output passes `limit`, so a short link that inflates to
+// tens of megabytes (a deflate bomb) is never joined, decoded or parsed. Deflate
+// expands at most about 1000×, so the length cap bounds what a browser can inflate
+// ahead of this loop.
+async function inflate(bytes: Uint8Array, limit: number): Promise<Uint8Array> {
+  const reader = new Blob([bytes])
+    .stream()
+    .pipeThrough(new DecompressionStream('deflate-raw'))
+    .getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > limit) {
+      await reader.cancel().catch(() => {});
+      throw new Error('Inflated share data exceeds the limit');
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
 }
 
 // Stored dates are UTC toISOString() values. Minute precision keeps the URL
@@ -79,11 +126,8 @@ function fromShareDate(date: string): string {
   return OFFSETLESS_DATE_TIME.test(date) ? date + 'Z' : date;
 }
 
-async function transform(
-  bytes: Uint8Array,
-  stream: CompressionStream | DecompressionStream
-): Promise<Uint8Array> {
-  const piped = new Blob([bytes]).stream().pipeThrough(stream);
+async function compress(bytes: Uint8Array): Promise<Uint8Array> {
+  const piped = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
   return new Uint8Array(await new Response(piped).arrayBuffer());
 }
 
@@ -121,7 +165,7 @@ function isSharePayload(value: unknown): value is SharePayload {
   if (typeof pet.name !== 'string' || typeof pet.birthdate !== 'string') return false;
   if (pet.species !== 'cat' && pet.species !== 'dog') return false;
   if (!isOptionalFinite(pet.normalCeiling) || !isOptionalFinite(pet.elevatedCeiling)) return false;
-  if (!Array.isArray(v.readings)) return false;
+  if (!Array.isArray(v.readings) || v.readings.length > MAX_SHARED_READINGS) return false;
   return v.readings.every((r) => {
     if (typeof r !== 'object' || r === null) return false;
     const reading = r as Record<string, unknown>;
@@ -132,7 +176,14 @@ function isSharePayload(value: unknown): value is SharePayload {
     ) {
       return false;
     }
-    if (typeof reading.rate !== 'number' || !Number.isFinite(reading.rate)) return false;
+    if (
+      typeof reading.rate !== 'number' ||
+      !Number.isFinite(reading.rate) ||
+      reading.rate < 0 ||
+      reading.rate > MAX_SHARED_RATE
+    ) {
+      return false;
+    }
     return (
       reading.restState === undefined ||
       reading.restState === 'resting' ||

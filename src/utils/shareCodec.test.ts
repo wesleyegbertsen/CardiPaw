@@ -231,6 +231,78 @@ describe('encodeShare / decodeShare', () => {
     expect(decoded.readings[0].date).toBe('2026-03-14T10:00Z');
   });
 
+  // Base64 characters from a fixed-seed generator: random enough that deflate cannot shrink them.
+  function incompressible(length: number): string {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    let seed = 1;
+    let out = '';
+    for (let i = 0; i < length; i++) {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      out += alphabet[(seed >>> 0) % 64];
+    }
+    return out;
+  }
+
+  it('rejects a link longer than 100 000 characters', async () => {
+    const payload: SharePayload = {
+      ...samplePayload,
+      pet: { ...samplePayload.pet, name: incompressible(130_000) },
+    };
+    const encoded = await encodeShare(payload);
+    expect(encoded.length).toBeGreaterThan(100_000);
+    await expect(decodeShare(encoded)).rejects.toBeInstanceOf(ShareDecodeError);
+  });
+
+  it('rejects a small link that inflates past 2 MB', async () => {
+    const bomb = { ...samplePayload, pet: { ...samplePayload.pet, name: 'a'.repeat(3_000_000) } };
+    const encoded = await encodeRaw(JSON.stringify(bomb));
+    expect(encoded.length).toBeLessThan(100_000);
+    await expect(decodeShare(encoded)).rejects.toBeInstanceOf(ShareDecodeError);
+  });
+
+  it('rejects more than 10 000 readings and accepts exactly 10 000', async () => {
+    const many = (n: number) => ({
+      ...samplePayload,
+      readings: Array.from({ length: n }, () => ({ date: '2026-03-14T08:30Z', rate: 22 })),
+    });
+    await expect(decodeShare(await encodeRaw(JSON.stringify(many(10_001))))).rejects.toBeInstanceOf(
+      ShareDecodeError,
+    );
+    await expect(decodeShare(await encodeRaw(JSON.stringify(many(10_000))))).resolves.toMatchObject(
+      { readings: { length: 10_000 } },
+    );
+  });
+
+  it.each([
+    ['a negative rate', -1],
+    ['a rate above 1000', 1001],
+  ])('rejects a snapshot with %s', async (_n, rate) => {
+    const value = { ...samplePayload, readings: [{ date: '2026-03-14T08:30Z', rate }] };
+    await expect(decodeShare(await encodeRaw(JSON.stringify(value)))).rejects.toBeInstanceOf(
+      ShareDecodeError,
+    );
+  });
+
+  it('keeps decimal rates and guided rates above 200', async () => {
+    const value: SharePayload = {
+      ...samplePayload,
+      readings: [
+        { date: '2026-03-14T08:30Z', rate: 22.5 },
+        { date: '2026-03-15T08:30Z', rate: 240 },
+        { date: '2026-03-16T08:30Z', rate: 1000 },
+      ],
+    };
+    await expect(decodeShare(await encodeShare(value))).resolves.toEqual(value);
+  });
+
+  it('cuts a very long pet name to 100 characters', async () => {
+    const value = { ...samplePayload, pet: { ...samplePayload.pet, name: '🐾'.repeat(500) } };
+    const decoded = await decodeShare(await encodeRaw(JSON.stringify(value)));
+    expect(decoded.pet.name).toBe('🐾'.repeat(100));
+  });
+
   it('gives decode failures a stable error name', async () => {
     await expect(decodeShare('!!!')).rejects.toMatchObject({ name: 'ShareDecodeError' });
   });
