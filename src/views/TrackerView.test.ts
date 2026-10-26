@@ -268,6 +268,27 @@ describe('TrackerView', () => {
     expect(wrapper.get('.manual-rate-input').attributes('aria-label')).toBe('Rate (breaths/min)');
   });
 
+  it.each(['manual', 'guided'])('exposes the %s rest state as pressed buttons', async (mode) => {
+    const { wrapper } = await mountTracker();
+    if (mode === 'manual') {
+      await wrapper.findAll('.mode-pill')[1].trigger('click');
+    } else {
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(30_000);
+    }
+    const group = wrapper.get('.rest-state-row');
+    expect(group.attributes('role')).toBe('group');
+    const labelId = group.attributes('aria-labelledby');
+    expect(labelId && document.getElementById(labelId)?.textContent).toBe('Pet was');
+    const [resting, sleeping] = wrapper.findAll('.rest-btn');
+    const pressed = () => [resting, sleeping].map((b) => b.attributes('aria-pressed'));
+    expect(pressed()).toEqual(['false', 'false']);
+    await resting.trigger('click');
+    expect(pressed()).toEqual(['true', 'false']);
+    await resting.trigger('click');
+    expect(resting.attributes('aria-pressed')).toBe('false');
+  });
+
   it('names the sound and vibration switches', async () => {
     const { wrapper } = await mountTracker();
     const names = wrapper.findAll('[role="switch"]').map((s) => {

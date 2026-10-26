@@ -51,6 +51,21 @@ describe('EditReadingView', () => {
     expect((wrapper.get('.notes-stub').element as HTMLTextAreaElement).value).toBe('<p>Calm</p>');
   });
 
+  it('labels the rate and rest state fields', async () => {
+    const { wrapper, rate } = await mountEdit(makeReading({ restState: 'sleeping' }));
+    expect(rate.attributes('id')).toBeTruthy();
+    expect(wrapper.get('label.label').attributes('for')).toBe(rate.attributes('id'));
+    const labelText = (el: { attributes: (n: string) => string | undefined }) =>
+      document.getElementById(el.attributes('aria-labelledby')!)?.textContent;
+    const group = wrapper.get('.rest-state-row');
+    expect(group.attributes('role')).toBe('group');
+    expect(labelText(group)).toBe('Pet was');
+    expect(wrapper.findAll('.rest-btn').map((b) => b.attributes('aria-pressed'))).toEqual([
+      'false',
+      'true',
+    ]);
+  });
+
   it('hides the badge and disables save when the rate is cleared', async () => {
     const { rate, submit, badge } = await mountEdit();
     await rate.setValue('');

@@ -51,6 +51,8 @@ const saveError = ref(false);
 const loadError = ref(false);
 const soundLabelId = useId();
 const vibrationLabelId = useId();
+// The manual and done bodies never render together, so their rest rows can share one id
+const restLabelId = useId();
 const isManualMode = computed(() => mode.value === 'manual');
 const heartRef = ref<HTMLButtonElement | null>(null);
 const resultRef = ref<HTMLElement | null>(null);
@@ -242,16 +244,18 @@ onUnmounted(() => {
         >{{ $t('status.' + getRateStatus(manualRate, pet).cssClass) }}</span>
       </div>
 
-      <div class="rest-state-row">
-        <span class="rest-state-label">{{ $t('restState.petWas') }}</span>
+      <div class="rest-state-row" role="group" :aria-labelledby="restLabelId">
+        <span :id="restLabelId" class="rest-state-label">{{ $t('restState.petWas') }}</span>
         <button
           class="rest-btn"
           :class="{ active: restState === 'resting' }"
+          :aria-pressed="restState === 'resting'"
           @click="restState = restState === 'resting' ? undefined : 'resting'"
         >{{ $t('restState.resting') }}</button>
         <button
           class="rest-btn"
           :class="{ active: restState === 'sleeping' }"
+          :aria-pressed="restState === 'sleeping'"
           @click="restState = restState === 'sleeping' ? undefined : 'sleeping'"
         >{{ $t('restState.sleeping') }}</button>
       </div>
@@ -355,16 +359,18 @@ onUnmounted(() => {
 
       <p class="result-note">{{ $t('tracker.basedOn', clickCount) }}</p>
 
-      <div class="rest-state-row">
-        <span class="rest-state-label">{{ $t('restState.petWas') }}</span>
+      <div class="rest-state-row" role="group" :aria-labelledby="restLabelId">
+        <span :id="restLabelId" class="rest-state-label">{{ $t('restState.petWas') }}</span>
         <button
           class="rest-btn"
           :class="{ active: restState === 'resting' }"
+          :aria-pressed="restState === 'resting'"
           @click="restState = restState === 'resting' ? undefined : 'resting'"
         >{{ $t('restState.resting') }}</button>
         <button
           class="rest-btn"
           :class="{ active: restState === 'sleeping' }"
+          :aria-pressed="restState === 'sleeping'"
           @click="restState = restState === 'sleeping' ? undefined : 'sleeping'"
         >{{ $t('restState.sleeping') }}</button>
       </div>

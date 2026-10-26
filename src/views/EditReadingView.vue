@@ -118,9 +118,10 @@ function formatDate(iso: string) {
       </div>
 
       <div class="field">
-        <label class="label">{{ $t('reading.rateLabel') }}</label>
+        <label class="label" for="reading-rate">{{ $t('reading.rateLabel') }}</label>
         <div class="rate-row">
           <input
+            id="reading-rate"
             class="rate-input"
             type="number"
             v-model.number="editRate"
@@ -135,25 +136,27 @@ function formatDate(iso: string) {
       </div>
 
       <div class="field">
-        <label class="label">{{ $t('restState.petWas') }}</label>
-        <div class="rest-state-row">
+        <span id="reading-rest-label" class="label">{{ $t('restState.petWas') }}</span>
+        <div class="rest-state-row" role="group" aria-labelledby="reading-rest-label">
           <button
             type="button"
             class="rest-btn"
             :class="{ active: editRestState === 'resting' }"
+            :aria-pressed="editRestState === 'resting'"
             @click="editRestState = editRestState === 'resting' ? undefined : 'resting'"
           >{{ $t('restState.resting') }}</button>
           <button
             type="button"
             class="rest-btn"
             :class="{ active: editRestState === 'sleeping' }"
+            :aria-pressed="editRestState === 'sleeping'"
             @click="editRestState = editRestState === 'sleeping' ? undefined : 'sleeping'"
           >{{ $t('restState.sleeping') }}</button>
         </div>
       </div>
 
       <div class="field">
-        <label class="label">{{ $t('reading.notesLabel') }}</label>
+        <span id="reading-notes-label" class="label">{{ $t('reading.notesLabel') }}</span>
         <RichTextEditor v-model="editNotes" />
       </div>
 
