@@ -81,6 +81,23 @@ describe('ShareView', () => {
     expect(rows[2].get('.rest-tag').classes()).toContain('resting');
   });
 
+  it('gives each row its own key when two readings share a minute', async () => {
+    // Share dates have minute precision (and links can be hand-made), so dates repeat.
+    const d = await codec.encodeShare({
+      v: 1,
+      sharedAt: '2024-03-20',
+      pet: { name: 'Mimi', species: 'cat', birthdate: '2020-01-01' },
+      readings: [22, 30, 18].map((rate) => ({ date: '2024-03-12T08:00Z', rate })),
+    });
+    const { wrapper } = await mountShare({ d });
+    const rows = wrapper.findAll('.reading-row');
+    expect(rows.map((r) => r.get('.row-rate').text().split(' ')[0])).toEqual(['22', '30', '18']);
+    // Vue only reports duplicate keys when it patches a list, and this table is rebuilt for every
+    // link, so check the keys themselves: duplicates would let a later update reuse the wrong row.
+    const keys = rows.map((r) => (r.element as Element & { __vnode: { key: unknown } }).__vnode.key);
+    expect(new Set(keys).size).toBe(3);
+  });
+
   it.each([
     ['missing', {}],
     ['empty', { d: '' }],
