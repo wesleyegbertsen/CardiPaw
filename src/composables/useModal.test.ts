@@ -1,11 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h, nextTick, ref, type Ref } from 'vue';
-import { enableAutoUnmount, mount } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { useModal } from './useModal';
 
-// useModal keeps a module-level stack of open dialogs; unmounting every wrapper
-// after each test keeps one test's dialogs from swallowing the next one's keys.
-enableAutoUnmount(afterEach);
 // opener() adds buttons outside any wrapper; remove them even when a test fails early.
 afterEach(() => document.body.replaceChildren());
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, type VueWrapper } from '@vue/test-utils';
+import { flushPromises, type VueWrapper } from '@vue/test-utils';
 import SettingsView from './SettingsView.vue';
 import * as backup from '../services/backup';
 import { mountView, settle } from '../test/mountView';
@@ -10,8 +10,6 @@ vi.mock('../services/backup', async (importOriginal) => {
   const real = await importOriginal<typeof import('../services/backup')>();
   return { ...real, downloadBackup: vi.fn(), importBackup: vi.fn() };
 });
-
-enableAutoUnmount(afterEach);
 
 const exportButton = (w: VueWrapper) => w.findAll('.action-btn')[0];
 const importButton = (w: VueWrapper) => w.findAll('.action-btn')[1];

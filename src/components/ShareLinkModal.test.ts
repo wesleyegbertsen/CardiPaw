@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import ShareLinkModal from './ShareLinkModal.vue';
 import * as codec from '../utils/shareCodec';
@@ -13,8 +13,6 @@ vi.mock('../utils/shareCodec', async (importOriginal) => {
   const real = await importOriginal<typeof import('../utils/shareCodec')>();
   return { ...real, encodeShare: vi.fn(real.encodeShare) };
 });
-
-enableAutoUnmount(afterEach);
 
 const readings = [
   makeReading({ id: 'march', date: '2024-03-15T12:00:00.000Z' }),

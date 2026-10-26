@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises } from '@vue/test-utils';
+import { flushPromises } from '@vue/test-utils';
 import AddEditNoteView from './AddEditNoteView.vue';
 import * as db from '../services/db';
 import { useNotesStore } from '../stores/notes';
@@ -10,8 +10,6 @@ import type { Note } from '../types';
 vi.mock('../components/LazyRichTextEditor', async () =>
   (await import('../test/stubs')).lazyEditorStubModule(),
 );
-
-enableAutoUnmount(afterEach);
 
 const NOW = '2024-04-01T10:00:00.000Z';
 const notesTab = { name: 'pet', params: { id: 'pet-1' }, query: { tab: 'notes' } };

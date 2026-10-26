@@ -1,5 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
 import HomeView from './HomeView.vue';
 import * as db from '../services/db';
 import { usePetsStore } from '../stores/pets';
@@ -11,8 +10,6 @@ vi.mock('vue-chartjs', async () => {
   const { defineComponent, h } = await import('vue');
   return { Line: defineComponent({ render: () => h('canvas') }) };
 });
-
-enableAutoUnmount(afterEach);
 
 // App.vue starts the pet load; HomeView only renders the store's state.
 async function mountHome(load: () => Promise<unknown>, pets: Pet[] = []) {

@@ -13,8 +13,8 @@ import type { Note, Pet, Reading } from '../types';
  * Helpers for mounting a whole view against the real stores, a real router and
  * fake-indexeddb (src/test/setup.ts). Runs in the dom vitest project.
  *
- * - Call `enableAutoUnmount(afterEach)` in the test file; mounted views attach to
- *   `document.body`.
+ * - Mounted views attach to `document.body` and are unmounted after each test
+ *   (src/test/setup-dom.ts).
  * - IndexedDB stays in memory for the whole file: seed only what a test needs and use
  *   unique ids, or clear the stores yourself.
  * - When faking time alongside IndexedDB, fake only the clock:

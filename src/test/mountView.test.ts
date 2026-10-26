@@ -1,11 +1,8 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { defineComponent, h, onMounted } from 'vue';
-import { enableAutoUnmount } from '@vue/test-utils';
 import { mountView } from './mountView';
 import { usePetsStore } from '../stores/pets';
 import { makePet } from './fixtures';
-
-enableAutoUnmount(afterEach);
 
 const LoadsPets = defineComponent({
   setup() {

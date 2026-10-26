@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h } from 'vue';
-import { enableAutoUnmount, flushPromises, type VueWrapper } from '@vue/test-utils';
+import { flushPromises, type VueWrapper } from '@vue/test-utils';
 import ShareView from './ShareView.vue';
 import * as codec from '../utils/shareCodec';
 import { mountView } from '../test/mountView';
@@ -12,8 +12,6 @@ vi.mock('../utils/shareCodec', async (importOriginal) => {
   const real = await importOriginal<typeof import('../utils/shareCodec')>();
   return { ...real, decodeShare: vi.fn(real.decodeShare) };
 });
-
-enableAutoUnmount(afterEach);
 
 // Chart.js needs a canvas; the view's job is to hand each month its readings.
 const RRRChartStub = defineComponent({

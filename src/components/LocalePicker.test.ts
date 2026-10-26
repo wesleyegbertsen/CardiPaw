@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
 import LocalePicker from './LocalePicker.vue';
 import { setLocale } from '../i18n';
 import { createTestI18n } from '../test/i18n';
@@ -8,8 +8,6 @@ vi.mock('../i18n', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../i18n')>()),
   setLocale: vi.fn(),
 }));
-
-enableAutoUnmount(afterEach);
 
 function mountPicker() {
   return mount(LocalePicker, { global: { plugins: [createTestI18n()] } });

@@ -1,9 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
 import OnboardingModal from './OnboardingModal.vue';
 import { createTestI18n } from '../test/i18n';
-
-enableAutoUnmount(afterEach);
 
 const q = <T extends Element = HTMLElement>(selector: string) =>
   document.body.querySelector<T>(selector);

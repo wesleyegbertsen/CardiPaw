@@ -1,5 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
 import NoteView from './NoteView.vue';
 import { useNotesStore } from '../stores/notes';
 import * as db from '../services/db';
@@ -7,8 +6,6 @@ import { mountView, settle } from '../test/mountView';
 import { makeNote, makePet } from '../test/fixtures';
 import { deferred } from '../test/deferred';
 import type { Note } from '../types';
-
-enableAutoUnmount(afterEach);
 
 const location = '/pets/pet-1/notes/note-1';
 const notesTab = { name: 'pet', params: { id: 'pet-1' }, query: { tab: 'notes' } };

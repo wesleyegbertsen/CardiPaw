@@ -54,6 +54,8 @@ export default defineConfig({
           include: ['src/**/*.test.ts'],
           // A project's exclude replaces Vitest's default (node_modules etc.), so spread it in.
           exclude: [...configDefaults.exclude, ...NODE_TESTS],
+          // Added to the root setupFiles (`extends: true` concatenates arrays).
+          setupFiles: ['src/test/setup-dom.ts'],
         },
       },
     ],

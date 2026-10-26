@@ -1,12 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
 import type { Editor } from '@tiptap/vue-3';
 import RichTextEditor from './RichTextEditor.vue';
 import en from '../i18n/locales/en.json';
 import nl from '../i18n/locales/nl.json';
-
-enableAutoUnmount(afterEach);
 
 // Real TipTap: it runs in happy-dom, and TipTap core puts the Editor on its DOM node.
 function mountEditor(modelValue = '') {

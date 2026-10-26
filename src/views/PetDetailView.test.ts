@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import PetDetailView from './PetDetailView.vue';
 import { usePetsStore } from '../stores/pets';
 import { mountView, settle, type MountViewOptions } from '../test/mountView';
@@ -20,8 +20,6 @@ vi.mock('../components/RRRChart.vue', async () => {
     }),
   };
 });
-
-enableAutoUnmount(afterEach);
 
 const pet = makePet();
 

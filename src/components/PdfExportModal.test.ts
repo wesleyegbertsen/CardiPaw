@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import PdfExportModal from './PdfExportModal.vue';
 import { usePdfExport } from '../composables/usePdfExport';
 import { createTestI18n } from '../test/i18n';
@@ -11,8 +11,6 @@ vi.mock('../composables/usePdfExport', async () => {
   const state = { isGenerating: ref(false), generatePdf: vi.fn() };
   return { usePdfExport: () => state, preloadPdfLibrary: vi.fn() };
 });
-
-enableAutoUnmount(afterEach);
 
 const { isGenerating, generatePdf } = usePdfExport();
 const pet = makePet();
