@@ -69,8 +69,13 @@ describe('EditReadingView', () => {
 
   it('hides the badge and disables save when the rate is cleared', async () => {
     const { rate, submit, badge } = await mountEdit();
+    // The status pill describes the rate input while it is shown
+    const describedBy = rate.attributes('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(describedBy).toBe(badge().attributes('id'));
     await rate.setValue('');
     expect(badge().exists()).toBe(false);
+    expect(rate.attributes('aria-describedby')).toBeUndefined();
     expect(submit.element.disabled).toBe(true);
   });
 

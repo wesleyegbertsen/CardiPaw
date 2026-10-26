@@ -266,6 +266,8 @@ describe('TrackerView', () => {
     const { wrapper } = await mountTracker();
     await wrapper.findAll('.mode-pill')[1].trigger('click');
     expect(wrapper.get('.manual-rate-input').attributes('aria-label')).toBe('Rate (breaths/min)');
+    // The label already says breaths/min; the visible unit is not read a second time
+    expect(wrapper.get('.manual-rate-unit').attributes('aria-hidden')).toBe('true');
     expect(wrapper.get('.notes-stub').attributes('aria-label')).toBe('Notes');
   });
 

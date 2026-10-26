@@ -128,8 +128,9 @@ function formatDate(iso: string) {
             required
             min="1"
             max="200"
+            :aria-describedby="rateValid ? 'reading-rate-status' : undefined"
           />
-          <span v-if="rateValid" class="rate-badge" :class="getRateStatus(editRate, pet).cssClass">
+          <span v-if="rateValid" id="reading-rate-status" class="rate-badge" :class="getRateStatus(editRate, pet).cssClass">
             {{ $t('status.' + getRateStatus(editRate, pet).cssClass) }}
           </span>
         </div>

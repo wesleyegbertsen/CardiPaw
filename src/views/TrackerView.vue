@@ -236,7 +236,7 @@ onUnmounted(() => {
           :aria-label="$t('reading.rateLabel')"
           autofocus
         />
-        <span class="manual-rate-unit">{{ $t('tracker.unitSpaced') }}</span>
+        <span class="manual-rate-unit" aria-hidden="true">{{ $t('tracker.unitSpaced') }}</span>
         <span
           class="rate-badge"
           :class="getRateStatus(manualRate, pet).cssClass"
