@@ -1,11 +1,21 @@
 <script setup lang="ts">
 // PWA update/offline notifications — https://vite-pwa-org.netlify.app/frameworks/vue.html
+import { onUnmounted } from 'vue'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
+
+let updateTimer: ReturnType<typeof setInterval> | undefined
+let unmounted = false
 
 const { offlineReady, needRefresh, updateServiceWorker } = useRegisterSW({
   onRegistered(r) {
-    if (r) setInterval(() => r.update(), 60 * 60 * 1000)
+    // Registration can finish after the banner is gone; don't start a check nobody can stop.
+    if (r && !unmounted) updateTimer = setInterval(() => r.update(), 60 * 60 * 1000)
   },
+})
+
+onUnmounted(() => {
+  unmounted = true
+  clearInterval(updateTimer)
 })
 
 function close() {

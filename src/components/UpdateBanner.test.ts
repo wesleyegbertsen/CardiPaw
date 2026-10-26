@@ -96,6 +96,26 @@ describe('UpdateBanner', () => {
     expect(update).toHaveBeenCalledTimes(2);
   });
 
+  it('stops checking for updates once unmounted', () => {
+    vi.useFakeTimers();
+    const wrapper = mountBanner();
+    const update = vi.fn();
+    sw.options!.onRegistered!({ update });
+    wrapper.unmount();
+    vi.advanceTimersByTime(2 * 60 * 60 * 1000);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('does not start checking when registration finishes after unmount', () => {
+    vi.useFakeTimers();
+    const wrapper = mountBanner();
+    wrapper.unmount();
+    const update = vi.fn();
+    sw.options!.onRegistered!({ update });
+    vi.advanceTimersByTime(60 * 60 * 1000);
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it('does nothing when no registration is returned', () => {
     vi.useFakeTimers();
     const setInterval = vi.spyOn(globalThis, 'setInterval');
