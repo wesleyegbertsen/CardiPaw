@@ -24,7 +24,7 @@ vi.mock('../components/RRRChart.vue', async () => {
 
 const pet = makePet();
 
-function mountDetail(location: string, data: MountViewOptions = {}) {
+function mountDetail(location: string, data: MountViewOptions<typeof PetDetailView> = {}) {
   return mountView(PetDetailView, location, { pets: [pet], ...data });
 }
 
@@ -340,6 +340,16 @@ describe('PetDetailView', () => {
       expect(dragging()).toBe(false);
     });
 
+    it('commits a slow drag only once it is past a quarter of the width', async () => {
+      const exact = await mountSwipe();
+      await exact.swipe(-100, 2000);
+      expect(exact.replace).not.toHaveBeenCalled();
+
+      const past = await mountSwipe();
+      await past.swipe(-101, 2000);
+      expect(past.replace).toHaveBeenCalledWith({ query: { tab: 'readings' } });
+    });
+
     it('moves to the previous tab on a quick short flick', async () => {
       const { swipe, replace, wrapper } = await mountSwipe('readings');
       await swipe(40, 100); // 0.4 px/ms
@@ -354,12 +364,24 @@ describe('PetDetailView', () => {
       expect(activeTabIndex(wrapper)).toBe(1);
     });
 
+    it('counts a short drag as a flick only when faster than 0.3 px/ms', async () => {
+      const exact = await mountSwipe();
+      await exact.swipe(-30, 100);
+      expect(exact.replace).not.toHaveBeenCalled();
+
+      const faster = await mountSwipe();
+      await faster.swipe(-31, 100);
+      expect(faster.replace).toHaveBeenCalledWith({ query: { tab: 'readings' } });
+    });
+
     it('moves the track and the tab indicator with the finger, without transitions', async () => {
-      const { wrapper, start, move, transform, dragging } = await mountSwipe('readings');
+      const { wrapper, start, move, transform, dragging, collapsed } = await mountSwipe('readings');
       await start();
-      await move(-15); // past the 10px lock threshold
+      await move(-15);
       expect(dragging()).toBe(true);
       expect(transform()).toContain('translateX(calc(-100% + -15px))');
+      // Both neighbours stay rendered so either can slide in under the finger.
+      expect(collapsed()).toEqual([false, false, false]);
       await move(-50);
       expect(transform()).toContain('translateX(calc(-100% + -50px))');
       const indicator = wrapper.get('.tab-indicator');
@@ -385,6 +407,15 @@ describe('PetDetailView', () => {
       await last.end(-100, 0, 50);
       await settle();
       expect(last.replace).not.toHaveBeenCalled();
+      expect(last.transform()).toContain('translateX(calc(-200% + 0px))');
+    });
+
+    it('starts dragging sideways once the finger has moved 10px', async () => {
+      const { start, move, transform, dragging } = await mountSwipe();
+      await start();
+      await move(-10);
+      expect(dragging()).toBe(true);
+      expect(transform()).toContain('translateX(calc(0% + -10px))');
     });
 
     it('does not drag a vertical gesture, even after a small sideways jitter', async () => {
@@ -410,6 +441,7 @@ describe('PetDetailView', () => {
       expect(transform()).toContain('translateX(calc(0% + 0px))');
 
       await move(-200, 0, 600);
+      expect(transform()).toContain('translateX(calc(0% + 0px))');
       await end(-200, 0, 700);
       await settle();
       expect(dragging()).toBe(false);
@@ -437,6 +469,16 @@ describe('PetDetailView', () => {
       expect(activeTabIndex(wrapper)).toBe(0);
     });
 
+    it('closes the jump picker when the tab changes', async () => {
+      const { wrapper } = await mountSwipe();
+      await wrapper.get('.range-label-btn').trigger('click');
+      expect(wrapper.find('.jump-picker').exists()).toBe(true);
+      await tabs(wrapper)[1].trigger('click');
+      await settle();
+      expect(activeTabIndex(wrapper)).toBe(1);
+      expect(wrapper.find('.jump-picker').exists()).toBe(false);
+    });
+
     it('keeps the panels expanded until the track itself finishes sliding', async () => {
       const { wrapper, swipe, collapsed } = await mountSwipe();
       expect(collapsed()).toEqual([false, true, true]);
@@ -449,6 +491,34 @@ describe('PetDetailView', () => {
 
       await wrapper.get('.tab-track').trigger('transitionend');
       expect(collapsed()).toEqual([true, false, true]);
+    });
+
+    it('keeps the panels expanded while a tapped tab slides in', async () => {
+      const { wrapper, collapsed } = await mountSwipe();
+      await tabs(wrapper)[1].trigger('click');
+      await settle();
+      expect(collapsed()).toEqual([false, false, false]);
+      await wrapper.get('.tab-track').trigger('transitionend');
+      expect(collapsed()).toEqual([true, false, true]);
+    });
+
+    it('keeps the panels expanded while the track snaps back', async () => {
+      const { wrapper, swipe, collapsed } = await mountSwipe();
+      await swipe(-80, 2000);
+      expect(collapsed()).toEqual([false, false, false]);
+      await wrapper.get('.tab-track').trigger('transitionend');
+      expect(collapsed()).toEqual([false, true, true]);
+    });
+
+    it('collapses the panels at once when a drag is released where it started', async () => {
+      // The track does not move, so no transitionend will come to collapse them.
+      const { start, move, end, collapsed } = await mountSwipe();
+      await start();
+      await move(-15);
+      await move(0);
+      await end(0, 0, 2000);
+      await settle();
+      expect(collapsed()).toEqual([false, true, true]);
     });
   });
 });
