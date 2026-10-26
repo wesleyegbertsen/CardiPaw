@@ -16,6 +16,7 @@ enableAutoUnmount(afterEach);
 
 const exportButton = (w: VueWrapper) => w.findAll('.action-btn')[0];
 const importButton = (w: VueWrapper) => w.findAll('.action-btn')[1];
+const status = (w: VueWrapper) => w.get('[role="status"]').text();
 const alerts = (w: VueWrapper) => w.findAll('[role="alert"]').map((a) => a.text());
 const dialogMessage = () => document.body.querySelector('[role="alertdialog"] .message');
 const clickInBody = (selector: string) =>
@@ -66,6 +67,15 @@ describe('SettingsView', () => {
         expect.objectContaining({ pets: [makePet()] }),
       );
       expect(importButton(wrapper).text()).toContain('Imported');
+    });
+
+    it('announces Imported in a status region', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(status(wrapper)).toBe('');
+      await pickFile(wrapper, backupText());
+      clickInBody('.btn-confirm');
+      await settle();
+      expect(status(wrapper)).toBe('✓ Imported');
     });
 
     it('restarts the Imported confirmation on a repeat import', async () => {
@@ -177,9 +187,11 @@ describe('SettingsView', () => {
       vi.advanceTimersByTime(1500);
       await flushPromises();
       expect(exportButton(wrapper).text()).toContain('Exported');
+      expect(status(wrapper)).toBe('✓ Exported');
       vi.advanceTimersByTime(1500);
       await flushPromises();
       expect(exportButton(wrapper).text()).not.toContain('Exported');
+      expect(status(wrapper)).toBe('');
     });
 
     it('leaves no timer running after leaving the page', async () => {
@@ -190,6 +202,14 @@ describe('SettingsView', () => {
       expect(vi.getTimerCount()).toBe(1);
       wrapper.unmount();
       expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('announces Exported in a status region', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(status(wrapper)).toBe('');
+      await exportButton(wrapper).trigger('click');
+      await settle();
+      expect(status(wrapper)).toBe('✓ Exported');
     });
 
     it('reports a failed export instead of claiming success', async () => {
@@ -207,6 +227,13 @@ describe('SettingsView', () => {
       expect(alerts(wrapper)).toEqual([]);
       expect(exportButton(wrapper).text()).toContain('Exported');
     });
+  });
+
+  it('keeps the hidden file input out of the tab order', async () => {
+    const { wrapper } = await mountView(SettingsView, '/settings');
+    const input = wrapper.get('input[type="file"]');
+    expect(input.attributes('tabindex')).toBe('-1');
+    expect(input.attributes('aria-hidden')).toBe('true');
   });
 
   it('opens and closes the privacy information', async () => {

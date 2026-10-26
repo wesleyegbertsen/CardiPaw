@@ -39,6 +39,10 @@ const exportSuccess = ref(false);
 const importSuccess = ref(false);
 const importing = ref(false);
 const exportError = ref(false);
+// Spoken by the status region; the buttons show the same text
+const statusMessage = computed(() =>
+  importSuccess.value ? t('settings.imported') : exportSuccess.value ? t('settings.exported') : '',
+);
 
 // A repeat export/import restarts its 3 s confirmation instead of being cut short
 let exportTimer: ReturnType<typeof setTimeout> | undefined;
@@ -194,8 +198,12 @@ function cancelImport() {
           type="file"
           accept=".json,application/json"
           class="sr-only"
+          tabindex="-1"
+          aria-hidden="true"
           @change="onImportFileChange"
         />
+
+        <p class="sr-only" role="status">{{ statusMessage }}</p>
 
         <p v-if="exportError" class="error-msg" role="alert">{{ $t('settings.exportError') }}</p>
         <p v-if="importError" class="error-msg" role="alert">{{ importError }}</p>
