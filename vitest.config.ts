@@ -6,10 +6,11 @@ import { fileURLToPath } from 'node:url';
 // zone opt in with vi.stubEnv('TZ', …), which unstubEnvs undoes after each test.
 process.env.TZ = 'UTC';
 
-// Pure-logic tests run in plain Node, which has CompressionStream, Blob and Response
-// built in. Every other test runs in happy-dom (the dom project); a new test that should
-// run in Node adds itself here. src/utils/html.test.ts overrides its environment with a
-// `// @vitest-environment jsdom` docblock: DOMPurify needs jsdom.
+// Tests that need no DOM run in plain Node (IndexedDB comes from setup.ts), which has
+// CompressionStream, Blob and Response built in. Every other test runs in happy-dom (the
+// dom project); a new test that should run in Node adds itself here.
+// src/utils/html.test.ts overrides its environment with a `// @vitest-environment jsdom`
+// docblock: DOMPurify needs jsdom.
 const NODE_TESTS = [
   'src/composables/{useAudioBeep,useHaptics}.test.ts',
   'src/i18n/locales.test.ts',
