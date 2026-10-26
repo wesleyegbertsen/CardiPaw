@@ -87,6 +87,7 @@ onBeforeUnmount(() => {
         type="button"
         class="toolbar-btn"
         :class="{ active: editor.isActive('bold') }"
+        :aria-pressed="editor.isActive('bold')"
         @click="editor.chain().focus().toggleBold().run()"
         :aria-label="$t('editor.bold')"
       >
@@ -98,6 +99,7 @@ onBeforeUnmount(() => {
         type="button"
         class="toolbar-btn"
         :class="{ active: editor.isActive('italic') }"
+        :aria-pressed="editor.isActive('italic')"
         @click="editor.chain().focus().toggleItalic().run()"
         :aria-label="$t('editor.italic')"
       >
@@ -110,6 +112,7 @@ onBeforeUnmount(() => {
         type="button"
         class="toolbar-btn"
         :class="{ active: editor.isActive('bulletList') }"
+        :aria-pressed="editor.isActive('bulletList')"
         @click="editor.chain().focus().toggleBulletList().run()"
         :aria-label="$t('editor.bulletList')"
       >

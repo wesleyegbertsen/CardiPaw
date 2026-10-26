@@ -90,4 +90,13 @@ describe('RichTextEditor', () => {
     expect(content.attributes('aria-labelledby')).toBe('notes-label');
     expect(content.attributes('aria-label')).toBeUndefined();
   });
+
+  it('exposes the toolbar state with aria-pressed', async () => {
+    const { wrapper, editor } = mountEditor('<p>Calm</p>');
+    await flushPromises();
+    const pressed = () => wrapper.findAll('.toolbar-btn').map((b) => b.attributes('aria-pressed'));
+    expect(pressed()).toEqual(['false', 'false', 'false']);
+    editor().chain().selectAll().toggleBold().run();
+    await vi.waitFor(() => expect(pressed()).toEqual(['true', 'false', 'false']));
+  });
 });
