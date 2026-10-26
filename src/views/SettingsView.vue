@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef } from 'vue';
+import { computed, onBeforeUnmount, ref, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as db from '../services/db';
 import { BackupError, downloadBackup, importBackup, parseBackup, type ValidatedBackup } from '../services/backup';
@@ -40,6 +40,14 @@ const importSuccess = ref(false);
 const importing = ref(false);
 const exportError = ref(false);
 
+// A repeat export/import restarts its 3 s confirmation instead of being cut short
+let exportTimer: ReturnType<typeof setTimeout> | undefined;
+let importTimer: ReturnType<typeof setTimeout> | undefined;
+onBeforeUnmount(() => {
+  clearTimeout(exportTimer);
+  clearTimeout(importTimer);
+});
+
 async function exportData() {
   exportError.value = false;
   try {
@@ -50,7 +58,8 @@ async function exportData() {
     return;
   }
   exportSuccess.value = true;
-  setTimeout(() => { exportSuccess.value = false; }, 3000);
+  clearTimeout(exportTimer);
+  exportTimer = setTimeout(() => { exportSuccess.value = false; }, 3000);
 }
 
 function triggerImport() {
@@ -91,7 +100,8 @@ async function confirmImport() {
     importing.value = false;
   }
   importSuccess.value = true;
-  setTimeout(() => { importSuccess.value = false; }, 3000);
+  clearTimeout(importTimer);
+  importTimer = setTimeout(() => { importSuccess.value = false; }, 3000);
 }
 
 // Dev-only seed loader

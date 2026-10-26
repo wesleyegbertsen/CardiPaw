@@ -68,6 +68,26 @@ describe('SettingsView', () => {
       expect(importButton(wrapper).text()).toContain('Imported');
     });
 
+    it('restarts the Imported confirmation on a repeat import', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      vi.useFakeTimers(); // importBackup is mocked, so nothing here needs IndexedDB
+      const importOnce = async () => {
+        const input = wrapper.get('input[type="file"]');
+        const file = new File([backupText()], 'backup.json', { type: 'application/json' });
+        Object.defineProperty(input.element, 'files', { value: [file], configurable: true });
+        await input.trigger('change');
+        await flushPromises();
+        clickInBody('.btn-confirm');
+        await flushPromises();
+      };
+      await importOnce();
+      vi.advanceTimersByTime(2000);
+      await importOnce();
+      vi.advanceTimersByTime(1500);
+      await flushPromises();
+      expect(importButton(wrapper).text()).toContain('Imported');
+    });
+
     it('mentions damaged records that will be skipped', async () => {
       const { wrapper } = await mountView(SettingsView, '/settings');
       await pickFile(wrapper, backupText({ readings: [makeReading(), { id: 'broken' }] }));
@@ -144,6 +164,32 @@ describe('SettingsView', () => {
       vi.advanceTimersByTime(1);
       await flushPromises();
       expect(exportButton(wrapper).text()).not.toContain('Exported');
+    });
+
+    it('restarts the Exported confirmation on a repeat export', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      vi.useFakeTimers();
+      await exportButton(wrapper).trigger('click');
+      await flushPromises();
+      vi.advanceTimersByTime(2000);
+      await exportButton(wrapper).trigger('click');
+      await flushPromises();
+      vi.advanceTimersByTime(1500);
+      await flushPromises();
+      expect(exportButton(wrapper).text()).toContain('Exported');
+      vi.advanceTimersByTime(1500);
+      await flushPromises();
+      expect(exportButton(wrapper).text()).not.toContain('Exported');
+    });
+
+    it('leaves no timer running after leaving the page', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      vi.useFakeTimers();
+      await exportButton(wrapper).trigger('click');
+      await flushPromises();
+      expect(vi.getTimerCount()).toBe(1);
+      wrapper.unmount();
+      expect(vi.getTimerCount()).toBe(0);
     });
 
     it('reports a failed export instead of claiming success', async () => {
