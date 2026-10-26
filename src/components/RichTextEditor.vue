@@ -8,6 +8,10 @@ import Placeholder from '@tiptap/extension-placeholder';
 const props = defineProps<{
   modelValue: string;
   placeholder?: string;
+  /** Accessible name when there is no visible label to point at. */
+  label?: string;
+  /** Id of the visible label element; wins over `label`. */
+  labelledby?: string;
 }>();
 
 const emit = defineEmits<{
@@ -36,8 +40,15 @@ const editor = useEditor({
   ],
   content: props.modelValue,
   editorProps: {
-    attributes: {
-      class: 'rich-editor-content',
+    // A function so a redraw picks up new label props; TipTap already adds role="textbox".
+    attributes: () => {
+      const attrs: Record<string, string> = {
+        class: 'rich-editor-content',
+        'aria-multiline': 'true',
+      };
+      if (props.labelledby) attrs['aria-labelledby'] = props.labelledby;
+      else if (props.label) attrs['aria-label'] = props.label;
+      return attrs;
     },
   },
   onUpdate({ editor }) {
@@ -58,8 +69,9 @@ watch(
   }
 );
 
-// The placeholder is read on every redraw; an empty transaction makes TipTap redraw it.
-watch(locale, () => {
+// The placeholder and the attributes are read on every redraw; an empty transaction makes
+// TipTap redraw them.
+watch([locale, () => props.label, () => props.labelledby], () => {
   editor.value?.view.dispatch(editor.value.state.tr);
 });
 

@@ -143,8 +143,8 @@ async function save() {
       </div>
 
       <div class="field">
-        <label class="label">{{ $t('note.contentLabel') }}</label>
-        <RichTextEditor v-model="editContent" />
+        <span id="note-content-label" class="label">{{ $t('note.contentLabel') }}</span>
+        <RichTextEditor v-model="editContent" labelledby="note-content-label" />
       </div>
 
       <p v-if="saveError" class="save-error" role="alert">{{ $t('common.saveError') }}</p>

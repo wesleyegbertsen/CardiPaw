@@ -13,13 +13,19 @@ export function lazyEditorStubModule() {
   return {
     preloadRichTextEditor: vi.fn(),
     LazyRichTextEditor: defineComponent({
-      props: { modelValue: { type: String, default: '' } },
+      props: {
+        modelValue: { type: String, default: '' },
+        label: { type: String, default: undefined },
+        labelledby: { type: String, default: undefined },
+      },
       emits: ['update:modelValue'],
       setup(props, { emit }) {
         return () =>
           h('textarea', {
             class: 'notes-stub',
             value: props.modelValue,
+            'aria-label': props.label,
+            'aria-labelledby': props.labelledby,
             onInput: (e: Event) =>
               emit('update:modelValue', (e.target as HTMLTextAreaElement).value),
           });

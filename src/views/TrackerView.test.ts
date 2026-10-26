@@ -262,10 +262,11 @@ describe('TrackerView', () => {
     expect(pressed()).toEqual(['false', 'true']);
   });
 
-  it('labels the manual rate field', async () => {
+  it('labels the manual rate and notes fields', async () => {
     const { wrapper } = await mountTracker();
     await wrapper.findAll('.mode-pill')[1].trigger('click');
     expect(wrapper.get('.manual-rate-input').attributes('aria-label')).toBe('Rate (breaths/min)');
+    expect(wrapper.get('.notes-stub').attributes('aria-label')).toBe('Notes');
   });
 
   it.each(['manual', 'guided'])('exposes the %s rest state as pressed buttons', async (mode) => {
@@ -275,6 +276,7 @@ describe('TrackerView', () => {
     } else {
       await wrapper.get('.heart-btn').trigger('click');
       await vi.advanceTimersByTimeAsync(30_000);
+      expect(wrapper.get('.notes-stub').attributes('aria-label')).toBe('Notes');
     }
     const group = wrapper.get('.rest-state-row');
     expect(group.attributes('role')).toBe('group');

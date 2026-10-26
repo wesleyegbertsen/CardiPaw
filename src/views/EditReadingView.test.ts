@@ -51,7 +51,7 @@ describe('EditReadingView', () => {
     expect((wrapper.get('.notes-stub').element as HTMLTextAreaElement).value).toBe('<p>Calm</p>');
   });
 
-  it('labels the rate and rest state fields', async () => {
+  it('labels the rate, rest state and notes fields', async () => {
     const { wrapper, rate } = await mountEdit(makeReading({ restState: 'sleeping' }));
     expect(rate.attributes('id')).toBeTruthy();
     expect(wrapper.get('label.label').attributes('for')).toBe(rate.attributes('id'));
@@ -64,6 +64,7 @@ describe('EditReadingView', () => {
       'false',
       'true',
     ]);
+    expect(labelText(wrapper.get('.notes-stub'))).toBe('Notes');
   });
 
   it('hides the badge and disables save when the rate is cleared', async () => {

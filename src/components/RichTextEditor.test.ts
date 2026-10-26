@@ -10,7 +10,7 @@ import nl from '../i18n/locales/nl.json';
 enableAutoUnmount(afterEach);
 
 // Real TipTap: it runs in happy-dom, and TipTap core puts the Editor on its DOM node.
-function mountEditor(modelValue = '') {
+function mountEditor(modelValue = '', props: { label?: string; labelledby?: string } = {}) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -18,7 +18,7 @@ function mountEditor(modelValue = '') {
     messages: { en, nl },
   });
   const wrapper = mount(RichTextEditor, {
-    props: { modelValue },
+    props: { modelValue, ...props },
     attachTo: document.body,
     global: { plugins: [i18n] },
   });
@@ -66,5 +66,28 @@ describe('RichTextEditor', () => {
     // The Vue binding re-renders two animation frames after a transaction.
     await vi.waitFor(() => expect(bold.classes()).toContain('active'));
     expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual(['<p><strong>Calm</strong></p>']);
+  });
+
+  it('is a named multiline textbox', async () => {
+    const { wrapper } = mountEditor('', { label: 'Notes' });
+    await flushPromises();
+    const content = wrapper.get('.ProseMirror');
+    expect(content.classes()).toContain('rich-editor-content');
+    expect(content.attributes('role')).toBe('textbox');
+    expect(content.attributes('aria-multiline')).toBe('true');
+    expect(content.attributes('aria-label')).toBe('Notes');
+    expect(content.attributes('aria-labelledby')).toBeUndefined();
+
+    await wrapper.setProps({ label: 'Notizen' });
+    await flushPromises();
+    expect(content.attributes('aria-label')).toBe('Notizen');
+  });
+
+  it('prefers a visible label over its own', async () => {
+    const { wrapper } = mountEditor('', { label: 'Notes', labelledby: 'notes-label' });
+    await flushPromises();
+    const content = wrapper.get('.ProseMirror');
+    expect(content.attributes('aria-labelledby')).toBe('notes-label');
+    expect(content.attributes('aria-label')).toBeUndefined();
   });
 });

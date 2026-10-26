@@ -157,7 +157,7 @@ function formatDate(iso: string) {
 
       <div class="field">
         <span id="reading-notes-label" class="label">{{ $t('reading.notesLabel') }}</span>
-        <RichTextEditor v-model="editNotes" />
+        <RichTextEditor v-model="editNotes" labelledby="reading-notes-label" />
       </div>
 
       <p v-if="saveError" class="save-error" role="alert">{{ $t('common.saveError') }}</p>

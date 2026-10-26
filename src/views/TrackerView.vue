@@ -261,7 +261,7 @@ onUnmounted(() => {
       </div>
 
       <div class="notes-wrapper">
-        <RichTextEditor v-model="notes" />
+        <RichTextEditor v-model="notes" :label="$t('reading.notesLabel')" />
       </div>
 
       <div class="done-actions">
@@ -376,7 +376,7 @@ onUnmounted(() => {
       </div>
 
       <div class="notes-wrapper">
-        <RichTextEditor v-model="notes" />
+        <RichTextEditor v-model="notes" :label="$t('reading.notesLabel')" />
       </div>
 
       <div class="done-actions">
