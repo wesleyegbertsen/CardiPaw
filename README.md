@@ -253,6 +253,7 @@ When a release contains several PRs, the biggest bump wins: one `feat:` among te
 npm ci
 npm run dev           # start the dev server
 npm test              # run the unit tests once (npm run test:watch to keep them running)
+npm run test:coverage # the tests with a coverage report; fails below the thresholds in vitest.config.ts
 npm run lint          # ESLint
 npm run typecheck     # vue-tsc
 npm run check-locale  # key parity of every locale against en.json

@@ -41,6 +41,18 @@ export default defineConfig({
     unstubGlobals: true,
     // Files stay isolated (the default): each gets a fresh fake IndexedDB from setup.ts.
     setupFiles: ['src/test/setup.ts'],
+    // `npm run test:coverage` (CI). Coverage is configured once here, for all projects.
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,vue}'],
+      // Setting exclude replaces Vitest's defaults, so the test files are listed again.
+      exclude: ['src/**/*.test.ts', 'src/test/**', 'src/types/**', 'src/**/*.d.ts'],
+      // The text table lists only files below 100%; open coverage/index.html for details.
+      reporter: [['text', { skipFull: true }], 'html'],
+      // floor(measured) - 1, measured when they were set: raise them as coverage grows,
+      // don't lower them to get a change merged.
+      thresholds: { statements: 96, branches: 93, functions: 83, lines: 96 },
+    },
     projects: [
       {
         extends: true,
