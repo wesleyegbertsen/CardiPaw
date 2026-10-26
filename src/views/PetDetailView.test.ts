@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { nextTick } from 'vue';
 import PetDetailView from './PetDetailView.vue';
 import { usePetsStore } from '../stores/pets';
 import { mountView, settle, type MountViewOptions } from '../test/mountView';
@@ -274,6 +275,180 @@ describe('PetDetailView', () => {
       await enabled[0].trigger('click');
       expect(wrapper.find('.jump-picker').exists()).toBe(false);
       expect(label()).toBe('February 2024');
+    });
+  });
+
+  describe('swipe', () => {
+    // happy-dom has no layout and Event.timeStamp is read-only, so the viewport gets a
+    // fixed width and touch events are built by hand with the fields the handlers read.
+    const WIDTH = 400; // a drag commits past 25%: 100px
+
+    async function mountSwipe(tab = 'chart') {
+      const mounted = await mountDetail(`/pets/pet-1?tab=${tab}`);
+      const { wrapper } = mounted;
+      const viewport = wrapper.get('.tab-viewport').element;
+      Object.defineProperty(viewport, 'clientWidth', { value: WIDTH });
+
+      // Fingers start at (200, 100); dx/dy are relative to that, `time` is in ms.
+      async function fire(type: string, dx: number, dy: number, time: number, fingers = 1) {
+        const points = Array.from({ length: fingers }, () => ({
+          clientX: 200 + dx,
+          clientY: 100 + dy,
+        }));
+        const event = new Event(type, { bubbles: true });
+        Object.defineProperties(event, {
+          touches: { value: type === 'touchend' || type === 'touchcancel' ? [] : points },
+          changedTouches: { value: points },
+          timeStamp: { value: time },
+        });
+        viewport.dispatchEvent(event);
+        await nextTick();
+      }
+      const start = (time = 0, fingers = 1) => fire('touchstart', 0, 0, time, fingers);
+      const move = (dx: number, dy = 0, time = 0) => fire('touchmove', dx, dy, time);
+      const end = (dx: number, dy = 0, time = 0) => fire('touchend', dx, dy, time);
+      /** A one-finger horizontal swipe by `dx` px that lifts after `ms`. */
+      async function swipe(dx: number, ms: number) {
+        await start();
+        await move(dx, 0, ms / 2);
+        await end(dx, 0, ms);
+        await settle();
+      }
+
+      const track = () => wrapper.get('.tab-track');
+      const transform = () => track().attributes('style');
+      const dragging = () => track().classes().includes('dragging');
+      const collapsed = () =>
+        wrapper.findAll('.tab-panel').map((p) => p.classes().includes('collapsed'));
+      return { ...mounted, fire, start, move, end, swipe, transform, dragging, collapsed };
+    }
+
+    it('moves to the next tab after a slow drag past a quarter of the width', async () => {
+      const { swipe, replace, wrapper, transform } = await mountSwipe();
+      await swipe(-120, 2000);
+      expect(replace).toHaveBeenCalledWith({ query: { tab: 'readings' } });
+      expect(activeTabIndex(wrapper)).toBe(1);
+      expect(transform()).toContain('translateX(calc(-100% + 0px))');
+    });
+
+    it('snaps back after a slow drag of less than a quarter of the width', async () => {
+      const { swipe, replace, wrapper, transform, dragging } = await mountSwipe();
+      await swipe(-80, 2000);
+      expect(replace).not.toHaveBeenCalled();
+      expect(activeTabIndex(wrapper)).toBe(0);
+      expect(transform()).toContain('translateX(calc(0% + 0px))');
+      expect(dragging()).toBe(false);
+    });
+
+    it('moves to the previous tab on a quick short flick', async () => {
+      const { swipe, replace, wrapper } = await mountSwipe('readings');
+      await swipe(40, 100); // 0.4 px/ms
+      expect(replace).toHaveBeenCalledWith({ query: { tab: 'chart' } });
+      expect(activeTabIndex(wrapper)).toBe(0);
+    });
+
+    it('snaps back after a short drag that is too slow to be a flick', async () => {
+      const { swipe, replace, wrapper } = await mountSwipe('readings');
+      await swipe(40, 200); // 0.2 px/ms
+      expect(replace).not.toHaveBeenCalled();
+      expect(activeTabIndex(wrapper)).toBe(1);
+    });
+
+    it('moves the track and the tab indicator with the finger, without transitions', async () => {
+      const { wrapper, start, move, transform, dragging } = await mountSwipe('readings');
+      await start();
+      await move(-15); // past the 10px lock threshold
+      expect(dragging()).toBe(true);
+      expect(transform()).toContain('translateX(calc(-100% + -15px))');
+      await move(-50);
+      expect(transform()).toContain('translateX(calc(-100% + -50px))');
+      const indicator = wrapper.get('.tab-indicator');
+      expect(indicator.classes()).toContain('dragging');
+      // Tab 1, dragged an eighth of the width towards tab 2.
+      expect(indicator.attributes('style')).toContain('translateX(112.5%)');
+    });
+
+    it('resists dragging past the first and the last tab, and stays there', async () => {
+      const first = await mountSwipe('chart');
+      await first.start();
+      await first.move(100);
+      expect(first.transform()).toContain('translateX(calc(0% + 30px))');
+      await first.end(100, 0, 50);
+      await settle();
+      expect(first.replace).not.toHaveBeenCalled();
+      expect(first.transform()).toContain('translateX(calc(0% + 0px))');
+
+      const last = await mountSwipe('notes');
+      await last.start();
+      await last.move(-100);
+      expect(last.transform()).toContain('translateX(calc(-200% + -30px))');
+      await last.end(-100, 0, 50);
+      await settle();
+      expect(last.replace).not.toHaveBeenCalled();
+    });
+
+    it('does not drag a vertical gesture, even after a small sideways jitter', async () => {
+      const { start, move, end, replace, transform, dragging } = await mountSwipe();
+      await start();
+      await move(-9); // under the 10px lock threshold: no axis yet
+      expect(dragging()).toBe(false);
+      await move(-9, 40); // locks to vertical scrolling
+      await move(-200, 40);
+      expect(dragging()).toBe(false);
+      expect(transform()).toContain('translateX(calc(0% + 0px))');
+      await end(-200, 40, 2000);
+      await settle();
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('cancels the drag when a second finger touches', async () => {
+      const { start, move, end, replace, transform, dragging } = await mountSwipe();
+      await start();
+      await move(-100);
+      await start(500, 2);
+      expect(dragging()).toBe(false);
+      expect(transform()).toContain('translateX(calc(0% + 0px))');
+
+      await move(-200, 0, 600);
+      await end(-200, 0, 700);
+      await settle();
+      expect(dragging()).toBe(false);
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('resets the track when the touch is cancelled', async () => {
+      const { start, move, fire, replace, transform, dragging } = await mountSwipe();
+      await start();
+      await move(-150);
+      await fire('touchcancel', -150, 0, 100);
+      await settle();
+      expect(dragging()).toBe(false);
+      expect(transform()).toContain('translateX(calc(0% + 0px))');
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('ignores swipes while the jump picker is open', async () => {
+      const { wrapper, swipe, replace, dragging } = await mountSwipe();
+      await wrapper.get('.range-label-btn').trigger('click');
+      expect(wrapper.find('.jump-picker').exists()).toBe(true);
+      await swipe(-150, 100);
+      expect(dragging()).toBe(false);
+      expect(replace).not.toHaveBeenCalled();
+      expect(activeTabIndex(wrapper)).toBe(0);
+    });
+
+    it('keeps the panels expanded until the track itself finishes sliding', async () => {
+      const { wrapper, swipe, collapsed } = await mountSwipe();
+      expect(collapsed()).toEqual([false, true, true]);
+      await swipe(-120, 2000);
+      expect(collapsed()).toEqual([false, false, false]);
+
+      // A transition inside a panel bubbles up but is not the slide.
+      await wrapper.findAll('.tab-panel')[1].trigger('transitionend');
+      expect(collapsed()).toEqual([false, false, false]);
+
+      await wrapper.get('.tab-track').trigger('transitionend');
+      expect(collapsed()).toEqual([true, false, true]);
     });
   });
 });
