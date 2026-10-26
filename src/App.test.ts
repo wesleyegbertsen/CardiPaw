@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { enableAutoUnmount } from '@vue/test-utils';
+import { defineComponent, h } from 'vue';
 import App from './App.vue';
 import * as db from './services/db';
 import { mountView, settle } from './test/mountView';
@@ -24,6 +25,42 @@ describe('App', () => {
     await settle();
     expect(wrapper.find('.bottom-nav').exists()).toBe(false);
     expect(wrapper.find('.app-main').classes()).toContain('no-nav');
+  });
+
+  describe('route views', () => {
+    // Numbers each instance, so a test can tell a fresh view from a reused one.
+    let created = 0;
+    const Probe = defineComponent({
+      setup() {
+        const id = ++created;
+        return () => h('div', { class: 'probe' }, String(id));
+      },
+    });
+    const mountProbe = (location: string) => mountView(App, location, { routeComponent: Probe });
+
+    it('gives each pet its own view', async () => {
+      const { wrapper, router } = await mountProbe('/pets/a');
+      const first = wrapper.get('.probe').text();
+      await router.push('/pets/b');
+      await settle();
+      expect(wrapper.get('.probe').text()).not.toBe(first);
+    });
+
+    it('starts a fresh form when going from adding a pet to editing one', async () => {
+      const { wrapper, router } = await mountProbe('/pets/add');
+      const first = wrapper.get('.probe').text();
+      await router.push('/pets/x/edit');
+      await settle();
+      expect(wrapper.get('.probe').text()).not.toBe(first);
+    });
+
+    it('keeps the view when only the query changes, such as the pet tab', async () => {
+      const { wrapper, router } = await mountProbe('/pets/a');
+      const first = wrapper.get('.probe').text();
+      await router.push({ path: '/pets/a', query: { tab: 'notes' } });
+      await settle();
+      expect(wrapper.get('.probe').text()).toBe(first);
+    });
   });
 
   it('logs a failed pet load instead of leaving the rejection unhandled', async () => {

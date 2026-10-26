@@ -49,6 +49,8 @@ export async function seed({ pets = [], readings = [], notes = [] }: SeedData = 
 export interface MountViewOptions extends SeedData {
   stubs?: Stubs;
   props?: Record<string, unknown>;
+  /** What every route renders (default `Blank`); set it to observe what a RouterView does. */
+  routeComponent?: Component;
 }
 
 /**
@@ -59,14 +61,14 @@ export interface MountViewOptions extends SeedData {
 export async function mountView(
   component: Component,
   location: RouteLocationRaw,
-  { stubs, props, ...data }: MountViewOptions = {},
+  { stubs, props, routeComponent = Blank, ...data }: MountViewOptions = {},
 ) {
   await seed(data);
   const pinia = createPinia();
   setActivePinia(pinia);
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: routes.map((r) => ({ ...r, component: Blank })),
+    routes: routes.map((r) => ({ ...r, component: routeComponent })),
   });
   await router.push(location);
   await router.isReady();
