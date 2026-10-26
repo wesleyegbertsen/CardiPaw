@@ -56,6 +56,8 @@ const heartRef = ref<HTMLButtonElement | null>(null);
 const resultRef = ref<HTMLElement | null>(null);
 
 function switchMode(next: Mode) {
+  // Clicking the active mode again must not wipe what was entered
+  if (mode.value === next) return;
   mode.value = next;
   restState.value = undefined;
   notes.value = '';

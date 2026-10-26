@@ -236,6 +236,20 @@ describe('TrackerView', () => {
     });
   });
 
+  it('keeps the entry when the active mode is clicked again', async () => {
+    const { wrapper } = await mountTracker();
+    const manual = wrapper.findAll('.mode-pill')[1];
+    await manual.trigger('click');
+    await wrapper.get('.manual-rate-input').setValue('42');
+    await wrapper.findAll('.rest-btn')[0].trigger('click');
+    await wrapper.get('.notes-stub').setValue('<p>calm</p>');
+
+    await manual.trigger('click');
+    expect(wrapper.get<HTMLInputElement>('.manual-rate-input').element.value).toBe('42');
+    expect(wrapper.find('.rest-btn.active').exists()).toBe(true);
+    expect(wrapper.get<HTMLTextAreaElement>('.notes-stub').element.value).toBe('<p>calm</p>');
+  });
+
   it('names the sound and vibration switches', async () => {
     const { wrapper } = await mountTracker();
     const names = wrapper.findAll('[role="switch"]').map((s) => {
