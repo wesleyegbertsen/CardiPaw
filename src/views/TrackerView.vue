@@ -38,7 +38,11 @@ type Phase = 'idle' | 'running' | 'done';
 type Mode = 'guided' | 'manual';
 const phase = ref<Phase>('idle');
 const mode = ref<Mode>('guided');
-const timeLeft = ref(30);
+const MEASUREMENT_SECONDS = 30;
+const timeLeft = ref(MEASUREMENT_SECONDS);
+// Wall-clock end of the measurement. Timers are throttled in background tabs, on a
+// locked screen or in battery saver, so the count is timed by the clock, not by ticks.
+let endsAt = 0;
 const clickCount = ref(0);
 const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
 const isPulsing = ref(false);
@@ -63,7 +67,7 @@ function switchMode(next: Mode) {
   saveError.value = false;
 }
 
-const resultRate = computed(() => clickCount.value * 2);
+const resultRate = computed(() => clickCount.value * (60 / MEASUREMENT_SECONDS));
 
 function handleHeartClick() {
   if (phase.value === 'idle') {
@@ -79,15 +83,20 @@ function onHeartEnter(e: KeyboardEvent) {
 }
 
 function startTracking() {
+  endsAt = Date.now() + MEASUREMENT_SECONDS * 1000;
+  timeLeft.value = MEASUREMENT_SECONDS;
   phase.value = 'running';
   clickCount.value = 1; // first click counts as the first breath
   if (soundEnabled.value) playBeep(880, 0.15, 0.3);
   if (vibrationEnabled.value) vibrateTap();
   triggerPulse();
-  intervalId.value = setInterval(tick, 1000);
+  // Ticks more often than once a second: a timer can fire a millisecond before the clock
+  // says the time is up, and the count must not run on for another full second.
+  intervalId.value = setInterval(tick, 250);
 }
 
 function registerBreath() {
+  if (finishIfOver()) return; // a tap after the time is up must not count
   clickCount.value++;
   if (soundEnabled.value) playBeep(880, 0.15, 0.3);
   if (vibrationEnabled.value) vibrateTap();
@@ -95,10 +104,16 @@ function registerBreath() {
 }
 
 function tick() {
-  timeLeft.value--;
-  if (timeLeft.value <= 0) {
-    stopTracking();
-  }
+  finishIfOver();
+}
+
+// Updates the seconds left from the clock and ends the measurement once time is up,
+// however late this runs. Returns whether it has ended.
+function finishIfOver(): boolean {
+  timeLeft.value = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+  if (timeLeft.value > 0) return false;
+  stopTracking();
+  return true;
 }
 
 function stopTracking() {
@@ -154,7 +169,7 @@ function reset() {
     intervalId.value = null;
   }
   phase.value = 'idle';
-  timeLeft.value = 30;
+  timeLeft.value = MEASUREMENT_SECONDS;
   clickCount.value = 0;
   isPulsing.value = false;
   restState.value = undefined;
@@ -276,7 +291,7 @@ onUnmounted(() => {
             <circle
               cx="60" cy="60" r="54"
               class="ring-progress"
-              :stroke-dashoffset="339.3 - (339.3 * (30 - timeLeft) / 30)"
+              :stroke-dashoffset="(339.3 * timeLeft) / MEASUREMENT_SECONDS"
             />
           </svg>
           <div class="timer-text">
