@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { nextTick, ref, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { GB, NL, DE, FR, JP } from 'country-flag-icons/string/3x2';
 import { SUPPORTED_LOCALES, LOCALE_NAMES, setLocale, type Locale } from '../i18n';
@@ -18,34 +18,73 @@ const FLAGS: Record<Locale, string> = {
   ja: JP,
 };
 
+const listId = useId();
+const rootRef = ref<HTMLElement | null>(null);
+const triggerRef = ref<HTMLButtonElement | null>(null);
+
+// A disclosure, not a menu: Tab moves through the options, Escape closes
+function toggle() {
+  open.value = !open.value;
+  if (open.value) {
+    nextTick(() => rootRef.value?.querySelector<HTMLElement>('.lang-option.active')?.focus());
+  }
+}
+
+function close() {
+  open.value = false;
+  triggerRef.value?.focus();
+}
+
+function onEscape(e: KeyboardEvent) {
+  if (!open.value) return;
+  e.stopPropagation();
+  close();
+}
+
+// Tabbing out closes the list. A null relatedTarget (a click on something unfocusable;
+// Safari never focuses clicked buttons) is left to the backdrop and the options.
+function onFocusout(e: FocusEvent) {
+  const next = e.relatedTarget as Node | null;
+  if (open.value && next && !rootRef.value?.contains(next)) open.value = false;
+}
+
 function pick(loc: Locale) {
   setLocale(loc);
-  open.value = false;
+  close();
 }
 </script>
 
 <template>
-  <div class="lang-picker">
-    <button class="lang-trigger" @click="open = !open" :aria-label="$t('home.switchLanguage')">
+  <div ref="rootRef" class="lang-picker" @keydown.esc="onEscape" @focusout="onFocusout">
+    <button
+      ref="triggerRef"
+      class="lang-trigger"
+      :aria-label="$t('home.switchLanguage')"
+      :aria-expanded="open"
+      :aria-controls="open ? listId : undefined"
+      @click="toggle"
+    >
       <span class="lang-trigger-spacer" />
-      <span class="lang-flag" v-html="FLAGS[locale as Locale]" />
-      <svg class="lang-chevron" :class="{ open }" viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+      <span class="lang-flag" aria-hidden="true" v-html="FLAGS[locale as Locale]" />
+      <svg class="lang-chevron" :class="{ open }" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
         <path d="M7 10l5 5 5-5z"/>
       </svg>
     </button>
-    <div v-if="open" class="lang-dropdown">
+    <div v-if="open" :id="listId" class="lang-dropdown">
       <button
         v-for="loc in SUPPORTED_LOCALES"
         :key="loc"
         class="lang-option"
         :class="{ active: locale === loc }"
         :title="LOCALE_NAMES[loc]"
+        :aria-current="locale === loc ? 'true' : undefined"
         @click="pick(loc)"
       >
-        <span v-html="FLAGS[loc]" />
+        <span aria-hidden="true" v-html="FLAGS[loc]" />
+        <span class="sr-only" :lang="loc">{{ LOCALE_NAMES[loc] }}</span>
       </button>
     </div>
-    <div v-if="open" class="lang-backdrop" @click="open = false" />
+    <div v-if="open" class="lang-backdrop" @click="close" />
   </div>
 </template>
 
