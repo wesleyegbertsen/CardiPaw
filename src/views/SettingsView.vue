@@ -484,14 +484,6 @@ function cancelImport() {
   border-radius: var(--radius-sm);
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-}
-
 .about-text {
   font-size: 14px;
   color: var(--color-text-muted);
