@@ -108,9 +108,13 @@ function tick() {
 }
 
 // Updates the seconds left from the clock and ends the measurement once time is up,
-// however late this runs. Returns whether it has ended.
+// however late this runs. Returns whether it has ended. Capped at 30 so a clock set
+// back mid-measurement cannot show more time than a measurement has.
 function finishIfOver(): boolean {
-  timeLeft.value = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+  timeLeft.value = Math.min(
+    MEASUREMENT_SECONDS,
+    Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)),
+  );
   if (timeLeft.value > 0) return false;
   stopTracking();
   return true;

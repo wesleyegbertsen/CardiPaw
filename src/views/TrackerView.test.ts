@@ -70,6 +70,9 @@ async function mountTracker({ stored }: { stored?: Pet[] | Error | Promise<Pet[]
   return { wrapper, addReading, getAllPets, push, replace };
 }
 
+const ringOffset = (wrapper: VueWrapper) =>
+  Number(wrapper.get('.ring-progress').attributes('stroke-dashoffset'));
+
 describe('TrackerView', () => {
   beforeEach(() => {
     // Hoisted spies outlive each test, so clear their calls to keep tests order-independent.
@@ -134,10 +137,23 @@ describe('TrackerView', () => {
   it('shows the seconds left by the clock', async () => {
     const { wrapper } = await mountTracker();
     await wrapper.get('.heart-btn').trigger('click');
-    vi.setSystemTime(Date.now() + 12_400);
+    expect(ringOffset(wrapper)).toBeCloseTo(339.3);
+    // 16.2 s left: rounds up to 17, not to the nearest second.
+    vi.setSystemTime(Date.now() + 12_800);
     await vi.advanceTimersByTimeAsync(1_000);
 
     expect(wrapper.get('.timer-number').text()).toBe('17');
+    expect(ringOffset(wrapper)).toBeCloseTo((339.3 * 17) / 30);
+  });
+
+  it('never shows more than 30 seconds when the clock moves back', async () => {
+    const { wrapper } = await mountTracker();
+    await wrapper.get('.heart-btn').trigger('click');
+    vi.setSystemTime(Date.now() - 60_000);
+    await vi.advanceTimersByTimeAsync(250);
+
+    expect(wrapper.get('.timer-number').text()).toBe('30');
+    expect(ringOffset(wrapper)).toBeCloseTo(339.3);
   });
 
   it('saves a guided measurement and returns to the pet', async () => {
