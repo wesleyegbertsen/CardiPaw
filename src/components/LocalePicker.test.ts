@@ -109,15 +109,36 @@ describe('LocalePicker', () => {
 
   it('closes when focus moves out of the picker, not when it moves inside or nowhere', async () => {
     const outside = document.body.appendChild(document.createElement('button'));
-    const wrapper = mountPicker();
-    await wrapper.get('.lang-trigger').trigger('click');
-    await flushPromises();
-    const english = wrapper.get('.lang-option[title="English"]');
-    await english.trigger('focusout', { relatedTarget: wrapper.get('.lang-trigger').element });
-    await english.trigger('focusout', { relatedTarget: null });
-    expect(wrapper.find('.lang-dropdown').exists()).toBe(true);
-    await english.trigger('focusout', { relatedTarget: outside });
-    expect(wrapper.find('.lang-dropdown').exists()).toBe(false);
-    outside.remove();
+    try {
+      const wrapper = mountPicker();
+      await wrapper.get('.lang-trigger').trigger('click');
+      await flushPromises();
+      const english = wrapper.get('.lang-option[title="English"]');
+      await english.trigger('focusout', { relatedTarget: wrapper.get('.lang-trigger').element });
+      await english.trigger('focusout', { relatedTarget: null });
+      expect(wrapper.find('.lang-dropdown').exists()).toBe(true);
+      await english.trigger('focusout', { relatedTarget: outside });
+      expect(wrapper.find('.lang-dropdown').exists()).toBe(false);
+    } finally {
+      outside.remove();
+    }
+  });
+
+  it('keeps Escape from reaching an enclosing dialog only while open', async () => {
+    const parentKeydown = vi.fn();
+    document.addEventListener('keydown', parentKeydown);
+    try {
+      const wrapper = mountPicker();
+      await wrapper.get('.lang-trigger').trigger('click');
+      await flushPromises();
+      await wrapper.get('.lang-option[title="Deutsch"]').trigger('keydown', { key: 'Escape' });
+      expect(wrapper.find('.lang-dropdown').exists()).toBe(false);
+      expect(parentKeydown).not.toHaveBeenCalled();
+
+      await wrapper.get('.lang-trigger').trigger('keydown', { key: 'Escape' });
+      expect(parentKeydown).toHaveBeenCalledTimes(1);
+    } finally {
+      document.removeEventListener('keydown', parentKeydown);
+    }
   });
 });
