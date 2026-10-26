@@ -12,10 +12,34 @@ export class ShareDecodeError extends Error {
   }
 }
 
+// Limits for links from strangers. The encoder refuses anything past them, so the
+// app never makes a link its own decoder rejects. 10 000 readings (about 13 years
+// at two a day) with every field set encode to 98 000–107 000 characters and
+// inflate to 700–800 KB; both caps leave about twice that or more.
+const MAX_SHARE_PARAM_LENGTH = 200_000;
+const MAX_INFLATED_BYTES = 2_000_000;
+const MAX_SHARED_READINGS = 10_000;
+// The viewer draws one section and chart per month, so a few readings spread over
+// thousands of months would pass the other caps and still lock up the page.
+const MAX_SHARED_MONTHS = 240;
+// Guided rates (taps × 2) have no upper bound and older links hold decimals, so no integer or 300 cap.
+const MAX_SHARED_RATE = 1000;
+const MAX_PET_NAME_LENGTH = 100;
+
+/** The selection would make a link longer or larger than decodeShare accepts. */
+export class ShareTooLargeError extends Error {
+  constructor() {
+    super('The selection is too large to share as a link.');
+    this.name = 'ShareTooLargeError';
+  }
+}
+
 export function buildSharePayload(pet: Pet, readings: Reading[], months: string[]): SharePayload {
   const monthSet = new Set(months);
   const shared = readings
-    .filter((r) => monthSet.has(localMonthKey(r.date)))
+    // Backup import accepts any finite rate; leave out the ones a link cannot carry
+    // so a single bad value does not make the whole link undecodable.
+    .filter((r) => monthSet.has(localMonthKey(r.date)) && isShareRate(r.rate))
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((r) => ({
       date: toShareDate(r.date),
@@ -39,20 +63,18 @@ export function buildSharePayload(pet: Pet, readings: Reading[], months: string[
 }
 
 export async function encodeShare(payload: SharePayload): Promise<string> {
+  if (
+    payload.readings.length > MAX_SHARED_READINGS ||
+    countMonths(payload.readings) > MAX_SHARED_MONTHS
+  ) {
+    throw new ShareTooLargeError();
+  }
   const json = new TextEncoder().encode(JSON.stringify(payload));
   const compressed = await compress(json);
-  return toBase64Url(compressed);
+  const encoded = toBase64Url(compressed);
+  if (encoded.length > MAX_SHARE_PARAM_LENGTH) throw new ShareTooLargeError();
+  return encoded;
 }
-
-// Limits for links from strangers. Each sits well above anything the app
-// produces: 10 000 readings (about 13 years at two a day) encode to about
-// 86 000 characters and inflate to about 550 KB.
-const MAX_SHARE_PARAM_LENGTH = 100_000;
-const MAX_INFLATED_BYTES = 2_000_000;
-const MAX_SHARED_READINGS = 10_000;
-// Guided rates (taps × 2) have no upper bound and older links hold decimals, so no integer or 300 cap.
-const MAX_SHARED_RATE = 1000;
-const MAX_PET_NAME_LENGTH = 100;
 
 export async function decodeShare(encoded: string): Promise<SharePayload> {
   if (encoded.length > MAX_SHARE_PARAM_LENGTH) {
@@ -83,8 +105,8 @@ export async function decodeShare(encoded: string): Promise<SharePayload> {
 
 // Stops reading once the output passes `limit`, so a short link that inflates to
 // tens of megabytes (a deflate bomb) is never joined, decoded or parsed. Deflate
-// expands at most about 1000×, so the length cap bounds what a browser can inflate
-// ahead of this loop.
+// expands at most about 1032×, so the length cap (150 KB of compressed data) bounds
+// what a browser can inflate ahead of this loop to about 155 MB.
 async function inflate(bytes: Uint8Array, limit: number): Promise<Uint8Array> {
   const reader = new Blob([bytes])
     .stream()
@@ -126,6 +148,11 @@ function fromShareDate(date: string): string {
   return OFFSETLESS_DATE_TIME.test(date) ? date + 'Z' : date;
 }
 
+// Counts months the way the viewer groups readings into sections.
+function countMonths(readings: { date: string }[]): number {
+  return new Set(readings.map((r) => localMonthKey(fromShareDate(r.date)))).size;
+}
+
 async function compress(bytes: Uint8Array): Promise<Uint8Array> {
   const piped = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
   return new Uint8Array(await new Response(piped).arrayBuffer());
@@ -152,6 +179,10 @@ function isShareDay(s: unknown): s is string {
   return typeof s === 'string' && SHARE_DAY.test(s) && !Number.isNaN(Date.parse(s));
 }
 
+function isShareRate(n: unknown): n is number {
+  return typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= MAX_SHARED_RATE;
+}
+
 function isOptionalFinite(n: unknown): boolean {
   return n === undefined || (typeof n === 'number' && Number.isFinite(n));
 }
@@ -166,7 +197,7 @@ function isSharePayload(value: unknown): value is SharePayload {
   if (pet.species !== 'cat' && pet.species !== 'dog') return false;
   if (!isOptionalFinite(pet.normalCeiling) || !isOptionalFinite(pet.elevatedCeiling)) return false;
   if (!Array.isArray(v.readings) || v.readings.length > MAX_SHARED_READINGS) return false;
-  return v.readings.every((r) => {
+  const readingsValid = v.readings.every((r) => {
     if (typeof r !== 'object' || r === null) return false;
     const reading = r as Record<string, unknown>;
     if (
@@ -176,14 +207,7 @@ function isSharePayload(value: unknown): value is SharePayload {
     ) {
       return false;
     }
-    if (
-      typeof reading.rate !== 'number' ||
-      !Number.isFinite(reading.rate) ||
-      reading.rate < 0 ||
-      reading.rate > MAX_SHARED_RATE
-    ) {
-      return false;
-    }
+    if (!isShareRate(reading.rate)) return false;
     return (
       reading.restState === undefined ||
       reading.restState === 'resting' ||
@@ -193,4 +217,5 @@ function isSharePayload(value: unknown): value is SharePayload {
       reading.source === 'manual'
     );
   });
+  return readingsValid && countMonths(v.readings as { date: string }[]) <= MAX_SHARED_MONTHS;
 }

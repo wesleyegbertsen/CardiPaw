@@ -96,6 +96,26 @@ describe('ShareLinkModal', () => {
     expect(alert()).toBeNull();
   });
 
+  it('says the selection is too large instead of offering a link', async () => {
+    await mountModal();
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(codec.encodeShare).mockRejectedValueOnce(new codec.ShareTooLargeError());
+    monthBoxes()[0].click();
+    await flushPromises();
+    expect(alert()?.textContent?.trim()).toBe(
+      'This selection is too large to share as a link. Select fewer months.',
+    );
+    expect(alert()?.className).toBe('encode-error');
+    expect(linkPreview().value).toBe('');
+    expect(copyButton().disabled).toBe(true);
+    // An expected outcome, not a failure worth logging.
+    expect(error).not.toHaveBeenCalled();
+
+    monthBoxes()[0].click();
+    await vi.waitFor(() => expect(copyButton().disabled).toBe(false), { timeout: 5000 });
+    expect(alert()).toBeNull();
+  });
+
   it('ignores a result that a newer selection superseded', async () => {
     await mountModal();
     const first = deferred<string>();
