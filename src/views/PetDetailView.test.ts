@@ -70,6 +70,61 @@ describe('PetDetailView', () => {
     expect(activeTabIndex(wrapper)).toBe(2);
   });
 
+  it('marks up the tabs and panels as a tablist', async () => {
+    const { wrapper } = await mountDetail('/pets/pet-1?tab=readings');
+    expect(wrapper.get('.tabs').attributes('role')).toBe('tablist');
+    tabs(wrapper).forEach((tab, i) => {
+      expect(tab.attributes('role')).toBe('tab');
+      expect(tab.attributes('aria-selected')).toBe(String(i === 1));
+      expect(tab.attributes('tabindex')).toBe(i === 1 ? '0' : '-1');
+      const panel = document.getElementById(tab.attributes('aria-controls')!);
+      expect(panel?.getAttribute('role')).toBe('tabpanel');
+      expect(panel?.getAttribute('aria-labelledby')).toBe(tab.attributes('id'));
+    });
+    expect(wrapper.get('.tab-indicator').attributes('aria-hidden')).toBe('true');
+  });
+
+  it('moves between tabs with the arrow keys, Home and End', async () => {
+    const { wrapper, replace } = await mountDetail('/pets/pet-1');
+    await tabs(wrapper)[0].trigger('keydown', { key: 'ArrowRight', altKey: true });
+    await tabs(wrapper)[0].trigger('keydown', { key: 'a' });
+    expect(replace).not.toHaveBeenCalled();
+    const press = async (key: string) => {
+      await wrapper.get('.tab:focus').trigger('keydown', { key });
+      await settle();
+    };
+    (tabs(wrapper)[0].element as HTMLElement).focus();
+
+    await press('ArrowRight');
+    expect(replace).toHaveBeenLastCalledWith({ query: { tab: 'readings' } });
+    expect(document.activeElement).toBe(tabs(wrapper)[1].element);
+    expect(tabs(wrapper)[1].attributes('aria-selected')).toBe('true');
+    expect(tabs(wrapper)[1].attributes('tabindex')).toBe('0');
+
+    await press('End');
+    expect(document.activeElement).toBe(tabs(wrapper)[2].element);
+    await press('ArrowRight'); // wraps
+    expect(document.activeElement).toBe(tabs(wrapper)[0].element);
+    await press('ArrowLeft'); // wraps
+    expect(document.activeElement).toBe(tabs(wrapper)[2].element);
+    await press('Home');
+    expect(document.activeElement).toBe(tabs(wrapper)[0].element);
+    expect(activeTabIndex(wrapper)).toBe(0);
+    const visited = replace.mock.calls.map(([to]) => (to as { query: { tab: string } }).query.tab);
+    expect(visited).toEqual(['readings', 'notes', 'chart', 'notes', 'chart']);
+  });
+
+  it('follows the focused tab when keys come faster than navigation', async () => {
+    const { wrapper, replace } = await mountDetail('/pets/pet-1');
+    (tabs(wrapper)[0].element as HTMLElement).focus();
+    await tabs(wrapper)[0].trigger('keydown', { key: 'ArrowRight' });
+    await tabs(wrapper)[1].trigger('keydown', { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(tabs(wrapper)[2].element);
+    await settle();
+    expect(replace).toHaveBeenLastCalledWith({ query: { tab: 'notes' } });
+    expect(activeTabIndex(wrapper)).toBe(2);
+  });
+
   it('opens the edit form and the tracker', async () => {
     const { wrapper, push } = await mountDetail('/pets/pet-1');
     const edit = wrapper.findAll('.header-actions .icon-btn')[2];

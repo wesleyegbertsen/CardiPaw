@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, useId, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
@@ -46,6 +46,31 @@ const activeTab = computed({
   },
 });
 const activeTabIndex = computed(() => TABS.indexOf(activeTab.value));
+
+const tabsId = useId();
+const tabId = (tab: Tab) => `${tabsId}-tab-${tab}`;
+const panelId = (tab: Tab) => `${tabsId}-panel-${tab}`;
+const tablistRef = ref<HTMLElement | null>(null);
+
+// WAI-ARIA tabs with automatic activation: arrows wrap, Home/End jump to the ends
+function onTabKeydown(e: KeyboardEvent) {
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  const tabEls = [...(tablistRef.value?.querySelectorAll<HTMLElement>('[role="tab"]') ?? [])];
+  const i = tabEls.indexOf(e.target as HTMLElement);
+  if (i < 0) return;
+  const n = TABS.length;
+  const keys: Record<string, number> = {
+    ArrowRight: (i + 1) % n,
+    ArrowLeft: (i - 1 + n) % n,
+    Home: 0,
+    End: n - 1,
+  };
+  const next = keys[e.key];
+  if (next === undefined) return;
+  e.preventDefault();
+  tabEls[next].focus();
+  activeTab.value = TABS[next];
+}
 
 // Index the swipe track is positioned at. Updated immediately on swipe commit so the
 // slide animation doesn't wait for router.replace to resolve; otherwise mirrors activeTab.
@@ -422,18 +447,46 @@ async function deletePet() {
       </button>
     </div>
 
-    <div class="tabs">
-      <button class="tab" :class="{ active: activeTab === 'chart' }" @click="activeTab = 'chart'">{{ $t('petDetail.tabChart') }}</button>
-      <button class="tab" :class="{ active: activeTab === 'readings' }" @click="activeTab = 'readings'">
+    <div ref="tablistRef" class="tabs" role="tablist" @keydown="onTabKeydown">
+      <button
+        :id="tabId('chart')"
+        class="tab"
+        :class="{ active: activeTab === 'chart' }"
+        role="tab"
+        :aria-selected="activeTab === 'chart'"
+        :aria-controls="panelId('chart')"
+        :tabindex="activeTab === 'chart' ? 0 : -1"
+        @click="activeTab = 'chart'"
+      >{{ $t('petDetail.tabChart') }}</button>
+      <button
+        :id="tabId('readings')"
+        class="tab"
+        :class="{ active: activeTab === 'readings' }"
+        role="tab"
+        :aria-selected="activeTab === 'readings'"
+        :aria-controls="panelId('readings')"
+        :tabindex="activeTab === 'readings' ? 0 : -1"
+        @click="activeTab = 'readings'"
+      >
         {{ $t('petDetail.tabReadings') }}
         <span v-if="readings.length > 0" class="tab-count">{{ readings.length }}</span>
       </button>
-      <button class="tab" :class="{ active: activeTab === 'notes' }" @click="activeTab = 'notes'">
+      <button
+        :id="tabId('notes')"
+        class="tab"
+        :class="{ active: activeTab === 'notes' }"
+        role="tab"
+        :aria-selected="activeTab === 'notes'"
+        :aria-controls="panelId('notes')"
+        :tabindex="activeTab === 'notes' ? 0 : -1"
+        @click="activeTab = 'notes'"
+      >
         {{ $t('petDetail.tabNotes') }}
         <span v-if="notes.length > 0" class="tab-count">{{ notes.length }}</span>
       </button>
       <div
         class="tab-indicator"
+        aria-hidden="true"
         :class="{ dragging: isDragging }"
         :style="{ transform: `translateX(${(trackIndex - dragProgress) * 100}%)` }"
       ></div>
@@ -453,7 +506,7 @@ async function deletePet() {
         :style="{ transform: `translateX(calc(${-trackIndex * 100}% + ${dragOffset}px))` }"
         @transitionend.self="isAnimating = false"
       >
-        <div class="tab-panel" :class="{ collapsed: isPanelCollapsed(0) }">
+        <div :id="panelId('chart')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(0) }" role="tabpanel" :aria-labelledby="tabId('chart')">
           <div class="chart-controls">
             <div class="range-toggle">
               <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
@@ -528,10 +581,10 @@ async function deletePet() {
           </div>
           <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" :normal-ceiling="pet?.normalCeiling" />
         </div>
-        <div class="tab-panel" :class="{ collapsed: isPanelCollapsed(1) }">
+        <div :id="panelId('readings')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(1) }" role="tabpanel" :aria-labelledby="tabId('readings')">
           <ReadingList :readings="readings" :pet="pet" />
         </div>
-        <div class="tab-panel" :class="{ collapsed: isPanelCollapsed(2) }">
+        <div :id="panelId('notes')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(2) }" role="tabpanel" :aria-labelledby="tabId('notes')">
           <NoteList :notes="notes" :petId="petId" />
         </div>
       </div>
