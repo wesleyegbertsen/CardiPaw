@@ -254,6 +254,12 @@ describe('usePdfExport', () => {
     expect(all.filter((s) => /^\w+ 2024$/.test(s))).toEqual(['January 2024', 'March 2024']);
   });
 
+  it('starts on the first page when the first selected month has no readings', async () => {
+    const doc = await generate(makePet(), readings, ['2024-05', '2024-03']);
+    expect(doc.events.filter((e) => e.type === 'addPage')).toHaveLength(0);
+    expect(texts(doc.events).filter((s) => s.startsWith('Page '))).toEqual(['Page 1 of 1']);
+  });
+
   it('starts each month on a new page and numbers every page', async () => {
     const doc = await generate(makePet(), readings, ['2024-01', '2024-02', '2024-03']);
     const monthPages = doc.events.flatMap((e) =>

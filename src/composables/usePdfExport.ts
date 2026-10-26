@@ -236,6 +236,7 @@ export function usePdfExport() {
         newestFirst ? b.localeCompare(a) : a.localeCompare(b)
       );
 
+      let firstSection = true;
       for (const monthKey of sortedMonths) {
         const monthReadings = readings
           .filter(r => localMonthKey(r.date) === monthKey)
@@ -246,11 +247,13 @@ export function usePdfExport() {
         const dailyAverages = aggregateByDay(readings, monthKey);
         const chartDataUrl = renderChartToDataUrl(dailyAverages, pet.normalCeiling ?? DEFAULT_NORMAL_CEILING, loc, t('chart.yAxis'));
 
-        // Each month starts on its own page (skip addPage for the very first section)
-        if (sortedMonths.indexOf(monthKey) > 0) {
+        // Each month starts on its own page, except the first one printed
+        // (a selected month without readings is skipped and must not count as first).
+        if (!firstSection) {
           doc.addPage();
           curY = MT;
         }
+        firstSection = false;
 
         // Month heading bar
         const monthLabel = new Intl.DateTimeFormat(loc, { month: 'long', year: 'numeric' }).format(
