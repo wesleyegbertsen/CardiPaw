@@ -157,6 +157,9 @@ async function nativeShare() {
           </p>
         </div>
 
+        <!-- Inside the modal dialog: screen readers ignore live regions outside it -->
+        <p class="sr-only" role="status">{{ copied ? $t('shareModal.copied') : '' }}</p>
+
         <div class="dialog-footer">
           <button class="btn-cancel" @click="emit('close')">{{ $t('common.close') }}</button>
           <button v-if="canNativeShare" class="btn-secondary" @click="nativeShare" :disabled="!shareUrl">
