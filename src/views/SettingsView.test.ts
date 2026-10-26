@@ -93,9 +93,20 @@ describe('SettingsView', () => {
       await importOnce();
       vi.advanceTimersByTime(2000);
       await importOnce();
-      vi.advanceTimersByTime(1500);
+      // Blanked for a moment so screen readers announce the same text again
+      expect(status(wrapper)).toBe('');
+      expect(importButton(wrapper).text()).toContain('Imported');
+      vi.advanceTimersByTime(100);
+      await flushPromises();
+      expect(status(wrapper)).toBe('✓ Imported');
+      vi.advanceTimersByTime(1400);
       await flushPromises();
       expect(importButton(wrapper).text()).toContain('Imported');
+      expect(status(wrapper)).toBe('✓ Imported');
+      vi.advanceTimersByTime(1500);
+      await flushPromises();
+      expect(importButton(wrapper).text()).not.toContain('Imported');
+      expect(status(wrapper)).toBe('');
     });
 
     it('mentions damaged records that will be skipped', async () => {
@@ -184,7 +195,13 @@ describe('SettingsView', () => {
       vi.advanceTimersByTime(2000);
       await exportButton(wrapper).trigger('click');
       await flushPromises();
-      vi.advanceTimersByTime(1500);
+      // Blanked for a moment so screen readers announce the same text again
+      expect(status(wrapper)).toBe('');
+      expect(exportButton(wrapper).text()).toContain('Exported');
+      vi.advanceTimersByTime(100);
+      await flushPromises();
+      expect(status(wrapper)).toBe('✓ Exported');
+      vi.advanceTimersByTime(1400);
       await flushPromises();
       expect(exportButton(wrapper).text()).toContain('Exported');
       expect(status(wrapper)).toBe('✓ Exported');
@@ -199,7 +216,9 @@ describe('SettingsView', () => {
       vi.useFakeTimers();
       await exportButton(wrapper).trigger('click');
       await flushPromises();
-      expect(vi.getTimerCount()).toBe(1);
+      vi.advanceTimersByTime(1000);
+      await exportButton(wrapper).trigger('click'); // a repeat also starts the re-announce timer
+      await flushPromises();
       wrapper.unmount();
       expect(vi.getTimerCount()).toBe(0);
     });

@@ -40,17 +40,31 @@ const importSuccess = ref(false);
 const importing = ref(false);
 const exportError = ref(false);
 // Spoken by the status region; the buttons show the same text
-const statusMessage = computed(() =>
-  importSuccess.value ? t('settings.imported') : exportSuccess.value ? t('settings.exported') : '',
-);
+const statusPaused = ref(false);
+const statusMessage = computed(() => {
+  if (statusPaused.value) return '';
+  return importSuccess.value
+    ? t('settings.imported')
+    : exportSuccess.value ? t('settings.exported') : '';
+});
 
 // A repeat export/import restarts its 3 s confirmation instead of being cut short
 let exportTimer: ReturnType<typeof setTimeout> | undefined;
 let importTimer: ReturnType<typeof setTimeout> | undefined;
+let statusPauseTimer: ReturnType<typeof setTimeout> | undefined;
 onBeforeUnmount(() => {
   clearTimeout(exportTimer);
   clearTimeout(importTimer);
+  clearTimeout(statusPauseTimer);
 });
+
+// Screen readers skip a live region whose text comes back unchanged within one update,
+// so a repeat blanks the region briefly; the button keeps its text
+function reannounceStatus() {
+  statusPaused.value = true;
+  clearTimeout(statusPauseTimer);
+  statusPauseTimer = setTimeout(() => { statusPaused.value = false; }, 100);
+}
 
 async function exportData() {
   exportError.value = false;
@@ -61,6 +75,7 @@ async function exportData() {
     exportError.value = true;
     return;
   }
+  if (exportSuccess.value) reannounceStatus();
   exportSuccess.value = true;
   clearTimeout(exportTimer);
   exportTimer = setTimeout(() => { exportSuccess.value = false; }, 3000);
@@ -103,6 +118,7 @@ async function confirmImport() {
   } finally {
     importing.value = false;
   }
+  if (importSuccess.value) reannounceStatus();
   importSuccess.value = true;
   clearTimeout(importTimer);
   importTimer = setTimeout(() => { importSuccess.value = false; }, 3000);

@@ -159,6 +159,30 @@ describe('ShareLinkModal', () => {
     expect(status()).toBe('');
   });
 
+  it('announces Copied again on a repeat copy', async () => {
+    await mountModal();
+    vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    copyButton().click();
+    await flushPromises();
+    vi.advanceTimersByTime(1000);
+    copyButton().click();
+    await flushPromises();
+    // Blanked for a moment so screen readers announce the same text again
+    expect(status()).toBe('');
+    expect(copyButton().textContent?.trim()).toBe('Copied!');
+    vi.advanceTimersByTime(100);
+    await flushPromises();
+    expect(status()).toBe('Copied!');
+    vi.advanceTimersByTime(1899);
+    await flushPromises();
+    expect(copyButton().textContent?.trim()).toBe('Copied!');
+    vi.advanceTimersByTime(1);
+    await flushPromises();
+    expect(copyButton().textContent?.trim()).toBe('Copy link');
+    expect(status()).toBe('');
+  });
+
   it('clears the Copied timer when closed', async () => {
     const wrapper = await mountModal();
     vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
