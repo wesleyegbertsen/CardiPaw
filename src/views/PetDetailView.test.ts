@@ -6,6 +6,7 @@ import { usePetsStore } from '../stores/pets';
 import { mountView, settle, type MountViewOptions } from '../test/mountView';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
 import { deferred } from '../test/deferred';
+import { touchEvent } from '../test/touch';
 import { createTestI18n } from '../test/i18n';
 import * as db from '../services/db';
 import type { Reading } from '../types';
@@ -279,8 +280,7 @@ describe('PetDetailView', () => {
   });
 
   describe('swipe', () => {
-    // happy-dom has no layout and Event.timeStamp is read-only, so the viewport gets a
-    // fixed width and touch events are built by hand with the fields the handlers read.
+    // happy-dom has no layout, so the viewport gets a fixed width.
     const WIDTH = 400; // a drag commits past 25%: 100px
 
     async function mountSwipe(tab = 'chart') {
@@ -295,13 +295,7 @@ describe('PetDetailView', () => {
           clientX: 200 + dx,
           clientY: 100 + dy,
         }));
-        const event = new Event(type, { bubbles: true });
-        Object.defineProperties(event, {
-          touches: { value: type === 'touchend' || type === 'touchcancel' ? [] : points },
-          changedTouches: { value: points },
-          timeStamp: { value: time },
-        });
-        viewport.dispatchEvent(event);
+        viewport.dispatchEvent(touchEvent(type, points, time));
         await nextTick();
       }
       const start = (time = 0, fingers = 1) => fire('touchstart', 0, 0, time, fingers);

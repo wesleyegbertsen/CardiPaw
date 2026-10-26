@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import OnboardingModal from './OnboardingModal.vue';
 import { createTestI18n } from '../test/i18n';
+import { touchEvent } from '../test/touch';
 
 const q = <T extends Element = HTMLElement>(selector: string) =>
   document.body.querySelector<T>(selector);
@@ -20,15 +21,10 @@ async function click(el: HTMLElement) {
   await flushPromises();
 }
 
-// happy-dom has no Touch constructor; the handlers only read clientX/clientY.
 async function swipe(dx: number, dy = 0) {
   const body = q('.dialog-body')!;
-  const touch = (type: string, x: number, y: number) => {
-    const event = new Event(type, { bubbles: true });
-    const points = [{ clientX: x, clientY: y }];
-    Object.assign(event, { touches: points, changedTouches: points });
-    body.dispatchEvent(event);
-  };
+  const touch = (type: string, x: number, y: number) =>
+    body.dispatchEvent(touchEvent(type, [{ clientX: x, clientY: y }]));
   touch('touchstart', 100, 100);
   touch('touchend', 100 + dx, 100 + dy);
   await flushPromises();
