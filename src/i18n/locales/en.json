@@ -330,14 +330,15 @@
   },
   "trend": {
     "title": "Breathing rate trending up",
+    "titleAboveCeiling": "Breathing rate above Normal",
     "rising": "{name}'s resting breathing rate has been about {recent} breaths/min over the last {days} days, up from a usual {baseline}.",
-    "aboveCeiling": "{name}'s resting breathing rate has been above {ceiling} breaths/min on more than one of the last {days} days.",
+    "aboveCeiling": "{name}'s resting breathing rate has been above {ceiling} breaths/min on {minAbove} or more of the last {days} days.",
     "advice": "Measure again while {name} is resting or asleep, and talk to your vet if it stays higher.",
     "how": "How is this worked out?",
     "infoTitle": "How trend alerts work",
     "info": {
       "p1": "CardiPaw compares the last {days} days with the {baselineDays} days before them. Each day counts once, using the middle value of that day's readings, so measuring again on the same day doesn't count twice.",
-      "p2": "An alert shows when, on at least 2 of the last {days} days, the rate was {percent}% and {breaths} breaths/min or more above the usual rate. Working out the usual rate needs readings on at least {minDays} of the earlier days. An alert also shows when at least 2 of the last {days} days were above {name}'s Normal ceiling of {ceiling} breaths/min.",
+      "p2": "An alert shows when, on at least {minRaised} of the last {days} days, the rate was {percent}% and {breaths} breaths/min or more above the usual rate. Working out the usual rate needs readings on at least {minDays} of the earlier days. An alert also shows when at least {minAbove} of the last {days} days were above {name}'s Normal ceiling of {ceiling} breaths/min.",
       "p3": "The alert goes away on its own once readings settle. With too few readings nothing is shown, so no alert doesn't always mean all is well.",
       "p4": "Readings taken while awake, excited or warm can make the rate look higher, and so can mixing sleeping and resting readings, because the rate is usually lower during sleep. This is not a diagnosis. If you're worried, contact your vet, and if your pet is struggling to breathe, contact them straight away."
     }

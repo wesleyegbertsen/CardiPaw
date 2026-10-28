@@ -698,7 +698,7 @@ describe('PetDetailView', () => {
     it('explains a rise above the usual rate, above the track button', async () => {
       const { wrapper } = await mountTrend(trendReadings(today, 20, [28, 28]));
       const alert = wrapper.get('.trend-alert');
-      expect(alert.get('.trend-title').text()).toBe('Breathing rate trending up');
+      expect(alert.get('h2.trend-title').text()).toBe('Breathing rate trending up');
       expect(alert.get('.trend-message').text()).toBe(
         "Ace's resting breathing rate has been about 28 breaths/min over the last 3 days, up from a usual 20.",
       );
@@ -710,8 +710,9 @@ describe('PetDetailView', () => {
 
     it("explains days above the pet's Normal ceiling without a baseline", async () => {
       const { wrapper } = await mountTrend(trendReadings(today, null, [30, 30]), { normalCeiling: 28 });
+      expect(wrapper.get('.trend-title').text()).toBe('Breathing rate above Normal');
       expect(wrapper.get('.trend-message').text()).toBe(
-        "Ace's resting breathing rate has been above 28 breaths/min on more than one of the last 3 days.",
+        "Ace's resting breathing rate has been above 28 breaths/min on 2 or more of the last 3 days.",
       );
     });
 
@@ -730,9 +731,13 @@ describe('PetDetailView', () => {
       const dialog = document.body.querySelector('[role="dialog"]')!;
       expect(dialog.querySelector('h2')!.textContent).toBe('How trend alerts work');
       expect(dialog.textContent).toContain('compares the last 3 days with the 28 days before them');
-      expect(dialog.textContent).toContain('the rate was 20% and 4 breaths/min or more above the usual rate');
+      expect(dialog.textContent).toContain(
+        'on at least 2 of the last 3 days, the rate was 20% and 4 breaths/min or more above the usual rate',
+      );
       expect(dialog.textContent).toContain('readings on at least 7 of the earlier days');
-      expect(dialog.textContent).toContain("above Ace's Normal ceiling of 30 breaths/min");
+      expect(dialog.textContent).toContain(
+        "when at least 2 of the last 3 days were above Ace's Normal ceiling of 30 breaths/min",
+      );
       (dialog.querySelector('.btn-ok') as HTMLElement).click();
       await nextTick();
       expect(document.body.querySelector('[role="dialog"]')).toBeNull();

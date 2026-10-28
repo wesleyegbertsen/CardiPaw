@@ -73,7 +73,7 @@ Each pet on the home screen shows a compact 7-day sparkline so you can see at a 
 
 ### Trend Alerts
 
-CardiPaw keeps an eye on the trend for you. When a pet's resting breathing rate has crept up, the detail view shows a short alert above the Start tracking button, and the pet's card on the home screen gets a "Breathing rate trending up" row. An alert shows when either of these is true:
+CardiPaw keeps an eye on the trend for you. When a pet's resting breathing rate has crept up, the detail view shows a short alert above the Start tracking button, and the pet's card on the home screen gets a "Breathing rate trending up" row ("Breathing rate above Normal" for the second rule below). An alert shows when either of these is true:
 
 - on **at least 2 of the last 3 days**, the rate was **20% and 4 breaths/min or more** above the pet's usual rate, or
 - on **at least 2 of the last 3 days**, the rate was above the pet's Normal ceiling (see [Status Thresholds](#status-thresholds), or the pet's own ceiling when one is set).

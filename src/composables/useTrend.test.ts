@@ -22,6 +22,7 @@ describe('useTrend', () => {
   it('describes a rise with rounded numbers', () => {
     const { trend, app } = setup(trendReadings(today, 20, [27, 28]), makePet());
     expect(trend.value.alerting).toBe(true);
+    expect(trend.value.title).toBe('Breathing rate trending up');
     expect(trend.value.message).toBe(
       "Ace's resting breathing rate has been about 28 breaths/min over the last 3 days, up from a usual 20.",
     );
@@ -42,9 +43,16 @@ describe('useTrend', () => {
       trendReadings(today, null, [30, 30]),
       makePet({ normalCeiling: 28 }),
     );
+    expect(trend.value.title).toBe('Breathing rate above Normal');
     expect(trend.value.message).toBe(
-      "Ace's resting breathing rate has been above 28 breaths/min on more than one of the last 3 days.",
+      "Ace's resting breathing rate has been above 28 breaths/min on 2 or more of the last 3 days.",
     );
+    expect(trend.value.infoParams).toMatchObject({
+      name: 'Ace',
+      ceiling: 28,
+      minRaised: 2,
+      minAbove: 2,
+    });
     app.unmount();
   });
 
@@ -55,7 +63,7 @@ describe('useTrend', () => {
       [trendReadings(today, 20, [28, 28]), undefined],
     ] as const) {
       const { trend, app } = setup([...readings], pet);
-      expect(trend.value).toMatchObject({ alerting: false, message: '' });
+      expect(trend.value).toMatchObject({ alerting: false, title: '', message: '' });
       app.unmount();
     }
   });

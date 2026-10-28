@@ -11,13 +11,6 @@ import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
 import { useTrend } from '../composables/useTrend';
-import {
-  BASELINE_DAYS,
-  MIN_BASELINE_DAYS,
-  RECENT_DAYS,
-  RISE_MIN_BREATHS,
-  RISE_PERCENT,
-} from '../utils/trend';
 import RRRChart from '../components/RRRChart.vue';
 import ReadingList from '../components/ReadingList.vue';
 import NoteList from '../components/NoteList.vue';
@@ -483,7 +476,7 @@ async function deletePet() {
           <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
         </svg>
         <div class="trend-text">
-          <p class="trend-title">{{ $t('trend.title') }}</p>
+          <h2 class="trend-title">{{ trend.title }}</h2>
           <p class="trend-message">{{ trend.message }}</p>
           <p class="trend-advice">{{ $t('trend.advice', { name: pet.name }) }}</p>
           <button type="button" class="trend-how" @click="showTrendInfo = true">{{ $t('trend.how') }}</button>
@@ -679,19 +672,8 @@ async function deletePet() {
     />
 
     <InfoModal v-if="showTrendInfo" :title="$t('trend.infoTitle')" @close="showTrendInfo = false">
-      <p>{{ $t('trend.info.p1', { days: RECENT_DAYS, baselineDays: BASELINE_DAYS }) }}</p>
-      <p>
-        {{
-          $t('trend.info.p2', {
-            days: RECENT_DAYS,
-            percent: RISE_PERCENT,
-            breaths: RISE_MIN_BREATHS,
-            minDays: MIN_BASELINE_DAYS,
-            name: pet.name,
-            ceiling: trend.result.normalCeiling,
-          })
-        }}
-      </p>
+      <p>{{ $t('trend.info.p1', trend.infoParams) }}</p>
+      <p>{{ $t('trend.info.p2', trend.infoParams) }}</p>
       <p>{{ $t('trend.info.p3') }}</p>
       <p>{{ $t('trend.info.p4') }}</p>
     </InfoModal>

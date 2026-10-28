@@ -143,6 +143,11 @@ describe('PetCard', () => {
       expect(wrapper.get('.pet-card').attributes('aria-describedby')).toBe(row.attributes('id'));
     });
 
+    it('names days above the Normal ceiling as such', async () => {
+      const wrapper = await mountCard('Ace', trendReadings(today, null, [34, 34]));
+      expect(wrapper.get('.trend-row').text()).toBe('Breathing rate above Normal');
+    });
+
     it('shows nothing for stable readings', async () => {
       const wrapper = await mountCard('Ace', trendReadings(today, 20, [20, 22]));
       expect(wrapper.find('.trend-row').exists()).toBe(false);

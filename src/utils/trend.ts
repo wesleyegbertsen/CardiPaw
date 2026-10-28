@@ -7,7 +7,7 @@ import { DEFAULT_NORMAL_CEILING } from './rateStatus';
 // number on the same day can't raise an alert on its own.
 
 export const RECENT_DAYS = 3; // today and the 2 days before
-export const MIN_RECENT_DAYS = 2; // recent days with readings needed for any alert
+const MIN_RECENT_DAYS = 2; // recent days with readings needed for any alert
 export const BASELINE_DAYS = 28; // the 28 days before the recent window
 export const MIN_BASELINE_DAYS = 7; // baseline days with readings needed for the rising rule
 export const RISE_PERCENT = 20; // a recent day is "raised" at ≥ baseline × 1.20 …
@@ -15,7 +15,7 @@ export const RISE_MIN_BREATHS = 4; // … and ≥ baseline + 4 breaths/min
 export const MIN_RAISED_DAYS = 2; // raised recent days needed for 'rising'
 export const MIN_DAYS_ABOVE_CEILING = 2; // recent days above the Normal ceiling needed for 'aboveCeiling'
 
-export type TrendKind = 'none' | 'insufficient' | 'rising' | 'aboveCeiling';
+type TrendKind = 'none' | 'insufficient' | 'rising' | 'aboveCeiling';
 
 interface TrendCounts {
   baselineDays: number;
@@ -26,7 +26,7 @@ interface TrendCounts {
   normalCeiling: number;
 }
 
-export type TrendResult = TrendCounts &
+type TrendResult = TrendCounts &
   (
     | { kind: 'rising'; baseline: number; recent: number }
     | {

@@ -1,7 +1,17 @@
 import { computed, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
-import { computeTrend, isTrendAlert, RECENT_DAYS } from '../utils/trend';
+import {
+  BASELINE_DAYS,
+  computeTrend,
+  isTrendAlert,
+  MIN_BASELINE_DAYS,
+  MIN_DAYS_ABOVE_CEILING,
+  MIN_RAISED_DAYS,
+  RECENT_DAYS,
+  RISE_MIN_BREATHS,
+  RISE_PERCENT,
+} from '../utils/trend';
 
 /**
  * The pet's trend alert, if any. Like useLastMeasured, "today" is read when the
@@ -17,8 +27,10 @@ export function useTrend(
     const result = computeTrend(readings.value, pet.value);
     const alerting = !!pet.value && isTrendAlert(result);
     const name = pet.value?.name ?? '';
+    let title = '';
     let message = '';
     if (alerting && result.kind === 'rising') {
+      title = t('trend.title');
       message = t('trend.rising', {
         name,
         recent: Math.round(result.recent),
@@ -26,12 +38,26 @@ export function useTrend(
         days: RECENT_DAYS,
       });
     } else if (alerting) {
+      title = t('trend.titleAboveCeiling');
       message = t('trend.aboveCeiling', {
         name,
         ceiling: result.normalCeiling,
         days: RECENT_DAYS,
+        minAbove: MIN_DAYS_ABOVE_CEILING,
       });
     }
-    return { result, alerting, message };
+    // For "How is this worked out?", so views don't need the tuning constants.
+    const infoParams = {
+      name,
+      days: RECENT_DAYS,
+      baselineDays: BASELINE_DAYS,
+      minDays: MIN_BASELINE_DAYS,
+      percent: RISE_PERCENT,
+      breaths: RISE_MIN_BREATHS,
+      minRaised: MIN_RAISED_DAYS,
+      minAbove: MIN_DAYS_ABOVE_CEILING,
+      ceiling: result.normalCeiling,
+    };
+    return { result, alerting, title, message, infoParams };
   });
 }
