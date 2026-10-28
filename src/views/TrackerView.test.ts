@@ -362,6 +362,8 @@ describe('TrackerView', () => {
     ['the sound switch', '.slide-toggle'],
     // The two switches share a row; the space between them is not part of the tap area.
     ['the space between the switches', '.toggle-rows'],
+    // Around and between the length picker and the switches: a tap that just misses one.
+    ['the space around the options', '.tracker-options'],
   ])('tapping %s does not start the measurement', async (_label, selector) => {
     const { wrapper } = await mountTracker();
     await wrapper.get(selector).trigger('click');

@@ -321,44 +321,47 @@ onUnmounted(() => {
       <div class="body-bottom">
         <template v-if="phase === 'idle'">
           <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
-          <!-- @click.stop: inside the tap area, and a radio is clicked by mouse, Space and arrow keys alike -->
-          <div class="option-row length-picker" role="radiogroup" :aria-labelledby="lengthLabelId" @click.stop>
-            <span :id="lengthLabelId" class="toggle-label">{{ $t('tracker.measurementLength') }}</span>
-            <div class="length-options">
-              <label
-                v-for="seconds in MEASUREMENT_OPTIONS"
-                :key="seconds"
-                class="length-option"
-                :class="{ active: measurementSeconds === seconds }"
-              >
-                <input v-model="measurementSeconds" class="sr-only" type="radio" :name="lengthName" :value="seconds" />
-                {{ $t('tracker.secondsOption', { seconds }) }}
-              </label>
+          <!-- @click.stop: inside the tap area, and a radio is clicked by mouse, Space and arrow keys alike.
+               On the whole block, so a tap that just misses an option or a switch does not start a measurement. -->
+          <div class="tracker-options" @click.stop>
+            <div class="option-row length-picker" role="radiogroup" :aria-labelledby="lengthLabelId">
+              <span :id="lengthLabelId" class="toggle-label">{{ $t('tracker.measurementLength') }}</span>
+              <div class="length-options">
+                <label
+                  v-for="seconds in MEASUREMENT_OPTIONS"
+                  :key="seconds"
+                  class="length-option"
+                  :class="{ active: measurementSeconds === seconds }"
+                >
+                  <input v-model="measurementSeconds" class="sr-only" type="radio" :name="lengthName" :value="seconds" />
+                  {{ $t('tracker.secondsOption', { seconds }) }}
+                </label>
+              </div>
             </div>
-          </div>
-          <!-- Side by side to keep the idle screen short enough for small phones; wraps when there is no room -->
-          <div class="toggle-rows" @click.stop>
-            <div class="option-row">
-              <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
-              <button
-                class="slide-toggle"
-                :class="{ on: soundEnabled }"
-                role="switch"
-                :aria-checked="soundEnabled"
-                :aria-labelledby="soundLabelId"
-                @click="soundEnabled = !soundEnabled"
-              />
-            </div>
-            <div v-if="hapticsSupported" class="option-row">
-              <span :id="vibrationLabelId" class="toggle-label">{{ $t('tracker.vibration') }}</span>
-              <button
-                class="slide-toggle"
-                :class="{ on: vibrationEnabled }"
-                role="switch"
-                :aria-checked="vibrationEnabled"
-                :aria-labelledby="vibrationLabelId"
-                @click="vibrationEnabled = !vibrationEnabled"
-              />
+            <!-- Side by side to keep the idle screen short enough for small phones; wraps when there is no room -->
+            <div class="toggle-rows">
+              <div class="option-row">
+                <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
+                <button
+                  class="slide-toggle"
+                  :class="{ on: soundEnabled }"
+                  role="switch"
+                  :aria-checked="soundEnabled"
+                  :aria-labelledby="soundLabelId"
+                  @click="soundEnabled = !soundEnabled"
+                />
+              </div>
+              <div v-if="hapticsSupported" class="option-row">
+                <span :id="vibrationLabelId" class="toggle-label">{{ $t('tracker.vibration') }}</span>
+                <button
+                  class="slide-toggle"
+                  :class="{ on: vibrationEnabled }"
+                  role="switch"
+                  :aria-checked="vibrationEnabled"
+                  :aria-labelledby="vibrationLabelId"
+                  @click="vibrationEnabled = !vibrationEnabled"
+                />
+              </div>
             </div>
           </div>
         </template>
@@ -718,6 +721,19 @@ onUnmounted(() => {
   color: var(--color-text-muted);
 }
 
+/* Length picker and switches. One block that swallows taps (see the template), so its
+   gaps use padding, not margins; the padding past the edges is offset by negative margins
+   to widen that block around the controls without moving them. */
+.tracker-options {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 8px;
+  margin: 0 -8px -8px;
+}
+
 /* Measurement length: native radios styled as a segmented control */
 .length-options {
   display: flex;
@@ -742,6 +758,13 @@ onUnmounted(() => {
   transition: background 0.2s, color 0.2s;
 }
 
+/* A taller hit area (44px) without a taller control */
+.length-option::before {
+  content: '';
+  position: absolute;
+  inset: -9px 0;
+}
+
 .length-option.active {
   background: var(--color-primary);
   color: #fff;
@@ -757,7 +780,7 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  column-gap: 24px;
+  gap: 8px 24px;
 }
 
 .option-row {
@@ -765,7 +788,6 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 8px;
 }
 
 .toggle-label {
