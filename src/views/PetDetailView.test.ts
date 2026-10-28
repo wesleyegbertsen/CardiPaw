@@ -743,6 +743,40 @@ describe('PetDetailView', () => {
       expect(document.body.querySelector('[role="dialog"]')).toBeNull();
     });
 
+    it('gives way to the error when a reload fails over cached readings, like the card', async () => {
+      // The first visit caches the readings; see 'keeps showing a cached pet …' above.
+      const first = await mountTrend(trendReadings(today, 20, [28, 28]));
+      expect(first.wrapper.find('.trend-alert').exists()).toBe(true);
+
+      vi.spyOn(db, 'getReadingsForPet').mockRejectedValueOnce(new Error('idb broken'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const wrapper = mount(PetDetailView, {
+        attachTo: document.body,
+        global: { plugins: [first.pinia, first.router, createTestI18n()] },
+      });
+      await settle();
+
+      expect(tabs(wrapper)[1].get('.tab-count').text()).toBe('12');
+      expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+      expect(wrapper.find('.trend-alert').exists()).toBe(false);
+    });
+
+    it('still shows when only the notes fail to load', async () => {
+      vi.spyOn(db, 'getNotesForPet').mockRejectedValueOnce(new Error('idb broken'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper } = await mountTrend(trendReadings(today, 20, [28, 28]));
+      expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+      expect(wrapper.find('.trend-alert').exists()).toBe(true);
+    });
+
+    it("explains the pet's own Normal ceiling in the dialog", async () => {
+      const { wrapper } = await mountTrend(trendReadings(today, null, [30, 30]), { normalCeiling: 28 });
+      await wrapper.get('.trend-how').trigger('click');
+      expect(document.body.querySelector('[role="dialog"]')!.textContent).toContain(
+        "above Ace's Normal ceiling of 28 breaths/min",
+      );
+    });
+
     it('goes away when a high reading is deleted', async () => {
       const readings = trendReadings(today, 20, [28, 28]);
       const { wrapper, pinia } = await mountTrend(readings);

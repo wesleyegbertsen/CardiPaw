@@ -364,6 +364,8 @@ function hasNoReadingsInMonth(monthIndex: number, year: number): boolean {
 }
 
 const loadError = ref(false);
+// Cached readings may be stale after a failed reload, so the trend alert hides, as on the card.
+const readingsError = ref(false);
 const deleting = ref(false);
 const deleteError = ref(false);
 
@@ -391,6 +393,7 @@ onMounted(async () => {
   readingsStore.loadReadingsForPet(petId).catch((e) => {
     console.error('Loading readings failed', e);
     loadError.value = true;
+    readingsError.value = true;
   });
   notesStore.loadNotesForPet(petId).catch((e) => {
     console.error('Loading notes failed', e);
@@ -471,7 +474,7 @@ async function deletePet() {
     </div>
 
     <div class="track-cta">
-      <div v-if="trend.alerting" class="trend-alert">
+      <div v-if="trend.alerting && !readingsError" class="trend-alert">
         <svg class="trend-icon" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
           <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
         </svg>

@@ -319,6 +319,8 @@ function startTracking() {
   font-weight: 600;
   color: var(--color-warning-text);
   background: var(--color-warning-bg);
+  /* As on the detail page's alert: the dark warning background is close to the card. */
+  border: 1px solid var(--color-warning);
   border-radius: var(--radius-sm);
 }
 </style>
