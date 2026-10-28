@@ -1,7 +1,6 @@
-import 'fake-indexeddb/auto';
 import { vi } from 'vitest';
 import { defineComponent, h, type Component } from 'vue';
-import { flushPromises, mount, type Stubs } from '@vue/test-utils';
+import { flushPromises, mount, type ComponentMountingOptions, type Stubs } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type RouteLocationRaw } from 'vue-router';
 import { routes } from '../router';
@@ -12,10 +11,10 @@ import type { Note, Pet, Reading } from '../types';
 
 /**
  * Helpers for mounting a whole view against the real stores, a real router and
- * fake-indexeddb. Needs a DOM environment (`// @vitest-environment happy-dom`).
+ * fake-indexeddb (src/test/setup.ts). Runs in the dom vitest project.
  *
- * - Call `enableAutoUnmount(afterEach)` in the test file; mounted views attach to
- *   `document.body`.
+ * - Mounted views attach to `document.body` and are unmounted after each test
+ *   (src/test/setup-dom.ts).
  * - IndexedDB stays in memory for the whole file: seed only what a test needs and use
  *   unique ids, or clear the stores yourself.
  * - When faking time alongside IndexedDB, fake only the clock:
@@ -46,9 +45,10 @@ export async function seed({ pets = [], readings = [], notes = [] }: SeedData = 
   await db.importAllData({ version: 1, exportedAt: '', pets, readings, notes });
 }
 
-export interface MountViewOptions extends SeedData {
+export interface MountViewOptions<C extends Component = Component> extends SeedData {
   stubs?: Stubs;
-  props?: Record<string, unknown>;
+  /** Checked against the props `component` declares. */
+  props?: ComponentMountingOptions<C>['props'];
 }
 
 /**
@@ -56,10 +56,10 @@ export interface MountViewOptions extends SeedData {
  * router already at `location`. `push` and `replace` are spies created before mounting,
  * so they also record navigation from `onMounted`.
  */
-export async function mountView(
-  component: Component,
+export async function mountView<C extends Component>(
+  component: C,
   location: RouteLocationRaw,
-  { stubs, props, ...data }: MountViewOptions = {},
+  { stubs, props, ...data }: MountViewOptions<C> = {},
 ) {
   await seed(data);
   const pinia = createPinia();
@@ -73,7 +73,8 @@ export async function mountView(
   const push = vi.spyOn(router, 'push');
   const replace = vi.spyOn(router, 'replace');
   installIntersectionObserver();
-  const wrapper = mount(component, {
+  // mount()'s overloads can't resolve a generic component; `props` is checked above.
+  const wrapper = mount(component as Component, {
     attachTo: document.body,
     props,
     global: { plugins: [pinia, router, createTestI18n()], stubs },

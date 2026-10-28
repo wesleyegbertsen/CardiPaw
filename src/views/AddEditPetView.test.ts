@@ -1,6 +1,5 @@
-// @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, type VueWrapper } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
+import { flushPromises, type VueWrapper } from '@vue/test-utils';
 import { defineComponent, h } from 'vue';
 import AddEditPetView from './AddEditPetView.vue';
 import { usePetsStore } from '../stores/pets';
@@ -9,8 +8,6 @@ import { makePet } from '../test/fixtures';
 import { deferred } from '../test/deferred';
 import * as db from '../services/db';
 import type { Pet } from '../types';
-
-enableAutoUnmount(afterEach);
 
 // The date picker has its own tests; here a plain input stands in for it.
 const DatePickerStub = defineComponent({

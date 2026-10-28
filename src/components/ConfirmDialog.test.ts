@@ -1,11 +1,7 @@
-// @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from 'vitest';
-import { enableAutoUnmount, mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
+import { mount } from '@vue/test-utils';
 import ConfirmDialog from './ConfirmDialog.vue';
 import { createTestI18n } from '../test/i18n';
-
-// useModal tracks open dialogs in module state; don't let one test's dialog outlive it.
-enableAutoUnmount(afterEach);
 
 function mountDialog() {
   return mount(ConfirmDialog, {

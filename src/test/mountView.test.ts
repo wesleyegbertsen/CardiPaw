@@ -1,12 +1,8 @@
-// @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import { defineComponent, h, onMounted } from 'vue';
-import { enableAutoUnmount } from '@vue/test-utils';
 import { mountView } from './mountView';
 import { usePetsStore } from '../stores/pets';
 import { makePet } from './fixtures';
-
-enableAutoUnmount(afterEach);
 
 const LoadsPets = defineComponent({
   setup() {
@@ -20,6 +16,11 @@ const LoadsPets = defineComponent({
   },
 });
 
+const Greets = defineComponent({
+  props: { name: { type: String, required: true } },
+  setup: (props) => () => h('p', `Hi ${props.name}`),
+});
+
 describe('mountView', () => {
   it('seeds IndexedDB so the real store loads the records', async () => {
     const { wrapper, router } = await mountView(
@@ -30,5 +31,21 @@ describe('mountView', () => {
     expect(usePetsStore().pets).toHaveLength(2);
     expect(wrapper.findAll('li')).toHaveLength(2);
     expect(router.currentRoute.value.params.id).toBe('a');
+  });
+
+  it('passes props to the component', async () => {
+    const { wrapper } = await mountView(Greets, '/', { props: { name: 'Ace' } });
+    expect(wrapper.text()).toBe('Hi Ace');
+  });
+
+  it('checks props against the component at compile time', () => {
+    // Never called: vue-tsc fails the build if these calls stop being type errors.
+    const misuses = () => {
+      // @ts-expect-error `name` must be a string
+      void mountView(Greets, '/', { props: { name: 1 } });
+      // @ts-expect-error `name` is required
+      void mountView(Greets, '/', { props: {} });
+    };
+    expectTypeOf(misuses).toBeFunction();
   });
 });

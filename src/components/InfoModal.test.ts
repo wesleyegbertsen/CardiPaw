@@ -1,10 +1,7 @@
-// @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from 'vitest';
-import { enableAutoUnmount, mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
+import { mount } from '@vue/test-utils';
 import InfoModal from './InfoModal.vue';
 import { createTestI18n } from '../test/i18n';
-
-enableAutoUnmount(afterEach);
 
 const q = (selector: string) => document.body.querySelector<HTMLElement>(selector)!;
 

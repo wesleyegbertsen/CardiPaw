@@ -1,12 +1,9 @@
-// @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { enableAutoUnmount, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import ThemeToggle from './ThemeToggle.vue';
 import { useThemeStore } from '../stores/theme';
 import { createTestI18n } from '../test/i18n';
-
-enableAutoUnmount(afterEach);
 
 describe('ThemeToggle', () => {
   beforeEach(() => {
