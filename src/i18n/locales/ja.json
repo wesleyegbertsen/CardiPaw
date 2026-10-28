@@ -102,6 +102,7 @@
     "modeLabel": "測定モード",
     "instruction": "ペットの胸が上がり下がりするたびに、画面のどこかをタップしてください。",
     "measurement30": "30秒間の測定",
+    "secondsUnit": "秒",
     "sound": "音",
     "vibration": "バイブレーション",
     "breathsCounted": "回カウント済み",

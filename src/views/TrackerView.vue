@@ -292,7 +292,7 @@ onUnmounted(() => {
           </svg>
           <div class="timer-text">
             <span class="timer-number">{{ timeLeft }}</span>
-            <span class="timer-unit">sec</span>
+            <span class="timer-unit">{{ $t('tracker.secondsUnit') }}</span>
           </div>
         </div>
       </div>

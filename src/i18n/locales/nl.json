@@ -102,6 +102,7 @@
     "modeLabel": "Meetmethode",
     "instruction": "Tik ergens op het scherm telkens als je de borstkas van je huisdier ziet op- en neergaan.",
     "measurement30": "Meting van 30 seconden",
+    "secondsUnit": "sec",
     "sound": "Geluid",
     "vibration": "Trillen",
     "breathsCounted": "ademhalingen geteld",

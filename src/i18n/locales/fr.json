@@ -102,6 +102,7 @@
     "modeLabel": "Mode de mesure",
     "instruction": "Appuyez n'importe où sur l'écran chaque fois que vous voyez la poitrine de votre animal se soulever.",
     "measurement30": "Mesure de 30 secondes",
+    "secondsUnit": "s",
     "sound": "Son",
     "vibration": "Vibration",
     "breathsCounted": "respirations comptées",

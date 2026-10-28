@@ -102,6 +102,7 @@
     "modeLabel": "Messmodus",
     "instruction": "Tippe jedes Mal irgendwo auf den Bildschirm, wenn sich der Brustkorb deines Tieres hebt und senkt.",
     "measurement30": "30-Sekunden-Messung",
+    "secondsUnit": "Sek.",
     "sound": "Ton",
     "vibration": "Vibration",
     "breathsCounted": "Atemzüge gezählt",
