@@ -110,7 +110,8 @@ function toReading(value: unknown): Reading | null {
   if (typeof notes === 'string') reading.notes = notes;
   if (source === 'manual') reading.source = source;
   // Only a length the tracker offers, and only on a guided reading; anything else is
-  // dropped (the label falls back to 30 s) rather than skipping the reading.
+  // dropped (the reading falls back to the default length, see readingSeconds) rather
+  // than skipping the reading.
   else if (isMeasurementSeconds(durationSeconds)) reading.durationSeconds = durationSeconds;
   return reading;
 }

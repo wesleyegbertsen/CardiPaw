@@ -33,15 +33,21 @@ const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   `page.reload()` needed). Changing only the query (`?tab=` on a pet page,
   `?d=` on `/share`) keeps the same instance, which must react to the new
   query itself.
-- Pets/readings live in IndexedDB; theme, locale, and tracker toggle
-  prefs live in `localStorage` under `cardipaw-*` keys.
+- Pets/readings live in IndexedDB; theme, locale, and tracker prefs
+  (sound, vibration, measurement length) live in `localStorage` under
+  `cardipaw-*` keys.
 - Seed data: `npm run seed` writes `public/seed-data.json`, imported via
   Settings → "Load seed data" (dev mode only).
 
 ## Flows worth driving
 
 - Tracker guided mode: `.toggle-rows .slide-toggle` (Sound/Vibration,
-  `aria-checked` reflects state), `.length-picker input[type=radio]`
-  (15/30/60 s, idle only, remembered per pet), `.heart-btn`
-  starts/registers breaths.
+  `aria-checked` reflects state), `.heart-btn` starts/registers breaths.
+  The length picker (15/30/60 s, idle only, remembered per pet) uses
+  visually hidden radios, so Playwright's `.check()` on them times out:
+  click the label instead, e.g.
+  `page.locator('.length-option', { hasText: '60' }).click()`, and assert
+  `.length-picker input:checked`. The picker and switches sit in
+  `.tracker-options`, which swallows taps; a tap anywhere else on the
+  idle screen starts a measurement.
 - Manual mode via `.mode-pill` buttons.
