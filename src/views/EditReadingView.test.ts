@@ -59,6 +59,14 @@ describe('EditReadingView', () => {
     expect((wrapper.get('.notes-stub').element as HTMLTextAreaElement).value).toBe('<p>Calm</p>');
   });
 
+  it.each([
+    [makeReading({ durationSeconds: 60 }), 'Guided (60 s)'],
+    [makeReading(), 'Guided (30 s)'],
+  ])('labels a guided reading with its length (%#)', async (reading, label) => {
+    const { wrapper } = await mountEdit(reading);
+    expect(wrapper.get('.source-chip').text()).toBe(label);
+  });
+
   it('labels the rate, rest state and notes fields', async () => {
     const { wrapper, rate } = await mountEdit(makeReading({ restState: 'sleeping' }));
     expect(rate.attributes('id')).toBeTruthy();

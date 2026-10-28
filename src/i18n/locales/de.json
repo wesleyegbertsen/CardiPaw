@@ -38,7 +38,7 @@
     "manual": "Manuell",
     "guided": "Geführt",
     "manualEntry": "Manuelle Eingabe",
-    "guided30": "Geführt (30 s)"
+    "guidedSeconds": "Geführt ({seconds} s)"
   },
   "age": {
     "weeks": "1 Woche | {n} Wochen",

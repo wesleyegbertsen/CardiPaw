@@ -32,6 +32,20 @@ describe('ReadingView', () => {
     expect(wrapper.findAll('.header-actions button')).toHaveLength(0);
   });
 
+  it.each([
+    [makeReading({ durationSeconds: 60 }), 'Guided (60 s)'],
+    [makeReading({ durationSeconds: 15 }), 'Guided (15 s)'],
+    // Saved before the length could be chosen: those all ran for 30 seconds.
+    [makeReading(), 'Guided (30 s)'],
+    [makeReading({ source: 'manual' }), 'Manual entry'],
+  ])('labels how the reading was taken (%#)', async (reading, label) => {
+    const { wrapper } = await mountView(ReadingView, location, {
+      pets: [makePet()],
+      readings: [reading],
+    });
+    expect(wrapper.get('.source-chip').text()).toBe(label);
+  });
+
   it('rates the reading against the pet’s own ceilings', async () => {
     const { wrapper } = await mountView(ReadingView, location, {
       pets: [makePet({ normalCeiling: 20, elevatedCeiling: 22 })],

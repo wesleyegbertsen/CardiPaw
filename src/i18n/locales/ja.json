@@ -38,7 +38,7 @@
     "manual": "手動",
     "guided": "ガイド",
     "manualEntry": "手動入力",
-    "guided30": "ガイド（30秒）"
+    "guidedSeconds": "ガイド（{seconds}秒）"
   },
   "age": {
     "weeks": "{n}週",

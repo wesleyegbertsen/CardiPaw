@@ -38,7 +38,7 @@
     "manual": "Manual",
     "guided": "Guided",
     "manualEntry": "Manual entry",
-    "guided30": "Guided (30 s)"
+    "guidedSeconds": "Guided ({seconds} s)"
   },
   "age": {
     "weeks": "1 week | {n} weeks",
