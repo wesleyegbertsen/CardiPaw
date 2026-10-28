@@ -50,7 +50,16 @@ jobs:
       # Vitest writes no report when a test fails, so there is nothing to show then.
       - name: Coverage summary
         if: ${{ !cancelled() && hashFiles('coverage/coverage.txt') != '' }}
-        run: node scripts/coverage-summary.mjs >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          {
+            echo '## Test coverage'
+            echo
+            echo 'Files at 100% are left out. Run `npm run test:coverage` and open `coverage/index.html` for details.'
+            echo
+            echo '```text'
+            cat coverage/coverage.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check locale keys
         run: npm run check-locale
