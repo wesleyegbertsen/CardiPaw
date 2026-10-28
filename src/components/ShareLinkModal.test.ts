@@ -23,6 +23,7 @@ const q = <T extends Element>(selector: string) => document.body.querySelector<T
 const copyButton = () => q<HTMLButtonElement>('.btn-primary')!;
 const linkPreview = () => q<HTMLInputElement>('.link-preview')!;
 const alert = () => q('[role="alert"]');
+const status = () => q('[role="dialog"] [role="status"]')?.textContent;
 const monthBoxes = () => [...document.body.querySelectorAll<HTMLInputElement>('.month-row input')];
 
 async function mountModal() {
@@ -135,14 +136,16 @@ describe('ShareLinkModal', () => {
     expect(error).not.toHaveBeenCalled();
   });
 
-  it('shows Copied for two seconds after copying', async () => {
+  it('shows and announces Copied for two seconds after copying', async () => {
     await mountModal();
+    expect(status()).toBe('');
     const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     copyButton().click();
     await flushPromises();
     expect(writeText).toHaveBeenCalledWith(linkPreview().value);
     expect(copyButton().textContent?.trim()).toBe('Copied!');
+    expect(status()).toBe('Copied!');
 
     vi.advanceTimersByTime(1999);
     await flushPromises();
@@ -150,6 +153,31 @@ describe('ShareLinkModal', () => {
     vi.advanceTimersByTime(1);
     await flushPromises();
     expect(copyButton().textContent?.trim()).toBe('Copy link');
+    expect(status()).toBe('');
+  });
+
+  it('announces Copied again on a repeat copy', async () => {
+    await mountModal();
+    vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    copyButton().click();
+    await flushPromises();
+    vi.advanceTimersByTime(1000);
+    copyButton().click();
+    await flushPromises();
+    // Blanked for a moment so screen readers announce the same text again
+    expect(status()).toBe('');
+    expect(copyButton().textContent?.trim()).toBe('Copied!');
+    vi.advanceTimersByTime(100);
+    await flushPromises();
+    expect(status()).toBe('Copied!');
+    vi.advanceTimersByTime(1899);
+    await flushPromises();
+    expect(copyButton().textContent?.trim()).toBe('Copied!');
+    vi.advanceTimersByTime(1);
+    await flushPromises();
+    expect(copyButton().textContent?.trim()).toBe('Copy link');
+    expect(status()).toBe('');
   });
 
   it('clears the Copied timer when closed', async () => {

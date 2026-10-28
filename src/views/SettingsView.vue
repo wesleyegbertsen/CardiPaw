@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef } from 'vue';
+import { computed, onBeforeUnmount, ref, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as db from '../services/db';
 import { BackupError, downloadBackup, importBackup, parseBackup, type ValidatedBackup } from '../services/backup';
@@ -39,6 +39,32 @@ const exportSuccess = ref(false);
 const importSuccess = ref(false);
 const importing = ref(false);
 const exportError = ref(false);
+// Spoken by the status region; the buttons show the same text
+const statusPaused = ref(false);
+const statusMessage = computed(() => {
+  if (statusPaused.value) return '';
+  return importSuccess.value
+    ? t('settings.imported')
+    : exportSuccess.value ? t('settings.exported') : '';
+});
+
+// A repeat export/import restarts its 3 s confirmation instead of being cut short
+let exportTimer: ReturnType<typeof setTimeout> | undefined;
+let importTimer: ReturnType<typeof setTimeout> | undefined;
+let statusPauseTimer: ReturnType<typeof setTimeout> | undefined;
+onBeforeUnmount(() => {
+  clearTimeout(exportTimer);
+  clearTimeout(importTimer);
+  clearTimeout(statusPauseTimer);
+});
+
+// Screen readers skip a live region whose text comes back unchanged within one update,
+// so a repeat blanks the region briefly; the button keeps its text
+function reannounceStatus() {
+  statusPaused.value = true;
+  clearTimeout(statusPauseTimer);
+  statusPauseTimer = setTimeout(() => { statusPaused.value = false; }, 100);
+}
 
 async function exportData() {
   exportError.value = false;
@@ -49,8 +75,10 @@ async function exportData() {
     exportError.value = true;
     return;
   }
+  if (exportSuccess.value) reannounceStatus();
   exportSuccess.value = true;
-  setTimeout(() => { exportSuccess.value = false; }, 3000);
+  clearTimeout(exportTimer);
+  exportTimer = setTimeout(() => { exportSuccess.value = false; }, 3000);
 }
 
 function triggerImport() {
@@ -90,8 +118,10 @@ async function confirmImport() {
   } finally {
     importing.value = false;
   }
+  if (importSuccess.value) reannounceStatus();
   importSuccess.value = true;
-  setTimeout(() => { importSuccess.value = false; }, 3000);
+  clearTimeout(importTimer);
+  importTimer = setTimeout(() => { importSuccess.value = false; }, 3000);
 }
 
 // Dev-only seed loader
@@ -184,8 +214,12 @@ function cancelImport() {
           type="file"
           accept=".json,application/json"
           class="sr-only"
+          tabindex="-1"
+          aria-hidden="true"
           @change="onImportFileChange"
         />
+
+        <p class="sr-only" role="status">{{ statusMessage }}</p>
 
         <p v-if="exportError" class="error-msg" role="alert">{{ $t('settings.exportError') }}</p>
         <p v-if="importError" class="error-msg" role="alert">{{ importError }}</p>
@@ -482,14 +516,6 @@ function cancelImport() {
   background: var(--color-danger-bg);
   padding: 10px 14px;
   border-radius: var(--radius-sm);
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
 }
 
 .about-text {

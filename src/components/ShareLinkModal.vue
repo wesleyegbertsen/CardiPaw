@@ -85,13 +85,25 @@ const isLongUrl = computed(() => shareUrl.value.length > 8000);
 
 const canNativeShare = typeof navigator.share === 'function';
 const copied = ref(false);
+// Screen readers skip a live region whose text comes back unchanged within one update,
+// so a repeat copy blanks the region briefly; the button keeps its text
+const copiedPaused = ref(false);
 let copiedTimer: ReturnType<typeof setTimeout> | undefined;
-onBeforeUnmount(() => clearTimeout(copiedTimer));
+let copiedPauseTimer: ReturnType<typeof setTimeout> | undefined;
+onBeforeUnmount(() => {
+  clearTimeout(copiedTimer);
+  clearTimeout(copiedPauseTimer);
+});
 
 async function copyLink() {
   if (!shareUrl.value) return;
   try {
     await navigator.clipboard.writeText(shareUrl.value);
+    if (copied.value) {
+      copiedPaused.value = true;
+      clearTimeout(copiedPauseTimer);
+      copiedPauseTimer = setTimeout(() => (copiedPaused.value = false), 100);
+    }
     copied.value = true;
     clearTimeout(copiedTimer);
     copiedTimer = setTimeout(() => (copied.value = false), 2000);
@@ -156,6 +168,9 @@ async function nativeShare() {
             {{ $t('shareModal.lengthWarning') }}
           </p>
         </div>
+
+        <!-- Inside the modal dialog: screen readers ignore live regions outside it -->
+        <p class="sr-only" role="status">{{ copied && !copiedPaused ? $t('shareModal.copied') : '' }}</p>
 
         <div class="dialog-footer">
           <button class="btn-cancel" @click="emit('close')">{{ $t('common.close') }}</button>

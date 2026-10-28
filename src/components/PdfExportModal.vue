@@ -25,6 +25,7 @@ const newestFirst = ref(true);
 const includeNotes = ref(false);
 const exportFailed = ref(false);
 const notesLabelId = useId();
+const orderLabelId = useId();
 
 // Fetch jsPDF while the user picks months, so Export doesn't wait for the download.
 onMounted(preloadPdfLibrary);
@@ -94,17 +95,19 @@ async function handleExport() {
 
         <div class="export-options">
           <div class="option-row">
-            <span class="export-option-label">{{ $t('pdfModal.order') }}</span>
-            <div class="sort-options">
+            <span :id="orderLabelId" class="export-option-label">{{ $t('pdfModal.order') }}</span>
+            <div class="sort-options" role="group" :aria-labelledby="orderLabelId">
               <button
                 class="sort-btn"
                 :class="{ active: newestFirst }"
+                :aria-pressed="newestFirst"
                 @click="newestFirst = true"
                 :disabled="isGenerating"
               >{{ $t('pdfModal.newestFirst') }}</button>
               <button
                 class="sort-btn"
                 :class="{ active: !newestFirst }"
+                :aria-pressed="!newestFirst"
                 @click="newestFirst = false"
                 :disabled="isGenerating"
               >{{ $t('pdfModal.oldestFirst') }}</button>

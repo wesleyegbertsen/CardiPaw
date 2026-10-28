@@ -28,6 +28,12 @@ describe('AddEditNoteView', () => {
   afterEach(() => vi.useRealTimers());
 
   describe('adding', () => {
+    it('labels the content editor', async () => {
+      const { wrapper } = await mountNote('/pets/pet-1/notes/add');
+      const id = wrapper.get('.notes-stub').attributes('aria-labelledby');
+      expect(id && document.getElementById(id)?.textContent).toBe('Content');
+    });
+
     it('needs a title', async () => {
       const { wrapper, submit } = await mountNote('/pets/pet-1/notes/add');
       expect(submit.element.disabled).toBe(true);

@@ -69,6 +69,92 @@ describe('PetDetailView', () => {
     expect(activeTabIndex(wrapper)).toBe(2);
   });
 
+  it('marks up the tabs and panels as a tablist', async () => {
+    const { wrapper } = await mountDetail('/pets/pet-1?tab=readings', {
+      readings: [makeReading(), makeReading({ id: 'r2' })],
+    });
+    const textOf = (id: string | null | undefined) =>
+      id && document.getElementById(id)?.textContent;
+    const tablist = wrapper.get('.tabs');
+    expect(tablist.attributes('role')).toBe('tablist');
+    expect(textOf(tablist.attributes('aria-labelledby'))).toBe(pet.name);
+    const panelNames: (string | null | undefined)[] = [];
+    tabs(wrapper).forEach((tab, i) => {
+      expect(tab.attributes('role')).toBe('tab');
+      expect(tab.attributes('aria-selected')).toBe(String(i === 1));
+      expect(tab.attributes('tabindex')).toBe(i === 1 ? '0' : '-1');
+      const panel = document.getElementById(tab.attributes('aria-controls')!);
+      expect(panel?.getAttribute('role')).toBe('tabpanel');
+      // Named after the tab without its count
+      const labelId = panel?.getAttribute('aria-labelledby');
+      expect(tab.element.contains(document.getElementById(labelId!))).toBe(true);
+      panelNames.push(textOf(labelId)?.trim());
+    });
+    expect(panelNames).toEqual(['Chart', 'Readings', 'Notes']);
+    expect(wrapper.get('.tab-indicator').attributes('aria-hidden')).toBe('true');
+  });
+
+  it('lets the list panels take focus, as they may hold only text', async () => {
+    const { wrapper } = await mountDetail('/pets/pet-1');
+    const tabindex = (id: string) =>
+      wrapper.get(`[role="tabpanel"]#${id}`).attributes('tabindex');
+    const ids = tabs(wrapper).map((t) => CSS.escape(t.attributes('aria-controls')!));
+    // The chart panel starts with its range buttons, so it needs no tab stop of its own
+    expect(ids.map(tabindex)).toEqual([undefined, '0', '0']);
+  });
+
+  it('moves between tabs with the arrow keys, Home and End', async () => {
+    const { wrapper, replace } = await mountDetail('/pets/pet-1');
+    const keydown = (key: string, init: KeyboardEventInit = {}) => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
+      tabs(wrapper)[0].element.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    // Unhandled keys keep their default action (Tab still leaves the tablist)
+    expect(keydown('ArrowRight', { altKey: true })).toBe(false);
+    expect(keydown('a')).toBe(false);
+    expect(keydown('Tab')).toBe(false);
+    await settle();
+    expect(replace).not.toHaveBeenCalled();
+    const press = async (key: string) => {
+      await wrapper.get('.tab:focus').trigger('keydown', { key });
+      await settle();
+    };
+    (tabs(wrapper)[0].element as HTMLElement).focus();
+
+    // Handled keys don't also scroll the page
+    expect(keydown('ArrowRight')).toBe(true);
+    await settle();
+    expect(replace).toHaveBeenLastCalledWith({ query: { tab: 'readings' } });
+    expect(document.activeElement).toBe(tabs(wrapper)[1].element);
+    expect(tabs(wrapper)[1].attributes('aria-selected')).toBe('true');
+    expect(tabs(wrapper)[1].attributes('tabindex')).toBe('0');
+
+    expect(keydown('End')).toBe(true);
+    await settle();
+    expect(document.activeElement).toBe(tabs(wrapper)[2].element);
+    await press('ArrowRight'); // wraps
+    expect(document.activeElement).toBe(tabs(wrapper)[0].element);
+    await press('ArrowLeft'); // wraps
+    expect(document.activeElement).toBe(tabs(wrapper)[2].element);
+    await press('Home');
+    expect(document.activeElement).toBe(tabs(wrapper)[0].element);
+    expect(activeTabIndex(wrapper)).toBe(0);
+    const visited = replace.mock.calls.map(([to]) => (to as { query: { tab: string } }).query.tab);
+    expect(visited).toEqual(['readings', 'notes', 'chart', 'notes', 'chart']);
+  });
+
+  it('follows the focused tab when keys come faster than navigation', async () => {
+    const { wrapper, replace } = await mountDetail('/pets/pet-1');
+    (tabs(wrapper)[0].element as HTMLElement).focus();
+    await tabs(wrapper)[0].trigger('keydown', { key: 'ArrowRight' });
+    await tabs(wrapper)[1].trigger('keydown', { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(tabs(wrapper)[2].element);
+    await settle();
+    expect(replace).toHaveBeenLastCalledWith({ query: { tab: 'notes' } });
+    expect(activeTabIndex(wrapper)).toBe(2);
+  });
+
   it('opens the edit form and the tracker', async () => {
     const { wrapper, push } = await mountDetail('/pets/pet-1');
     const edit = wrapper.findAll('.header-actions .icon-btn')[2];
@@ -262,6 +348,78 @@ describe('PetDetailView', () => {
       expect(label()).toBe('2024');
       expect(prev.attributes('disabled')).toBeDefined();
       expect(next.attributes('disabled')).toBeDefined();
+    });
+
+    it('exposes the selected range as pressed buttons in a labelled group', async () => {
+      const { wrapper, range } = await mountChart();
+      const group = wrapper.get('.range-toggle');
+      expect(group.attributes('role')).toBe('group');
+      expect(group.attributes('aria-label')).toBe('Time range');
+      const pressed = () => group.findAll('button').map((b) => b.attributes('aria-pressed'));
+      expect(pressed()).toEqual(['true', 'false', 'false']);
+      await range(1);
+      expect(pressed()).toEqual(['false', 'true', 'false']);
+    });
+
+    it('labels the jump picker and closes it with Escape', async () => {
+      const { wrapper, range } = await mountChart();
+      await range(1);
+      const trigger = wrapper.get('.range-label-btn');
+      expect(trigger.attributes('aria-expanded')).toBe('false');
+      await trigger.trigger('click');
+      expect(trigger.attributes('aria-expanded')).toBe('true');
+      const arrows = wrapper.findAll('.jump-nav-arrow').map((b) => b.attributes('aria-label'));
+      expect(arrows).toEqual(['Previous year', 'Next year']);
+      const current = wrapper.findAll('.jump-month-btn[aria-current="true"]');
+      expect(current.map((m) => m.text())).toEqual(['Mar']);
+
+      // A month button may be disabled before the readings load; the picker never is
+      await wrapper.get('.jump-picker').trigger('keydown', { key: 'Escape' });
+      expect(wrapper.find('.jump-picker').exists()).toBe(false);
+      expect(trigger.attributes('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(trigger.element);
+    });
+
+    it('ties the jump picker to its trigger while open', async () => {
+      const { wrapper, range } = await mountChart();
+      await range(1);
+      const trigger = wrapper.get('.range-label-btn');
+      expect(trigger.attributes('aria-controls')).toBeUndefined();
+      await trigger.trigger('click');
+      const id = wrapper.get('.jump-picker').attributes('id');
+      expect(id).toBeTruthy();
+      expect(trigger.attributes('aria-controls')).toBe(id);
+    });
+
+    it('closes the jump picker when focus leaves it, not inside or nowhere', async () => {
+      const { wrapper, range } = await mountChart();
+      await range(1);
+      const trigger = wrapper.get('.range-label-btn');
+      await trigger.trigger('click');
+      const month = wrapper.get('.jump-month-btn[aria-current]');
+      await month.trigger('focusout', { relatedTarget: trigger.element });
+      await month.trigger('focusout', { relatedTarget: null });
+      expect(wrapper.find('.jump-picker').exists()).toBe(true);
+
+      const outside = wrapper.get('.today-btn').element as HTMLElement;
+      outside.focus();
+      await month.trigger('focusout', { relatedTarget: outside });
+      expect(wrapper.find('.jump-picker').exists()).toBe(false);
+      expect(trigger.attributes('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(outside);
+    });
+
+    it.each([
+      ['a pick', '.jump-month-btn[aria-current]'],
+      ['a backdrop click', '.jump-backdrop'],
+    ])('returns focus to the jump picker trigger on %s', async (_, target) => {
+      const { wrapper, range } = await mountChart();
+      await range(1);
+      const trigger = wrapper.get('.range-label-btn');
+      await trigger.trigger('click');
+      await wrapper.get(target).trigger('click');
+      expect(wrapper.find('.jump-picker').exists()).toBe(false);
+      expect(document.activeElement).toBe(trigger.element);
     });
 
     it('disables future months and months without readings in the jump picker', async () => {

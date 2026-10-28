@@ -13,6 +13,7 @@ vi.mock('../services/backup', async (importOriginal) => {
 
 const exportButton = (w: VueWrapper) => w.findAll('.action-btn')[0];
 const importButton = (w: VueWrapper) => w.findAll('.action-btn')[1];
+const status = (w: VueWrapper) => w.get('[role="status"]').text();
 const alerts = (w: VueWrapper) => w.findAll('[role="alert"]').map((a) => a.text());
 const dialogMessage = () => document.body.querySelector('[role="alertdialog"] .message');
 const clickInBody = (selector: string) =>
@@ -63,6 +64,46 @@ describe('SettingsView', () => {
         expect.objectContaining({ pets: [makePet()] }),
       );
       expect(importButton(wrapper).text()).toContain('Imported');
+    });
+
+    it('announces Imported in a status region', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(status(wrapper)).toBe('');
+      await pickFile(wrapper, backupText());
+      clickInBody('.btn-confirm');
+      await settle();
+      expect(status(wrapper)).toBe('✓ Imported');
+    });
+
+    it('restarts the Imported confirmation on a repeat import', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      vi.useFakeTimers(); // importBackup is mocked, so nothing here needs IndexedDB
+      const importOnce = async () => {
+        const input = wrapper.get('input[type="file"]');
+        const file = new File([backupText()], 'backup.json', { type: 'application/json' });
+        Object.defineProperty(input.element, 'files', { value: [file], configurable: true });
+        await input.trigger('change');
+        await flushPromises();
+        clickInBody('.btn-confirm');
+        await flushPromises();
+      };
+      await importOnce();
+      vi.advanceTimersByTime(2000);
+      await importOnce();
+      // Blanked for a moment so screen readers announce the same text again
+      expect(status(wrapper)).toBe('');
+      expect(importButton(wrapper).text()).toContain('Imported');
+      vi.advanceTimersByTime(100);
+      await flushPromises();
+      expect(status(wrapper)).toBe('✓ Imported');
+      vi.advanceTimersByTime(1400);
+      await flushPromises();
+      expect(importButton(wrapper).text()).toContain('Imported');
+      expect(status(wrapper)).toBe('✓ Imported');
+      vi.advanceTimersByTime(1500);
+      await flushPromises();
+      expect(importButton(wrapper).text()).not.toContain('Imported');
+      expect(status(wrapper)).toBe('');
     });
 
     it('mentions damaged records that will be skipped', async () => {
@@ -143,6 +184,50 @@ describe('SettingsView', () => {
       expect(exportButton(wrapper).text()).not.toContain('Exported');
     });
 
+    it('restarts the Exported confirmation on a repeat export', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      vi.useFakeTimers();
+      await exportButton(wrapper).trigger('click');
+      await flushPromises();
+      vi.advanceTimersByTime(2000);
+      await exportButton(wrapper).trigger('click');
+      await flushPromises();
+      // Blanked for a moment so screen readers announce the same text again
+      expect(status(wrapper)).toBe('');
+      expect(exportButton(wrapper).text()).toContain('Exported');
+      vi.advanceTimersByTime(100);
+      await flushPromises();
+      expect(status(wrapper)).toBe('✓ Exported');
+      vi.advanceTimersByTime(1400);
+      await flushPromises();
+      expect(exportButton(wrapper).text()).toContain('Exported');
+      expect(status(wrapper)).toBe('✓ Exported');
+      vi.advanceTimersByTime(1500);
+      await flushPromises();
+      expect(exportButton(wrapper).text()).not.toContain('Exported');
+      expect(status(wrapper)).toBe('');
+    });
+
+    it('leaves no timer running after leaving the page', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      vi.useFakeTimers();
+      await exportButton(wrapper).trigger('click');
+      await flushPromises();
+      vi.advanceTimersByTime(1000);
+      await exportButton(wrapper).trigger('click'); // a repeat also starts the re-announce timer
+      await flushPromises();
+      wrapper.unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('announces Exported in a status region', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(status(wrapper)).toBe('');
+      await exportButton(wrapper).trigger('click');
+      await settle();
+      expect(status(wrapper)).toBe('✓ Exported');
+    });
+
     it('reports a failed export instead of claiming success', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(backup.downloadBackup).mockRejectedValueOnce(new Error('blocked'));
@@ -158,6 +243,13 @@ describe('SettingsView', () => {
       expect(alerts(wrapper)).toEqual([]);
       expect(exportButton(wrapper).text()).toContain('Exported');
     });
+  });
+
+  it('keeps the hidden file input out of the tab order', async () => {
+    const { wrapper } = await mountView(SettingsView, '/settings');
+    const input = wrapper.get('input[type="file"]');
+    expect(input.attributes('tabindex')).toBe('-1');
+    expect(input.attributes('aria-hidden')).toBe('true');
   });
 
   it('opens and closes the privacy information', async () => {

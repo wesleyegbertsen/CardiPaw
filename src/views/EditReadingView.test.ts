@@ -48,10 +48,31 @@ describe('EditReadingView', () => {
     expect((wrapper.get('.notes-stub').element as HTMLTextAreaElement).value).toBe('<p>Calm</p>');
   });
 
+  it('labels the rate, rest state and notes fields', async () => {
+    const { wrapper, rate } = await mountEdit(makeReading({ restState: 'sleeping' }));
+    expect(rate.attributes('id')).toBeTruthy();
+    expect(wrapper.get('label.label').attributes('for')).toBe(rate.attributes('id'));
+    const labelText = (el: { attributes: (n: string) => string | undefined }) =>
+      document.getElementById(el.attributes('aria-labelledby')!)?.textContent;
+    const group = wrapper.get('.rest-state-row');
+    expect(group.attributes('role')).toBe('group');
+    expect(labelText(group)).toBe('Pet was');
+    expect(wrapper.findAll('.rest-btn').map((b) => b.attributes('aria-pressed'))).toEqual([
+      'false',
+      'true',
+    ]);
+    expect(labelText(wrapper.get('.notes-stub'))).toBe('Notes');
+  });
+
   it('hides the badge and disables save when the rate is cleared', async () => {
     const { rate, submit, badge } = await mountEdit();
+    // The status pill describes the rate input while it is shown
+    const describedBy = rate.attributes('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(describedBy).toBe(badge().attributes('id'));
     await rate.setValue('');
     expect(badge().exists()).toBe(false);
+    expect(rate.attributes('aria-describedby')).toBeUndefined();
     expect(submit.element.disabled).toBe(true);
   });
 
