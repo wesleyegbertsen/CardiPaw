@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, computed } from 'vue';
+import { onMounted, onUnmounted, ref, computed, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import type { Reading } from '../types';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
 import { LazyRichTextEditor as RichTextEditor } from '../components/LazyRichTextEditor';
+import RestStateToggle from '../components/RestStateToggle.vue';
 import { useI18n } from 'vue-i18n';
 
 const { locale } = useI18n();
@@ -25,6 +26,9 @@ const reading = computed(() =>
 
 const editRate = ref(0);
 const editRestState = ref<'resting' | 'sleeping' | undefined>(undefined);
+const rateId = useId();
+const rateStatusId = useId();
+const notesLabelId = useId();
 const editNotes = ref('');
 const saving = ref(false);
 const saveError = ref(false);
@@ -125,43 +129,31 @@ function formatDate(iso: string) {
       </div>
 
       <div class="field">
-        <label class="label">{{ $t('reading.rateLabel') }}</label>
+        <label class="label" :for="rateId">{{ $t('reading.rateLabel') }}</label>
         <div class="rate-row">
           <input
+            :id="rateId"
             class="rate-input"
             type="number"
             v-model.number="editRate"
             required
             min="1"
             max="200"
+            :aria-describedby="rateValid ? rateStatusId : undefined"
           />
-          <span v-if="rateValid" class="rate-badge" :class="getRateStatus(editRate, pet).cssClass">
+          <span v-if="rateValid" :id="rateStatusId" class="rate-badge" :class="getRateStatus(editRate, pet).cssClass">
             {{ $t('status.' + getRateStatus(editRate, pet).cssClass) }}
           </span>
         </div>
       </div>
 
       <div class="field">
-        <label class="label">{{ $t('restState.petWas') }}</label>
-        <div class="rest-state-row">
-          <button
-            type="button"
-            class="rest-btn"
-            :class="{ active: editRestState === 'resting' }"
-            @click="editRestState = editRestState === 'resting' ? undefined : 'resting'"
-          >{{ $t('restState.resting') }}</button>
-          <button
-            type="button"
-            class="rest-btn"
-            :class="{ active: editRestState === 'sleeping' }"
-            @click="editRestState = editRestState === 'sleeping' ? undefined : 'sleeping'"
-          >{{ $t('restState.sleeping') }}</button>
-        </div>
+        <RestStateToggle v-model="editRestState" layout="stacked" />
       </div>
 
       <div class="field">
-        <label class="label">{{ $t('reading.notesLabel') }}</label>
-        <RichTextEditor v-model="editNotes" />
+        <span :id="notesLabelId" class="label">{{ $t('reading.notesLabel') }}</span>
+        <RichTextEditor v-model="editNotes" :labelledby="notesLabelId" />
       </div>
 
       <p v-if="saveError" class="save-error" role="alert">{{ $t('common.saveError') }}</p>
@@ -339,30 +331,6 @@ function formatDate(iso: string) {
 .rate-badge.danger {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
-}
-
-.rest-state-row {
-  display: flex;
-  gap: 8px;
-}
-
-.rest-btn {
-  flex: 1;
-  height: 48px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  max-width: 160px;
-}
-
-.rest-btn.active {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .submit-btn {

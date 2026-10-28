@@ -1,6 +1,5 @@
-// @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, type VueWrapper } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
+import { flushPromises, type VueWrapper } from '@vue/test-utils';
 import { defineComponent, h } from 'vue';
 import AddEditPetView from './AddEditPetView.vue';
 import { usePetsStore } from '../stores/pets';
@@ -9,8 +8,6 @@ import { makePet } from '../test/fixtures';
 import { deferred } from '../test/deferred';
 import * as db from '../services/db';
 import type { Pet } from '../types';
-
-enableAutoUnmount(afterEach);
 
 // The date picker has its own tests; here a plain input stands in for it.
 const DatePickerStub = defineComponent({
@@ -49,6 +46,27 @@ const required = { '#pet-name': 'Luna', '.date-stub': '2020-05-01' };
 
 describe('AddEditPetView', () => {
   describe('adding', () => {
+    it('names the species and threshold groups', async () => {
+      const { wrapper } = await mountForm('/pets/add');
+      const labelText = (selector: string) => {
+        const id = wrapper.get(selector).attributes('aria-labelledby');
+        return id && document.getElementById(id)?.textContent;
+      };
+      expect(wrapper.findAll('[role="radiogroup"] input[type="radio"]')).toHaveLength(2);
+      expect(labelText('[role="radiogroup"]')).toBe('Species');
+      expect(wrapper.findAll('[role="group"] input[type="number"]')).toHaveLength(2);
+      expect(labelText('[role="group"]')).toBe('RRR thresholds (optional)');
+    });
+
+    it('groups the species radios under one name and hides the icons', async () => {
+      const { wrapper } = await mountForm('/pets/add');
+      const radios = wrapper.findAll('.species-option input[type="radio"]');
+      expect(radios.map((r) => r.attributes('name'))).toEqual(['species', 'species']);
+      const icons = wrapper.findAll('.species-icon');
+      expect(icons).toHaveLength(2);
+      icons.forEach((icon) => expect(icon.attributes('aria-hidden')).toBe('true'));
+    });
+
     it('needs a name and a birthdate', async () => {
       const { submit, fill } = await mountForm('/pets/add');
       expect(submit.element.disabled).toBe(true);

@@ -1,10 +1,7 @@
-// @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import PetPhotoUpload from './PetPhotoUpload.vue';
 import { createTestI18n } from '../test/i18n';
-
-enableAutoUnmount(afterEach);
 
 // happy-dom cannot decode images or draw on a canvas, so fake the browser pieces.
 const image = { width: 0, height: 0, decodes: true };

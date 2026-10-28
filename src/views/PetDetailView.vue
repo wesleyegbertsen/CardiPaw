@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
@@ -46,6 +46,34 @@ const activeTab = computed({
   },
 });
 const activeTabIndex = computed(() => TABS.indexOf(activeTab.value));
+
+const tabsId = useId();
+const tabId = (tab: Tab) => `${tabsId}-tab-${tab}`;
+const panelId = (tab: Tab) => `${tabsId}-panel-${tab}`;
+// Panels are named by the tab text without its count
+const tabLabelId = (tab: Tab) => `${tabId(tab)}-label`;
+const titleId = `${tabsId}-title`;
+const tablistRef = ref<HTMLElement | null>(null);
+
+// WAI-ARIA tabs with automatic activation: arrows wrap, Home/End jump to the ends
+function onTabKeydown(e: KeyboardEvent) {
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  const tabEls = [...(tablistRef.value?.querySelectorAll<HTMLElement>('[role="tab"]') ?? [])];
+  const i = tabEls.indexOf(e.target as HTMLElement);
+  if (i < 0) return;
+  const n = TABS.length;
+  const keys: Record<string, number> = {
+    ArrowRight: (i + 1) % n,
+    ArrowLeft: (i - 1 + n) % n,
+    Home: 0,
+    End: n - 1,
+  };
+  const next = keys[e.key];
+  if (next === undefined) return;
+  e.preventDefault();
+  tabEls[next].focus();
+  activeTab.value = TABS[next];
+}
 
 // Index the swipe track is positioned at. Updated immediately on swipe commit so the
 // slide animation doesn't wait for router.replace to resolve; otherwise mirrors activeTab.
@@ -138,6 +166,9 @@ const chartOffset = ref(0);
 const showJumpPicker = ref(false);
 const pickerYear = ref(new Date().getFullYear());
 const jumpPickerRef = ref<HTMLElement | null>(null);
+const rangeLabelBtnRef = ref<HTMLButtonElement | null>(null);
+const rangeLabelWrapRef = ref<HTMLElement | null>(null);
+const jumpPickerId = useId();
 
 
 watch(chartRange, () => {
@@ -281,20 +312,35 @@ function openJumpPicker() {
   }
 }
 
+function closeJumpPicker() {
+  if (!showJumpPicker.value) return;
+  showJumpPicker.value = false;
+  rangeLabelBtnRef.value?.focus();
+}
+
+// Tabbing out closes the picker without moving focus. A null relatedTarget (a click on
+// something unfocusable; Safari never focuses clicked buttons) is left to the backdrop.
+function onJumpPickerFocusout(e: FocusEvent) {
+  const next = e.relatedTarget as Node | null;
+  if (showJumpPicker.value && next && !rangeLabelWrapRef.value?.contains(next)) {
+    showJumpPicker.value = false;
+  }
+}
+
 function jumpToYear(year: number) {
   chartOffset.value = year - new Date().getFullYear();
-  showJumpPicker.value = false;
+  closeJumpPicker();
 }
 
 function jumpToMonth(monthIndex: number, year: number) {
   const now = new Date();
   chartOffset.value = (year - now.getFullYear()) * 12 + (monthIndex - now.getMonth());
-  showJumpPicker.value = false;
+  closeJumpPicker();
 }
 
 function jumpToWeekOffset(offset: number) {
   chartOffset.value = offset;
-  showJumpPicker.value = false;
+  closeJumpPicker();
 }
 
 function isFutureMonth(monthIndex: number, year: number): boolean {
@@ -411,7 +457,7 @@ async function deletePet() {
           <span>{{ petInitial(pet.name) }}</span>
         </div>
       </div>
-      <h1 class="pet-name">{{ pet.name }}</h1>
+      <h1 :id="titleId" class="pet-name">{{ pet.name }}</h1>
       <div class="pet-meta">
         <span class="badge" :class="pet.species">{{ $t('species.' + pet.species) }}</span>
         <span class="meta-dot">·</span>
@@ -429,18 +475,48 @@ async function deletePet() {
       </button>
     </div>
 
-    <div class="tabs">
-      <button class="tab" :class="{ active: activeTab === 'chart' }" @click="activeTab = 'chart'">{{ $t('petDetail.tabChart') }}</button>
-      <button class="tab" :class="{ active: activeTab === 'readings' }" @click="activeTab = 'readings'">
-        {{ $t('petDetail.tabReadings') }}
+    <div ref="tablistRef" class="tabs" role="tablist" :aria-labelledby="titleId" @keydown="onTabKeydown">
+      <button
+        :id="tabId('chart')"
+        class="tab"
+        :class="{ active: activeTab === 'chart' }"
+        role="tab"
+        :aria-selected="activeTab === 'chart'"
+        :aria-controls="panelId('chart')"
+        :tabindex="activeTab === 'chart' ? 0 : -1"
+        @click="activeTab = 'chart'"
+      >
+        <span :id="tabLabelId('chart')">{{ $t('petDetail.tabChart') }}</span>
+      </button>
+      <button
+        :id="tabId('readings')"
+        class="tab"
+        :class="{ active: activeTab === 'readings' }"
+        role="tab"
+        :aria-selected="activeTab === 'readings'"
+        :aria-controls="panelId('readings')"
+        :tabindex="activeTab === 'readings' ? 0 : -1"
+        @click="activeTab = 'readings'"
+      >
+        <span :id="tabLabelId('readings')">{{ $t('petDetail.tabReadings') }}</span>
         <span v-if="readings.length > 0" class="tab-count">{{ readings.length }}</span>
       </button>
-      <button class="tab" :class="{ active: activeTab === 'notes' }" @click="activeTab = 'notes'">
-        {{ $t('petDetail.tabNotes') }}
+      <button
+        :id="tabId('notes')"
+        class="tab"
+        :class="{ active: activeTab === 'notes' }"
+        role="tab"
+        :aria-selected="activeTab === 'notes'"
+        :aria-controls="panelId('notes')"
+        :tabindex="activeTab === 'notes' ? 0 : -1"
+        @click="activeTab = 'notes'"
+      >
+        <span :id="tabLabelId('notes')">{{ $t('petDetail.tabNotes') }}</span>
         <span v-if="notes.length > 0" class="tab-count">{{ notes.length }}</span>
       </button>
       <div
         class="tab-indicator"
+        aria-hidden="true"
         :class="{ dragging: isDragging }"
         :style="{ transform: `translateX(${(trackIndex - dragProgress) * 100}%)` }"
       ></div>
@@ -460,12 +536,12 @@ async function deletePet() {
         :style="{ transform: `translateX(calc(${-trackIndex * 100}% + ${dragOffset}px))` }"
         @transitionend.self="isAnimating = false"
       >
-        <div class="tab-panel" :class="{ collapsed: isPanelCollapsed(0) }">
+        <div :id="panelId('chart')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(0) }" role="tabpanel" :aria-labelledby="tabLabelId('chart')">
           <div class="chart-controls">
-            <div class="range-toggle">
-              <button :class="{ active: chartRange === 'week' }" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
-              <button :class="{ active: chartRange === 'month' }" @click="chartRange = 'month'">{{ $t('petDetail.rangeMonth') }}</button>
-              <button :class="{ active: chartRange === 'year' }" @click="chartRange = 'year'">{{ $t('petDetail.rangeYear') }}</button>
+            <div class="range-toggle" role="group" :aria-label="$t('petDetail.rangeLabel')">
+              <button :class="{ active: chartRange === 'week' }" :aria-pressed="chartRange === 'week'" @click="chartRange = 'week'">{{ $t('petDetail.rangeWeek') }}</button>
+              <button :class="{ active: chartRange === 'month' }" :aria-pressed="chartRange === 'month'" @click="chartRange = 'month'">{{ $t('petDetail.rangeMonth') }}</button>
+              <button :class="{ active: chartRange === 'year' }" :aria-pressed="chartRange === 'year'" @click="chartRange = 'year'">{{ $t('petDetail.rangeYear') }}</button>
             </div>
             <div class="range-nav">
               <button class="nav-btn" @click="chartOffset--" :disabled="!canGoPrev" :aria-label="$t('petDetail.prevPeriod')">
@@ -473,30 +549,37 @@ async function deletePet() {
                   <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                 </svg>
               </button>
-              <div class="range-label-wrap">
-                <button class="range-label-btn" @click="openJumpPicker">
+              <div ref="rangeLabelWrapRef" class="range-label-wrap" @keydown.esc="closeJumpPicker" @focusout="onJumpPickerFocusout">
+                <button
+                  ref="rangeLabelBtnRef"
+                  class="range-label-btn"
+                  :aria-expanded="showJumpPicker"
+                  :aria-controls="showJumpPicker ? jumpPickerId : undefined"
+                  @click="openJumpPicker"
+                >
                   {{ chartLabel }}
                   <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
                     <path d="M7 10l5 5 5-5z"/>
                   </svg>
                 </button>
-                <div v-if="showJumpPicker" class="jump-picker" :class="`picker-${chartRange}`">
+                <div v-if="showJumpPicker" :id="jumpPickerId" class="jump-picker" :class="`picker-${chartRange}`">
                   <div class="jump-picker-scroll" ref="jumpPickerRef">
                   <template v-if="chartRange === 'year'">
                     <button v-for="y in availableYears" :key="y"
                       class="jump-year-btn" :class="{ active: y === chartWindow.start.getFullYear() }"
+                      :aria-current="y === chartWindow.start.getFullYear() ? 'true' : undefined"
                       @click="jumpToYear(y)">{{ y }}</button>
                   </template>
                   <template v-else-if="chartRange === 'month'">
                     <div class="jump-month-nav">
-                      <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[availableYears.length - 1]" @click="pickerYear--">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                      <button class="jump-nav-arrow" :disabled="pickerYear <= availableYears[availableYears.length - 1]" :aria-label="$t('datePicker.prevYear')" @click="pickerYear--">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
                           <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                         </svg>
                       </button>
                       <span class="jump-year-label">{{ pickerYear }}</span>
-                      <button class="jump-nav-arrow" :disabled="pickerYear >= new Date().getFullYear()" @click="pickerYear++">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                      <button class="jump-nav-arrow" :disabled="pickerYear >= new Date().getFullYear()" :aria-label="$t('datePicker.nextYear')" @click="pickerYear++">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
                           <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
                         </svg>
                       </button>
@@ -505,6 +588,7 @@ async function deletePet() {
                       <button v-for="(m, i) in MONTH_NAMES" :key="i"
                         class="jump-month-btn"
                         :class="{ active: isDisplayedMonth(i, pickerYear) }"
+                        :aria-current="isDisplayedMonth(i, pickerYear) ? 'true' : undefined"
                         :disabled="isFutureMonth(i, pickerYear) || hasNoReadingsInMonth(i, pickerYear)"
                         @click="jumpToMonth(i, pickerYear)">{{ m }}</button>
                     </div>
@@ -514,13 +598,14 @@ async function deletePet() {
                       <div v-if="item.type === 'header'" class="jump-week-year-header">{{ item.year }}</div>
                       <button v-else
                         class="jump-year-btn" :class="{ active: item.offset === chartOffset }"
+                        :aria-current="item.offset === chartOffset ? 'true' : undefined"
                         @click="jumpToWeekOffset(item.offset)">{{ weekLabel(item.offset) }}</button>
                     </template>
                   </template>
                   </div>
                 </div>
               </div>
-              <div v-if="showJumpPicker" class="jump-backdrop" @click="showJumpPicker = false" />
+              <div v-if="showJumpPicker" class="jump-backdrop" @click="closeJumpPicker" />
               <div class="range-right">
                 <button class="today-btn" :style="{ visibility: chartOffset !== 0 ? 'visible' : 'hidden' }" @click="chartOffset = 0">
                   {{ chartRange === 'week' ? $t('petDetail.thisWeek') : chartRange === 'month' ? $t('petDetail.thisMonth') : $t('petDetail.thisYear') }}
@@ -535,10 +620,10 @@ async function deletePet() {
           </div>
           <RRRChart :readings="chartReadings" :max-ticks="chartRange === 'year' ? 12 : chartRange === 'month' ? 6 : 8" :normal-ceiling="pet?.normalCeiling" />
         </div>
-        <div class="tab-panel" :class="{ collapsed: isPanelCollapsed(1) }">
+        <div :id="panelId('readings')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(1) }" role="tabpanel" :aria-labelledby="tabLabelId('readings')" tabindex="0">
           <ReadingList :readings="readings" :pet="pet" />
         </div>
-        <div class="tab-panel" :class="{ collapsed: isPanelCollapsed(2) }">
+        <div :id="panelId('notes')" class="tab-panel" :class="{ collapsed: isPanelCollapsed(2) }" role="tabpanel" :aria-labelledby="tabLabelId('notes')" tabindex="0">
           <NoteList :notes="notes" :petId="petId" />
         </div>
       </div>

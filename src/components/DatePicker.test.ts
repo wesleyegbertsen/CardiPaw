@@ -1,14 +1,11 @@
-// @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import DatePicker from './DatePicker.vue';
 import { createI18n } from 'vue-i18n';
 import en from '../i18n/locales/en.json';
 import nl from '../i18n/locales/nl.json';
 import { createTestI18n } from '../test/i18n';
 import { stubTimezone } from '../test/timezone';
-
-enableAutoUnmount(afterEach);
 
 function mountPicker(props: { modelValue: string; max?: string }, locale: 'en' | 'nl' = 'en') {
   const i18n =

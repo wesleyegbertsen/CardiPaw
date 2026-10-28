@@ -1,6 +1,5 @@
-// @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import RRRChart from './RRRChart.vue';
 import { createTestI18n } from '../test/i18n';
@@ -8,8 +7,6 @@ import { makeReading } from '../test/fixtures';
 import type { Reading } from '../types';
 
 vi.mock('vue-chartjs', async () => (await import('../test/stubs')).recordingLineStub());
-
-enableAutoUnmount(afterEach);
 
 interface ChartData {
   labels: string[];

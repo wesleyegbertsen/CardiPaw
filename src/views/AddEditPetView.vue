@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { usePetsStore } from '../stores/pets';
@@ -12,6 +12,8 @@ const route = useRoute();
 const router = useRouter();
 const petsStore = usePetsStore();
 const { t } = useI18n();
+const speciesLabelId = useId();
+const thresholdsLabelId = useId();
 
 const isEdit = !!route.params.id;
 const petId = route.params.id as string;
@@ -160,16 +162,16 @@ function goBack() {
       </div>
 
       <div class="field">
-        <label class="label">{{ $t('addEditPet.species') }}</label>
-        <div class="species-radios">
+        <span :id="speciesLabelId" class="label">{{ $t('addEditPet.species') }}</span>
+        <div class="species-radios" role="radiogroup" :aria-labelledby="speciesLabelId">
           <label class="species-option" :class="{ selected: species === 'cat' }">
-            <input type="radio" v-model="species" value="cat" class="sr-only" />
-            <span class="species-icon">🐱</span>
+            <input type="radio" v-model="species" name="species" value="cat" class="sr-only" />
+            <span class="species-icon" aria-hidden="true">🐱</span>
             <span>{{ $t('species.cat') }}</span>
           </label>
           <label class="species-option" :class="{ selected: species === 'dog' }">
-            <input type="radio" v-model="species" value="dog" class="sr-only" />
-            <span class="species-icon">🐶</span>
+            <input type="radio" v-model="species" name="species" value="dog" class="sr-only" />
+            <span class="species-icon" aria-hidden="true">🐶</span>
             <span>{{ $t('species.dog') }}</span>
           </label>
         </div>
@@ -181,8 +183,8 @@ function goBack() {
       </div>
 
       <div class="field">
-        <label class="label"><abbr :title="$t('addEditPet.rrrTitle')">{{ $t('addEditPet.rrrAbbr') }}</abbr> {{ $t('addEditPet.thresholdsSuffix') }}</label>
-        <div class="threshold-inputs">
+        <span :id="thresholdsLabelId" class="label"><abbr :title="$t('addEditPet.rrrTitle')">{{ $t('addEditPet.rrrAbbr') }}</abbr> {{ $t('addEditPet.thresholdsSuffix') }}</span>
+        <div class="threshold-inputs" role="group" :aria-labelledby="thresholdsLabelId">
           <div class="threshold-input-group">
             <label class="threshold-sub-label" for="normal-ceiling">{{ $t('addEditPet.normalCeiling') }}</label>
             <input
@@ -345,19 +347,14 @@ function goBack() {
   background: var(--color-primary-light);
 }
 
-.species-icon {
-  font-size: 28px;
+/* The radio itself is visually hidden, so its card shows keyboard focus */
+.species-option:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.species-icon {
+  font-size: 28px;
 }
 
 .submit-btn {

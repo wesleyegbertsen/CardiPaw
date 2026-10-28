@@ -41,8 +41,9 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
-      - name: Test
-        run: npm test
+      # The whole suite, failing below the coverage thresholds in vitest.config.ts.
+      - name: Test with coverage
+        run: npm run test:coverage
 
       - name: Check locale keys
         run: npm run check-locale

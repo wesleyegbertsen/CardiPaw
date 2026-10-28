@@ -9,6 +9,7 @@ import { useTrackerPrefs } from '../composables/useTrackerPrefs';
 import { useOnboarding } from '../composables/useOnboarding';
 import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
 import OnboardingModal from '../components/OnboardingModal.vue';
+import RestStateToggle from '../components/RestStateToggle.vue';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
 
 const route = useRoute();
@@ -60,6 +61,8 @@ const heartRef = ref<HTMLButtonElement | null>(null);
 const resultRef = ref<HTMLElement | null>(null);
 
 function switchMode(next: Mode) {
+  // Clicking the active mode again must not wipe what was entered
+  if (mode.value === next) return;
   mode.value = next;
   restState.value = undefined;
   notes.value = '';
@@ -230,10 +233,10 @@ onUnmounted(() => {
     <div v-else-if="pet" class="tracker-main">
     <!-- Mode toggle: absolutely positioned so it overlays the body without affecting its height -->
     <div v-if="phase === 'idle'" class="mode-toggle-bar">
-      <div class="mode-toggle">
-        <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }"></div>
-        <button class="mode-pill" :class="{ active: !isManualMode }" @click="switchMode('guided')">{{ $t('tracker.guided') }}</button>
-        <button class="mode-pill" :class="{ active: isManualMode }" @click="switchMode('manual')">{{ $t('tracker.manual') }}</button>
+      <div class="mode-toggle" role="group" :aria-label="$t('tracker.modeLabel')">
+        <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }" aria-hidden="true"></div>
+        <button class="mode-pill" :class="{ active: !isManualMode }" :aria-pressed="!isManualMode" @click="switchMode('guided')">{{ $t('tracker.guided') }}</button>
+        <button class="mode-pill" :class="{ active: isManualMode }" :aria-pressed="isManualMode" @click="switchMode('manual')">{{ $t('tracker.manual') }}</button>
       </div>
     </div>
 
@@ -248,9 +251,10 @@ onUnmounted(() => {
           max="200"
           placeholder="0"
           inputmode="numeric"
+          :aria-label="$t('reading.rateLabel')"
           autofocus
         />
-        <span class="manual-rate-unit">{{ $t('tracker.unitSpaced') }}</span>
+        <span class="manual-rate-unit" aria-hidden="true">{{ $t('tracker.unitSpaced') }}</span>
         <span
           class="rate-badge"
           :class="getRateStatus(manualRate, pet).cssClass"
@@ -258,22 +262,10 @@ onUnmounted(() => {
         >{{ $t('status.' + getRateStatus(manualRate, pet).cssClass) }}</span>
       </div>
 
-      <div class="rest-state-row">
-        <span class="rest-state-label">{{ $t('restState.petWas') }}</span>
-        <button
-          class="rest-btn"
-          :class="{ active: restState === 'resting' }"
-          @click="restState = restState === 'resting' ? undefined : 'resting'"
-        >{{ $t('restState.resting') }}</button>
-        <button
-          class="rest-btn"
-          :class="{ active: restState === 'sleeping' }"
-          @click="restState = restState === 'sleeping' ? undefined : 'sleeping'"
-        >{{ $t('restState.sleeping') }}</button>
-      </div>
+      <RestStateToggle v-model="restState" />
 
       <div class="notes-wrapper">
-        <RichTextEditor v-model="notes" />
+        <RichTextEditor v-model="notes" :label="$t('reading.notesLabel')" />
       </div>
 
       <div class="done-actions">
@@ -371,22 +363,10 @@ onUnmounted(() => {
 
       <p class="result-note">{{ $t('tracker.basedOn', clickCount) }}</p>
 
-      <div class="rest-state-row">
-        <span class="rest-state-label">{{ $t('restState.petWas') }}</span>
-        <button
-          class="rest-btn"
-          :class="{ active: restState === 'resting' }"
-          @click="restState = restState === 'resting' ? undefined : 'resting'"
-        >{{ $t('restState.resting') }}</button>
-        <button
-          class="rest-btn"
-          :class="{ active: restState === 'sleeping' }"
-          @click="restState = restState === 'sleeping' ? undefined : 'sleeping'"
-        >{{ $t('restState.sleeping') }}</button>
-      </div>
+      <RestStateToggle v-model="restState" />
 
       <div class="notes-wrapper">
-        <RichTextEditor v-model="notes" />
+        <RichTextEditor v-model="notes" :label="$t('reading.notesLabel')" />
       </div>
 
       <div class="done-actions">
@@ -604,18 +584,6 @@ onUnmounted(() => {
 }
 
 /* Breath count */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 .breath-count {
   display: flex;
   flex-direction: column;
@@ -675,38 +643,6 @@ onUnmounted(() => {
 .result-note {
   font-size: 13px;
   color: var(--color-text-muted);
-}
-
-.rest-state-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 320px;
-}
-
-.rest-state-label {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-
-.rest-btn {
-  flex: 1;
-  height: 38px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-}
-
-.rest-btn.active {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .notes-wrapper {

@@ -1,6 +1,5 @@
-// @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import type { Ref } from 'vue';
 import UpdateBanner from './UpdateBanner.vue';
 import { createTestI18n } from '../test/i18n';
@@ -26,8 +25,6 @@ vi.mock('virtual:pwa-register/vue', async () => {
     },
   };
 });
-
-enableAutoUnmount(afterEach);
 
 const banner = () => document.body.querySelector<HTMLElement>('.update-banner');
 

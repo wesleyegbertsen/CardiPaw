@@ -1,6 +1,5 @@
-// @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import TrackerView from './TrackerView.vue';
@@ -29,8 +28,6 @@ vi.mock('../composables/useOnboarding', async () => {
 vi.mock('../components/LazyRichTextEditor', async () =>
   (await import('../test/stubs')).lazyEditorStubModule(),
 );
-
-enableAutoUnmount(afterEach);
 
 const pet = makePet();
 let router: Router;
@@ -290,6 +287,63 @@ describe('TrackerView', () => {
       await wrapper.get('.btn-discard').trigger('click');
       expect(wrapper.find('[role="alert"]').exists()).toBe(false);
     });
+  });
+
+  it('keeps the entry when the active mode is clicked again', async () => {
+    const { wrapper } = await mountTracker();
+    const manual = wrapper.findAll('.mode-pill')[1];
+    await manual.trigger('click');
+    await wrapper.get('.manual-rate-input').setValue('42');
+    await wrapper.findAll('.rest-btn')[0].trigger('click');
+    await wrapper.get('.notes-stub').setValue('<p>calm</p>');
+
+    await manual.trigger('click');
+    expect(wrapper.get<HTMLInputElement>('.manual-rate-input').element.value).toBe('42');
+    expect(wrapper.find('.rest-btn.active').exists()).toBe(true);
+    expect(wrapper.get<HTMLTextAreaElement>('.notes-stub').element.value).toBe('<p>calm</p>');
+  });
+
+  it('exposes the mode as pressed buttons in a labelled group', async () => {
+    const { wrapper } = await mountTracker();
+    const group = wrapper.get('.mode-toggle');
+    expect(group.attributes('role')).toBe('group');
+    expect(group.attributes('aria-label')).toBe('Measurement mode');
+    expect(wrapper.get('.mode-toggle-indicator').attributes('aria-hidden')).toBe('true');
+    const pressed = () => wrapper.findAll('.mode-pill').map((p) => p.attributes('aria-pressed'));
+    expect(pressed()).toEqual(['true', 'false']);
+    await wrapper.findAll('.mode-pill')[1].trigger('click');
+    expect(pressed()).toEqual(['false', 'true']);
+  });
+
+  it('labels the manual rate and notes fields', async () => {
+    const { wrapper } = await mountTracker();
+    await wrapper.findAll('.mode-pill')[1].trigger('click');
+    expect(wrapper.get('.manual-rate-input').attributes('aria-label')).toBe('Rate (breaths/min)');
+    // The label already says breaths/min; the visible unit is not read a second time
+    expect(wrapper.get('.manual-rate-unit').attributes('aria-hidden')).toBe('true');
+    expect(wrapper.get('.notes-stub').attributes('aria-label')).toBe('Notes');
+  });
+
+  it.each(['manual', 'guided'])('exposes the %s rest state as pressed buttons', async (mode) => {
+    const { wrapper } = await mountTracker();
+    if (mode === 'manual') {
+      await wrapper.findAll('.mode-pill')[1].trigger('click');
+    } else {
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(wrapper.get('.notes-stub').attributes('aria-label')).toBe('Notes');
+    }
+    const group = wrapper.get('.rest-state-row');
+    expect(group.attributes('role')).toBe('group');
+    const labelId = group.attributes('aria-labelledby');
+    expect(labelId && document.getElementById(labelId)?.textContent).toBe('Pet was');
+    const [resting, sleeping] = wrapper.findAll('.rest-btn');
+    const pressed = () => [resting, sleeping].map((b) => b.attributes('aria-pressed'));
+    expect(pressed()).toEqual(['false', 'false']);
+    await resting.trigger('click');
+    expect(pressed()).toEqual(['true', 'false']);
+    await resting.trigger('click');
+    expect(resting.attributes('aria-pressed')).toBe('false');
   });
 
   it('names the sound and vibration switches', async () => {

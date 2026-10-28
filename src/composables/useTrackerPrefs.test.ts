@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import { forgetTrackerPrefs, pruneTrackerPrefs, useTrackerPrefs } from './useTrackerPrefs';

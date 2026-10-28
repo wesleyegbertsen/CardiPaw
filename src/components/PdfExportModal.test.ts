@@ -1,6 +1,5 @@
-// @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import PdfExportModal from './PdfExportModal.vue';
 import { usePdfExport } from '../composables/usePdfExport';
 import { createTestI18n } from '../test/i18n';
@@ -12,8 +11,6 @@ vi.mock('../composables/usePdfExport', async () => {
   const state = { isGenerating: ref(false), generatePdf: vi.fn() };
   return { usePdfExport: () => state, preloadPdfLibrary: vi.fn() };
 });
-
-enableAutoUnmount(afterEach);
 
 const { isGenerating, generatePdf } = usePdfExport();
 const pet = makePet();
@@ -70,6 +67,19 @@ describe('PdfExportModal', () => {
     notesSwitch().click();
     await flushPromises();
     expect(notesSwitch().getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('exposes the order as pressed buttons in a labelled group', async () => {
+    mountModal();
+    const group = q('.sort-options')!;
+    expect(group.getAttribute('role')).toBe('group');
+    const labelId = group.getAttribute('aria-labelledby');
+    expect(labelId && document.getElementById(labelId)?.textContent).toBe('Order');
+    const sortButtons = () => [...group.querySelectorAll('.sort-btn')];
+    expect(sortButtons().map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
+    sortButtons()[1].dispatchEvent(new MouseEvent('click'));
+    await flushPromises();
+    expect(sortButtons().map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
   });
 
   it('needs at least one month', async () => {
