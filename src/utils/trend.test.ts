@@ -110,6 +110,24 @@ describe('computeTrend', () => {
     ).toBe(21);
   });
 
+  it('takes the middle two values for an even count', () => {
+    // 14 baseline days at 20 and 14 at 24.
+    expect(trend([...days(-30, -17, 20), ...days(-16, -3, 24), ...recentOf(28, 28)])).toMatchObject(
+      { kind: 'rising', baseline: 22 },
+    );
+    // A day with readings 20 and 30 counts as 25.
+    expect(trend([...baselineAt(20), day(-1, 20), day(0, 20, 8), day(0, 30, 9)]).recent).toBe(22.5);
+  });
+
+  it('sorts rates as numbers, not text', () => {
+    // As text, 40 would sort between 10 and 9.
+    expect(
+      trend([...baselineAt(20), day(-1, 10), day(0, 9, 8), day(0, 10, 9), day(0, 40, 10)]).recent,
+    ).toBe(10);
+    const baseline = [9, 9, 9, 10, 40, 40, 40].map((rate, i) => day(-9 + i, rate));
+    expect(trend([...baseline, ...recentOf(10, 10)]).baseline).toBe(10);
+  });
+
   it('needs the rise to clear both the percentage and the breaths floor', () => {
     expect(trend([...baselineAt(12), ...recentOf(14, 14)]).kind).toBe('none'); // +16%, +2
     expect(trend([...baselineAt(12), ...recentOf(16, 16)]).kind).toBe('rising'); // +33%, +4
