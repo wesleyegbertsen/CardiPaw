@@ -154,6 +154,18 @@ describe('EditReadingView', () => {
     },
   );
 
+  it('keeps a guided reading’s measurement length when saving an edit', async () => {
+    const { wrapper, rate } = await mountEdit(makeReading({ durationSeconds: 60 }));
+    const update = vi.spyOn(useReadingsStore(), 'updateReading');
+
+    await rate.setValue('28');
+    await wrapper.get('form').trigger('submit');
+    await settle();
+
+    expect(update).toHaveBeenCalledOnce();
+    expect(update.mock.calls[0][0]).toMatchObject({ rate: 28, durationSeconds: 60 });
+  });
+
   it('toggles the rest state and saves empty notes as undefined', async () => {
     const { wrapper, rate, replace } = await mountEdit(
       makeReading({ restState: 'resting', notes: '<p>Old</p>' }),
