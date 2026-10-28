@@ -131,6 +131,28 @@ describe('validateBackup', () => {
     expect(data.pets[0]).toEqual(makePet());
     expect(data.readings[0]).toEqual(makeReading());
   });
+
+  it.each([15, 30, 60] as const)('keeps a guided measurement length of %s seconds', (seconds) => {
+    const reading = makeReading({ durationSeconds: seconds });
+    expect(validateBackup(backup({ readings: [reading] })).data.readings).toEqual([reading]);
+  });
+
+  it.each([45, '60', -1, null])(
+    'drops a measurement length of %s but keeps the reading',
+    (durationSeconds) => {
+      const { data, skipped } = validateBackup(
+        backup({ readings: [{ ...makeReading(), durationSeconds }] }),
+      );
+      expect(skipped).toBe(0);
+      expect(data.readings).toEqual([makeReading()]);
+    },
+  );
+
+  it('drops a measurement length from a manual entry', () => {
+    const manual = makeReading({ source: 'manual', clickCount: 0 });
+    const { data } = validateBackup(backup({ readings: [{ ...manual, durationSeconds: 30 }] }));
+    expect(data.readings).toEqual([manual]);
+  });
 });
 
 describe('parseBackup', () => {
@@ -158,8 +180,10 @@ describe('export and import', () => {
   it('round-trips an export through JSON and import', async () => {
     await db.savePet(makePet());
     await db.saveReading(makeReading());
+    await db.saveReading(makeReading({ id: 'reading-2', durationSeconds: 60 }));
     await db.saveNote(makeNote({ pinnedAt: '2024-03-16T00:00:00.000Z' }));
     const exported = await exportBackup();
+    expect(exported.readings).toContainEqual(makeReading({ id: 'reading-2', durationSeconds: 60 }));
 
     await emptyDb();
     await importBackup(parseBackup(JSON.stringify(exported)).data);

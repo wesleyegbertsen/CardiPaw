@@ -1,6 +1,7 @@
 import type { Pet, Reading, Note, ExportPayload } from '../types';
 import * as db from './db';
 import { localDayKey } from '../utils/date';
+import { isMeasurementSeconds } from '../utils/measurement';
 import { usePetsStore } from '../stores/pets';
 import { resetPetData } from '../stores/petData';
 
@@ -93,7 +94,7 @@ function toPet(value: unknown): Pet | null {
 
 function toReading(value: unknown): Reading | null {
   if (!isObject(value)) return null;
-  const { id, petId, date, rate, clickCount, restState, notes, source } = value;
+  const { id, petId, date, rate, clickCount, restState, notes, source, durationSeconds } = value;
   if (!isNonEmptyString(id) || !isNonEmptyString(petId)) return null;
   // No usable rate (e.g. "" saved by an older edit form): the reading cannot be
   // shown or charted, and edited rates cannot be rebuilt from clickCount.
@@ -108,6 +109,9 @@ function toReading(value: unknown): Reading | null {
   if (restState === 'resting' || restState === 'sleeping') reading.restState = restState;
   if (typeof notes === 'string') reading.notes = notes;
   if (source === 'manual') reading.source = source;
+  // Only a length the tracker offers, and only on a guided reading; anything else is
+  // dropped (the label falls back to 30 s) rather than skipping the reading.
+  else if (isMeasurementSeconds(durationSeconds)) reading.durationSeconds = durationSeconds;
   return reading;
 }
 
