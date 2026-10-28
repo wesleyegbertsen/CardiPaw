@@ -1,14 +1,11 @@
-// @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { nextTick } from 'vue';
-import { enableAutoUnmount, mount, RouterLinkStub } from '@vue/test-utils';
+import { mount, RouterLinkStub } from '@vue/test-utils';
 import ReadingList from './ReadingList.vue';
 import NoteList from './NoteList.vue';
 import { createTestI18n } from '../test/i18n';
 import { installIntersectionObserver } from '../test/intersectionObserver';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
-
-enableAutoUnmount(afterEach);
 
 const global = () => ({
   plugins: [createTestI18n()],

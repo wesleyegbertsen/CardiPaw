@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readStorage, writeStorage } from './storage';
 import { blockStorage, failStorageWrites } from '../test/blockStorage';

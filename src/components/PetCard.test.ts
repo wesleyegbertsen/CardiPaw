@@ -1,7 +1,5 @@
-// @vitest-environment happy-dom
-import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia } from 'pinia';
 import PetCard from './PetCard.vue';
 import { useReadingsStore } from '../stores/readings';
@@ -13,8 +11,6 @@ import type { Reading } from '../types';
 const push = vi.hoisted(() => vi.fn());
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));
 vi.mock('vue-chartjs', async () => (await import('../test/stubs')).recordingLineStub());
-
-enableAutoUnmount(afterEach);
 
 const profile = { name: 'pet', params: { id: 'pet-1' } };
 const tracker = { name: 'tracker', params: { id: 'pet-1' } };

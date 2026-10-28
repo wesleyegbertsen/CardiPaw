@@ -1,12 +1,8 @@
-// @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
 import App from './App.vue';
 import * as db from './services/db';
 import { mountView, settle } from './test/mountView';
 import { blockStorage } from './test/blockStorage';
-
-enableAutoUnmount(afterEach);
 
 describe('App', () => {
   it('marks the current nav item active and hides the nav on shared pages', async () => {

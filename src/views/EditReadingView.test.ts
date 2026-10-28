@@ -1,6 +1,5 @@
-// @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
 import EditReadingView from './EditReadingView.vue';
 import { useReadingsStore } from '../stores/readings';
 import * as db from '../services/db';
@@ -12,8 +11,6 @@ import type { Reading } from '../types';
 vi.mock('../components/LazyRichTextEditor', async () =>
   (await import('../test/stubs')).lazyEditorStubModule(),
 );
-
-enableAutoUnmount(afterEach);
 
 const location = '/pets/pet-1/readings/reading-1/edit';
 

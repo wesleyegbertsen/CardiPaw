@@ -1,6 +1,4 @@
-// @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
 import ReadingView from './ReadingView.vue';
 import { useReadingsStore } from '../stores/readings';
 import * as db from '../services/db';
@@ -8,8 +6,6 @@ import { mountView, settle } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
 import { deferred } from '../test/deferred';
 import type { Reading } from '../types';
-
-enableAutoUnmount(afterEach);
 
 const location = '/pets/pet-1/readings/reading-1';
 const readingsTab = { name: 'pet', params: { id: 'pet-1' }, query: { tab: 'readings' } };

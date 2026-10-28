@@ -1,4 +1,3 @@
-import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExportPayload, Note, Pet, Reading } from '../types';

@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 /**
  * Makes deletes in one IndexedDB object store fail, as a failing write can,
  * after the first `succeed` of them went through. Covers both store.delete()
- * and cursor.delete(). Call it after `fake-indexeddb/auto` is loaded.
+ * and cursor.delete(). Needs `fake-indexeddb/auto`, which src/test/setup.ts loads.
  *
  * By default the delete throws synchronously. With `async: true` it instead
  * returns a real request that fails later with a ConstraintError, which

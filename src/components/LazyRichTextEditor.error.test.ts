@@ -1,6 +1,5 @@
-// @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
 import { defineComponent, h } from 'vue';
 import { LazyRichTextEditor } from './LazyRichTextEditor';
 import { createTestI18n } from '../test/i18n';
@@ -9,8 +8,6 @@ import { createTestI18n } from '../test/i18n';
 vi.mock('./RichTextEditor.vue', () => {
   throw new Error('chunk');
 });
-
-enableAutoUnmount(afterEach);
 
 // An async component is meant to be rendered by a parent.
 const host = (modelValue: string) =>
