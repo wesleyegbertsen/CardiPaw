@@ -483,7 +483,11 @@ describe('TrackerView', () => {
     it('names each length in full for screen readers', async () => {
       const { wrapper } = await mountTracker();
       const options = wrapper.findAll('.length-option');
-      expect(options.map((o) => o.get('[aria-hidden="true"]').text())).toEqual(['15 s', '30 s', '60 s']);
+      expect(options.map((o) => o.get('[aria-hidden="true"]').text())).toEqual([
+        '15 s',
+        '30 s',
+        '60 s',
+      ]);
       expect(options.map((o) => o.get('span.sr-only').text())).toEqual([
         '15 seconds',
         '30 seconds',
@@ -531,6 +535,7 @@ describe('TrackerView', () => {
       const heart = wrapper.get('.heart-btn');
       for (let i = 0; i < 20; i++) await heart.trigger('click');
       expect(wrapper.get('.timer-number').text()).toBe('60');
+      expect(wrapper.get('.timer-unit').text()).toBe('s');
 
       vi.setSystemTime(Date.now() + 17_000);
       await vi.advanceTimersByTimeAsync(250);

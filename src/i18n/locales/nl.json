@@ -38,7 +38,7 @@
     "manual": "Handmatig",
     "guided": "Begeleid",
     "manualEntry": "Handmatige invoer",
-    "guidedSeconds": "Begeleid ({seconds} s)"
+    "guidedSeconds": "Begeleid ({seconds}\u00a0s)"
   },
   "age": {
     "weeks": "1 week | {n} weken",
@@ -102,9 +102,9 @@
     "modeLabel": "Meetmethode",
     "instruction": "Tik ergens op het scherm telkens als je de borstkas van je huisdier ziet op- en neergaan.",
     "measurementLength": "Meetduur",
-    "secondsOption": "{seconds} s",
+    "secondsOption": "{seconds}\u00a0s",
     "secondsLong": "{n} seconde | {n} seconden",
-    "secondsUnit": "sec",
+    "secondsUnit": "s",
     "sound": "Geluid",
     "vibration": "Trillen",
     "breathsCounted": "ademhalingen geteld",

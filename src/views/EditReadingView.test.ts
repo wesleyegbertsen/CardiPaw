@@ -60,8 +60,8 @@ describe('EditReadingView', () => {
   });
 
   it.each([
-    [makeReading({ durationSeconds: 60 }), 'Guided (60 s)'],
-    [makeReading(), 'Guided (30 s)'],
+    [makeReading({ durationSeconds: 60 }), 'Guided (60\u00a0s)'],
+    [makeReading(), 'Guided (30\u00a0s)'],
   ])('labels a guided reading with its length (%#)', async (reading, label) => {
     const { wrapper } = await mountEdit(reading);
     expect(wrapper.get('.source-chip').text()).toBe(label);

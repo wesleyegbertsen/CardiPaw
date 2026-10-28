@@ -33,10 +33,10 @@ describe('ReadingView', () => {
   });
 
   it.each([
-    [makeReading({ durationSeconds: 60 }), 'Guided (60 s)'],
-    [makeReading({ durationSeconds: 15 }), 'Guided (15 s)'],
+    [makeReading({ durationSeconds: 60 }), 'Guided (60\u00a0s)'],
+    [makeReading({ durationSeconds: 15 }), 'Guided (15\u00a0s)'],
     // Saved before the length could be chosen: those all ran for 30 seconds.
-    [makeReading(), 'Guided (30 s)'],
+    [makeReading(), 'Guided (30\u00a0s)'],
     [makeReading({ source: 'manual' }), 'Manual entry'],
   ])('labels how the reading was taken (%#)', async (reading, label) => {
     const { wrapper } = await mountView(ReadingView, location, {

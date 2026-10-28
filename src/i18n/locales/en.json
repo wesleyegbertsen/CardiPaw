@@ -38,7 +38,7 @@
     "manual": "Manual",
     "guided": "Guided",
     "manualEntry": "Manual entry",
-    "guidedSeconds": "Guided ({seconds} s)"
+    "guidedSeconds": "Guided ({seconds}\u00a0s)"
   },
   "age": {
     "weeks": "1 week | {n} weeks",
@@ -102,9 +102,9 @@
     "modeLabel": "Measurement mode",
     "instruction": "Tap anywhere on the screen each time you see your pet's chest rise and fall.",
     "measurementLength": "Measurement length",
-    "secondsOption": "{seconds} s",
+    "secondsOption": "{seconds}\u00a0s",
     "secondsLong": "{n} second | {n} seconds",
-    "secondsUnit": "sec",
+    "secondsUnit": "s",
     "sound": "Sound",
     "vibration": "Vibration",
     "breathsCounted": "breaths counted",

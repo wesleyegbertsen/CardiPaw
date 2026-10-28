@@ -38,7 +38,7 @@
     "manual": "Manuel",
     "guided": "Guidé",
     "manualEntry": "Saisie manuelle",
-    "guidedSeconds": "Guidé ({seconds} s)"
+    "guidedSeconds": "Guidé ({seconds}\u00a0s)"
   },
   "age": {
     "weeks": "1 semaine | {n} semaines",
@@ -102,7 +102,7 @@
     "modeLabel": "Mode de mesure",
     "instruction": "Appuyez n'importe où sur l'écran chaque fois que vous voyez la poitrine de votre animal se soulever.",
     "measurementLength": "Durée de la mesure",
-    "secondsOption": "{seconds} s",
+    "secondsOption": "{seconds}\u00a0s",
     "secondsLong": "{n} seconde | {n} secondes",
     "secondsUnit": "s",
     "sound": "Son",
