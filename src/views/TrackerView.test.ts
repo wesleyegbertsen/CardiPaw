@@ -474,11 +474,21 @@ describe('TrackerView', () => {
       expect(group.attributes('role')).toBe('radiogroup');
       const labelId = group.attributes('aria-labelledby');
       expect(labelId && document.getElementById(labelId)?.textContent).toBe('Measurement length');
-      const options = wrapper.findAll('.length-option');
-      expect(options.map((o) => o.text())).toEqual(['15 s', '30 s', '60 s']);
+      expect(wrapper.findAll('.length-option')).toHaveLength(3);
       const radios = wrapper.findAll<HTMLInputElement>('.length-picker input[type="radio"]');
       expect(new Set(radios.map((r) => r.attributes('name'))).size).toBe(1);
       expect(radios.map((r) => r.element.checked)).toEqual([false, true, false]);
+    });
+
+    it('names each length in full for screen readers', async () => {
+      const { wrapper } = await mountTracker();
+      const options = wrapper.findAll('.length-option');
+      expect(options.map((o) => o.get('[aria-hidden="true"]').text())).toEqual(['15 s', '30 s', '60 s']);
+      expect(options.map((o) => o.get('span.sr-only').text())).toEqual([
+        '15 seconds',
+        '30 seconds',
+        '60 seconds',
+      ]);
     });
 
     it.each([

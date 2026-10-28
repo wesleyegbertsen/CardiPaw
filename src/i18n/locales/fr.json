@@ -103,6 +103,7 @@
     "instruction": "Appuyez n'importe où sur l'écran chaque fois que vous voyez la poitrine de votre animal se soulever.",
     "measurementLength": "Durée de la mesure",
     "secondsOption": "{seconds} s",
+    "secondsLong": "{n} seconde | {n} secondes",
     "secondsUnit": "s",
     "sound": "Son",
     "vibration": "Vibration",

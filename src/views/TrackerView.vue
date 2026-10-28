@@ -334,7 +334,8 @@ onUnmounted(() => {
                   :class="{ active: measurementSeconds === seconds }"
                 >
                   <input v-model="measurementSeconds" class="sr-only" type="radio" :name="lengthName" :value="seconds" />
-                  {{ $t('tracker.secondsOption', { seconds }) }}
+                  <span aria-hidden="true">{{ $t('tracker.secondsOption', { seconds }) }}</span>
+                  <span class="sr-only">{{ $t('tracker.secondsLong', seconds) }}</span>
                 </label>
               </div>
             </div>

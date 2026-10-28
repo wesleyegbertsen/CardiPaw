@@ -103,6 +103,7 @@
     "instruction": "ペットの胸が上がり下がりするたびに、画面のどこかをタップしてください。",
     "measurementLength": "測定時間",
     "secondsOption": "{seconds}秒",
+    "secondsLong": "{n}秒",
     "secondsUnit": "秒",
     "sound": "音",
     "vibration": "バイブレーション",

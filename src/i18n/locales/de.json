@@ -103,6 +103,7 @@
     "instruction": "Tippe jedes Mal irgendwo auf den Bildschirm, wenn sich der Brustkorb deines Tieres hebt und senkt.",
     "measurementLength": "Messdauer",
     "secondsOption": "{seconds} s",
+    "secondsLong": "{n} Sekunde | {n} Sekunden",
     "secondsUnit": "Sek.",
     "sound": "Ton",
     "vibration": "Vibration",

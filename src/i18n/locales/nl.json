@@ -103,6 +103,7 @@
     "instruction": "Tik ergens op het scherm telkens als je de borstkas van je huisdier ziet op- en neergaan.",
     "measurementLength": "Meetduur",
     "secondsOption": "{seconds} s",
+    "secondsLong": "{n} seconde | {n} seconden",
     "secondsUnit": "sec",
     "sound": "Geluid",
     "vibration": "Trillen",
