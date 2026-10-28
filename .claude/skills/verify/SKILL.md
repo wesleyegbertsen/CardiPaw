@@ -40,6 +40,8 @@ const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 
 ## Flows worth driving
 
-- Tracker guided mode: `.option-row .slide-toggle` (Sound/Vibration,
-  `aria-checked` reflects state), `.heart-btn` starts/registers breaths.
+- Tracker guided mode: `.toggle-rows .slide-toggle` (Sound/Vibration,
+  `aria-checked` reflects state), `.length-picker input[type=radio]`
+  (15/30/60 s, idle only, remembered per pet), `.heart-btn`
+  starts/registers breaths.
 - Manual mode via `.mode-pill` buttons.
