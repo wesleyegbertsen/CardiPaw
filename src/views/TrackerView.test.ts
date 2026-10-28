@@ -355,6 +355,17 @@ describe('TrackerView', () => {
     expect(names).toEqual(['Sound', 'Vibration']);
   });
 
+  it.each([
+    ['the sound switch', '.slide-toggle'],
+    // The two switches share a row; the space between them is not part of the tap area.
+    ['the space between the switches', '.toggle-rows'],
+  ])('tapping %s does not start the measurement', async (_label, selector) => {
+    const { wrapper } = await mountTracker();
+    await wrapper.get(selector).trigger('click');
+    expect(wrapper.find('.timer-ring').exists()).toBe(false);
+    expect(audio.playBeep).not.toHaveBeenCalled();
+  });
+
   it('saves only once when Save is clicked twice in a row', async () => {
     const { wrapper, addReading } = await mountTracker();
     await wrapper.get('.heart-btn').trigger('click');

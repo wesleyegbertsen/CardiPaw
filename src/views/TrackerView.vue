@@ -318,27 +318,30 @@ onUnmounted(() => {
         <template v-if="phase === 'idle'">
           <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
           <p class="timer-note">{{ $t('tracker.measurement30') }}</p>
-          <div class="option-row" @click.stop>
-            <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
-            <button
-              class="slide-toggle"
-              :class="{ on: soundEnabled }"
-              role="switch"
-              :aria-checked="soundEnabled"
-              :aria-labelledby="soundLabelId"
-              @click="soundEnabled = !soundEnabled"
-            />
-          </div>
-          <div v-if="hapticsSupported" class="option-row" @click.stop>
-            <span :id="vibrationLabelId" class="toggle-label">{{ $t('tracker.vibration') }}</span>
-            <button
-              class="slide-toggle"
-              :class="{ on: vibrationEnabled }"
-              role="switch"
-              :aria-checked="vibrationEnabled"
-              :aria-labelledby="vibrationLabelId"
-              @click="vibrationEnabled = !vibrationEnabled"
-            />
+          <!-- Side by side to keep the idle screen short enough for small phones; wraps when there is no room -->
+          <div class="toggle-rows" @click.stop>
+            <div class="option-row">
+              <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
+              <button
+                class="slide-toggle"
+                :class="{ on: soundEnabled }"
+                role="switch"
+                :aria-checked="soundEnabled"
+                :aria-labelledby="soundLabelId"
+                @click="soundEnabled = !soundEnabled"
+              />
+            </div>
+            <div v-if="hapticsSupported" class="option-row">
+              <span :id="vibrationLabelId" class="toggle-label">{{ $t('tracker.vibration') }}</span>
+              <button
+                class="slide-toggle"
+                :class="{ on: vibrationEnabled }"
+                role="switch"
+                :aria-checked="vibrationEnabled"
+                :aria-labelledby="vibrationLabelId"
+                @click="vibrationEnabled = !vibrationEnabled"
+              />
+            </div>
           </div>
         </template>
         <div v-else class="breath-count">
@@ -702,7 +705,14 @@ onUnmounted(() => {
   color: var(--color-text-muted);
 }
 
-/* Sound toggle */
+/* Sound and vibration switches */
+.toggle-rows {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 24px;
+}
+
 .option-row {
   display: flex;
   align-items: center;
