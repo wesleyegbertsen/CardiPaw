@@ -17,6 +17,8 @@
   --color-success-bg: #dcfce7;
   --color-warning: #d97706;
   --color-warning-bg: #fef3c7;
+  /* Text on --color-warning-bg (and on surfaces): ≥4.5:1, unlike --color-warning. */
+  --color-warning-text: #92400e;
   --color-danger: #dc2626;
   --color-danger-bg: #fee2e2;
   /* Text on --color-danger-bg (and small error text on surfaces): ≥4.5:1, unlike --color-danger. */
@@ -49,6 +51,7 @@
   --color-primary-light: #3d1424;
   --color-success-bg: #052e16;
   --color-warning-bg: #1a120a;
+  --color-warning-text: #fbbf24;
   --color-danger-bg: #2d0a0a;
   --color-danger-text: #fca5a5;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);

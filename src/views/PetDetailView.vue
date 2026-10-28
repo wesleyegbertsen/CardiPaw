@@ -10,12 +10,21 @@ import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
+import { useTrend } from '../composables/useTrend';
+import {
+  BASELINE_DAYS,
+  MIN_BASELINE_DAYS,
+  RECENT_DAYS,
+  RISE_MIN_BREATHS,
+  RISE_PERCENT,
+} from '../utils/trend';
 import RRRChart from '../components/RRRChart.vue';
 import ReadingList from '../components/ReadingList.vue';
 import NoteList from '../components/NoteList.vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import PdfExportModal from '../components/PdfExportModal.vue';
 import ShareLinkModal from '../components/ShareLinkModal.vue';
+import InfoModal from '../components/InfoModal.vue';
 import { useNotesStore } from '../stores/notes';
 
 const route = useRoute();
@@ -32,6 +41,8 @@ const ageDisplay = useAgeCalculator(birthdateRef);
 
 const readings = computed(() => readingsStore.getReadingsForPet(petId));
 const lastMeasured = useLastMeasured(readings);
+const trend = useTrend(readings, pet);
+const showTrendInfo = ref(false);
 const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
@@ -467,6 +478,17 @@ async function deletePet() {
     </div>
 
     <div class="track-cta">
+      <div v-if="trend.alerting" class="trend-alert">
+        <svg class="trend-icon" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
+          <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+        </svg>
+        <div class="trend-text">
+          <p class="trend-title">{{ $t('trend.title') }}</p>
+          <p class="trend-message">{{ trend.message }}</p>
+          <p class="trend-advice">{{ $t('trend.advice', { name: pet.name }) }}</p>
+          <button type="button" class="trend-how" @click="showTrendInfo = true">{{ $t('trend.how') }}</button>
+        </div>
+      </div>
       <button class="track-btn" @click="router.push({ name: 'tracker', params: { id: petId } })">
         <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -656,6 +678,24 @@ async function deletePet() {
       @close="showShareModal = false"
     />
 
+    <InfoModal v-if="showTrendInfo" :title="$t('trend.infoTitle')" @close="showTrendInfo = false">
+      <p>{{ $t('trend.info.p1', { days: RECENT_DAYS, baselineDays: BASELINE_DAYS }) }}</p>
+      <p>
+        {{
+          $t('trend.info.p2', {
+            days: RECENT_DAYS,
+            percent: RISE_PERCENT,
+            breaths: RISE_MIN_BREATHS,
+            minDays: MIN_BASELINE_DAYS,
+            name: pet.name,
+            ceiling: trend.result.normalCeiling,
+          })
+        }}
+      </p>
+      <p>{{ $t('trend.info.p3') }}</p>
+      <p>{{ $t('trend.info.p4') }}</p>
+    </InfoModal>
+
     <ConfirmDialog
       v-if="showDeleteDialog"
       :message="$t('petDetail.deleteConfirm', { name: pet.name })"
@@ -816,6 +856,44 @@ async function deletePet() {
   padding: 16px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+}
+
+.trend-alert {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px 4px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  /* The dark warning background is close to the surface; the border keeps the box visible. */
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+}
+
+.trend-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.trend-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.trend-message,
+.trend-advice {
+  font-size: 14px;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+.trend-how {
+  min-height: 44px;
+  padding: 0;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .track-btn {

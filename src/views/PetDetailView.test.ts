@@ -9,6 +9,8 @@ import { deferred } from '../test/deferred';
 import { touchEvent } from '../test/touch';
 import { createTestI18n } from '../test/i18n';
 import * as db from '../services/db';
+import { useReadingsStore } from '../stores/readings';
+import { trendReadings } from '../test/trendReadings';
 import type { Pet, Reading } from '../types';
 
 // Chart.js needs a canvas; the view's job is to hand the chart the right readings.
@@ -681,6 +683,68 @@ describe('PetDetailView', () => {
       await end(0, 0, 2000);
       await settle();
       expect(collapsed()).toEqual([false, true, true]);
+    });
+  });
+  describe('trend alert', () => {
+    // Only the clock is faked: fake timers stall fake-indexeddb.
+    const today = new Date(2024, 2, 20, 9);
+
+    async function mountTrend(readings: Reading[], petOverrides: Partial<Pet> = {}) {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(today);
+      return mountDetail('/pets/pet-1', { pets: [makePet(petOverrides)], readings });
+    }
+
+    it('explains a rise above the usual rate, above the track button', async () => {
+      const { wrapper } = await mountTrend(trendReadings(today, 20, [28, 28]));
+      const alert = wrapper.get('.trend-alert');
+      expect(alert.get('.trend-title').text()).toBe('Breathing rate trending up');
+      expect(alert.get('.trend-message').text()).toBe(
+        "Ace's resting breathing rate has been about 28 breaths/min over the last 3 days, up from a usual 20.",
+      );
+      expect(alert.get('.trend-advice').text()).toBe(
+        'Measure again while Ace is resting or asleep, and talk to your vet if it stays higher.',
+      );
+      expect(alert.element.nextElementSibling).toBe(wrapper.get('.track-cta .track-btn').element);
+    });
+
+    it("explains days above the pet's Normal ceiling without a baseline", async () => {
+      const { wrapper } = await mountTrend(trendReadings(today, null, [30, 30]), { normalCeiling: 28 });
+      expect(wrapper.get('.trend-message').text()).toBe(
+        "Ace's resting breathing rate has been above 28 breaths/min on more than one of the last 3 days.",
+      );
+    });
+
+    it.each([
+      ['stable readings', trendReadings(today, 20, [20, 22])],
+      ['one high day', trendReadings(today, 20, [34])],
+      ['no readings', []],
+    ])('shows nothing for %s', async (_, readings) => {
+      const { wrapper } = await mountTrend(readings);
+      expect(wrapper.find('.trend-alert').exists()).toBe(false);
+    });
+
+    it('explains how it works in a dialog', async () => {
+      const { wrapper } = await mountTrend(trendReadings(today, 20, [28, 28]));
+      await wrapper.get('.trend-how').trigger('click');
+      const dialog = document.body.querySelector('[role="dialog"]')!;
+      expect(dialog.querySelector('h2')!.textContent).toBe('How trend alerts work');
+      expect(dialog.textContent).toContain('compares the last 3 days with the 28 days before them');
+      expect(dialog.textContent).toContain('the rate was 20% and 4 breaths/min or more above the usual rate');
+      expect(dialog.textContent).toContain('readings on at least 7 of the earlier days');
+      expect(dialog.textContent).toContain("above Ace's Normal ceiling of 30 breaths/min");
+      (dialog.querySelector('.btn-ok') as HTMLElement).click();
+      await nextTick();
+      expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+    });
+
+    it('goes away when a high reading is deleted', async () => {
+      const readings = trendReadings(today, 20, [28, 28]);
+      const { wrapper, pinia } = await mountTrend(readings);
+      expect(wrapper.find('.trend-alert').exists()).toBe(true);
+      await useReadingsStore(pinia).removeReading(readings.at(-1)!.id, 'pet-1');
+      await settle();
+      expect(wrapper.find('.trend-alert').exists()).toBe(false);
     });
   });
 });
