@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import TrackerView from './TrackerView.vue';
@@ -172,6 +173,7 @@ describe('TrackerView', () => {
       restState: 'sleeping',
       notes: '<p>calm</p>',
       source: undefined,
+      durationSeconds: 30,
     });
     expect(router.currentRoute.value.name).toBe('pet');
   });
@@ -195,6 +197,7 @@ describe('TrackerView', () => {
       notes: undefined,
       source: 'manual',
     });
+    expect(addReading.mock.calls[0][0].durationSeconds).toBeUndefined();
     expect(router.currentRoute.value.name).toBe('pet');
   });
 
@@ -455,6 +458,127 @@ describe('TrackerView', () => {
       load.resolve([]);
       await flushPromises();
       expect(replace).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('measurement length', () => {
+    const PREFS_KEY = 'cardipaw-tracker-prefs';
+    const lengthInput = (wrapper: VueWrapper, seconds: number) =>
+      wrapper.get<HTMLInputElement>(`.length-picker input[value="${seconds}"]`);
+
+    it('offers 15, 30 and 60 seconds as a named radio group, 30 by default', async () => {
+      const { wrapper } = await mountTracker();
+      const group = wrapper.get('.length-picker');
+      expect(group.attributes('role')).toBe('radiogroup');
+      const labelId = group.attributes('aria-labelledby');
+      expect(labelId && document.getElementById(labelId)?.textContent).toBe('Measurement length');
+      const options = wrapper.findAll('.length-option');
+      expect(options.map((o) => o.text())).toEqual(['15 s', '30 s', '60 s']);
+      const radios = wrapper.findAll<HTMLInputElement>('.length-picker input[type="radio"]');
+      expect(new Set(radios.map((r) => r.attributes('name'))).size).toBe(1);
+      expect(radios.map((r) => r.element.checked)).toEqual([false, true, false]);
+    });
+
+    it.each([
+      ['the radio', (w: VueWrapper) => lengthInput(w, 60).element.click()],
+      ['its label', (w: VueWrapper) => w.findAll<HTMLElement>('.length-option')[2].element.click()],
+    ])('choosing a length with %s does not start the measurement', async (_label, choose) => {
+      const { wrapper } = await mountTracker();
+      choose(wrapper);
+      await nextTick();
+      expect(lengthInput(wrapper, 60).element.checked).toBe(true);
+      expect(wrapper.find('.timer-ring').exists()).toBe(false);
+      expect(wrapper.get('.heart-btn').attributes('aria-label')).toBe('Tap to start');
+      expect(audio.playBeep).not.toHaveBeenCalled();
+    });
+
+    it('counts for 15 seconds and scales the taps to a minute', async () => {
+      const { wrapper, addReading } = await mountTracker();
+      await lengthInput(wrapper, 15).setValue();
+      const heart = wrapper.get('.heart-btn');
+      for (let i = 0; i < 7; i++) await heart.trigger('click');
+      expect(wrapper.get('.timer-number').text()).toBe('15');
+      expect(ringOffset(wrapper)).toBeCloseTo(339.3);
+
+      await vi.advanceTimersByTimeAsync(14_750);
+      expect(wrapper.find('.result-number').exists()).toBe(false);
+      await vi.advanceTimersByTimeAsync(250);
+      expect(wrapper.get('.result-number').text()).toBe('28');
+      expect(wrapper.get('.result-note').text()).toBe('Based on 7 breaths in 15 seconds');
+
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledWith(
+        expect.objectContaining({ rate: 28, clickCount: 7, durationSeconds: 15 }),
+      );
+    });
+
+    it('counts for 60 seconds and shows the time left against 60', async () => {
+      const { wrapper, addReading } = await mountTracker();
+      await lengthInput(wrapper, 60).setValue();
+      const heart = wrapper.get('.heart-btn');
+      for (let i = 0; i < 20; i++) await heart.trigger('click');
+      expect(wrapper.get('.timer-number').text()).toBe('60');
+
+      vi.setSystemTime(Date.now() + 17_000);
+      await vi.advanceTimersByTimeAsync(250);
+      expect(wrapper.get('.timer-number').text()).toBe('43');
+      expect(ringOffset(wrapper)).toBeCloseTo((339.3 * 43) / 60);
+
+      await vi.advanceTimersByTimeAsync(42_500);
+      expect(wrapper.find('.result-number').exists()).toBe(false);
+      await vi.advanceTimersByTimeAsync(250);
+      expect(wrapper.get('.result-number').text()).toBe('20');
+      expect(wrapper.get('.result-note').text()).toBe('Based on 20 breaths in 60 seconds');
+
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledWith(
+        expect.objectContaining({ rate: 20, clickCount: 20, durationSeconds: 60 }),
+      );
+    });
+
+    it('never shows more than the chosen length when the clock moves back', async () => {
+      const { wrapper } = await mountTracker();
+      await lengthInput(wrapper, 60).setValue();
+      await wrapper.get('.heart-btn').trigger('click');
+      vi.setSystemTime(Date.now() - 60_000);
+      await vi.advanceTimersByTimeAsync(250);
+      expect(wrapper.get('.timer-number').text()).toBe('60');
+      expect(ringOffset(wrapper)).toBeCloseTo(339.3);
+    });
+
+    it('hides the picker once the measurement runs', async () => {
+      const { wrapper } = await mountTracker();
+      await wrapper.get('.heart-btn').trigger('click');
+      expect(wrapper.find('.length-picker').exists()).toBe(false);
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(wrapper.find('.length-picker').exists()).toBe(false);
+    });
+
+    it('is not offered for a manual entry', async () => {
+      const { wrapper } = await mountTracker();
+      await wrapper.findAll('.mode-pill')[1].trigger('click');
+      expect(wrapper.find('.length-picker').exists()).toBe(false);
+    });
+
+    it("remembers the pet's length and keeps it on Try again", async () => {
+      localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ [pet.id]: { soundEnabled: true, vibrationEnabled: true, measurementSeconds: 60 } }),
+      );
+      const { wrapper } = await mountTracker();
+      expect(lengthInput(wrapper, 60).element.checked).toBe(true);
+
+      await lengthInput(wrapper, 15).setValue();
+      expect(JSON.parse(localStorage.getItem(PREFS_KEY)!)[pet.id].measurementSeconds).toBe(15);
+
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(15_000);
+      await wrapper.get('.btn-retry').trigger('click');
+      expect(lengthInput(wrapper, 15).element.checked).toBe(true);
+      await wrapper.get('.heart-btn').trigger('click');
+      expect(wrapper.get('.timer-number').text()).toBe('15');
     });
   });
 

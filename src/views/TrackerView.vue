@@ -11,6 +11,7 @@ import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../
 import OnboardingModal from '../components/OnboardingModal.vue';
 import RestStateToggle from '../components/RestStateToggle.vue';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
+import { MEASUREMENT_OPTIONS, rateFromTaps } from '../utils/measurement';
 
 const route = useRoute();
 const router = useRouter();
@@ -21,7 +22,7 @@ const { isSupported: hapticsSupported, vibrateTap, vibrateDone } = useHaptics();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
-const { soundEnabled, vibrationEnabled } = useTrackerPrefs(petId);
+const { soundEnabled, vibrationEnabled, measurementSeconds } = useTrackerPrefs(petId);
 const { hasSeenOnboarding, markSeen } = useOnboarding();
 const showOnboarding = ref(!hasSeenOnboarding.value);
 
@@ -39,8 +40,8 @@ type Phase = 'idle' | 'running' | 'done';
 type Mode = 'guided' | 'manual';
 const phase = ref<Phase>('idle');
 const mode = ref<Mode>('guided');
-const MEASUREMENT_SECONDS = 30;
-const timeLeft = ref(MEASUREMENT_SECONDS);
+// The length picker is only shown while idle, so the chosen length is fixed for a whole run.
+const timeLeft = ref<number>(measurementSeconds.value);
 // Wall-clock end of the measurement. Timers are throttled in background tabs, on a
 // locked screen or in battery saver, so the count is timed by the clock, not by ticks.
 let endsAt = 0;
@@ -56,6 +57,8 @@ const saveError = ref(false);
 const loadError = ref(false);
 const soundLabelId = useId();
 const vibrationLabelId = useId();
+const lengthName = useId();
+const lengthLabelId = useId();
 const isManualMode = computed(() => mode.value === 'manual');
 const heartRef = ref<HTMLButtonElement | null>(null);
 const resultRef = ref<HTMLElement | null>(null);
@@ -70,7 +73,7 @@ function switchMode(next: Mode) {
   saveError.value = false;
 }
 
-const resultRate = computed(() => clickCount.value * (60 / MEASUREMENT_SECONDS));
+const resultRate = computed(() => rateFromTaps(clickCount.value, measurementSeconds.value));
 
 function handleHeartClick() {
   if (phase.value === 'idle') {
@@ -86,8 +89,8 @@ function onHeartEnter(e: KeyboardEvent) {
 }
 
 function startTracking() {
-  endsAt = Date.now() + MEASUREMENT_SECONDS * 1000;
-  timeLeft.value = MEASUREMENT_SECONDS;
+  endsAt = Date.now() + measurementSeconds.value * 1000;
+  timeLeft.value = measurementSeconds.value;
   phase.value = 'running';
   clickCount.value = 1; // first click counts as the first breath
   if (soundEnabled.value) playBeep(880, 0.15, 0.3);
@@ -111,11 +114,11 @@ function tick() {
 }
 
 // Updates the seconds left from the clock and ends the measurement once time is up,
-// however late this runs. Returns whether it has ended. Capped at 30 so a clock set
-// back mid-measurement cannot show more time than a measurement has.
+// however late this runs. Returns whether it has ended. Capped at the measurement's
+// length so a clock set back mid-measurement cannot show more time than it has.
 function finishIfOver(): boolean {
   timeLeft.value = Math.min(
-    MEASUREMENT_SECONDS,
+    measurementSeconds.value,
     Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)),
   );
   if (timeLeft.value > 0) return false;
@@ -155,6 +158,7 @@ async function saveReading() {
       restState: restState.value,
       notes: notes.value || undefined,
       source: isManual ? 'manual' : undefined,
+      durationSeconds: isManual ? undefined : measurementSeconds.value,
     });
     router.push({ name: 'pet', params: { id: petId } });
   } catch (e) {
@@ -176,7 +180,7 @@ function reset() {
     intervalId.value = null;
   }
   phase.value = 'idle';
-  timeLeft.value = MEASUREMENT_SECONDS;
+  timeLeft.value = measurementSeconds.value;
   clickCount.value = 0;
   isPulsing.value = false;
   restState.value = undefined;
@@ -287,7 +291,7 @@ onUnmounted(() => {
             <circle
               cx="60" cy="60" r="54"
               class="ring-progress"
-              :stroke-dashoffset="(339.3 * timeLeft) / MEASUREMENT_SECONDS"
+              :stroke-dashoffset="(339.3 * timeLeft) / measurementSeconds"
             />
           </svg>
           <div class="timer-text">
@@ -317,7 +321,21 @@ onUnmounted(() => {
       <div class="body-bottom">
         <template v-if="phase === 'idle'">
           <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
-          <p class="timer-note">{{ $t('tracker.measurement30') }}</p>
+          <!-- @click.stop: inside the tap area, and a radio is clicked by mouse, Space and arrow keys alike -->
+          <div class="option-row length-picker" role="radiogroup" :aria-labelledby="lengthLabelId" @click.stop>
+            <span :id="lengthLabelId" class="toggle-label">{{ $t('tracker.measurementLength') }}</span>
+            <div class="length-options">
+              <label
+                v-for="seconds in MEASUREMENT_OPTIONS"
+                :key="seconds"
+                class="length-option"
+                :class="{ active: measurementSeconds === seconds }"
+              >
+                <input v-model="measurementSeconds" class="sr-only" type="radio" :name="lengthName" :value="seconds" />
+                {{ $t('tracker.secondsOption', { seconds }) }}
+              </label>
+            </div>
+          </div>
           <!-- Side by side to keep the idle screen short enough for small phones; wraps when there is no room -->
           <div class="toggle-rows" @click.stop>
             <div class="option-row">
@@ -364,7 +382,7 @@ onUnmounted(() => {
         <div class="result-label">{{ $t('common.breathsPerMin') }}</div>
       </div>
 
-      <p class="result-note">{{ $t('tracker.basedOn', clickCount) }}</p>
+      <p class="result-note">{{ $t('tracker.basedOn', { seconds: measurementSeconds }, clickCount) }}</p>
 
       <RestStateToggle v-model="restState" />
 
@@ -529,11 +547,6 @@ onUnmounted(() => {
   font-size: 18px;
   font-weight: 600;
   color: var(--color-primary);
-}
-
-.timer-note {
-  font-size: 13px;
-  color: var(--color-text-muted);
 }
 
 /* Timer ring */
@@ -703,6 +716,40 @@ onUnmounted(() => {
   height: 44px;
   font-size: 14px;
   color: var(--color-text-muted);
+}
+
+/* Measurement length: native radios styled as a segmented control */
+.length-options {
+  display: flex;
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 3px;
+}
+
+.length-option {
+  position: relative; /* contains the visually hidden radio */
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.length-option.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.length-option:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* Sound and vibration switches */
