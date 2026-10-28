@@ -327,5 +327,9 @@
     "ageMonths": "{n} mois | {n} mois",
     "ageYears": "{n} an | {n} ans",
     "ageYearMonth": "{y} an {m} mois"
+  },
+  "trend": {
+    "rising": "La fréquence respiratoire au repos de {name} est d'environ {recent} resp./min sur les {days} derniers jours, contre {baseline} habituellement.",
+    "aboveCeiling": "La fréquence respiratoire au repos de {name} a dépassé {ceiling} resp./min sur plus d'un des {days} derniers jours."
   }
 }

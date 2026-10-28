@@ -327,5 +327,9 @@
     "ageMonths": "{n} maand | {n} maanden",
     "ageYears": "{n} jaar | {n} jaar",
     "ageYearMonth": "{y}j {m}mnd"
+  },
+  "trend": {
+    "rising": "De rustademhalingsfrequentie van {name} lag de afgelopen {days} dagen rond {recent} ademh./min, hoger dan de gebruikelijke {baseline}.",
+    "aboveCeiling": "De rustademhalingsfrequentie van {name} lag op meer dan één van de afgelopen {days} dagen boven {ceiling} ademh./min."
   }
 }

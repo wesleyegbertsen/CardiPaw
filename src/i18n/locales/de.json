@@ -327,5 +327,9 @@
     "ageMonths": "{n} Monat | {n} Monate",
     "ageYears": "{n} Jahr | {n} Jahre",
     "ageYearMonth": "{y}J {m}Mon"
+  },
+  "trend": {
+    "rising": "Die Ruhe-Atemfrequenz von {name} lag in den letzten {days} Tagen bei etwa {recent} Atemz./Min, höher als die üblichen {baseline}.",
+    "aboveCeiling": "Die Ruhe-Atemfrequenz von {name} lag an mehr als einem der letzten {days} Tage über {ceiling} Atemz./Min."
   }
 }

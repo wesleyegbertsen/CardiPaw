@@ -327,5 +327,9 @@
     "ageMonths": "{n} month | {n} months",
     "ageYears": "{n} year | {n} years",
     "ageYearMonth": "{y}y {m}mo"
+  },
+  "trend": {
+    "rising": "{name}'s resting breathing rate has been about {recent} breaths/min over the last {days} days, up from a usual {baseline}.",
+    "aboveCeiling": "{name}'s resting breathing rate has been above {ceiling} breaths/min on more than one of the last {days} days."
   }
 }

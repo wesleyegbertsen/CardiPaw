@@ -327,5 +327,9 @@
     "ageMonths": "{n}ヶ月",
     "ageYears": "{n}年",
     "ageYearMonth": "{y}年{m}ヶ月"
+  },
+  "trend": {
+    "rising": "{name}の安静時呼吸数は直近{days}日間で約{recent}回/分で、普段の{baseline}回/分より高くなっています。",
+    "aboveCeiling": "{name}の安静時呼吸数が、直近{days}日間のうち複数の日で{ceiling}回/分を超えています。"
   }
 }
