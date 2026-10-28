@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
 import { localMonthKey } from '../utils/date';
-import { buildSharePayload, encodeShare } from '../utils/shareCodec';
+import { buildSharePayload, encodeShare, ShareTooLargeError } from '../utils/shareCodec';
 import { useModal } from '../composables/useModal';
 
 const props = defineProps<{ pet: Pet; readings: Reading[] }>();
@@ -52,6 +52,7 @@ function countReadings(monthKey: string): number {
 
 const shareUrl = ref('');
 const encodeFailed = ref(false);
+const tooLarge = ref(false);
 let encodeToken = 0;
 
 watch(
@@ -61,13 +62,17 @@ watch(
     // Never leave the previous link up while the new one is encoded: Copy would share deselected months.
     shareUrl.value = '';
     encodeFailed.value = false;
+    tooLarge.value = false;
     if (months.length === 0) return;
     const payload = buildSharePayload(props.pet, props.readings, months);
     let encoded: string;
     try {
       encoded = await encodeShare(payload);
     } catch (e) {
-      if (token === encodeToken) {
+      if (token !== encodeToken) return;
+      if (e instanceof ShareTooLargeError) {
+        tooLarge.value = true;
+      } else {
         console.error('Share link encoding failed', e);
         encodeFailed.value = true;
       }
@@ -164,6 +169,7 @@ async function nativeShare() {
         <div v-else class="link-section">
           <input class="link-preview" :value="shareUrl" :aria-label="$t('shareModal.title')" readonly @focus="($event.target as HTMLInputElement).select()" />
           <p v-if="encodeFailed" class="encode-error" role="alert">{{ $t('shareModal.encodeError') }}</p>
+          <p v-if="tooLarge" class="encode-error" role="alert">{{ $t('shareModal.tooLarge') }}</p>
           <p v-if="isLongUrl" class="length-warning">
             {{ $t('shareModal.lengthWarning') }}
           </p>

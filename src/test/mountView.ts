@@ -49,6 +49,8 @@ export interface MountViewOptions<C extends Component = Component> extends SeedD
   stubs?: Stubs;
   /** Checked against the props `component` declares. */
   props?: ComponentMountingOptions<C>['props'];
+  /** What every route renders (default `Blank`); set it to observe what a RouterView does. */
+  routeComponent?: Component;
 }
 
 /**
@@ -59,14 +61,14 @@ export interface MountViewOptions<C extends Component = Component> extends SeedD
 export async function mountView<C extends Component>(
   component: C,
   location: RouteLocationRaw,
-  { stubs, props, ...data }: MountViewOptions<C> = {},
+  { stubs, props, routeComponent = Blank, ...data }: MountViewOptions<C> = {},
 ) {
   await seed(data);
   const pinia = createPinia();
   setActivePinia(pinia);
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: routes.map((r) => ({ ...r, component: Blank })),
+    routes: routes.map((r) => ({ ...r, component: routeComponent })),
   });
   await router.push(location);
   await router.isReady();

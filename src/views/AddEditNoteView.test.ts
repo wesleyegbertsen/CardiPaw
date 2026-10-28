@@ -4,6 +4,7 @@ import AddEditNoteView from './AddEditNoteView.vue';
 import * as db from '../services/db';
 import { useNotesStore } from '../stores/notes';
 import { mountView, settle } from '../test/mountView';
+import { deferred } from '../test/deferred';
 import { makeNote, makePet } from '../test/fixtures';
 import type { Note } from '../types';
 
@@ -166,6 +167,16 @@ describe('AddEditNoteView', () => {
     it('goes to the notes tab for an unknown note', async () => {
       const { push } = await mountNote(location);
       expect(push).toHaveBeenCalledWith(notesTab);
+    });
+
+    it('does not go to the notes tab after the user already left', async () => {
+      const load = deferred<Note[]>();
+      vi.spyOn(db, 'getNotesForPet').mockReturnValueOnce(load.promise);
+      const { push, wrapper } = await mountNote(location);
+      wrapper.unmount();
+      load.resolve([]);
+      await settle();
+      expect(push).not.toHaveBeenCalled();
     });
 
     it('never adds a note when saved before the note has loaded', async () => {

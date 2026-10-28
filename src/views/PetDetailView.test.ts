@@ -9,7 +9,7 @@ import { deferred } from '../test/deferred';
 import { touchEvent } from '../test/touch';
 import { createTestI18n } from '../test/i18n';
 import * as db from '../services/db';
-import type { Reading } from '../types';
+import type { Pet, Reading } from '../types';
 
 // Chart.js needs a canvas; the view's job is to hand the chart the right readings.
 vi.mock('../components/RRRChart.vue', async () => {
@@ -40,6 +40,16 @@ describe('PetDetailView', () => {
     const { push, wrapper } = await mountView(PetDetailView, '/pets/missing');
     expect(push).toHaveBeenCalledWith({ name: 'home' });
     expect(wrapper.find('.page').exists()).toBe(false);
+  });
+
+  it('does not send the user home after they already left', async () => {
+    const load = deferred<Pet[]>();
+    vi.spyOn(db, 'getAllPets').mockReturnValueOnce(load.promise);
+    const { push, wrapper } = await mountView(PetDetailView, '/pets/missing');
+    wrapper.unmount();
+    load.resolve([]);
+    await settle();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('shows ? as the avatar for a pet without a name', async () => {

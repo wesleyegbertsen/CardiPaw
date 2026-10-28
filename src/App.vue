@@ -23,7 +23,7 @@ onMounted(() => {
   <div class="app-layout">
     <UpdateBanner />
     <main class="app-main" :class="{ 'no-nav': isShareView }">
-      <RouterView />
+      <RouterView :key="route.path" />
     </main>
 
     <nav v-if="!isShareView" class="bottom-nav">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, useId } from 'vue';
+import { onMounted, onUnmounted, ref, computed, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
@@ -37,6 +37,11 @@ const loadError = ref(false);
 // Guided results (taps×2) can exceed 200, so an unchanged stored rate stays saveable.
 const rateValid = computed(() => isValidRate(editRate.value) || editRate.value === reading.value?.rate);
 
+let unmounted = false;
+onUnmounted(() => {
+  unmounted = true;
+});
+
 onMounted(async () => {
   try {
     await petsStore.loadPets();
@@ -46,6 +51,8 @@ onMounted(async () => {
     loadError.value = true;
     return;
   }
+  // The user may have left while the reading loaded; don't pull them away from another page.
+  if (unmounted) return;
   if (!reading.value) {
     router.push({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
     return;

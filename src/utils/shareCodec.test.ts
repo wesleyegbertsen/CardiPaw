@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildSharePayload, decodeShare, encodeShare, ShareDecodeError } from './shareCodec';
+import {
+  buildSharePayload,
+  decodeShare,
+  encodeShare,
+  ShareDecodeError,
+  ShareTooLargeError,
+} from './shareCodec';
 import type { Pet, Reading, SharePayload } from '../types';
 import { stubTimezone } from '../test/timezone';
 
@@ -37,6 +43,29 @@ async function encodeRaw(text: string): Promise<string> {
   let binary = '';
   for (const b of bytes) binary += String.fromCharCode(b);
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Fixed-seed xorshift: big fixtures stay identical from run to run.
+function seededRandom(seed: number): () => number {
+  return () => {
+    seed ^= seed << 13;
+    seed ^= seed >>> 17;
+    seed ^= seed << 5;
+    return (seed >>> 0) / 4_294_967_296;
+  };
+}
+
+// "YYYY-MM" keys for `count` consecutive months starting January `fromYear`.
+function monthKeys(count: number, fromYear: number): string[] {
+  return Array.from(
+    { length: count },
+    (_, i) => `${fromYear + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, '0')}`,
+  );
+}
+
+// One mid-month reading in each of `count` consecutive months.
+function oneReadingPerMonth(count: number, fromYear: number) {
+  return monthKeys(count, fromYear).map((m) => ({ date: `${m}-15T12:00Z`, rate: 22 }));
 }
 
 describe('buildSharePayload', () => {
@@ -106,6 +135,20 @@ describe('buildSharePayload', () => {
       ['2024-02'],
     );
     expect(built.readings).toHaveLength(1);
+  });
+
+  it('leaves out readings with a rate a link cannot carry', async () => {
+    // Backup import accepts any finite rate; one bad value must not make the whole link undecodable.
+    const stored = [
+      reading('neg', '2026-03-10T12:00:00.000Z', -1),
+      reading('huge', '2026-03-11T12:00:00.000Z', 1001),
+      reading('nan', '2026-03-12T12:00:00.000Z', NaN),
+      reading('zero', '2026-03-13T12:00:00.000Z', 0),
+      reading('max', '2026-03-14T12:00:00.000Z', 1000),
+    ];
+    const built = buildSharePayload(pet, stored, ['2026-03']);
+    expect(built.readings.map((r) => r.rate)).toEqual([0, 1000]);
+    await expect(decodeShare(await encodeShare(built))).resolves.toEqual(built);
   });
 
   it('does not reorder the caller’s readings array', () => {
@@ -229,6 +272,151 @@ describe('encodeShare / decodeShare', () => {
     const legacy = { ...samplePayload, readings: [{ date: '2026-03-14T10:00', rate: 22 }] };
     const decoded = await decodeShare(await encodeRaw(JSON.stringify(legacy)));
     expect(decoded.readings[0].date).toBe('2026-03-14T10:00Z');
+  });
+
+  // Base64 characters from a fixed-seed generator: random enough that deflate cannot shrink them.
+  function incompressible(length: number): string {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    let seed = 1;
+    let out = '';
+    for (let i = 0; i < length; i++) {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      out += alphabet[(seed >>> 0) % 64];
+    }
+    return out;
+  }
+
+  it('rejects a link longer than 200 000 characters', async () => {
+    const payload = {
+      ...samplePayload,
+      pet: { ...samplePayload.pet, name: incompressible(270_000) },
+    };
+    const encoded = await encodeRaw(JSON.stringify(payload));
+    expect(encoded.length).toBeGreaterThan(200_000);
+    await expect(decodeShare(encoded)).rejects.toThrow('The link is too long.');
+  });
+
+  it('checks the length cap at exactly 200 000 characters', async () => {
+    // At the cap the length check passes and decoding fails; one more character trips the cap.
+    await expect(decodeShare('A'.repeat(200_000))).rejects.toThrow(
+      'The link could not be decoded.',
+    );
+    await expect(decodeShare('A'.repeat(200_001))).rejects.toThrow('The link is too long.');
+  });
+
+  it('round-trips 10 000 readings with every field over 20 years', async () => {
+    const rand = seededRandom(42);
+    const months = monthKeys(240, 2006);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const stored = Array.from({ length: 10_000 }, (_, i): Reading => {
+      // Days 2–27 stay in the same month in every timezone.
+      const day = 2 + Math.floor(rand() * 26);
+      const time = `${pad(Math.floor(rand() * 24))}:${pad(Math.floor(rand() * 60))}:${pad(Math.floor(rand() * 60))}`;
+      let rate = rand() < 0.1 ? 100 + 2 * Math.floor(rand() * 100) : 10 + Math.floor(rand() * 90);
+      if (i % 997 === 0) rate = 0;
+      if (i % 1009 === 0) rate = 1000;
+      return reading(
+        String(i),
+        `${months[Math.floor((i * 240) / 10_000)]}-${pad(day)}T${time}.000Z`,
+        rate,
+        {
+          restState: rand() < 0.5 ? 'resting' : 'sleeping',
+          ...(rand() < 0.5 && { source: 'manual' as const }),
+        },
+      );
+    });
+    const built = buildSharePayload(pet, stored, months);
+    expect(built.readings).toHaveLength(10_000);
+    const encoded = await encodeShare(built);
+    // Larger than the old 100 000 cap: the app made links its own decoder refused.
+    expect(encoded.length).toBeGreaterThan(100_000);
+    await expect(decodeShare(encoded)).resolves.toEqual(built);
+  });
+
+  it('rejects readings spread over more than 240 months and accepts exactly 240', async () => {
+    const months = (n: number) => ({ ...samplePayload, readings: oneReadingPerMonth(n, 2000) });
+    await expect(decodeShare(await encodeRaw(JSON.stringify(months(241))))).rejects.toThrow(
+      'The link does not contain a valid snapshot.',
+    );
+    await expect(decodeShare(await encodeRaw(JSON.stringify(months(240))))).resolves.toMatchObject({
+      readings: { length: 240 },
+    });
+  });
+
+  it('rejects 10 000 readings in 10 000 different months', async () => {
+    // Small enough to pass every size cap, but the viewer would draw one chart per month.
+    const value = { ...samplePayload, readings: oneReadingPerMonth(10_000, 1000) };
+    await expect(decodeShare(await encodeRaw(JSON.stringify(value)))).rejects.toThrow(
+      'The link does not contain a valid snapshot.',
+    );
+  });
+
+  it('refuses to encode a link the decoder would reject', async () => {
+    const tooMany = {
+      ...samplePayload,
+      readings: Array.from({ length: 10_001 }, () => ({ date: '2026-03-14T08:30Z', rate: 22 })),
+    };
+    await expect(encodeShare(tooMany)).rejects.toBeInstanceOf(ShareTooLargeError);
+
+    const tooManyMonths = { ...samplePayload, readings: oneReadingPerMonth(241, 2000) };
+    await expect(encodeShare(tooManyMonths)).rejects.toBeInstanceOf(ShareTooLargeError);
+
+    const tooLong = {
+      ...samplePayload,
+      pet: { ...samplePayload.pet, name: incompressible(270_000) },
+    };
+    await expect(encodeShare(tooLong)).rejects.toBeInstanceOf(ShareTooLargeError);
+  });
+
+  it('rejects a small link that inflates past 2 MB', async () => {
+    const bomb = { ...samplePayload, pet: { ...samplePayload.pet, name: 'a'.repeat(3_000_000) } };
+    const encoded = await encodeRaw(JSON.stringify(bomb));
+    expect(encoded.length).toBeLessThan(100_000);
+    await expect(decodeShare(encoded)).rejects.toBeInstanceOf(ShareDecodeError);
+  });
+
+  it('rejects more than 10 000 readings and accepts exactly 10 000', async () => {
+    const many = (n: number) => ({
+      ...samplePayload,
+      readings: Array.from({ length: n }, () => ({ date: '2026-03-14T08:30Z', rate: 22 })),
+    });
+    await expect(decodeShare(await encodeRaw(JSON.stringify(many(10_001))))).rejects.toBeInstanceOf(
+      ShareDecodeError,
+    );
+    await expect(decodeShare(await encodeRaw(JSON.stringify(many(10_000))))).resolves.toMatchObject(
+      { readings: { length: 10_000 } },
+    );
+  });
+
+  it.each([
+    ['a negative rate', -1],
+    ['a rate above 1000', 1001],
+  ])('rejects a snapshot with %s', async (_n, rate) => {
+    const value = { ...samplePayload, readings: [{ date: '2026-03-14T08:30Z', rate }] };
+    await expect(decodeShare(await encodeRaw(JSON.stringify(value)))).rejects.toBeInstanceOf(
+      ShareDecodeError,
+    );
+  });
+
+  it('keeps zero, decimal rates and guided rates above 200', async () => {
+    const value: SharePayload = {
+      ...samplePayload,
+      readings: [
+        { date: '2026-03-13T08:30Z', rate: 0 },
+        { date: '2026-03-14T08:30Z', rate: 22.5 },
+        { date: '2026-03-15T08:30Z', rate: 240 },
+        { date: '2026-03-16T08:30Z', rate: 1000 },
+      ],
+    };
+    await expect(decodeShare(await encodeShare(value))).resolves.toEqual(value);
+  });
+
+  it('cuts a very long pet name to 100 characters', async () => {
+    const value = { ...samplePayload, pet: { ...samplePayload.pet, name: '🐾'.repeat(500) } };
+    const decoded = await decodeShare(await encodeRaw(JSON.stringify(value)));
+    expect(decoded.pet.name).toBe('🐾'.repeat(100));
   });
 
   it('gives decode failures a stable error name', async () => {

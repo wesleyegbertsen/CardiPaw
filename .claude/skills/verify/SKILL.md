@@ -27,10 +27,12 @@ const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 - Router uses **hash history**: tracker lives at `/#/pets/<id>/track`.
   The tracker needs a real pet: an unknown id redirects to Home. Add one
   first (Home → `+` → name → Save) and take its id from the URL.
-- **Hash-only `page.goto` does NOT remount the view.** Navigating from
-  `/#/pets/a/track` to `/#/pets/b/track` reuses the same component
-  instance (and `TrackerView` captures `route.params.id` once in setup).
-  Call `page.reload()` after `goto` to get a fresh mount.
+- **A route path change remounts the view; a query-only change does not.**
+  `App.vue` keys `<RouterView>` by `route.path`, so a hash-only `page.goto`
+  from `/#/pets/a/track` to `/#/pets/b/track` gives a fresh instance (no
+  `page.reload()` needed). Changing only the query (`?tab=` on a pet page,
+  `?d=` on `/share`) keeps the same instance, which must react to the new
+  query itself.
 - Pets/readings live in IndexedDB; theme, locale, and tracker toggle
   prefs live in `localStorage` under `cardipaw-*` keys.
 - Seed data: `npm run seed` writes `public/seed-data.json`, imported via

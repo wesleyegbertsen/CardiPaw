@@ -67,6 +67,9 @@ async function mountTracker({ stored }: { stored?: Pet[] | Error | Promise<Pet[]
   return { wrapper, addReading, getAllPets, push, replace };
 }
 
+const ringOffset = (wrapper: VueWrapper) =>
+  Number(wrapper.get('.ring-progress').attributes('stroke-dashoffset'));
+
 describe('TrackerView', () => {
   beforeEach(() => {
     // Hoisted spies outlive each test, so clear their calls to keep tests order-independent.
@@ -95,6 +98,59 @@ describe('TrackerView', () => {
     expect(wrapper.get('.result-number').text()).toBe('6');
     expect(audio.playDoneSound).toHaveBeenCalledOnce();
     expect(haptics.vibrateDone).toHaveBeenCalledOnce();
+  });
+
+  // Background tabs, a locked screen and battery saver delay setInterval; jumping the
+  // clock without running timers stands in for ticks that arrive late.
+  it('finishes after 30 seconds even when timer ticks arrive late', async () => {
+    const { wrapper } = await mountTracker();
+    await wrapper.get('.heart-btn').trigger('click');
+    vi.setSystemTime(Date.now() + 31_000);
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(wrapper.get('.result-number').text()).toBe('2');
+    expect(audio.playDoneSound).toHaveBeenCalledOnce();
+  });
+
+  it('does not count a tap that lands after the 30 seconds are up', async () => {
+    const { wrapper } = await mountTracker();
+    await wrapper.get('.heart-btn').trigger('click');
+    await wrapper.get('.heart-btn').trigger('click');
+    vi.setSystemTime(Date.now() + 30_500);
+    await wrapper.get('.heart-btn').trigger('click');
+
+    expect(wrapper.get('.result-number').text()).toBe('4');
+  });
+
+  it('ends on time when a timer fires just before the clock reaches 30 seconds', async () => {
+    const { wrapper } = await mountTracker();
+    await wrapper.get('.heart-btn').trigger('click');
+    vi.setSystemTime(Date.now() - 5); // the clock now runs 5 ms behind the timers
+    await vi.advanceTimersByTimeAsync(30_250);
+
+    expect(wrapper.find('.result-number').exists()).toBe(true);
+  });
+
+  it('shows the seconds left by the clock', async () => {
+    const { wrapper } = await mountTracker();
+    await wrapper.get('.heart-btn').trigger('click');
+    expect(ringOffset(wrapper)).toBeCloseTo(339.3);
+    // 16.2 s left: rounds up to 17, not to the nearest second.
+    vi.setSystemTime(Date.now() + 12_800);
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(wrapper.get('.timer-number').text()).toBe('17');
+    expect(ringOffset(wrapper)).toBeCloseTo((339.3 * 17) / 30);
+  });
+
+  it('never shows more than 30 seconds when the clock moves back', async () => {
+    const { wrapper } = await mountTracker();
+    await wrapper.get('.heart-btn').trigger('click');
+    vi.setSystemTime(Date.now() - 60_000);
+    await vi.advanceTimersByTimeAsync(250);
+
+    expect(wrapper.get('.timer-number').text()).toBe('30');
+    expect(ringOffset(wrapper)).toBeCloseTo(339.3);
   });
 
   it('saves a guided measurement and returns to the pet', async () => {

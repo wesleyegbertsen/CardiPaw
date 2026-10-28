@@ -264,6 +264,7 @@
     "selectAtLeastOne": "Wähle mindestens einen Monat zum Teilen aus.",
     "lengthWarning": "Dieser Link ist sehr lang und wird von manchen E-Mail- oder Chat-Apps möglicherweise gekürzt. Wähle ggf. weniger Monate aus.",
     "encodeError": "Der Link zum Teilen konnte nicht erstellt werden. Bitte versuche es erneut.",
+    "tooLarge": "Diese Auswahl ist zu groß, um sie als Link zu teilen. Wähle weniger Monate aus.",
     "shareNative": "Teilen…",
     "copied": "Kopiert!",
     "copyLink": "Link kopieren"

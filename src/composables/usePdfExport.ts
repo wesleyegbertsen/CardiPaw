@@ -236,6 +236,7 @@ export function usePdfExport() {
         newestFirst ? b.localeCompare(a) : a.localeCompare(b)
       );
 
+      let firstSection = true;
       for (const monthKey of sortedMonths) {
         const monthReadings = readings
           .filter(r => localMonthKey(r.date) === monthKey)
@@ -246,11 +247,13 @@ export function usePdfExport() {
         const dailyAverages = aggregateByDay(readings, monthKey);
         const chartDataUrl = renderChartToDataUrl(dailyAverages, pet.normalCeiling ?? DEFAULT_NORMAL_CEILING, loc, t('chart.yAxis'));
 
-        // Each month starts on its own page (skip addPage for the very first section)
-        if (sortedMonths.indexOf(monthKey) > 0) {
+        // Each month starts on its own page, except the first one printed
+        // (a selected month without readings is skipped and must not count as first).
+        if (!firstSection) {
           doc.addPage();
           curY = MT;
         }
+        firstSection = false;
 
         // Month heading bar
         const monthLabel = new Intl.DateTimeFormat(loc, { month: 'long', year: 'numeric' }).format(
@@ -413,12 +416,22 @@ export function usePdfExport() {
       }
 
       const dateSlug = localDayKey(new Date());
-      const safeName = pet.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-      doc.save(`cardipaw-${safeName}-${dateSlug}.pdf`);
+      const nameSlug = fileNameSlug(pet.name);
+      doc.save(nameSlug ? `cardipaw-${nameSlug}-${dateSlug}.pdf` : `cardipaw-${dateSlug}.pdf`);
     } finally {
       isGenerating.value = false;
     }
   }
 
   return { isGenerating, generatePdf };
+}
+
+// Letters and digits in any script survive (ポチ, Zoë); every other run becomes one dash.
+function fileNameSlug(name: string): string {
+  const slug = name
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+  return Array.from(slug).slice(0, 50).join('').replace(/-+$/, '');
 }

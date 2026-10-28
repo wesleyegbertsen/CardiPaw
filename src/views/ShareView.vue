@@ -183,7 +183,7 @@ function formatDateTime(date: string): string {
         <h2 class="month-title">{{ month.label }}</h2>
         <RRRChart :readings="month.chartReadings" :max-ticks="6" :normal-ceiling="pet.normalCeiling" />
         <div class="reading-table">
-          <div v-for="row in month.rows" :key="row.date" class="reading-row">
+          <div v-for="(row, i) in month.rows" :key="`${row.date}-${i}`" class="reading-row">
             <div class="row-left">
               <span class="row-date">{{ formatDateTime(row.date) }}</span>
             </div>

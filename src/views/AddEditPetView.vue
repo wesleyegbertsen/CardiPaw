@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, useId } from 'vue';
+import { ref, computed, onMounted, onUnmounted, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { usePetsStore } from '../stores/pets';
@@ -54,6 +54,11 @@ const ceilingA11y = (outOfRange: boolean) =>
 const normalA11y = computed(() => ceilingA11y(normalOutOfRange.value));
 const elevatedA11y = computed(() => ceilingA11y(elevatedOutOfRange.value));
 
+let unmounted = false;
+onUnmounted(() => {
+  unmounted = true;
+});
+
 onMounted(async () => {
   if (isEdit) {
     try {
@@ -63,6 +68,8 @@ onMounted(async () => {
       loadError.value = true;
       return;
     }
+    // The user may have left while the pets loaded; don't pull them away from another page.
+    if (unmounted) return;
     const pet = petsStore.getPetById(petId);
     if (!pet) {
       router.replace({ name: 'home' });
