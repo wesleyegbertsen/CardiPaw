@@ -28,6 +28,15 @@ describe('useTrend', () => {
     app.unmount();
   });
 
+  it('rounds a half-breath baseline in the message', () => {
+    // Baseline median 20.5 (5 days at 20, 5 at 21).
+    const baseline = [20, 20, 20, 20, 20, 21, 21, 21, 21, 21];
+    const { trend, app } = setup(trendReadings(today, baseline, [28, 28]), makePet());
+    expect(trend.value.result).toMatchObject({ kind: 'rising', baseline: 20.5 });
+    expect(trend.value.message).toMatch(/about 28 breaths\/min .*, up from a usual 21\.$/);
+    app.unmount();
+  });
+
   it("describes days above the pet's Normal ceiling", () => {
     const { trend, app } = setup(
       trendReadings(today, null, [30, 30]),

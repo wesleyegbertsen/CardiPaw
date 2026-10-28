@@ -21,8 +21,8 @@ export function useTrend(
     if (alerting && result.kind === 'rising') {
       message = t('trend.rising', {
         name,
-        recent: Math.round(result.recent!),
-        baseline: Math.round(result.baseline!),
+        recent: Math.round(result.recent),
+        baseline: Math.round(result.baseline),
         days: RECENT_DAYS,
       });
     } else if (alerting) {

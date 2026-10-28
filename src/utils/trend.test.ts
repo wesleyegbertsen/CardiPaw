@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeTrend, isTrendAlert, type TrendResult } from './trend';
+import { computeTrend, isTrendAlert } from './trend';
 import { makeReading } from '../test/fixtures';
 import { stubTimezone } from '../test/timezone';
 
@@ -75,6 +75,23 @@ describe('computeTrend', () => {
       kind: 'none',
       raisedDays: 2,
       recent: 20,
+    });
+  });
+
+  it('does not call it rising when the rounded numbers are equal', () => {
+    // Baseline 20.5 and mean 20.7 would read "about 21, up from a usual 21".
+    const halfDays = [-10, -9, -8, -7].flatMap((d) => [day(d, 20, 8), day(d, 22, 9)]);
+    expect(trend([...days(-14, -11, 20), ...halfDays, ...recentOf(26, 26, 10)])).toMatchObject({
+      kind: 'none',
+      raisedDays: 2,
+      baseline: 20.5,
+    });
+    // Baseline 20 and mean 20.3 would read "about 20, up from a usual 20".
+    const lowDay = [day(0, 12, 8), day(0, 14, 9)];
+    expect(trend([...days(-10, -3, 20), day(-2, 24), day(-1, 24), ...lowDay])).toMatchObject({
+      kind: 'none',
+      raisedDays: 2,
+      recentDays: 3,
     });
   });
 
@@ -215,12 +232,13 @@ describe('computeTrend', () => {
 
 describe('isTrendAlert', () => {
   it('is true only for rising and aboveCeiling', () => {
-    const of = (kind: TrendResult['kind']) => isTrendAlert({ kind } as TrendResult);
-    expect([of('rising'), of('aboveCeiling'), of('none'), of('insufficient')]).toEqual([
-      true,
-      true,
-      false,
-      false,
-    ]);
+    const results = [
+      trend([...baselineAt(20), ...recentOf(28, 28)]),
+      trend(recentOf(34, 34)),
+      trend([...baselineAt(20), ...recentOf(20, 20)]),
+      trend([]),
+    ];
+    expect(results.map((r) => r.kind)).toEqual(['rising', 'aboveCeiling', 'none', 'insufficient']);
+    expect(results.map(isTrendAlert)).toEqual([true, true, false, false]);
   });
 });

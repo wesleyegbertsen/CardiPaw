@@ -17,12 +17,7 @@ export const MIN_DAYS_ABOVE_CEILING = 2; // recent days above the Normal ceiling
 
 export type TrendKind = 'none' | 'insufficient' | 'rising' | 'aboveCeiling';
 
-export interface TrendResult {
-  kind: TrendKind;
-  /** Median of the baseline day values; null with fewer than MIN_BASELINE_DAYS. */
-  baseline: number | null;
-  /** Mean of the recent day values; null with fewer than MIN_RECENT_DAYS. */
-  recent: number | null;
+interface TrendCounts {
   baselineDays: number;
   recentDays: number;
   raisedDays: number;
@@ -30,6 +25,18 @@ export interface TrendResult {
   /** The pet's Normal ceiling, or the default. */
   normalCeiling: number;
 }
+
+export type TrendResult = TrendCounts &
+  (
+    | { kind: 'rising'; baseline: number; recent: number }
+    | {
+        kind: Exclude<TrendKind, 'rising'>;
+        /** Median of the baseline day values; null with fewer than MIN_BASELINE_DAYS. */
+        baseline: number | null;
+        /** Mean of the recent day values; null with fewer than MIN_RECENT_DAYS. */
+        recent: number | null;
+      }
+  );
 
 function median(values: number[]): number {
   const s = [...values].sort((a, b) => a - b);
@@ -81,24 +88,29 @@ export function computeTrend(
         ).length;
   const daysAboveCeiling = recentValues.filter((v) => v > normalCeiling).length;
 
-  let kind: TrendKind;
-  if (recent === null) kind = 'insufficient';
-  // `recent > baseline` keeps the message ("about {recent}, up from a usual {baseline}") true
-  // when a very low third day pulls the mean down.
-  else if (raisedDays >= MIN_RAISED_DAYS && recent > baseline!) kind = 'rising';
-  else if (daysAboveCeiling >= MIN_DAYS_ABOVE_CEILING) kind = 'aboveCeiling';
-  else kind = baseline === null ? 'insufficient' : 'none';
-
-  return {
-    kind,
-    baseline,
-    recent,
+  const counts: TrendCounts = {
     baselineDays: baselineValues.length,
     recentDays: recentValues.length,
     raisedDays,
     daysAboveCeiling,
     normalCeiling,
   };
+
+  // Comparing the rounded values keeps the message ("about {recent}, up from a usual
+  // {baseline}") true when a very low third day pulls the mean down to the baseline.
+  if (
+    recent !== null &&
+    baseline !== null &&
+    raisedDays >= MIN_RAISED_DAYS &&
+    Math.round(recent) > Math.round(baseline)
+  ) {
+    return { ...counts, kind: 'rising', baseline, recent };
+  }
+  let kind: Exclude<TrendKind, 'rising'>;
+  if (recent === null) kind = 'insufficient';
+  else if (daysAboveCeiling >= MIN_DAYS_ABOVE_CEILING) kind = 'aboveCeiling';
+  else kind = baseline === null ? 'insufficient' : 'none';
+  return { ...counts, kind, baseline, recent };
 }
 
 export const isTrendAlert = (result: TrendResult) =>
