@@ -156,11 +156,14 @@ function startTracking() {
       <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>
     </svg>
 
-    <p v-if="showTrend" :id="trendId" class="trend-row">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
-        <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
-      </svg>
-      {{ trend.title }}
+    <!-- Its own line, under the info column: the column is too narrow for the label on small phones. -->
+    <p v-if="showTrend" class="trend-row">
+      <span :id="trendId" class="badge trend">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12" aria-hidden="true">
+          <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+        </svg>
+        {{ trend.badge }}
+      </span>
     </p>
   </div>
 </template>
@@ -171,7 +174,7 @@ function startTracking() {
   flex-wrap: wrap;
   align-items: center;
   gap: 16px;
-  row-gap: 10px;
+  row-gap: 6px;
   width: 100%;
   padding: 16px;
   background: var(--color-surface);
@@ -256,6 +259,21 @@ function startTracking() {
   color: var(--color-badge-dog-text);
 }
 
+.trend-row {
+  flex-basis: 100%;
+  /* Lines the badge up with the info column: photo width + gap. */
+  padding-left: 80px;
+}
+
+.badge.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-badge-warning-bg);
+  color: var(--color-warning-text);
+  margin: 0;
+}
+
 .age {
   font-size: 13px;
   color: var(--color-text-muted);
@@ -307,20 +325,5 @@ function startTracking() {
 .chevron {
   flex-shrink: 0;
   color: var(--color-border);
-}
-
-.trend-row {
-  flex-basis: 100%;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-warning-text);
-  background: var(--color-warning-bg);
-  /* As on the detail page's alert: the dark warning background is close to the card. */
-  border: 1px solid var(--color-warning);
-  border-radius: var(--radius-sm);
 }
 </style>

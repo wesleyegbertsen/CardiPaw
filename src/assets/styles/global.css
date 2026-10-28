@@ -27,6 +27,7 @@
   --color-badge-cat-text: #9d174d;
   --color-badge-dog-bg: #dbeafe;
   --color-badge-dog-text: #1e40af;
+  --color-badge-warning-bg: #fef3c7; /* with --color-warning-text */
   --color-icon-export-bg: #dbeafe;
   --color-icon-export-text: #1e40af;
   --color-icon-import-bg: #d1fae5;
@@ -61,6 +62,7 @@
   --color-badge-cat-text: #f9a8c9;
   --color-badge-dog-bg: #1a2a3d;
   --color-badge-dog-text: #93c5fd;
+  --color-badge-warning-bg: #3a2a0a;
   --color-icon-export-bg: #1a2a3d;
   --color-icon-export-text: #93c5fd;
   --color-icon-import-bg: #0a2a1a;

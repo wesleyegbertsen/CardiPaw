@@ -366,6 +366,7 @@ function hasNoReadingsInMonth(monthIndex: number, year: number): boolean {
 const loadError = ref(false);
 // Cached readings may be stale after a failed reload, so the trend alert hides, as on the card.
 const readingsError = ref(false);
+const showTrend = computed(() => trend.value.alerting && !readingsError.value);
 const deleting = ref(false);
 const deleteError = ref(false);
 
@@ -471,20 +472,18 @@ async function deletePet() {
         <span class="pet-age">{{ ageDisplay }}</span>
       </div>
       <p class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
+      <button v-if="showTrend" type="button" class="trend-badge" aria-haspopup="dialog" @click="showTrendInfo = true">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
+          <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+        </svg>
+        {{ trend.badge }}
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
+          <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>
+        </svg>
+      </button>
     </div>
 
     <div class="track-cta">
-      <div v-if="trend.alerting && !readingsError" class="trend-alert">
-        <svg class="trend-icon" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
-          <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
-        </svg>
-        <div class="trend-text">
-          <h2 class="trend-title">{{ trend.title }}</h2>
-          <p class="trend-message">{{ trend.message }}</p>
-          <p class="trend-advice">{{ $t('trend.advice', { name: pet.name }) }}</p>
-          <button type="button" class="trend-how" @click="showTrendInfo = true">{{ $t('trend.how') }}</button>
-        </div>
-      </div>
       <button class="track-btn" @click="router.push({ name: 'tracker', params: { id: petId } })">
         <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -674,7 +673,10 @@ async function deletePet() {
       @close="showShareModal = false"
     />
 
-    <InfoModal v-if="showTrendInfo" :title="$t('trend.infoTitle')" @close="showTrendInfo = false">
+    <InfoModal v-if="showTrendInfo && showTrend" :title="trend.title" @close="showTrendInfo = false">
+      <p class="trend-message">{{ trend.message }}</p>
+      <p class="trend-advice">{{ $t('trend.advice', { name: pet?.name }) }}</p>
+      <h3 class="trend-how">{{ $t('trend.how') }}</h3>
       <p>{{ $t('trend.info.p1', trend.infoParams) }}</p>
       <p>{{ $t('trend.info.p2', trend.infoParams) }}</p>
       <p>{{ $t('trend.info.p3') }}</p>
@@ -837,48 +839,44 @@ async function deletePet() {
   color: #d97706;
 }
 
+.trend-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 4px 8px 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-badge-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* A 44px-tall tap target without making the badge itself bigger. */
+.trend-badge::after {
+  content: '';
+  position: absolute;
+  inset: -9px 0;
+}
+
+.trend-message,
+.trend-how {
+  color: var(--color-text);
+}
+
+.trend-how {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 20px 0 6px;
+}
+
 .track-cta {
   padding: 16px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-}
-
-.trend-alert {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px 16px 4px;
-  background: var(--color-warning-bg);
-  color: var(--color-warning-text);
-  /* The dark warning background is close to the surface; the border keeps the box visible. */
-  border: 1px solid var(--color-warning);
-  border-radius: var(--radius-md);
-}
-
-.trend-icon {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.trend-title {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.trend-message,
-.trend-advice {
-  font-size: 14px;
-  line-height: 1.45;
-  margin-top: 4px;
-}
-
-.trend-how {
-  min-height: 44px;
-  padding: 0;
-  color: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: underline;
 }
 
 .track-btn {

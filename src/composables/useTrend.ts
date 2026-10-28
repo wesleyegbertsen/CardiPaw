@@ -28,9 +28,11 @@ export function useTrend(
     const alerting = !!pet.value && isTrendAlert(result);
     const name = pet.value?.name ?? '';
     let title = '';
+    let badge = '';
     let message = '';
     if (alerting && result.kind === 'rising') {
       title = t('trend.title');
+      badge = t('trend.badge');
       message = t('trend.rising', {
         name,
         recent: Math.round(result.recent),
@@ -39,6 +41,7 @@ export function useTrend(
       });
     } else if (alerting) {
       title = t('trend.titleAboveCeiling');
+      badge = t('trend.badgeAboveCeiling');
       message = t('trend.aboveCeiling', {
         name,
         ceiling: result.normalCeiling,
@@ -58,6 +61,6 @@ export function useTrend(
       minAbove: MIN_DAYS_ABOVE_CEILING,
       ceiling: result.normalCeiling,
     };
-    return { result, alerting, title, message, infoParams };
+    return { result, alerting, title, badge, message, infoParams };
   });
 }

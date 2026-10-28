@@ -331,11 +331,12 @@
   "trend": {
     "title": "Atemfrequenz steigt",
     "titleAboveCeiling": "Atemfrequenz über Normalbereich",
+    "badge": "Steigend",
+    "badgeAboveCeiling": "Über normal",
     "rising": "Die Ruhe-Atemfrequenz von {name} lag in den letzten {days} Tagen bei etwa {recent} Atemz./Min, höher als üblich ({baseline} Atemz./Min).",
     "aboveCeiling": "Die Ruhe-Atemfrequenz von {name} lag an {minAbove} oder mehr der letzten {days} Tage über {ceiling} Atemz./Min.",
     "advice": "Miss noch einmal, während {name} ruht oder schläft, und sprich mit deinem Tierarzt, wenn der Wert erhöht bleibt.",
     "how": "Wie wird das berechnet?",
-    "infoTitle": "So funktionieren Trendhinweise",
     "info": {
       "p1": "CardiPaw vergleicht die letzten {days} Tage mit den {baselineDays} Tagen davor. Jeder Tag zählt einmal, mit dem mittleren Wert seiner Messungen. Eine erneute Messung am selben Tag zählt also nicht doppelt.",
       "p2": "Ein Hinweis erscheint, wenn die Frequenz an mindestens {minRaised} der letzten {days} Tage um {percent} % und {breaths} Atemz./Min oder mehr über dem üblichen Wert lag. Für den üblichen Wert braucht es Messungen an mindestens {minDays} der früheren Tage. Ein Hinweis erscheint auch, wenn mindestens {minAbove} der letzten {days} Tage über dem für {name} eingestellten Wert „Obergrenze normal“ ({ceiling} Atemz./Min) lagen.",

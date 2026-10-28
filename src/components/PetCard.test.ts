@@ -138,31 +138,31 @@ describe('PetCard', () => {
 
     it('flags a rising trend and describes the card with it', async () => {
       const wrapper = await mountCard('Ace', trendReadings(today, 20, [28, 28]));
-      const row = wrapper.get('.trend-row');
-      expect(row.text()).toBe('Breathing rate trending up');
-      expect(wrapper.get('.pet-card').attributes('aria-describedby')).toBe(row.attributes('id'));
+      const badge = wrapper.get('.trend-row .badge.trend');
+      expect(badge.text()).toBe('Trending up');
+      expect(wrapper.get('.pet-card').attributes('aria-describedby')).toBe(badge.attributes('id'));
     });
 
     it('names days above the Normal ceiling as such', async () => {
       const wrapper = await mountCard('Ace', trendReadings(today, null, [34, 34]));
-      expect(wrapper.get('.trend-row').text()).toBe('Breathing rate above Normal');
+      expect(wrapper.get('.badge.trend').text()).toBe('Above normal');
     });
 
     it('shows nothing for stable readings', async () => {
       const wrapper = await mountCard('Ace', trendReadings(today, 20, [20, 22]));
-      expect(wrapper.find('.trend-row').exists()).toBe(false);
+      expect(wrapper.find('.badge.trend').exists()).toBe(false);
       expect(wrapper.get('.pet-card').attributes('aria-describedby')).toBeUndefined();
     });
 
     it('appears when a second high day is added', async () => {
       const pinia = createPinia();
       const wrapper = await mountCard('Ace', trendReadings(today, 20, [28]), pinia);
-      expect(wrapper.find('.trend-row').exists()).toBe(false);
+      expect(wrapper.find('.badge.trend').exists()).toBe(false);
       await useReadingsStore(pinia).addReading({
         petId: 'pet-1', date: new Date(2024, 2, 19, 12).toISOString(), rate: 28, clickCount: 14,
       });
       await flushPromises();
-      expect(wrapper.find('.trend-row').exists()).toBe(true);
+      expect(wrapper.find('.badge.trend').exists()).toBe(true);
     });
 
     it('gives way to the error when a reload fails over cached readings', async () => {
@@ -171,7 +171,7 @@ describe('PetCard', () => {
       useReadingsStore(pinia).readingsByPet['pet-1'] = trendReadings(today, 20, [28, 28]);
       vi.spyOn(db, 'getReadingsForPet').mockRejectedValueOnce(new Error('blocked'));
       const wrapper = await mountCard('Ace', [], pinia);
-      expect(wrapper.find('.trend-row').exists()).toBe(false);
+      expect(wrapper.find('.badge.trend').exists()).toBe(false);
       expect(wrapper.get('.pet-card').attributes('aria-describedby')).toBe(wrapper.get('.readings-error').attributes('id'));
     });
   });

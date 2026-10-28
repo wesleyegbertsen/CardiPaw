@@ -73,14 +73,14 @@ Each pet on the home screen shows a compact 7-day sparkline so you can see at a 
 
 ### Trend Alerts
 
-CardiPaw keeps an eye on the trend for you. When a pet's resting breathing rate has crept up, the detail view shows a short alert above the Start tracking button, and the pet's card on the home screen gets a "Breathing rate trending up" row ("Breathing rate above Normal" for the second rule below). An alert shows when either of these is true:
+CardiPaw keeps an eye on the trend for you. When a pet's resting breathing rate has crept up, the pet's card on the home screen and the header of its detail view show a **Trending up** badge (**Above normal** for the second rule below). Tap the badge in the detail view to see the numbers behind it and what to do next. An alert shows when either of these is true:
 
 - on **at least 2 of the last 3 days**, the rate was **20% and 4 breaths/min or more** above the pet's usual rate, or
 - on **at least 2 of the last 3 days**, the rate was above the pet's Normal ceiling (see [Status Thresholds](#status-thresholds), or the pet's own ceiling when one is set).
 
 Each day counts once, using the median (middle value) of that day's readings, so measuring again on the same day doesn't count twice. The usual rate is the median of the day values over the 28 days before the last 3, and it needs readings on at least 7 of those 28 days; the Normal-ceiling rule works without it.
 
-The alert goes away on its own once readings settle. With too few readings nothing is shown, so no alert doesn't always mean all is well. Mixing sleeping and resting readings can also make the rate look higher, because the rate is usually lower during sleep. "How is this worked out?" in the alert explains all of this in the app.
+The alert goes away on its own once readings settle. With too few readings nothing is shown, so no alert doesn't always mean all is well. Mixing sleeping and resting readings can also make the rate look higher, because the rate is usually lower during sleep. The badge's details in the app explain all of this too.
 
 A trend alert is not a diagnosis. If you're worried, contact your vet, and if your pet is struggling to breathe, contact them straight away.
 

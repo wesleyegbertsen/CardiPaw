@@ -331,11 +331,12 @@
   "trend": {
     "title": "Respiration en hausse",
     "titleAboveCeiling": "Respiration au-dessus de la normale",
+    "badge": "En hausse",
+    "badgeAboveCeiling": "Hors norme",
     "rising": "La fréquence respiratoire au repos de {name} est d'environ {recent} resp./min sur les {days} derniers jours, contre {baseline} habituellement.",
     "aboveCeiling": "La fréquence respiratoire au repos de {name} a dépassé {ceiling} resp./min sur au moins {minAbove} des {days} derniers jours.",
     "advice": "Mesurez à nouveau pendant que {name} se repose ou dort, et parlez-en à votre vétérinaire si la fréquence reste élevée.",
     "how": "Comment est-ce calculé ?",
-    "infoTitle": "Fonctionnement des alertes de tendance",
     "info": {
       "p1": "CardiPaw compare les {days} derniers jours aux {baselineDays} jours précédents. Chaque jour compte une fois, avec la valeur médiane de ses mesures : mesurer à nouveau le même jour ne compte donc pas double.",
       "p2": "Une alerte s'affiche lorsque, sur au moins {minRaised} des {days} derniers jours, la fréquence a dépassé la valeur habituelle d'au moins {percent} % et d'au moins {breaths} resp./min. Pour établir cette valeur habituelle, il faut des mesures sur au moins {minDays} des jours précédents. Une alerte s'affiche aussi lorsqu'au moins {minAbove} des {days} derniers jours ont dépassé le plafond normal de {name} ({ceiling} resp./min).",

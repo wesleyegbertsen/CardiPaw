@@ -23,6 +23,7 @@ describe('useTrend', () => {
     const { trend, app } = setup(trendReadings(today, 20, [27, 28]), makePet());
     expect(trend.value.alerting).toBe(true);
     expect(trend.value.title).toBe('Breathing rate trending up');
+    expect(trend.value.badge).toBe('Trending up');
     expect(trend.value.message).toBe(
       "Ace's resting breathing rate has been about 28 breaths/min over the last 3 days, up from a usual 20.",
     );
@@ -44,6 +45,7 @@ describe('useTrend', () => {
       makePet({ normalCeiling: 28 }),
     );
     expect(trend.value.title).toBe('Breathing rate above Normal');
+    expect(trend.value.badge).toBe('Above normal');
     expect(trend.value.message).toBe(
       "Ace's resting breathing rate has been above 28 breaths/min on 2 or more of the last 3 days.",
     );
@@ -63,7 +65,7 @@ describe('useTrend', () => {
       [trendReadings(today, 20, [28, 28]), undefined],
     ] as const) {
       const { trend, app } = setup([...readings], pet);
-      expect(trend.value).toMatchObject({ alerting: false, title: '', message: '' });
+      expect(trend.value).toMatchObject({ alerting: false, title: '', badge: '', message: '' });
       app.unmount();
     }
   });
