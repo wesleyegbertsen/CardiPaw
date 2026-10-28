@@ -49,8 +49,9 @@ export default defineConfig({
       // Setting exclude replaces Vitest's defaults, so the test files are listed again.
       exclude: ['src/**/*.test.ts', 'src/test/**', 'src/types/**', 'src/**/*.d.ts'],
       // The text table lists only files below 100%; open coverage/index.html for details.
-      // The same table also goes to coverage/coverage.txt for the CI job summary, at full
-      // width (maxCols: 0) so long "Uncovered Line #s" lists aren't cut off.
+      // The same table also goes to coverage/coverage.txt, which scripts/coverage-summary.mjs
+      // turns into the CI job summary, at full width (maxCols: 0) so long "Uncovered Line #s"
+      // lists aren't cut off.
       reporter: [
         ['text', { skipFull: true }],
         ['text', { skipFull: true, file: 'coverage.txt', maxCols: 0 }],
