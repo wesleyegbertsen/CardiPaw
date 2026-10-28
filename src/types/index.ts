@@ -1,3 +1,5 @@
+import type { MeasurementSeconds } from '../utils/measurement';
+
 export type Species = 'cat' | 'dog';
 
 export interface Pet {
@@ -11,8 +13,7 @@ export interface Pet {
   elevatedCeiling?: number; // breaths/min; absent = use default 35
 }
 
-/** Length of a guided measurement, in seconds. */
-export type MeasurementSeconds = 15 | 30 | 60;
+export type { MeasurementSeconds };
 
 export interface Reading {
   id: string;

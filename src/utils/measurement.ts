@@ -1,7 +1,10 @@
-import type { MeasurementSeconds, Reading } from '../types';
+import type { Reading } from '../types';
 
 /** Lengths a guided measurement can run for. */
-export const MEASUREMENT_OPTIONS: readonly MeasurementSeconds[] = [15, 30, 60];
+export const MEASUREMENT_OPTIONS = [15, 30, 60] as const;
+
+/** Length of a guided measurement, in seconds. */
+export type MeasurementSeconds = (typeof MEASUREMENT_OPTIONS)[number];
 
 /** Every guided reading made before the length could be chosen ran for 30 seconds. */
 export const DEFAULT_MEASUREMENT_SECONDS: MeasurementSeconds = 30;
