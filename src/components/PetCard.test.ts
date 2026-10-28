@@ -6,6 +6,7 @@ import { useReadingsStore } from '../stores/readings';
 import * as db from '../services/db';
 import { createTestI18n } from '../test/i18n';
 import { makePet, makeReading } from '../test/fixtures';
+import { trendReadings } from '../test/trendReadings';
 import type { Reading } from '../types';
 
 const push = vi.hoisted(() => vi.fn());
@@ -125,6 +126,48 @@ describe('PetCard', () => {
       const wrapper = await mountCard('Ace', [], pinia);
       expect(wrapper.get('.readings-error').text()).toBe('Readings could not be loaded');
       expect(wrapper.find('.sparkline-wrap').exists()).toBe(false);
+    });
+  });
+  describe('trend', () => {
+    const today = new Date(2024, 2, 20, 9);
+    beforeEach(() => {
+      // Only the clock: faking timers would stall fake-indexeddb.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(today);
+    });
+
+    it('flags a rising trend and describes the card with it', async () => {
+      const wrapper = await mountCard('Ace', trendReadings(today, 20, [28, 28]));
+      const row = wrapper.get('.trend-row');
+      expect(row.text()).toBe('Breathing rate trending up');
+      expect(wrapper.get('.pet-card').attributes('aria-describedby')).toBe(row.attributes('id'));
+    });
+
+    it('shows nothing for stable readings', async () => {
+      const wrapper = await mountCard('Ace', trendReadings(today, 20, [20, 22]));
+      expect(wrapper.find('.trend-row').exists()).toBe(false);
+      expect(wrapper.get('.pet-card').attributes('aria-describedby')).toBeUndefined();
+    });
+
+    it('appears when a second high day is added', async () => {
+      const pinia = createPinia();
+      const wrapper = await mountCard('Ace', trendReadings(today, 20, [28]), pinia);
+      expect(wrapper.find('.trend-row').exists()).toBe(false);
+      await useReadingsStore(pinia).addReading({
+        petId: 'pet-1', date: new Date(2024, 2, 19, 12).toISOString(), rate: 28, clickCount: 14,
+      });
+      await flushPromises();
+      expect(wrapper.find('.trend-row').exists()).toBe(true);
+    });
+
+    it('gives way to the error when a reload fails over cached readings', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const pinia = createPinia();
+      useReadingsStore(pinia).readingsByPet['pet-1'] = trendReadings(today, 20, [28, 28]);
+      vi.spyOn(db, 'getReadingsForPet').mockRejectedValueOnce(new Error('blocked'));
+      const wrapper = await mountCard('Ace', [], pinia);
+      expect(wrapper.find('.trend-row').exists()).toBe(false);
+      expect(wrapper.get('.pet-card').attributes('aria-describedby')).toBe(wrapper.get('.readings-error').attributes('id'));
     });
   });
 });
