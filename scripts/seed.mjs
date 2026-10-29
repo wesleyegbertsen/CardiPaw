@@ -75,11 +75,31 @@ function makeReadings(petId, profile, totalCount, daySpread) {
     });
 }
 
+// One reading a day for the last `days` days, ending today, so the pet has the
+// recent and earlier readings a trend alert needs. `clicksFor(day)` gives the
+// clickCount for `day` days ago.
+function makeDailyReadings(petId, days, clicksFor) {
+  return Array.from({ length: days }, (_, i) => {
+    const day = days - 1 - i;
+    const clickCount = clicksFor(day);
+    return {
+      id: crypto.randomUUID(),
+      petId,
+      date: isoAt(day, day === 0 ? 0 : randInt(7, 11)), // today: just after midnight, never in the future
+      rate: clickCount * 2,
+      clickCount,
+      restState: 'sleeping',
+    };
+  });
+}
+
 // ── Pets ──────────────────────────────────────────────────────────────────────
 
 const bellaId = crypto.randomUUID();
 const maxId   = crypto.randomUUID();
 const lunaId  = crypto.randomUUID();
+const miloId  = crypto.randomUUID();
+const ollieId = crypto.randomUUID();
 
 const pets = [
   {
@@ -108,6 +128,22 @@ const pets = [
     normalCeiling: 28,
     elevatedCeiling: 33,
   },
+  {
+    id: miloId,
+    name: 'Milo',
+    species: 'cat',
+    photo: null,
+    birthdate: '2019-11-02',
+    createdAt: isoAt(40, 9),
+  },
+  {
+    id: ollieId,
+    name: 'Ollie',
+    species: 'dog',
+    photo: null,
+    birthdate: '2014-05-21',
+    createdAt: isoAt(40, 9),
+  },
 ];
 
 // ── Readings ──────────────────────────────────────────────────────────────────
@@ -116,6 +152,10 @@ const readings = [
   ...makeReadings(bellaId, 'bella', 48, 90),
   ...makeReadings(maxId,   'max',   38, 90),
   ...makeReadings(lunaId,  'luna',  60, 90),
+  // Steady 20–24 bpm, then 30–34 bpm over the last 3 days: "Trending up".
+  ...makeDailyReadings(miloId, 35, (day) => (day <= 2 ? randInt(15, 17) : randInt(10, 12))),
+  // A steady 32–36 bpm, above the default Normal ceiling of 30 but no rise: "Above normal".
+  ...makeDailyReadings(ollieId, 35, () => randInt(16, 18)),
 ];
 
 // ── Notes ─────────────────────────────────────────────────────────────────────

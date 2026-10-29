@@ -327,5 +327,21 @@
     "ageMonths": "{n} Monat | {n} Monate",
     "ageYears": "{n} Jahr | {n} Jahre",
     "ageYearMonth": "{y}J {m}Mon"
+  },
+  "trend": {
+    "title": "Atemfrequenz steigt",
+    "titleAboveCeiling": "Atemfrequenz über Normalbereich",
+    "badge": "Steigend",
+    "badgeAboveCeiling": "Über normal",
+    "rising": "Die Ruhe-Atemfrequenz von {name} lag in den letzten {days} Tagen bei etwa {recent} Atemz./Min, höher als üblich ({baseline} Atemz./Min).",
+    "aboveCeiling": "Die Ruhe-Atemfrequenz von {name} lag an {minAbove} oder mehr der letzten {days} Tage über {ceiling} Atemz./Min.",
+    "advice": "Miss noch einmal, während {name} ruht oder schläft, und sprich mit deinem Tierarzt, wenn der Wert erhöht bleibt.",
+    "how": "Wie wird das berechnet?",
+    "info": {
+      "p1": "CardiPaw vergleicht die letzten {days} Tage mit den {baselineDays} Tagen davor. Jeder Tag zählt einmal, mit dem mittleren Wert seiner Messungen. Eine erneute Messung am selben Tag zählt also nicht doppelt.",
+      "p2": "Ein Hinweis erscheint, wenn die Frequenz an mindestens {minRaised} der letzten {days} Tage um {percent} % und {breaths} Atemz./Min oder mehr über dem üblichen Wert lag. Für den üblichen Wert braucht es Messungen an mindestens {minDays} der früheren Tage. Ein Hinweis erscheint auch, wenn mindestens {minAbove} der letzten {days} Tage über dem für {name} eingestellten Wert „Obergrenze normal“ ({ceiling} Atemz./Min) lagen.",
+      "p3": "Der Hinweis verschwindet von selbst, sobald sich die Werte beruhigen. Bei zu wenigen Messungen wird nichts angezeigt. Kein Hinweis heißt also nicht immer, dass alles in Ordnung ist.",
+      "p4": "Messungen, während dein Tier wach, aufgeregt oder warm ist, können die Frequenz höher wirken lassen. Das gilt auch, wenn du Messungen im Schlaf und in Ruhe mischst, denn im Schlaf ist die Frequenz meist niedriger. Dies ist keine Diagnose. Wenn du dir Sorgen machst, wende dich an deinen Tierarzt, und sofort, wenn dein Tier Mühe beim Atmen hat."
+    }
   }
 }
