@@ -1,10 +1,15 @@
-import type { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
 import { localDayKey, localMonthKey } from './date';
 import { calendarAge } from './age';
 import { isRichText } from './richText';
 
-export type Translator = ReturnType<typeof useI18n>['t'];
+// The calls PDF text makes on vue-i18n's `t`. Spelled out because `t`'s own type is
+// tied to one instance's locale, so the app's and the tests' translators wouldn't mix.
+export interface Translator {
+  (key: string): string;
+  (key: string, plural: number): string;
+  (key: string, named: Record<string, unknown>): string;
+}
 
 /** One point per local day of `monthKey` ("YYYY-MM"): the day's rounded average rate. */
 export function aggregateByDay(
