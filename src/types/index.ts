@@ -1,3 +1,5 @@
+import type { MeasurementSeconds } from '../utils/measurement';
+
 export type Species = 'cat' | 'dog';
 
 export interface Pet {
@@ -11,15 +13,18 @@ export interface Pet {
   elevatedCeiling?: number; // breaths/min; absent = use default 35
 }
 
+export type { MeasurementSeconds };
+
 export interface Reading {
   id: string;
   petId: string;
   date: string; // ISO timestamp
-  rate: number; // breaths per minute (clickCount × 2)
-  clickCount: number; // raw clicks during 30s; 0 for manual entries
+  rate: number; // breaths per minute; set when saved (clickCount scaled to a minute) or edited, never recomputed
+  clickCount: number; // raw taps during the guided measurement; 0 for manual entries
+  durationSeconds?: MeasurementSeconds; // guided only; absent = 30 (saved before the length could be chosen)
   restState?: 'resting' | 'sleeping';
   notes?: string;
-  source?: 'manual'; // absent = guided 30-second measurement
+  source?: 'manual'; // absent = guided measurement
 }
 
 export interface Note {

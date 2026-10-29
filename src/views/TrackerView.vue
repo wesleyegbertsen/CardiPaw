@@ -11,6 +11,7 @@ import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../
 import OnboardingModal from '../components/OnboardingModal.vue';
 import RestStateToggle from '../components/RestStateToggle.vue';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
+import { MEASUREMENT_OPTIONS, rateFromTaps } from '../utils/measurement';
 
 const route = useRoute();
 const router = useRouter();
@@ -21,7 +22,7 @@ const { isSupported: hapticsSupported, vibrateTap, vibrateDone } = useHaptics();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
-const { soundEnabled, vibrationEnabled } = useTrackerPrefs(petId);
+const { soundEnabled, vibrationEnabled, measurementSeconds } = useTrackerPrefs(petId);
 const { hasSeenOnboarding, markSeen } = useOnboarding();
 const showOnboarding = ref(!hasSeenOnboarding.value);
 
@@ -39,8 +40,8 @@ type Phase = 'idle' | 'running' | 'done';
 type Mode = 'guided' | 'manual';
 const phase = ref<Phase>('idle');
 const mode = ref<Mode>('guided');
-const MEASUREMENT_SECONDS = 30;
-const timeLeft = ref(MEASUREMENT_SECONDS);
+// The length picker is only shown while idle, so the chosen length is fixed for a whole run.
+const timeLeft = ref<number>(measurementSeconds.value);
 // Wall-clock end of the measurement. Timers are throttled in background tabs, on a
 // locked screen or in battery saver, so the count is timed by the clock, not by ticks.
 let endsAt = 0;
@@ -56,6 +57,8 @@ const saveError = ref(false);
 const loadError = ref(false);
 const soundLabelId = useId();
 const vibrationLabelId = useId();
+const lengthName = useId();
+const lengthLabelId = useId();
 const isManualMode = computed(() => mode.value === 'manual');
 const heartRef = ref<HTMLButtonElement | null>(null);
 const resultRef = ref<HTMLElement | null>(null);
@@ -70,7 +73,7 @@ function switchMode(next: Mode) {
   saveError.value = false;
 }
 
-const resultRate = computed(() => clickCount.value * (60 / MEASUREMENT_SECONDS));
+const resultRate = computed(() => rateFromTaps(clickCount.value, measurementSeconds.value));
 
 function handleHeartClick() {
   if (phase.value === 'idle') {
@@ -86,8 +89,8 @@ function onHeartEnter(e: KeyboardEvent) {
 }
 
 function startTracking() {
-  endsAt = Date.now() + MEASUREMENT_SECONDS * 1000;
-  timeLeft.value = MEASUREMENT_SECONDS;
+  endsAt = Date.now() + measurementSeconds.value * 1000;
+  timeLeft.value = measurementSeconds.value;
   phase.value = 'running';
   clickCount.value = 1; // first click counts as the first breath
   if (soundEnabled.value) playBeep(880, 0.15, 0.3);
@@ -111,11 +114,11 @@ function tick() {
 }
 
 // Updates the seconds left from the clock and ends the measurement once time is up,
-// however late this runs. Returns whether it has ended. Capped at 30 so a clock set
-// back mid-measurement cannot show more time than a measurement has.
+// however late this runs. Returns whether it has ended. Capped at the measurement's
+// length so a clock set back mid-measurement cannot show more time than it has.
 function finishIfOver(): boolean {
   timeLeft.value = Math.min(
-    MEASUREMENT_SECONDS,
+    measurementSeconds.value,
     Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)),
   );
   if (timeLeft.value > 0) return false;
@@ -155,6 +158,7 @@ async function saveReading() {
       restState: restState.value,
       notes: notes.value || undefined,
       source: isManual ? 'manual' : undefined,
+      durationSeconds: isManual ? undefined : measurementSeconds.value,
     });
     router.push({ name: 'pet', params: { id: petId } });
   } catch (e) {
@@ -176,7 +180,7 @@ function reset() {
     intervalId.value = null;
   }
   phase.value = 'idle';
-  timeLeft.value = MEASUREMENT_SECONDS;
+  timeLeft.value = measurementSeconds.value;
   clickCount.value = 0;
   isPulsing.value = false;
   restState.value = undefined;
@@ -287,12 +291,12 @@ onUnmounted(() => {
             <circle
               cx="60" cy="60" r="54"
               class="ring-progress"
-              :stroke-dashoffset="(339.3 * timeLeft) / MEASUREMENT_SECONDS"
+              :stroke-dashoffset="(339.3 * timeLeft) / measurementSeconds"
             />
           </svg>
           <div class="timer-text">
             <span class="timer-number">{{ timeLeft }}</span>
-            <span class="timer-unit">sec</span>
+            <span class="timer-unit">{{ $t('tracker.secondsUnit') }}</span>
           </div>
         </div>
       </div>
@@ -317,28 +321,49 @@ onUnmounted(() => {
       <div class="body-bottom">
         <template v-if="phase === 'idle'">
           <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
-          <p class="timer-note">{{ $t('tracker.measurement30') }}</p>
-          <div class="option-row" @click.stop>
-            <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
-            <button
-              class="slide-toggle"
-              :class="{ on: soundEnabled }"
-              role="switch"
-              :aria-checked="soundEnabled"
-              :aria-labelledby="soundLabelId"
-              @click="soundEnabled = !soundEnabled"
-            />
-          </div>
-          <div v-if="hapticsSupported" class="option-row" @click.stop>
-            <span :id="vibrationLabelId" class="toggle-label">{{ $t('tracker.vibration') }}</span>
-            <button
-              class="slide-toggle"
-              :class="{ on: vibrationEnabled }"
-              role="switch"
-              :aria-checked="vibrationEnabled"
-              :aria-labelledby="vibrationLabelId"
-              @click="vibrationEnabled = !vibrationEnabled"
-            />
+          <!-- @click.stop: inside the tap area, and a radio is clicked by mouse, Space and arrow keys alike.
+               On the whole block, so a tap that just misses an option or a switch does not start a measurement. -->
+          <div class="tracker-options" @click.stop>
+            <div class="option-row length-picker" role="radiogroup" :aria-labelledby="lengthLabelId">
+              <span :id="lengthLabelId" class="toggle-label">{{ $t('tracker.measurementLength') }}</span>
+              <div class="length-options">
+                <label
+                  v-for="seconds in MEASUREMENT_OPTIONS"
+                  :key="seconds"
+                  class="length-option"
+                  :class="{ active: measurementSeconds === seconds }"
+                >
+                  <input v-model="measurementSeconds" class="sr-only" type="radio" :name="lengthName" :value="seconds" />
+                  <span aria-hidden="true">{{ $t('tracker.secondsOption', { seconds }) }}</span>
+                  <span class="sr-only">{{ $t('tracker.secondsLong', seconds) }}</span>
+                </label>
+              </div>
+            </div>
+            <!-- Side by side to keep the idle screen short enough for small phones; wraps when there is no room -->
+            <div class="toggle-rows">
+              <div class="option-row">
+                <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
+                <button
+                  class="slide-toggle"
+                  :class="{ on: soundEnabled }"
+                  role="switch"
+                  :aria-checked="soundEnabled"
+                  :aria-labelledby="soundLabelId"
+                  @click="soundEnabled = !soundEnabled"
+                />
+              </div>
+              <div v-if="hapticsSupported" class="option-row">
+                <span :id="vibrationLabelId" class="toggle-label">{{ $t('tracker.vibration') }}</span>
+                <button
+                  class="slide-toggle"
+                  :class="{ on: vibrationEnabled }"
+                  role="switch"
+                  :aria-checked="vibrationEnabled"
+                  :aria-labelledby="vibrationLabelId"
+                  @click="vibrationEnabled = !vibrationEnabled"
+                />
+              </div>
+            </div>
           </div>
         </template>
         <div v-else class="breath-count">
@@ -361,7 +386,7 @@ onUnmounted(() => {
         <div class="result-label">{{ $t('common.breathsPerMin') }}</div>
       </div>
 
-      <p class="result-note">{{ $t('tracker.basedOn', clickCount) }}</p>
+      <p class="result-note">{{ $t('tracker.basedOn', { seconds: measurementSeconds }, clickCount) }}</p>
 
       <RestStateToggle v-model="restState" />
 
@@ -526,11 +551,6 @@ onUnmounted(() => {
   font-size: 18px;
   font-weight: 600;
   color: var(--color-primary);
-}
-
-.timer-note {
-  font-size: 13px;
-  color: var(--color-text-muted);
 }
 
 /* Timer ring */
@@ -702,13 +722,73 @@ onUnmounted(() => {
   color: var(--color-text-muted);
 }
 
-/* Sound toggle */
+/* Length picker and switches. One block that swallows taps (see the template), so its
+   gaps use padding, not margins; the padding past the edges is offset by negative margins
+   to widen that block around the controls without moving them. */
+.tracker-options {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 8px;
+  margin: 0 -8px -8px;
+}
+
+/* Measurement length: native radios styled as a segmented control */
+.length-options {
+  display: flex;
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 3px;
+}
+
+.length-option {
+  position: relative; /* contains the visually hidden radio */
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+/* A taller hit area (44px) without a taller control */
+.length-option::before {
+  content: '';
+  position: absolute;
+  inset: -9px 0;
+}
+
+.length-option.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.length-option:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Sound and vibration switches */
+.toggle-rows {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 24px;
+}
+
 .option-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 8px;
 }
 
 .toggle-label {

@@ -26,12 +26,49 @@ describe('useTrackerPrefs', () => {
     await nextTick();
 
     expect(stored()).toEqual({
-      a: { soundEnabled: false, vibrationEnabled: true },
-      b: { soundEnabled: true, vibrationEnabled: false },
+      a: { soundEnabled: false, vibrationEnabled: true, measurementSeconds: 30 },
+      b: { soundEnabled: true, vibrationEnabled: false, measurementSeconds: 30 },
     });
     expect(useTrackerPrefs('a').soundEnabled.value).toBe(false);
     expect(useTrackerPrefs('a').vibrationEnabled.value).toBe(true);
     expect(useTrackerPrefs('b').vibrationEnabled.value).toBe(false);
+  });
+
+  it('defaults to a 30-second measurement', () => {
+    expect(useTrackerPrefs('a').measurementSeconds.value).toBe(30);
+  });
+
+  it('saves and restores the measurement length per pet', async () => {
+    useTrackerPrefs('a').measurementSeconds.value = 60;
+    await nextTick();
+    expect(stored()).toEqual({
+      a: { soundEnabled: true, vibrationEnabled: true, measurementSeconds: 60 },
+    });
+    expect(useTrackerPrefs('a').measurementSeconds.value).toBe(60);
+    expect(useTrackerPrefs('b').measurementSeconds.value).toBe(30);
+  });
+
+  it('keeps the measurement length when another pref changes', async () => {
+    useTrackerPrefs('a').measurementSeconds.value = 15;
+    await nextTick();
+    useTrackerPrefs('a').soundEnabled.value = false;
+    await nextTick();
+    expect(stored().a).toEqual({ soundEnabled: false, vibrationEnabled: true, measurementSeconds: 15 });
+  });
+
+  it.each([
+    ['missing (saved before it existed)', undefined],
+    ['a length the tracker does not offer', 45],
+    ['a string', '60'],
+    ['null', null],
+  ])('uses 30 seconds when the saved length is %s', (_label, measurementSeconds) => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ a: { soundEnabled: false, vibrationEnabled: true, measurementSeconds } }),
+    );
+    const prefs = useTrackerPrefs('a');
+    expect(prefs.measurementSeconds.value).toBe(30);
+    expect(prefs.soundEnabled.value).toBe(false);
   });
 
   it.each([
@@ -51,7 +88,9 @@ describe('useTrackerPrefs', () => {
     useTrackerPrefs('a').soundEnabled.value = false;
     await nextTick();
 
-    expect(stored()).toEqual({ a: { soundEnabled: false, vibrationEnabled: true } });
+    expect(stored()).toEqual({
+      a: { soundEnabled: false, vibrationEnabled: true, measurementSeconds: 30 },
+    });
     expect(useTrackerPrefs('a').soundEnabled.value).toBe(false);
   });
 

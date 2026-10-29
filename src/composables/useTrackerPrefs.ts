@@ -1,11 +1,14 @@
 import { ref, watch } from 'vue';
 import { readStorage, writeStorage } from '../utils/storage';
+import { DEFAULT_MEASUREMENT_SECONDS, isMeasurementSeconds } from '../utils/measurement';
+import type { MeasurementSeconds } from '../types';
 
 const STORAGE_KEY = 'cardipaw-tracker-prefs';
 
 interface TrackerPrefs {
   soundEnabled: boolean;
   vibrationEnabled: boolean;
+  measurementSeconds: MeasurementSeconds;
 }
 
 function loadAll(): Record<string, TrackerPrefs> {
@@ -24,17 +27,25 @@ export function useTrackerPrefs(petId: string) {
   const saved = loadAll()[petId];
   const soundEnabled = ref(saved?.soundEnabled ?? true);
   const vibrationEnabled = ref(saved?.vibrationEnabled ?? true);
+  // Prefs saved before the length could be chosen have none; a hand-edited or future value
+  // the tracker doesn't offer falls back too.
+  const savedSeconds: unknown = saved?.measurementSeconds;
+  const measurementSeconds = ref<MeasurementSeconds>(
+    isMeasurementSeconds(savedSeconds) ? savedSeconds : DEFAULT_MEASUREMENT_SECONDS,
+  );
 
-  watch([soundEnabled, vibrationEnabled], () => {
+  // Writes the whole entry, so every pref must be listed here or changing another one drops it.
+  watch([soundEnabled, vibrationEnabled, measurementSeconds], () => {
     const all = loadAll();
     all[petId] = {
       soundEnabled: soundEnabled.value,
       vibrationEnabled: vibrationEnabled.value,
+      measurementSeconds: measurementSeconds.value,
     };
     writeStorage(STORAGE_KEY, JSON.stringify(all));
   });
 
-  return { soundEnabled, vibrationEnabled };
+  return { soundEnabled, vibrationEnabled, measurementSeconds };
 }
 
 /** Removes a deleted pet's saved prefs. Never throws, even when storage is unavailable. */
