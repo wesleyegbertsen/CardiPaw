@@ -9,6 +9,8 @@ import { deferred } from '../test/deferred';
 import { touchEvent } from '../test/touch';
 import { createTestI18n } from '../test/i18n';
 import * as db from '../services/db';
+import { useReadingsStore } from '../stores/readings';
+import { trendReadings } from '../test/trendReadings';
 import type { Pet, Reading } from '../types';
 
 // Chart.js needs a canvas; the view's job is to hand the chart the right readings.
@@ -681,6 +683,117 @@ describe('PetDetailView', () => {
       await end(0, 0, 2000);
       await settle();
       expect(collapsed()).toEqual([false, true, true]);
+    });
+  });
+  describe('trend alert', () => {
+    // Only the clock is faked: fake timers stall fake-indexeddb.
+    const today = new Date(2024, 2, 20, 9);
+
+    async function mountTrend(readings: Reading[], petOverrides: Partial<Pet> = {}) {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(today);
+      return mountDetail('/pets/pet-1', { pets: [makePet(petOverrides)], readings });
+    }
+
+    function openTrend(wrapper: VueWrapper) {
+      return wrapper.get('.pet-hero .trend-badge').trigger('click');
+    }
+    const dialog = () => document.body.querySelector('[role="dialog"]');
+
+    it('shows a badge under the header that opens the explanation', async () => {
+      const { wrapper } = await mountTrend(trendReadings(today, 20, [28, 28]));
+      const badge = wrapper.get('.pet-hero .trend-badge');
+      expect(badge.text()).toBe('Trending up');
+      expect(badge.attributes('aria-haspopup')).toBe('dialog');
+      expect(dialog()).toBeNull();
+
+      await openTrend(wrapper);
+      expect(dialog()!.querySelector('h2')!.textContent).toBe('Breathing rate trending up');
+      expect(dialog()!.querySelector('.trend-message')!.textContent).toBe(
+        "Ace's resting breathing rate has been about 28 breaths/min over the last 3 days, up from a usual 20.",
+      );
+      expect(dialog()!.querySelector('.trend-advice')!.textContent).toBe(
+        'Measure again while Ace is resting or asleep, and talk to your vet if it stays higher.',
+      );
+    });
+
+    it("explains days above the pet's Normal ceiling without a baseline", async () => {
+      const { wrapper } = await mountTrend(trendReadings(today, null, [30, 30]), { normalCeiling: 28 });
+      expect(wrapper.get('.trend-badge').text()).toBe('Above normal');
+      await openTrend(wrapper);
+      expect(dialog()!.querySelector('h2')!.textContent).toBe('Breathing rate above Normal');
+      expect(dialog()!.querySelector('.trend-message')!.textContent).toBe(
+        "Ace's resting breathing rate has been above 28 breaths/min on 2 or more of the last 3 days.",
+      );
+    });
+
+    it.each([
+      ['stable readings', trendReadings(today, 20, [20, 22])],
+      ['one high day', trendReadings(today, 20, [34])],
+      ['no readings', []],
+    ])('shows nothing for %s', async (_, readings) => {
+      const { wrapper } = await mountTrend(readings);
+      expect(wrapper.find('.trend-badge').exists()).toBe(false);
+    });
+
+    it('explains how it works in the dialog', async () => {
+      const { wrapper } = await mountTrend(trendReadings(today, 20, [28, 28]));
+      await openTrend(wrapper);
+      expect(dialog()!.querySelector('h3')!.textContent).toBe('How is this worked out?');
+      expect(dialog()!.textContent).toContain('compares the last 3 days with the 28 days before them');
+      expect(dialog()!.textContent).toContain(
+        'on at least 2 of the last 3 days, the rate was 20% and 4 breaths/min or more above the usual rate',
+      );
+      expect(dialog()!.textContent).toContain('readings on at least 7 of the earlier days');
+      expect(dialog()!.textContent).toContain(
+        "when at least 2 of the last 3 days were above Ace's Normal ceiling of 30 breaths/min",
+      );
+      (dialog()!.querySelector('.btn-ok') as HTMLElement).click();
+      await nextTick();
+      expect(dialog()).toBeNull();
+    });
+
+    it('gives way to the error when a reload fails over cached readings, like the card', async () => {
+      // The first visit caches the readings; see 'keeps showing a cached pet …' above.
+      const first = await mountTrend(trendReadings(today, 20, [28, 28]));
+      expect(first.wrapper.find('.trend-badge').exists()).toBe(true);
+
+      vi.spyOn(db, 'getReadingsForPet').mockRejectedValueOnce(new Error('idb broken'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const wrapper = mount(PetDetailView, {
+        attachTo: document.body,
+        global: { plugins: [first.pinia, first.router, createTestI18n()] },
+      });
+      await settle();
+
+      expect(tabs(wrapper)[1].get('.tab-count').text()).toBe('12');
+      expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+      expect(wrapper.find('.trend-badge').exists()).toBe(false);
+    });
+
+    it('still shows when only the notes fail to load', async () => {
+      vi.spyOn(db, 'getNotesForPet').mockRejectedValueOnce(new Error('idb broken'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { wrapper } = await mountTrend(trendReadings(today, 20, [28, 28]));
+      expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
+      expect(wrapper.find('.trend-badge').exists()).toBe(true);
+    });
+
+    it("explains the pet's own Normal ceiling in the dialog", async () => {
+      const { wrapper } = await mountTrend(trendReadings(today, null, [30, 30]), { normalCeiling: 28 });
+      await openTrend(wrapper);
+      expect(dialog()!.textContent).toContain(
+        "above Ace's Normal ceiling of 28 breaths/min",
+      );
+    });
+
+    it('goes away when a high reading is deleted', async () => {
+      const readings = trendReadings(today, 20, [28, 28]);
+      const { wrapper, pinia } = await mountTrend(readings);
+      expect(wrapper.find('.trend-badge').exists()).toBe(true);
+      await useReadingsStore(pinia).removeReading(readings.at(-1)!.id, 'pet-1');
+      await settle();
+      expect(wrapper.find('.trend-badge').exists()).toBe(false);
     });
   });
 });

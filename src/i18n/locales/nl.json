@@ -330,5 +330,21 @@
     "ageMonths": "{n} maand | {n} maanden",
     "ageYears": "{n} jaar | {n} jaar",
     "ageYearMonth": "{y}j {m}mnd"
+  },
+  "trend": {
+    "title": "Ademfrequentie stijgt",
+    "titleAboveCeiling": "Ademfrequentie boven normaal",
+    "badge": "Stijgend",
+    "badgeAboveCeiling": "Boven normaal",
+    "rising": "De rustademhalingsfrequentie van {name} lag de afgelopen {days} dagen rond {recent} ademh./min, hoger dan de gebruikelijke {baseline}.",
+    "aboveCeiling": "De rustademhalingsfrequentie van {name} lag op {minAbove} of meer van de afgelopen {days} dagen boven {ceiling} ademh./min.",
+    "advice": "Meet opnieuw terwijl {name} rust of slaapt, en overleg met je dierenarts als het hoger blijft.",
+    "how": "Hoe wordt dit bepaald?",
+    "info": {
+      "p1": "CardiPaw vergelijkt de afgelopen {days} dagen met de {baselineDays} dagen daarvoor. Elke dag telt één keer mee, met de middelste waarde van de metingen van die dag, dus opnieuw meten op dezelfde dag telt niet dubbel.",
+      "p2": "Er verschijnt een melding als de frequentie op minstens {minRaised} van de afgelopen {days} dagen {percent}% en {breaths} ademh./min of meer boven de gebruikelijke waarde lag. Voor die gebruikelijke waarde zijn metingen op minstens {minDays} van de eerdere dagen nodig. Er verschijnt ook een melding als minstens {minAbove} van de afgelopen {days} dagen boven de ingestelde ‘Bovengrens normaal’ van {name} ({ceiling} ademh./min) lagen.",
+      "p3": "De melding verdwijnt vanzelf zodra de metingen weer rustiger zijn. Met te weinig metingen wordt niets getoond, dus geen melding betekent niet altijd dat alles goed is.",
+      "p4": "Metingen terwijl je huisdier wakker, opgewonden of warm is, kunnen de frequentie hoger laten lijken. Dat geldt ook als je metingen in slaap en in rust door elkaar gebruikt, omdat de frequentie tijdens de slaap meestal lager is. Dit is geen diagnose. Maak je je zorgen, neem dan contact op met je dierenarts, en meteen als je huisdier moeite heeft met ademen."
+    }
   }
 }

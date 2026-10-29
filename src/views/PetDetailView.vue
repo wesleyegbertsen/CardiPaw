@@ -10,12 +10,14 @@ import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
+import { useTrend } from '../composables/useTrend';
 import RRRChart from '../components/RRRChart.vue';
 import ReadingList from '../components/ReadingList.vue';
 import NoteList from '../components/NoteList.vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import PdfExportModal from '../components/PdfExportModal.vue';
 import ShareLinkModal from '../components/ShareLinkModal.vue';
+import InfoModal from '../components/InfoModal.vue';
 import { useNotesStore } from '../stores/notes';
 
 const route = useRoute();
@@ -32,6 +34,8 @@ const ageDisplay = useAgeCalculator(birthdateRef);
 
 const readings = computed(() => readingsStore.getReadingsForPet(petId));
 const lastMeasured = useLastMeasured(readings);
+const trend = useTrend(readings, pet);
+const showTrendInfo = ref(false);
 const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
@@ -360,6 +364,9 @@ function hasNoReadingsInMonth(monthIndex: number, year: number): boolean {
 }
 
 const loadError = ref(false);
+// Cached readings may be stale after a failed reload, so the trend alert hides, as on the card.
+const readingsError = ref(false);
+const showTrend = computed(() => trend.value.alerting && !readingsError.value);
 const deleting = ref(false);
 const deleteError = ref(false);
 
@@ -387,6 +394,7 @@ onMounted(async () => {
   readingsStore.loadReadingsForPet(petId).catch((e) => {
     console.error('Loading readings failed', e);
     loadError.value = true;
+    readingsError.value = true;
   });
   notesStore.loadNotesForPet(petId).catch((e) => {
     console.error('Loading notes failed', e);
@@ -464,6 +472,15 @@ async function deletePet() {
         <span class="pet-age">{{ ageDisplay }}</span>
       </div>
       <p class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
+      <button v-if="showTrend" type="button" class="trend-badge" aria-haspopup="dialog" @click="showTrendInfo = true">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
+          <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+        </svg>
+        {{ trend.badge }}
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
+          <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>
+        </svg>
+      </button>
     </div>
 
     <div class="track-cta">
@@ -656,6 +673,16 @@ async function deletePet() {
       @close="showShareModal = false"
     />
 
+    <InfoModal v-if="showTrendInfo && showTrend" :title="trend.title" @close="showTrendInfo = false">
+      <p class="trend-message">{{ trend.message }}</p>
+      <p class="trend-advice">{{ $t('trend.advice', { name: pet?.name }) }}</p>
+      <h3 class="trend-how">{{ $t('trend.how') }}</h3>
+      <p>{{ $t('trend.info.p1', trend.infoParams) }}</p>
+      <p>{{ $t('trend.info.p2', trend.infoParams) }}</p>
+      <p>{{ $t('trend.info.p3') }}</p>
+      <p>{{ $t('trend.info.p4') }}</p>
+    </InfoModal>
+
     <ConfirmDialog
       v-if="showDeleteDialog"
       :message="$t('petDetail.deleteConfirm', { name: pet.name })"
@@ -810,6 +837,40 @@ async function deletePet() {
 
 .last-measured.stale {
   color: #d97706;
+}
+
+.trend-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 4px 8px 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-badge-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* A 44px-tall tap target without making the badge itself bigger. */
+.trend-badge::after {
+  content: '';
+  position: absolute;
+  inset: -9px 0;
+}
+
+.trend-message,
+.trend-how {
+  color: var(--color-text);
+}
+
+.trend-how {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 20px 0 6px;
 }
 
 .track-cta {

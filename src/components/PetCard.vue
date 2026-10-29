@@ -15,6 +15,7 @@ import { localDayKey } from '../utils/date';
 import { petInitial } from '../utils/petInitial';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
+import { useTrend } from '../composables/useTrend';
 import { useReadingsStore } from '../stores/readings';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
@@ -39,6 +40,13 @@ onMounted(() => {
 
 const readings = computed(() => readingsStore.getReadingsForPet(props.pet.id));
 const lastMeasured = useLastMeasured(readings);
+const trend = useTrend(readings, computed(() => props.pet));
+const showTrend = computed(() => trend.value.alerting && !readingsError.value);
+const trendId = useId();
+// The card's aria-label replaces its content for screen readers, so describe what matters.
+const describedBy = computed(() =>
+  readingsError.value ? readingsErrorId : showTrend.value ? trendId : undefined,
+);
 
 const sparklineData = computed(() => {
   const allReadings = readings.value;
@@ -118,7 +126,7 @@ function startTracking() {
 </script>
 
 <template>
-  <div class="pet-card" @click="navigate" role="button" tabindex="0" @keydown.enter.self="navigate" @keydown.space.self.prevent="navigate" :aria-label="$t('petCard.viewProfile', { name: pet.name })" :aria-describedby="readingsError ? readingsErrorId : undefined">
+  <div class="pet-card" @click="navigate" role="button" tabindex="0" @keydown.enter.self="navigate" @keydown.space.self.prevent="navigate" :aria-label="$t('petCard.viewProfile', { name: pet.name })" :aria-describedby="describedBy">
     <div class="photo-wrap">
       <img v-if="pet.photo" :src="pet.photo" :alt="pet.name" class="photo" />
       <div v-else class="photo-placeholder">
@@ -147,14 +155,26 @@ function startTracking() {
     <svg class="chevron" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
       <path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"/>
     </svg>
+
+    <!-- Its own line, under the info column: the column is too narrow for the label on small phones. -->
+    <p v-if="showTrend" class="trend-row">
+      <span :id="trendId" class="badge trend">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12" aria-hidden="true">
+          <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+        </svg>
+        {{ trend.badge }}
+      </span>
+    </p>
   </div>
 </template>
 
 <style scoped>
 .pet-card {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
+  row-gap: 6px;
   width: 100%;
   padding: 16px;
   background: var(--color-surface);
@@ -237,6 +257,21 @@ function startTracking() {
 .badge.dog {
   background: var(--color-badge-dog-bg);
   color: var(--color-badge-dog-text);
+}
+
+.trend-row {
+  flex-basis: 100%;
+  /* Lines the badge up with the info column: photo width + gap. */
+  padding-left: 80px;
+}
+
+.badge.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-badge-warning-bg);
+  color: var(--color-warning-text);
+  margin: 0;
 }
 
 .age {

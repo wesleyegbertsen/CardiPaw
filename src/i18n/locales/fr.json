@@ -330,5 +330,21 @@
     "ageMonths": "{n} mois | {n} mois",
     "ageYears": "{n} an | {n} ans",
     "ageYearMonth": "{y} an {m} mois"
+  },
+  "trend": {
+    "title": "Respiration en hausse",
+    "titleAboveCeiling": "Respiration au-dessus de la normale",
+    "badge": "En hausse",
+    "badgeAboveCeiling": "Hors norme",
+    "rising": "La fréquence respiratoire au repos de {name} est d'environ {recent} resp./min sur les {days} derniers jours, contre {baseline} habituellement.",
+    "aboveCeiling": "La fréquence respiratoire au repos de {name} a dépassé {ceiling} resp./min sur au moins {minAbove} des {days} derniers jours.",
+    "advice": "Mesurez à nouveau pendant que {name} se repose ou dort, et parlez-en à votre vétérinaire si la fréquence reste élevée.",
+    "how": "Comment est-ce calculé ?",
+    "info": {
+      "p1": "CardiPaw compare les {days} derniers jours aux {baselineDays} jours précédents. Chaque jour compte une fois, avec la valeur médiane de ses mesures : mesurer à nouveau le même jour ne compte donc pas double.",
+      "p2": "Une alerte s'affiche lorsque, sur au moins {minRaised} des {days} derniers jours, la fréquence a dépassé la valeur habituelle d'au moins {percent} % et d'au moins {breaths} resp./min. Pour établir cette valeur habituelle, il faut des mesures sur au moins {minDays} des jours précédents. Une alerte s'affiche aussi lorsqu'au moins {minAbove} des {days} derniers jours ont dépassé le plafond normal de {name} ({ceiling} resp./min).",
+      "p3": "L'alerte disparaît d'elle-même lorsque les mesures se stabilisent. Avec trop peu de mesures, rien ne s'affiche : l'absence d'alerte ne signifie donc pas toujours que tout va bien.",
+      "p4": "Des mesures prises pendant que votre animal est éveillé, excité ou a chaud peuvent faire paraître la fréquence plus élevée. C'est aussi le cas si vous mélangez des mesures prises pendant le sommeil et au repos, car la fréquence est généralement plus basse pendant le sommeil. Ceci n'est pas un diagnostic. En cas d'inquiétude, contactez votre vétérinaire, et sans attendre si votre animal a du mal à respirer."
+    }
   }
 }

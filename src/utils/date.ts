@@ -24,3 +24,13 @@ export function localMonthKey(value: string | Date): string {
   const d = toDate(value);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 }
+
+/**
+ * Moves a "YYYY-MM-DD" day key by `days` calendar days (negative = earlier).
+ * Pure calendar arithmetic in UTC, so DST changes and the process timezone don't matter.
+ */
+export function shiftDayKey(key: string, days: number): string {
+  const [y, m, d] = key.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + days));
+  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
+}

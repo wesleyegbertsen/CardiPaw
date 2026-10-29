@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localDayKey, localMonthKey } from './date';
+import { localDayKey, localMonthKey, shiftDayKey } from './date';
 import { stubTimezone } from '../test/timezone';
 
 describe('localDayKey / localMonthKey', () => {
@@ -47,5 +47,35 @@ describe('localDayKey / localMonthKey', () => {
   it('accepts Date objects', () => {
     expect(localDayKey(new Date(2024, 1, 29, 23, 59))).toBe('2024-02-29');
     expect(localMonthKey(new Date(2024, 1, 29))).toBe('2024-02');
+  });
+});
+
+describe('shiftDayKey', () => {
+  it('returns the same key for 0 days', () => {
+    expect(shiftDayKey('2024-03-20', 0)).toBe('2024-03-20');
+  });
+
+  it('crosses month, leap-day and year boundaries', () => {
+    expect(shiftDayKey('2024-03-01', -1)).toBe('2024-02-29');
+    expect(shiftDayKey('2023-03-01', -1)).toBe('2023-02-28');
+    expect(shiftDayKey('2024-01-01', -1)).toBe('2023-12-31');
+    expect(shiftDayKey('2023-12-31', 1)).toBe('2024-01-01');
+    expect(shiftDayKey('2024-03-20', -30)).toBe('2024-02-19');
+  });
+
+  it('steps one calendar day at a time across DST changes, in any zone', () => {
+    for (const tz of ['Europe/Amsterdam', 'America/New_York', 'Pacific/Auckland']) {
+      stubTimezone(tz);
+      // Amsterdam springs forward on 31 March 2024, New York on 10 March, Auckland falls back on 7 April.
+      const keys = Array.from({ length: 40 }, (_, i) => shiftDayKey('2024-04-10', -i));
+      expect(new Set(keys).size).toBe(40);
+      expect(keys.at(-1)).toBe('2024-03-02');
+      // Matches stepping a local Date back day by day.
+      const local = new Date(2024, 3, 10, 0, 30);
+      keys.forEach((key) => {
+        expect(key).toBe(localDayKey(local));
+        local.setDate(local.getDate() - 1);
+      });
+    }
   });
 });
