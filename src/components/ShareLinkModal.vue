@@ -6,6 +6,7 @@ import type { Pet, Reading } from '../types';
 import { localMonthKey } from '../utils/date';
 import { buildSharePayload, encodeShare, ShareTooLargeError } from '../utils/shareCodec';
 import { useModal } from '../composables/useModal';
+import { publicUrl } from '../utils/platform';
 
 const props = defineProps<{ pet: Pet; readings: Reading[] }>();
 const emit = defineEmits<{ close: [] }>();
@@ -80,7 +81,7 @@ watch(
     }
     if (token !== encodeToken) return; // a newer selection superseded this one
     const href = router.resolve({ name: 'share', query: { d: encoded } }).href;
-    shareUrl.value = new URL(href, window.location.href).href;
+    shareUrl.value = publicUrl(href);
   },
   { immediate: true }
 );
