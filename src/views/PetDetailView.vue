@@ -12,6 +12,7 @@ import { useReadingsStore } from '../stores/readings';
 import { useAgeCalculator } from '../composables/useAgeCalculator';
 import { useLastMeasured } from '../composables/useLastMeasured';
 import { useTrend } from '../composables/useTrend';
+import { useDismissable } from '../composables/useModal';
 import RRRChart from '../components/RRRChart.vue';
 import ReadingList from '../components/ReadingList.vue';
 import NoteList from '../components/NoteList.vue';
@@ -322,6 +323,8 @@ function closeJumpPicker() {
   showJumpPicker.value = false;
   rangeLabelBtnRef.value?.focus();
 }
+
+useDismissable(showJumpPicker, closeJumpPicker);
 
 // Tabbing out closes the picker without moving focus. A null relatedTarget (a click on
 // something unfocusable; Safari never focuses clicked buttons) is left to the backdrop.

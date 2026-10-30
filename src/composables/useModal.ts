@@ -37,6 +37,34 @@ export function closeTopModal(): boolean {
   return true;
 }
 
+/**
+ * For a popup that isn't a modal, such as a disclosure dropdown: while `open`, the Android
+ * back button closes it like a dialog. Its keys and focus stay the popup's own business.
+ */
+export function useDismissable(open: Ref<boolean>, close: () => void) {
+  const id = Symbol('dismissable');
+
+  function remove() {
+    const i = stack.indexOf(id);
+    if (i >= 0) stack.splice(i, 1);
+    closers.delete(id);
+  }
+
+  watch(
+    open,
+    (isOpen) => {
+      if (!isOpen) {
+        remove();
+      } else if (!closers.has(id)) {
+        stack.push(id);
+        closers.set(id, close);
+      }
+    },
+    { immediate: true },
+  );
+  onBeforeUnmount(remove);
+}
+
 function tabbables(root: HTMLElement): HTMLElement[] {
   return [...root.querySelectorAll<HTMLElement>(TABBABLE)].filter(
     (el) => el.tabIndex >= 0 && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden'

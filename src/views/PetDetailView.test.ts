@@ -9,6 +9,7 @@ import { deferred } from '../test/deferred';
 import { touchEvent } from '../test/touch';
 import { createTestI18n } from '../test/i18n';
 import * as db from '../services/db';
+import { closeTopModal } from '../composables/useModal';
 import { useReadingsStore } from '../stores/readings';
 import { trendReadings } from '../test/trendReadings';
 import type { Pet, Reading } from '../types';
@@ -405,6 +406,18 @@ describe('PetDetailView', () => {
       expect(wrapper.find('.jump-picker').exists()).toBe(false);
       expect(trigger.attributes('aria-expanded')).toBe('false');
       expect(document.activeElement).toBe(trigger.element);
+    });
+
+    it('closes the jump picker on the Android back button, which it leaves alone once closed', async () => {
+      const { wrapper, range } = await mountChart();
+      await range(1);
+      const trigger = wrapper.get('.range-label-btn');
+      await trigger.trigger('click');
+      expect(closeTopModal()).toBe(true);
+      await nextTick();
+      expect(wrapper.find('.jump-picker').exists()).toBe(false);
+      expect(document.activeElement).toBe(trigger.element);
+      expect(closeTopModal()).toBe(false);
     });
 
     it('ties the jump picker to its trigger while open', async () => {

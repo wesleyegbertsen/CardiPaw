@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h, nextTick, ref, type Ref } from 'vue';
 import { mount } from '@vue/test-utils';
-import { closeTopModal, useModal } from './useModal';
+import { closeTopModal, useDismissable, useModal } from './useModal';
 
 // opener() adds buttons outside any wrapper; remove them even when a test fails early.
 afterEach(() => document.body.replaceChildren());
@@ -182,6 +182,22 @@ describe('closeTopModal', () => {
 
   it('forgets a dialog once it closes', () => {
     const w = mount(makeDialog(vi.fn()), { attachTo: document.body });
+    w.unmount();
+    expect(closeTopModal()).toBe(false);
+  });
+
+  it('closes an open popup, and forgets it when it unmounts while open', () => {
+    const close = vi.fn();
+    const open = ref(true);
+    const Popup = defineComponent({
+      setup() {
+        useDismissable(open, close);
+        return () => h('div');
+      },
+    });
+    const w = mount(Popup);
+    expect(closeTopModal()).toBe(true);
+    expect(close).toHaveBeenCalledTimes(1);
     w.unmount();
     expect(closeTopModal()).toBe(false);
   });
