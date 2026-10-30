@@ -207,8 +207,8 @@ async function retryLoad() {
 
 .fab {
   position: fixed;
-  bottom: calc(var(--nav-height) + 20px);
-  right: 20px;
+  bottom: calc(var(--nav-offset) + 20px);
+  right: calc(20px + var(--safe-right));
   width: 56px;
   height: 56px;
   border-radius: var(--radius-full);

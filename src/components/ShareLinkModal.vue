@@ -216,6 +216,7 @@ async function nativeShare() {
   background: var(--color-surface);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: 24px;
+  padding-bottom: calc(24px + var(--safe-bottom));
   width: 100%;
   max-width: 420px;
   box-shadow: var(--shadow-lg);
