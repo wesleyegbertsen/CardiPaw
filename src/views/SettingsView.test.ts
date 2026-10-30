@@ -40,7 +40,7 @@ const backupText = (extra: object = {}) =>
 
 describe('SettingsView', () => {
   beforeEach(() => {
-    vi.mocked(backup.downloadBackup).mockReset().mockResolvedValue();
+    vi.mocked(backup.downloadBackup).mockReset().mockResolvedValue('saved');
     vi.mocked(backup.importBackup).mockReset().mockResolvedValue();
   });
   afterEach(() => vi.useRealTimers());
@@ -226,6 +226,17 @@ describe('SettingsView', () => {
       await exportButton(wrapper).trigger('click');
       await settle();
       expect(status(wrapper)).toBe('✓ Exported');
+    });
+
+    it('claims nothing when the app share sheet is closed without saving', async () => {
+      vi.mocked(backup.downloadBackup).mockResolvedValueOnce('cancelled');
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      await exportButton(wrapper).trigger('click');
+      await settle();
+      expect(backup.downloadBackup).toHaveBeenCalledWith('Save or share your CardiPaw backup');
+      expect(status(wrapper)).toBe('');
+      expect(alerts(wrapper)).toEqual([]);
+      expect(exportButton(wrapper).text()).not.toContain('Exported');
     });
 
     it('reports a failed export instead of claiming success', async () => {

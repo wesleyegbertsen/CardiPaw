@@ -5,6 +5,10 @@ import { withSetup } from '../test/withSetup';
 import { makePet, makeReading } from '../test/fixtures';
 import { stubTimezone } from '../test/timezone';
 import type { Pet, Reading } from '../types';
+import { shareFile } from '../services/nativeFile';
+import { mockNative } from '../test/native';
+
+vi.mock('../services/nativeFile', () => ({ shareFile: vi.fn(async () => 'shared') }));
 
 type DocEvent =
   | { type: 'text'; value: string | string[]; page: number }
@@ -110,6 +114,9 @@ vi.mock('jspdf', () => {
     setLineWidth() {}
     rect() {}
     line() {}
+    output(type: string) {
+      return type === 'datauristring' ? 'data:application/pdf;filename=generated.pdf;base64,JVBERi0=' : '';
+    }
     save(name: string) {
       if (h.failSave) throw h.failSave;
       this.saved.push(name);
@@ -192,6 +199,18 @@ describe('usePdfExport', () => {
     const { isGenerating, generatePdf } = setup();
     await expect(generatePdf(makePet(), readings, ['2024-03'])).rejects.toThrow('disk full');
     expect(isGenerating.value).toBe(false);
+  });
+
+  it('hands the PDF to the share sheet in the app instead of downloading it', async () => {
+    mockNative();
+    const doc = await generate(makePet({ name: 'Mr. Biscuit' }), readings, ['2024-03']);
+    expect(doc.saved).toEqual([]);
+    expect(shareFile).toHaveBeenCalledWith({
+      name: 'cardipaw-mr-biscuit-2024-06-01.pdf',
+      data: 'JVBERi0=',
+      encoding: 'base64',
+      title: 'Share PDF report',
+    });
   });
 
   it('saves as cardipaw-<name>-<local date>.pdf', async () => {

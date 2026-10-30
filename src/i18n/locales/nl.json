@@ -187,6 +187,7 @@
     "dataDesc": "Je huisdierprofielen, metingen en notities worden lokaal op dit apparaat opgeslagen met IndexedDB. Exporteer ze om een back-up te maken of over te zetten naar een ander apparaat.",
     "exportName": "Gegevens exporteren",
     "exportDesc": "Download alle huisdieren, metingen en notities als JSON",
+    "exportShareTitle": "Je CardiPaw-back-up opslaan of delen",
     "exported": "✓ Geëxporteerd",
     "export": "Exporteren",
     "importName": "Gegevens importeren",
@@ -310,6 +311,7 @@
     "howItWorks": "Hoe het werkt"
   },
   "pdf": {
+    "shareTitle": "Pdf-rapport delen",
     "reportTitle": "CardiPaw-rapport ademhalingsfrequentie",
     "dateTime": "Datum / tijd",
     "note": "Notitie",

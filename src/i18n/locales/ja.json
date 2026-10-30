@@ -187,6 +187,7 @@
     "dataDesc": "ペットのプロフィール、測定値、メモはIndexedDBを使用してこのデバイスにローカル保存されています。バックアップや他のデバイスへの転送のためにエクスポートしてください。",
     "exportName": "データをエクスポート",
     "exportDesc": "すべてのペット、測定値、メモをJSONでダウンロード",
+    "exportShareTitle": "CardiPawのバックアップを保存または共有",
     "exported": "✓ エクスポート済み",
     "export": "エクスポート",
     "importName": "データをインポート",
@@ -310,6 +311,7 @@
     "howItWorks": "使い方"
   },
   "pdf": {
+    "shareTitle": "PDFレポートを共有",
     "reportTitle": "CardiPaw 呼吸数レポート",
     "dateTime": "日時",
     "note": "メモ",

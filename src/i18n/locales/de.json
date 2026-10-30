@@ -187,6 +187,7 @@
     "dataDesc": "Deine Tierprofile, Messungen und Notizen werden lokal auf diesem Gerät mit IndexedDB gespeichert. Exportiere sie, um ein Backup zu erstellen oder auf ein anderes Gerät zu übertragen.",
     "exportName": "Daten exportieren",
     "exportDesc": "Alle Tiere, Messungen und Notizen als JSON herunterladen",
+    "exportShareTitle": "CardiPaw-Backup speichern oder teilen",
     "exported": "✓ Exportiert",
     "export": "Exportieren",
     "importName": "Daten importieren",
@@ -310,6 +311,7 @@
     "howItWorks": "So funktioniert's"
   },
   "pdf": {
+    "shareTitle": "PDF-Bericht teilen",
     "reportTitle": "CardiPaw-Bericht zur Atemfrequenz",
     "dateTime": "Datum / Uhrzeit",
     "note": "Notiz",

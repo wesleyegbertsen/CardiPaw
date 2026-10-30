@@ -68,13 +68,16 @@ function reannounceStatus() {
 
 async function exportData() {
   exportError.value = false;
+  let outcome: Awaited<ReturnType<typeof downloadBackup>>;
   try {
-    await downloadBackup();
+    outcome = await downloadBackup(t('settings.exportShareTitle'));
   } catch (e) {
     console.error('Backup export failed', e);
     exportError.value = true;
     return;
   }
+  // Closing the app's share sheet saves nothing, so there is nothing to confirm.
+  if (outcome === 'cancelled') return;
   if (exportSuccess.value) reannounceStatus();
   exportSuccess.value = true;
   clearTimeout(exportTimer);

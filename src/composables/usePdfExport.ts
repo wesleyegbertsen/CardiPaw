@@ -15,6 +15,8 @@ import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
 import { localDayKey, localMonthKey } from '../utils/date';
 import { aggregateByDay, formatPdfAge, htmlToPlainText, type Translator } from '../utils/pdfText';
 import { currentLocale } from '../i18n';
+import { isNative } from '../utils/platform';
+import { shareFile } from '../services/nativeFile';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
@@ -417,7 +419,19 @@ export function usePdfExport() {
 
       const dateSlug = localDayKey(new Date());
       const nameSlug = fileNameSlug(pet.name);
-      doc.save(nameSlug ? `cardipaw-${nameSlug}-${dateSlug}.pdf` : `cardipaw-${dateSlug}.pdf`);
+      const fileName = nameSlug ? `cardipaw-${nameSlug}-${dateSlug}.pdf` : `cardipaw-${dateSlug}.pdf`;
+      if (isNative()) {
+        // The WebView ignores doc.save()'s download; hand the file to the share sheet instead.
+        const dataUri = doc.output('datauristring');
+        await shareFile({
+          name: fileName,
+          data: dataUri.slice(dataUri.indexOf(',') + 1),
+          encoding: 'base64',
+          title: t('pdf.shareTitle'),
+        });
+      } else {
+        doc.save(fileName);
+      }
     } finally {
       isGenerating.value = false;
     }

@@ -187,6 +187,7 @@
     "dataDesc": "Your pet profiles, readings and notes are stored locally on this device using IndexedDB. Export them to back up or transfer to another device.",
     "exportName": "Export data",
     "exportDesc": "Download all pets, readings and notes as JSON",
+    "exportShareTitle": "Save or share your CardiPaw backup",
     "exported": "✓ Exported",
     "export": "Export",
     "importName": "Import data",
@@ -310,6 +311,7 @@
     "howItWorks": "How it works"
   },
   "pdf": {
+    "shareTitle": "Share PDF report",
     "reportTitle": "CardiPaw Respiratory Rate Report",
     "dateTime": "Date / Time",
     "note": "Note",
