@@ -214,6 +214,15 @@ describe('usePdfExport', () => {
     });
   });
 
+  it('reports whether the PDF was saved, shared or the share sheet was closed', async () => {
+    const { generatePdf } = setup();
+    await expect(generatePdf(makePet(), readings, ['2024-03'])).resolves.toBe('saved');
+    mockNative();
+    await expect(generatePdf(makePet(), readings, ['2024-03'])).resolves.toBe('shared');
+    vi.mocked(shareFile).mockResolvedValueOnce('cancelled');
+    await expect(generatePdf(makePet(), readings, ['2024-03'])).resolves.toBe('cancelled');
+  });
+
   it('saves as cardipaw-<name>-<local date>.pdf', async () => {
     const doc = await generate(makePet({ name: 'Mr. Biscuit' }), readings, ['2024-03']);
     expect(doc.saved).toEqual(['cardipaw-mr-biscuit-2024-06-01.pdf']);

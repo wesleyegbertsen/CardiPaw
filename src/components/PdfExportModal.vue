@@ -62,8 +62,9 @@ function countReadings(monthKey: string): number {
 
 async function handleExport() {
   exportFailed.value = false;
+  let outcome: Awaited<ReturnType<typeof generatePdf>>;
   try {
-    await generatePdf(props.pet, props.readings, selectedMonths.value, newestFirst.value, includeNotes.value);
+    outcome = await generatePdf(props.pet, props.readings, selectedMonths.value, newestFirst.value, includeNotes.value);
   } catch (err) {
     // e.g. the on-demand jsPDF chunk could not be fetched; keep the dialog open so Export
     // can be tried again (a failed chunk may only load after the app is reopened)
@@ -71,6 +72,8 @@ async function handleExport() {
     exportFailed.value = true;
     return;
   }
+  // Closing the app's share sheet shared nothing; stay open so Export can be tried again.
+  if (outcome === 'cancelled') return;
   setTimeout(() => emit('close'), 200);
 }
 </script>
