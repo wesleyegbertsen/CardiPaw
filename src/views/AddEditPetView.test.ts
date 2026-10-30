@@ -79,7 +79,7 @@ describe('AddEditPetView', () => {
     });
 
     it('saves the trimmed name, leaves blank ceilings unset and opens the pet', async () => {
-      const { wrapper, fill, push } = await mountForm('/pets/add');
+      const { wrapper, fill, replace } = await mountForm('/pets/add');
       const addPet = vi.spyOn(usePetsStore(), 'addPet');
       await fill({ ...required, '#pet-name': '  Luna  ', '#elevated-ceiling': '40' });
       await wrapper.get('form').trigger('submit');
@@ -94,7 +94,7 @@ describe('AddEditPetView', () => {
         elevatedCeiling: 40,
       });
       const [saved] = usePetsStore().pets;
-      expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: saved.id } });
+      expect(replace).toHaveBeenCalledWith({ name: 'pet', params: { id: saved.id } });
     });
 
     it('requires the elevated ceiling to be above the normal one, defaults included', async () => {
@@ -168,7 +168,7 @@ describe('AddEditPetView', () => {
     it('reports a failed save, stays on the form and saves on retry', async () => {
       vi.spyOn(db, 'savePet').mockRejectedValueOnce(new Error('quota'));
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const { wrapper, fill, submit, push } = await mountForm('/pets/add');
+      const { wrapper, fill, submit, push, replace } = await mountForm('/pets/add');
       await fill(required);
       await wrapper.get('form').trigger('submit');
       await settle();
@@ -176,12 +176,13 @@ describe('AddEditPetView', () => {
       expect(wrapper.get('.save-error').text()).toBe('This could not be saved. Please try again.');
       expect(error).toHaveBeenCalledWith('Saving pet failed', expect.any(Error));
       expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
       expect(submit.element.disabled).toBe(false);
 
       await wrapper.get('form').trigger('submit');
       await settle();
       expect(wrapper.find('.save-error').exists()).toBe(false);
-      expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: usePetsStore().pets[0].id } });
+      expect(replace).toHaveBeenCalledWith({ name: 'pet', params: { id: usePetsStore().pets[0].id } });
     });
 
     it('adds one pet when the form is submitted twice', async () => {
@@ -197,9 +198,9 @@ describe('AddEditPetView', () => {
     });
 
     it('goes home on back', async () => {
-      const { wrapper, push } = await mountForm('/pets/add');
+      const { wrapper, replace } = await mountForm('/pets/add');
       await wrapper.get('.back-btn').trigger('click');
-      expect(push).toHaveBeenCalledWith({ name: 'home' });
+      expect(replace).toHaveBeenCalledWith({ name: 'home' });
     });
   });
 
@@ -207,7 +208,7 @@ describe('AddEditPetView', () => {
     const pet = makePet({ name: 'Ace', species: 'dog', normalCeiling: 25, elevatedCeiling: 40 });
 
     it('prefills the form and saves the changes', async () => {
-      const { wrapper, fill, push } = await mountForm('/pets/pet-1/edit', [pet]);
+      const { wrapper, fill, replace } = await mountForm('/pets/pet-1/edit', [pet]);
       expect((wrapper.get('#pet-name').element as HTMLInputElement).value).toBe('Ace');
       expect((wrapper.get('.date-stub').element as HTMLInputElement).value).toBe('2020-01-01');
       expect((wrapper.get('#normal-ceiling').element as HTMLInputElement).value).toBe('25');
@@ -226,7 +227,7 @@ describe('AddEditPetView', () => {
         normalCeiling: undefined,
         elevatedCeiling: 40,
       });
-      expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: 'pet-1' } });
+      expect(replace).toHaveBeenCalledWith({ name: 'pet', params: { id: 'pet-1' } });
     });
 
     it('keeps ceilings restored from an older backup saveable until they change', async () => {
@@ -279,9 +280,19 @@ describe('AddEditPetView', () => {
     });
 
     it('goes back to the pet', async () => {
-      const { wrapper, push } = await mountForm('/pets/pet-1/edit', [pet]);
+      const { wrapper, replace } = await mountForm('/pets/pet-1/edit', [pet]);
       await wrapper.get('.back-btn').trigger('click');
-      expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: 'pet-1' } });
+      expect(replace).toHaveBeenCalledWith({ name: 'pet', params: { id: 'pet-1' } });
+    });
+
+    it('steps back to the pet when the pet is the previous screen', async () => {
+      const { wrapper, router, push, replace } = await mountForm('/pets/pet-1/edit', [pet]);
+      router.options.history.state.back = '/pets/pet-1';
+      const back = vi.spyOn(router, 'back').mockImplementation(() => {});
+      await wrapper.get('.back-btn').trigger('click');
+      expect(back).toHaveBeenCalledTimes(1);
+      expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
     });
   });
 });

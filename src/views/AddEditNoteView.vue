@@ -49,7 +49,7 @@ onMounted(async () => {
   if (unmounted) return;
   if (isEditMode.value) {
     if (!existingNote.value) {
-      router.push({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
+      router.replace({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
       return;
     }
     editTitle.value = existingNote.value.title;
