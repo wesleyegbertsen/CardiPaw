@@ -9,6 +9,9 @@ import { createTestI18n } from '../test/i18n';
 import { deferred } from '../test/deferred';
 import { makePet, makeReading } from '../test/fixtures';
 import { mockNative } from '../test/native';
+import { Share } from '@capacitor/share';
+
+vi.mock('@capacitor/share', () => ({ Share: { share: vi.fn(async () => ({})) } }));
 
 vi.mock('../utils/shareCodec', async (importOriginal) => {
   const real = await importOriginal<typeof import('../utils/shareCodec')>();
@@ -240,6 +243,17 @@ describe('ShareLinkModal', () => {
         title: 'Ace — CardiPaw snapshot',
         url: linkPreview().value,
       });
+    });
+  });
+
+  it('shares through the Share plugin in the app', async () => {
+    mockNative();
+    await mountModal();
+    q<HTMLButtonElement>('.btn-secondary')!.click();
+    await flushPromises();
+    expect(Share.share).toHaveBeenCalledWith({
+      title: 'Ace — CardiPaw snapshot',
+      url: linkPreview().value,
     });
   });
 

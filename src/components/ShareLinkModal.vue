@@ -5,8 +5,9 @@ import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
 import { localMonthKey } from '../utils/date';
 import { buildSharePayload, encodeShare, ShareTooLargeError } from '../utils/shareCodec';
+import { Share } from '@capacitor/share';
 import { useModal } from '../composables/useModal';
-import { publicUrl } from '../utils/platform';
+import { isNative, publicUrl } from '../utils/platform';
 
 const props = defineProps<{ pet: Pet; readings: Reading[] }>();
 const emit = defineEmits<{ close: [] }>();
@@ -89,7 +90,8 @@ watch(
 // Some email/chat apps truncate very long URLs
 const isLongUrl = computed(() => shareUrl.value.length > 8000);
 
-const canNativeShare = typeof navigator.share === 'function';
+// The Android WebView has no Web Share API; the app uses the Share plugin instead.
+const canNativeShare = isNative() || typeof navigator.share === 'function';
 const copied = ref(false);
 // Screen readers skip a live region whose text comes back unchanged within one update,
 // so a repeat copy blanks the region briefly; the button keeps its text
@@ -121,10 +123,8 @@ async function copyLink() {
 async function nativeShare() {
   if (!shareUrl.value) return;
   try {
-    await navigator.share({
-      title: `${props.pet.name} — CardiPaw snapshot`,
-      url: shareUrl.value,
-    });
+    const data = { title: `${props.pet.name} — CardiPaw snapshot`, url: shareUrl.value };
+    await (isNative() ? Share.share(data) : navigator.share(data));
   } catch {
     // User dismissed the share sheet
   }
