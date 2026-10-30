@@ -53,11 +53,26 @@ describe('useHaptics in the app', () => {
 
   it('ignores a failed vibration', async () => {
     mockNative();
-    vi.mocked(Haptics.impact).mockRejectedValueOnce(new Error('no vibrator'));
-    vi.mocked(Haptics.notification).mockRejectedValueOnce(new Error('no vibrator'));
-    const haptics = useHaptics();
-    haptics.vibrateTap();
-    haptics.vibrateDone();
-    await new Promise((r) => setTimeout(r, 0)); // an unhandled rejection would fail the run
+    // Plain functions, not vi.fn(): a spy marks the promises it returns as handled, which
+    // would hide a missing .catch().
+    const { impact, notification } = Haptics;
+    const fail = () => Promise.reject(new Error('no vibrator'));
+    Haptics.impact = fail;
+    Haptics.notification = fail;
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      const haptics = useHaptics();
+      haptics.vibrateTap();
+      haptics.vibrateDone();
+      // Node reports unhandled rejections once the microtask queue drains.
+      await new Promise((r) => setTimeout(r, 0));
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+      Haptics.impact = impact;
+      Haptics.notification = notification;
+    }
   });
 });

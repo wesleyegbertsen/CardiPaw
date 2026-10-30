@@ -48,6 +48,11 @@ describe('shareFile', () => {
     await expect(shareFile(opts)).resolves.toBe('cancelled');
   });
 
+  it('treats a failure that merely mentions cancel as a real error', async () => {
+    vi.mocked(Share.share).mockRejectedValueOnce(new Error('Share canceled: file too large'));
+    await expect(shareFile(opts)).rejects.toThrow('Share canceled: file too large');
+  });
+
   it('rethrows any other share failure', async () => {
     vi.mocked(Share.share).mockRejectedValueOnce(new Error('only file urls are supported'));
     await expect(shareFile(opts)).rejects.toThrow('only file urls are supported');
