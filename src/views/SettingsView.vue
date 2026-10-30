@@ -14,7 +14,7 @@ const releaseUrl = appVersion === '0.0.0'
   ? null
   : `https://github.com/wesleyegbertsen/CardiPaw/releases/tag/v${appVersion}`;
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const importInput = ref<HTMLInputElement | null>(null);
 const showImportConfirm = ref(false);
@@ -70,7 +70,11 @@ async function exportData() {
   exportError.value = false;
   let outcome: Awaited<ReturnType<typeof downloadBackup>>;
   try {
-    outcome = await downloadBackup(t('settings.exportShareTitle'));
+    const date = new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium' }).format(new Date());
+    outcome = await downloadBackup({
+      subject: t('settings.exportShareSubject', { date }),
+      dialogTitle: t('settings.exportShareTitle'),
+    });
   } catch (e) {
     console.error('Backup export failed', e);
     exportError.value = true;

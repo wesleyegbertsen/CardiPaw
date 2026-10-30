@@ -427,7 +427,8 @@ export function usePdfExport() {
           name: fileName,
           data: dataUri.slice(dataUri.indexOf(',') + 1),
           encoding: 'base64',
-          title: t('pdf.shareTitle'),
+          subject: t('pdf.shareSubject', { name: pet.name }),
+          dialogTitle: t('pdf.shareTitle'),
         });
       } else {
         doc.save(fileName);

@@ -186,8 +186,9 @@
     "dataSection": "Daten",
     "dataDesc": "Deine Tierprofile, Messungen und Notizen werden lokal auf diesem Gerät mit IndexedDB gespeichert. Exportiere sie, um ein Backup zu erstellen oder auf ein anderes Gerät zu übertragen.",
     "exportName": "Daten exportieren",
-    "exportDesc": "Alle Tiere, Messungen und Notizen als JSON herunterladen",
+    "exportDesc": "Alle Tiere, Messungen und Notizen als JSON-Datei",
     "exportShareTitle": "CardiPaw-Backup speichern oder teilen",
+    "exportShareSubject": "CardiPaw-Backup {date}",
     "exported": "✓ Exportiert",
     "export": "Exportieren",
     "importName": "Daten importieren",
@@ -267,6 +268,8 @@
     "encodeError": "Der Link zum Teilen konnte nicht erstellt werden. Bitte versuche es erneut.",
     "tooLarge": "Diese Auswahl ist zu groß, um sie als Link zu teilen. Wähle weniger Monate aus.",
     "shareNative": "Teilen…",
+    "shareSubject": "{name} — CardiPaw-Momentaufnahme",
+    "shareDialogTitle": "Link zur Momentaufnahme teilen",
     "copied": "Kopiert!",
     "copyLink": "Link kopieren"
   },
@@ -312,6 +315,7 @@
   },
   "pdf": {
     "shareTitle": "PDF-Bericht teilen",
+    "shareSubject": "CardiPaw-Bericht – {name}",
     "reportTitle": "CardiPaw-Bericht zur Atemfrequenz",
     "dateTime": "Datum / Uhrzeit",
     "note": "Notiz",

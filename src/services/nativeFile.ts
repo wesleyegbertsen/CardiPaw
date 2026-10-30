@@ -10,8 +10,10 @@ export interface ShareFileOptions {
   /** UTF-8 text, or base64 for binary files. */
   data: string;
   encoding: 'utf8' | 'base64';
-  /** Shown above the share sheet. */
-  title: string;
+  /** The shared content's name, used by apps that take one (the email subject). */
+  subject: string;
+  /** Shown above the share sheet: what the user is doing. */
+  dialogTitle: string;
 }
 
 /**
@@ -22,7 +24,8 @@ export async function shareFile({
   name,
   data,
   encoding,
-  title,
+  subject,
+  dialogTitle,
 }: ShareFileOptions): Promise<ShareFileOutcome> {
   const { uri } = await Filesystem.writeFile({
     path: name,
@@ -32,7 +35,7 @@ export async function shareFile({
     ...(encoding === 'utf8' ? { encoding: Encoding.UTF8 } : {}),
   });
   try {
-    await Share.share({ title, dialogTitle: title, files: [uri] });
+    await Share.share({ title: subject, dialogTitle, files: [uri] });
   } catch (e) {
     // The Android plugin rejects with exactly this when the sheet is dismissed
     // (SharePlugin.java, activityResult); anything else is a real failure.

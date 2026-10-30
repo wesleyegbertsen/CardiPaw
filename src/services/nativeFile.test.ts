@@ -9,7 +9,13 @@ vi.mock('@capacitor/filesystem', async (importOriginal) => ({
 }));
 vi.mock('@capacitor/share', () => ({ Share: { share: vi.fn(async () => ({})) } }));
 
-const opts = { name: 'a.json', data: '{}', encoding: 'utf8', title: 'Save' } as const;
+const opts = {
+  name: 'a.json',
+  data: '{}',
+  encoding: 'utf8',
+  subject: 'Backup',
+  dialogTitle: 'Save',
+} as const;
 
 describe('shareFile', () => {
   it('writes UTF-8 text to the cache directory and shares that file', async () => {
@@ -21,7 +27,8 @@ describe('shareFile', () => {
       encoding: Encoding.UTF8,
     });
     expect(Share.share).toHaveBeenCalledWith({
-      title: 'Save',
+      // The subject goes to apps that take one (email); the dialog title heads the sheet.
+      title: 'Backup',
       dialogTitle: 'Save',
       files: ['file:///cache/f'],
     });

@@ -254,6 +254,7 @@ describe('ShareLinkModal', () => {
     expect(Share.share).toHaveBeenCalledWith({
       title: 'Ace — CardiPaw snapshot',
       url: linkPreview().value,
+      dialogTitle: 'Share snapshot link',
     });
   });
 

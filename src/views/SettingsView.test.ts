@@ -48,7 +48,7 @@ describe('SettingsView', () => {
   it('says the data and the export include notes', async () => {
     const { wrapper } = await mountView(SettingsView, '/settings');
     expect(wrapper.text()).toContain('Your pet profiles, readings and notes are stored locally');
-    expect(wrapper.text()).toContain('Download all pets, readings and notes as JSON');
+    expect(wrapper.text()).toContain('All pets, readings and notes as a JSON file');
   });
 
   describe('import', () => {
@@ -228,12 +228,25 @@ describe('SettingsView', () => {
       expect(status(wrapper)).toBe('✓ Exported');
     });
 
+    it('names the backup for the share sheet and the email subject', async () => {
+      // Only the clock: faking timers would stall fake-indexeddb.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2024-03-20T10:00:00.000Z'));
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      await exportButton(wrapper).trigger('click');
+      await settle();
+      expect(backup.downloadBackup).toHaveBeenCalledWith({
+        subject: 'CardiPaw backup Mar 20, 2024',
+        dialogTitle: 'Save or share your CardiPaw backup',
+      });
+    });
+
     it('claims nothing when the app share sheet is closed without saving', async () => {
       vi.mocked(backup.downloadBackup).mockResolvedValueOnce('cancelled');
       const { wrapper } = await mountView(SettingsView, '/settings');
       await exportButton(wrapper).trigger('click');
       await settle();
-      expect(backup.downloadBackup).toHaveBeenCalledWith('Save or share your CardiPaw backup');
+      expect(backup.downloadBackup).toHaveBeenCalledTimes(1);
       expect(status(wrapper)).toBe('');
       expect(alerts(wrapper)).toEqual([]);
       expect(exportButton(wrapper).text()).not.toContain('Exported');

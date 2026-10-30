@@ -13,7 +13,7 @@ const props = defineProps<{ pet: Pet; readings: Reading[] }>();
 const emit = defineEmits<{ close: [] }>();
 
 const router = useRouter();
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 
 const dialogRef = ref<HTMLElement | null>(null);
 useModal(dialogRef, { onClose: () => emit('close') });
@@ -123,8 +123,10 @@ async function copyLink() {
 async function nativeShare() {
   if (!shareUrl.value) return;
   try {
-    const data = { title: `${props.pet.name} — CardiPaw snapshot`, url: shareUrl.value };
-    await (isNative() ? Share.share(data) : navigator.share(data));
+    const data = { title: t('shareModal.shareSubject', { name: props.pet.name }), url: shareUrl.value };
+    await (isNative()
+      ? Share.share({ ...data, dialogTitle: t('shareModal.shareDialogTitle') })
+      : navigator.share(data));
   } catch {
     // User dismissed the share sheet
   }

@@ -186,8 +186,9 @@
     "dataSection": "Data",
     "dataDesc": "Your pet profiles, readings and notes are stored locally on this device using IndexedDB. Export them to back up or transfer to another device.",
     "exportName": "Export data",
-    "exportDesc": "Download all pets, readings and notes as JSON",
+    "exportDesc": "All pets, readings and notes as a JSON file",
     "exportShareTitle": "Save or share your CardiPaw backup",
+    "exportShareSubject": "CardiPaw backup {date}",
     "exported": "✓ Exported",
     "export": "Export",
     "importName": "Import data",
@@ -267,6 +268,8 @@
     "encodeError": "The share link could not be created. Please try again.",
     "tooLarge": "This selection is too large to share as a link. Select fewer months.",
     "shareNative": "Share…",
+    "shareSubject": "{name} — CardiPaw snapshot",
+    "shareDialogTitle": "Share snapshot link",
     "copied": "Copied!",
     "copyLink": "Copy link"
   },
@@ -312,6 +315,7 @@
   },
   "pdf": {
     "shareTitle": "Share PDF report",
+    "shareSubject": "CardiPaw report – {name}",
     "reportTitle": "CardiPaw Respiratory Rate Report",
     "dateTime": "Date / Time",
     "note": "Note",

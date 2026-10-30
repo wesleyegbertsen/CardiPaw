@@ -4,7 +4,7 @@ import { localDayKey } from '../utils/date';
 import { usePetsStore } from '../stores/pets';
 import { resetPetData } from '../stores/petData';
 import { isNative } from '../utils/platform';
-import { shareFile, type ShareFileOutcome } from './nativeFile';
+import { shareFile, type ShareFileOptions, type ShareFileOutcome } from './nativeFile';
 
 export type BackupErrorCode = 'unreadable' | 'invalid';
 
@@ -200,12 +200,14 @@ export function exportBackup(): Promise<ExportPayload> {
 
 /**
  * Exports all data as a JSON file: a download on the website, the share sheet in the app
- * (`shareTitle` heads it). 'cancelled' means the share sheet was closed without saving.
+ * (`share` names it there). 'cancelled' means the share sheet was closed without saving.
  */
-export async function downloadBackup(shareTitle: string): Promise<'saved' | ShareFileOutcome> {
+export async function downloadBackup(
+  share: Pick<ShareFileOptions, 'subject' | 'dialogTitle'>,
+): Promise<'saved' | ShareFileOutcome> {
   const json = JSON.stringify(await exportBackup());
   const name = `cardipaw-export-${localDayKey(new Date())}.json`;
-  if (isNative()) return shareFile({ name, data: json, encoding: 'utf8', title: shareTitle });
+  if (isNative()) return shareFile({ name, data: json, encoding: 'utf8', ...share });
   const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url;

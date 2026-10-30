@@ -209,7 +209,8 @@ describe('usePdfExport', () => {
       name: 'cardipaw-mr-biscuit-2024-06-01.pdf',
       data: 'JVBERi0=',
       encoding: 'base64',
-      title: 'Share PDF report',
+      subject: 'CardiPaw report – Mr. Biscuit',
+      dialogTitle: 'Share PDF report',
     });
   });
 

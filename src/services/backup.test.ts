@@ -233,6 +233,8 @@ describe('export and import', () => {
 });
 
 describe('downloadBackup', () => {
+  const share = { subject: 'Backup', dialogTitle: 'Save' };
+
   beforeEach(async () => {
     await db.importAllData(validateBackup(backup()).data);
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -243,7 +245,7 @@ describe('downloadBackup', () => {
   it('downloads the JSON file on the website', async () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:x');
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-    await expect(downloadBackup('Save')).resolves.toBe('saved');
+    await expect(downloadBackup(share)).resolves.toBe('saved');
     expect(click).toHaveBeenCalledTimes(1);
     expect(shareFile).not.toHaveBeenCalled();
   });
@@ -251,10 +253,15 @@ describe('downloadBackup', () => {
   it('hands the JSON file to the share sheet in the app', async () => {
     mockNative();
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-    await expect(downloadBackup('Save')).resolves.toBe('shared');
+    await expect(downloadBackup(share)).resolves.toBe('shared');
     expect(click).not.toHaveBeenCalled();
     const [opts] = vi.mocked(shareFile).mock.calls[0];
-    expect(opts).toMatchObject({ name: 'cardipaw-export-2024-03-20.json', encoding: 'utf8', title: 'Save' });
+    expect(opts).toMatchObject({
+      name: 'cardipaw-export-2024-03-20.json',
+      encoding: 'utf8',
+      subject: 'Backup',
+      dialogTitle: 'Save',
+    });
     expect(JSON.parse(opts.data).pets).toEqual([makePet()]);
   });
 });
