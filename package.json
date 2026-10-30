@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
+    "build:android": "vue-tsc -b && vite build --mode capacitor && cap sync android",
+    "android:open": "cap open android",
     "preview": "vite preview",
     "typecheck": "vue-tsc -b",
     "lint": "eslint .",
