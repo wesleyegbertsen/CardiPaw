@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { returnTo } from '../router/returnTo';
 import { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
 import { localDayKey, localMonthKey } from '../utils/date';
@@ -387,7 +388,7 @@ onMounted(async () => {
   // The user may have left while the pets loaded; don't pull them back home from another page.
   if (unmounted) return;
   if (!pet.value) {
-    router.push({ name: 'home' });
+    router.replace({ name: 'home' });
     return;
   }
   // Alert on failure, so an empty tab is not mistaken for a pet without data.
@@ -410,7 +411,7 @@ async function deletePet() {
   deleteError.value = false;
   try {
     await petsStore.removePet(petId);
-    router.push({ name: 'home' });
+    returnTo(router, { name: 'home' });
   } catch (e) {
     console.error('Deleting pet failed', e);
     deleteError.value = true;
@@ -424,7 +425,7 @@ async function deletePet() {
 <template>
   <div v-if="pet" class="page">
     <header class="page-header">
-      <button class="back-btn" @click="router.push({ name: 'home' })" :aria-label="$t('common.back')">
+      <button class="back-btn" @click="returnTo(router, { name: 'home' })" :aria-label="$t('common.back')">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
         </svg>
@@ -694,7 +695,7 @@ async function deletePet() {
 
   <div v-else-if="loadError" class="page">
     <header class="page-header">
-      <button class="back-btn" @click="router.push({ name: 'home' })" :aria-label="$t('common.back')">
+      <button class="back-btn" @click="returnTo(router, { name: 'home' })" :aria-label="$t('common.back')">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
         </svg>

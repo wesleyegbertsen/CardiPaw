@@ -39,19 +39,30 @@ describe('PetDetailView', () => {
   afterEach(() => vi.useRealTimers());
 
   it('goes home for an unknown pet', async () => {
-    const { push, wrapper } = await mountView(PetDetailView, '/pets/missing');
-    expect(push).toHaveBeenCalledWith({ name: 'home' });
+    const { wrapper, replace } = await mountView(PetDetailView, '/pets/missing');
+    expect(replace).toHaveBeenCalledWith({ name: 'home' });
     expect(wrapper.find('.page').exists()).toBe(false);
+  });
+
+  it('steps back to home on back when home is the previous screen', async () => {
+    const { wrapper, router, push, replace } = await mountDetail('/pets/pet-1');
+    router.options.history.state.back = '/';
+    const back = vi.spyOn(router, 'back').mockImplementation(() => {});
+    await wrapper.get('.back-btn').trigger('click');
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('does not send the user home after they already left', async () => {
     const load = deferred<Pet[]>();
     vi.spyOn(db, 'getAllPets').mockReturnValueOnce(load.promise);
-    const { push, wrapper } = await mountView(PetDetailView, '/pets/missing');
+    const { push, wrapper, replace } = await mountView(PetDetailView, '/pets/missing');
     wrapper.unmount();
     load.resolve([]);
     await settle();
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('shows ? as the avatar for a pet without a name', async () => {
@@ -180,16 +191,16 @@ describe('PetDetailView', () => {
 
   describe('delete', () => {
     it('removes the pet and goes home after confirming', async () => {
-      const { wrapper, push } = await mountDetail('/pets/pet-1');
+      const { wrapper, replace } = await mountDetail('/pets/pet-1');
       await wrapper.get('.icon-btn.danger').trigger('click');
       document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
       await settle();
       expect(usePetsStore().pets).toEqual([]);
-      expect(push).toHaveBeenCalledWith({ name: 'home' });
+      expect(replace).toHaveBeenCalledWith({ name: 'home' });
     });
 
     it('keeps the pet and returns focus to the delete button on cancel', async () => {
-      const { wrapper, push } = await mountDetail('/pets/pet-1');
+      const { wrapper, push, replace } = await mountDetail('/pets/pet-1');
       const remove = wrapper.get('.icon-btn.danger');
       (remove.element as HTMLElement).focus();
       await remove.trigger('click');
@@ -202,11 +213,12 @@ describe('PetDetailView', () => {
       expect(document.activeElement).toBe(remove.element);
       expect(usePetsStore().pets).toHaveLength(1);
       expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
     });
     it('reports a failed delete, keeps the pet and returns focus', async () => {
       vi.spyOn(db, 'deletePetCascade').mockRejectedValueOnce(new Error('quota'));
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const { wrapper, push } = await mountDetail('/pets/pet-1');
+      const { wrapper, push, replace } = await mountDetail('/pets/pet-1');
       const remove = wrapper.get('.icon-btn.danger');
       (remove.element as HTMLElement).focus();
       await remove.trigger('click');
@@ -219,19 +231,20 @@ describe('PetDetailView', () => {
       expect(usePetsStore().pets).toHaveLength(1);
       expect(error).toHaveBeenCalledWith('Deleting pet failed', expect.any(Error));
       expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
     });
 
     it('deletes on a retry after a failed delete', async () => {
       vi.spyOn(db, 'deletePetCascade').mockRejectedValueOnce(new Error('quota'));
       vi.spyOn(console, 'error').mockImplementation(() => {});
-      const { wrapper, push } = await mountDetail('/pets/pet-1');
+      const { wrapper, replace } = await mountDetail('/pets/pet-1');
       for (let attempt = 0; attempt < 2; attempt++) {
         await wrapper.get('.icon-btn.danger').trigger('click');
         document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
         await settle();
       }
       expect(usePetsStore().pets).toEqual([]);
-      expect(push).toHaveBeenCalledWith({ name: 'home' });
+      expect(replace).toHaveBeenCalledWith({ name: 'home' });
     });
 
     it('deletes once when confirm is clicked twice', async () => {
@@ -259,11 +272,12 @@ describe('PetDetailView', () => {
   it('shows an error with a way back when the pet cannot load', async () => {
     vi.spyOn(db, 'getAllPets').mockRejectedValueOnce(new Error('idb broken'));
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { wrapper, push } = await mountDetail('/pets/pet-1');
+    const { wrapper, push, replace } = await mountDetail('/pets/pet-1');
     expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
     await wrapper.get('.back-btn').trigger('click');
-    expect(push).toHaveBeenCalledWith({ name: 'home' });
+    expect(replace).toHaveBeenCalledWith({ name: 'home' });
     expect(error).toHaveBeenCalledWith('Loading pet failed', expect.any(Error));
   });
 
@@ -273,7 +287,7 @@ describe('PetDetailView', () => {
   ] as const)('shows the pet with an alert when its %s fail to load', async (what, method) => {
     vi.spyOn(db, method).mockRejectedValueOnce(new Error('idb broken'));
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { wrapper, push } = await mountDetail('/pets/pet-1', {
+    const { wrapper, push, replace } = await mountDetail('/pets/pet-1', {
       readings: [makeReading()],
       notes: [makeNote()],
     });
@@ -281,6 +295,7 @@ describe('PetDetailView', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
     expect(error).toHaveBeenCalledWith(`Loading ${what} failed`, expect.any(Error));
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('keeps showing a cached pet with an alert when the pets fail to load', async () => {
