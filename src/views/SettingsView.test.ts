@@ -3,6 +3,7 @@ import { flushPromises, type VueWrapper } from '@vue/test-utils';
 import SettingsView from './SettingsView.vue';
 import * as backup from '../services/backup';
 import { mountView, settle } from '../test/mountView';
+import { deferred } from '../test/deferred';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
 
 // Keep parsing and validation real; only the IndexedDB-touching calls are faked.
@@ -225,6 +226,21 @@ describe('SettingsView', () => {
       expect(status(wrapper)).toBe('');
       await exportButton(wrapper).trigger('click');
       await settle();
+      expect(status(wrapper)).toBe('✓ Exported');
+    });
+
+    it('ignores a second tap while the first export is in progress', async () => {
+      const pending = deferred<'saved'>();
+      vi.mocked(backup.downloadBackup).mockReturnValueOnce(pending.promise);
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      await exportButton(wrapper).trigger('click');
+      expect(exportButton(wrapper).attributes('disabled')).toBeDefined();
+      await exportButton(wrapper).trigger('click');
+      expect(backup.downloadBackup).toHaveBeenCalledTimes(1);
+
+      pending.resolve('saved');
+      await settle();
+      expect(exportButton(wrapper).attributes('disabled')).toBeUndefined();
       expect(status(wrapper)).toBe('✓ Exported');
     });
 

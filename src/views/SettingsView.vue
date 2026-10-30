@@ -38,6 +38,7 @@ const importError = ref('');
 const exportSuccess = ref(false);
 const importSuccess = ref(false);
 const importing = ref(false);
+const exporting = ref(false);
 const exportError = ref(false);
 // Spoken by the status region; the buttons show the same text
 const statusPaused = ref(false);
@@ -67,6 +68,9 @@ function reannounceStatus() {
 }
 
 async function exportData() {
+  // The share sheet takes a moment to open; a second tap would open a second one.
+  if (exporting.value) return;
+  exporting.value = true;
   exportError.value = false;
   let outcome: Awaited<ReturnType<typeof downloadBackup>>;
   try {
@@ -79,6 +83,8 @@ async function exportData() {
     console.error('Backup export failed', e);
     exportError.value = true;
     return;
+  } finally {
+    exporting.value = false;
   }
   // Closing the app's share sheet saves nothing, so there is nothing to confirm.
   if (outcome === 'cancelled') return;
@@ -193,7 +199,7 @@ function cancelImport() {
                 <div class="action-desc">{{ $t('settings.exportDesc') }}</div>
               </div>
             </div>
-            <button class="action-btn" @click="exportData">
+            <button class="action-btn" :disabled="exporting" @click="exportData">
               {{ exportSuccess ? $t('settings.exported') : $t('settings.export') }}
             </button>
           </div>
