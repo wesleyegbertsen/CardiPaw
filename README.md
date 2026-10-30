@@ -297,6 +297,7 @@ CI builds a debug APK on every PR and attaches it to the run as the `cardipaw-de
 - **Android Auto Backup is disabled** (`allowBackup="false"` and backup rules that exclude everything), so nothing is copied to Google's backup or to a new phone. The in-app export is the only backup: export regularly and keep the file somewhere safe.
 - Share links still point at `https://cardipaw.com`, so the people you send them to open them in their browser.
 - Release signing and Google Play publishing are not set up yet; CI only builds debug APKs.
+- A debug APK is signed with a different key than a release build, so Android won't install one over the other. Uninstalling deletes the app's data: export it first, uninstall the debug app, install the release and import.
 
 ## Tech Stack
 
