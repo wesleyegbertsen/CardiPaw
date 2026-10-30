@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { returnTo } from '../router/returnTo';
 import { useNotesStore } from '../stores/notes';
 import { usePetsStore } from '../stores/pets';
 import { LazyRichTextEditor as RichTextEditor } from '../components/LazyRichTextEditor';
@@ -62,7 +63,7 @@ function goBack() {
   if (isEditMode.value && noteId) {
     router.replace({ name: 'note', params: { id: petId, noteId } });
   } else {
-    router.replace({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
+    returnTo(router, { name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
   }
 }
 
@@ -92,7 +93,7 @@ async function save() {
         createdAt: new Date().toISOString(),
         pinnedAt: editPinned.value ? new Date().toISOString() : undefined,
       });
-      router.replace({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
+      returnTo(router, { name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
     }
   } catch (e) {
     console.error('Saving note failed', e);

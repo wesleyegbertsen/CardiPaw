@@ -24,6 +24,20 @@ describe('returnTo', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it('steps back when the previous entry is the target with another tab open', async () => {
+    window.history.replaceState(null, '', '/#/');
+    const router = make();
+    await router.push('/');
+    await router.isReady();
+    await router.push({ name: 'pet', params: { id: 'p1' }, query: { tab: 'notes' } });
+    await router.push({ name: 'reading', params: { id: 'p1', readingId: 'r1' } });
+    const back = vi.spyOn(router, 'back').mockImplementation(() => {});
+    const replace = vi.spyOn(router, 'replace');
+    returnTo(router, { name: 'pet', params: { id: 'p1' }, query: { tab: 'readings' } });
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it('replaces on a cold start (deep link, no previous entry)', async () => {
     window.history.replaceState(null, '', '/#/pets/p1/readings/r1');
     const router = make();

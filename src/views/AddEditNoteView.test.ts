@@ -63,6 +63,28 @@ describe('AddEditNoteView', () => {
       expect(replace).toHaveBeenCalledWith(notesTab);
     });
 
+    it('steps back to the notes tab when leaving, when it is the previous screen', async () => {
+      const { wrapper, router, push, replace } = await mountNote('/pets/pet-1/notes/add');
+      router.options.history.state.back = '/pets/pet-1?tab=notes';
+      const back = vi.spyOn(router, 'back').mockImplementation(() => {});
+      await wrapper.get('.back-btn').trigger('click');
+      expect(back).toHaveBeenCalledTimes(1);
+      expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('steps back to the notes tab after saving, when it is the previous screen', async () => {
+      const { wrapper, router, push, replace } = await mountNote('/pets/pet-1/notes/add');
+      router.options.history.state.back = '/pets/pet-1?tab=notes';
+      const back = vi.spyOn(router, 'back').mockImplementation(() => {});
+      await wrapper.get('#note-title').setValue('Vet');
+      await wrapper.get('form').trigger('submit');
+      await settle();
+      expect(back).toHaveBeenCalledTimes(1);
+      expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
+    });
+
     it('reports a failed save and stays on the form', async () => {
       vi.spyOn(db, 'saveNote').mockRejectedValueOnce(new Error('quota'));
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
