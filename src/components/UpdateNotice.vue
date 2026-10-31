@@ -37,8 +37,12 @@ const { available, showNotice, dismiss } = useUpdateCheck();
 .update-notice {
   position: fixed;
   bottom: calc(var(--nav-offset) + 88px);
-  left: 50%;
-  transform: translateX(-50%);
+  /* Both sides pinned and auto margins centre it: with left: 50% the box could only grow
+     into half the screen, so the buttons wrapped. */
+  left: 16px;
+  right: 16px;
+  width: fit-content;
+  margin-inline: auto;
   display: flex;
   align-items: center;
   gap: 12px;
