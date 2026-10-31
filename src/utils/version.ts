@@ -3,6 +3,14 @@ export type Version = readonly [number, number, number];
 
 export const LATEST_RELEASE_URL = 'https://github.com/wesleyegbertsen/CardiPaw/releases/latest';
 
+/**
+ * What the update check fetches (services/githubRelease.ts). The app's Content-Security-Policy
+ * allows this exact URL and nothing else on the host (native/csp.ts, which runs at build time
+ * and so can't import the fetching code).
+ */
+export const LATEST_RELEASE_API =
+  'https://api.github.com/repos/wesleyegbertsen/CardiPaw/releases/latest';
+
 // Plain X.Y.Z (optionally vX.Y.Z, as in release tags): no prerelease or build suffix.
 const RELEASE = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 

@@ -1,10 +1,15 @@
 // Build-time only: vite.config.ts turns nginx.conf's policy into the app's meta tag.
+import { LATEST_RELEASE_API } from '../utils/version';
 
 // A meta tag can't carry these; the WebView never frames the app anyway.
 const HEADER_ONLY_DIRECTIVES = ['frame-ancestors', 'report-uri', 'sandbox'];
 
-/** Hosts the app, but not the website, may fetch: the opt-in update check (useUpdateCheck). */
-export const NATIVE_CONNECT_SRC = ['https://api.github.com'];
+/**
+ * What the app, but not the website, may fetch: the one URL of the opt-in update check
+ * (useUpdateCheck). A source with a path and no trailing slash matches only that exact path,
+ * so the page can't reach the rest of api.github.com.
+ */
+export const NATIVE_CONNECT_SRC = [LATEST_RELEASE_API];
 
 const name = (directive: string) => directive.split(' ')[0];
 

@@ -1,7 +1,6 @@
-import { parseVersion, type Version } from '../utils/version';
+import { LATEST_RELEASE_API, parseVersion, type Version } from '../utils/version';
 
 // Unauthenticated: 60 requests an hour per IP, plenty for one check a day.
-const LATEST_RELEASE_API = 'https://api.github.com/repos/wesleyegbertsen/CardiPaw/releases/latest';
 const TIMEOUT_MS = 10_000;
 
 /**

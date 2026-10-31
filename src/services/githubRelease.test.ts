@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { LATEST_RELEASE_API } from '../utils/version';
 import { fetchLatestRelease } from './githubRelease';
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -14,8 +15,12 @@ describe('fetchLatestRelease', () => {
   it('asks GitHub for the latest release without credentials or a referrer', async () => {
     reply({ tag_name: 'v1.10.0' });
     await expect(fetchLatestRelease()).resolves.toEqual([1, 10, 0]);
-    expect(fetchMock).toHaveBeenCalledWith(
+    // The same constant the app's Content-Security-Policy allows (src/native/csp.ts).
+    expect(LATEST_RELEASE_API).toBe(
       'https://api.github.com/repos/wesleyegbertsen/CardiPaw/releases/latest',
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      LATEST_RELEASE_API,
       expect.objectContaining({
         headers: { Accept: 'application/vnd.github+json' },
         credentials: 'omit',

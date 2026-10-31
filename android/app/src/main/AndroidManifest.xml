@@ -49,8 +49,8 @@
          default): at most one request a day to api.github.com. Android grants it at install time
          to the whole app, not per feature; the opt-in only decides whether CardiPaw's own code
          makes the request. The app's Content-Security-Policy (src/native/csp.ts) limits what the
-         page can fetch to the app itself and api.github.com; native plugin calls, such as the
-         built-in CapacitorHttp, are outside the CSP. The app is still served in-process
+         page can fetch to the app itself and the one GitHub release URL the check asks; native
+         plugin calls, such as the built-in CapacitorHttp, are outside the CSP. The app is still served in-process
          (WebViewLocalServer), so it works offline. Never add REQUEST_INSTALL_PACKAGES: the user
          installs updates. -->
     <uses-permission android:name="android.permission.INTERNET" />

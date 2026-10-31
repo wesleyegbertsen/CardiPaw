@@ -8,8 +8,8 @@ import { version } from './package.json'
 
 // `vite build --mode capacitor` (npm run build:android) builds the Android app into
 // dist-native/: no service worker or web manifest, the page extends under the system bars,
-// and it carries the website's Content-Security-Policy as a meta tag (plus api.github.com in
-// connect-src for the opt-in update check; see src/native/csp.ts).
+// and it carries the website's Content-Security-Policy as a meta tag (plus the GitHub release URL
+// of the opt-in update check in connect-src; see src/native/csp.ts).
 export default defineConfig(({ mode }) => {
   const native = mode === 'capacitor'
   return {
