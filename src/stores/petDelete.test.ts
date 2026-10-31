@@ -8,6 +8,8 @@ import { mockNative } from '../test/native';
 import { cleanUpExports } from '../services/nativeFile';
 
 vi.mock('../services/nativeFile', () => ({ cleanUpExports: vi.fn(async () => {}) }));
+// mockNative() would send syncReminders to the plugin; src/stores/reminderHooks.test.ts covers the calls.
+vi.mock('../native/reminders', () => ({ syncReminders: vi.fn(async () => {}) }));
 
 const STORAGE_KEY = 'cardipaw-tracker-prefs';
 const prefs = { soundEnabled: false, vibrationEnabled: true };

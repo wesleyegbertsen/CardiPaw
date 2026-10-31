@@ -8,7 +8,7 @@ import { i18n } from './i18n';
 
 vi.mock('./native/backButton', () => ({ installBackButton: vi.fn() }));
 vi.mock('./native/exportCleanup', () => ({ cleanUpOldExports: vi.fn() }));
-// syncReminders too, for any module the app loads that keeps reminders in step.
+// syncReminders too: the stores import it.
 vi.mock('./native/reminders', () => ({
   installReminders: vi.fn(),
   syncReminders: vi.fn(async () => {}),
