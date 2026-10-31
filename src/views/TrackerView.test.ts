@@ -359,7 +359,9 @@ describe('TrackerView', () => {
 
   it('turns the sound off with its switch and remembers it for the pet', async () => {
     const { wrapper } = await mountTracker();
-    const sound = wrapper.findAll('[role="switch"]')[0];
+    const sound = wrapper
+      .findAll('[role="switch"]')
+      .find((s) => document.getElementById(s.attributes('aria-labelledby')!)?.textContent === 'Sound')!;
     expect(sound.attributes('aria-checked')).toBe('true');
     await sound.trigger('click');
     expect(sound.attributes('aria-checked')).toBe('false');

@@ -53,6 +53,18 @@ describe('useUpdateCheck', () => {
     expect(local.fetchLatest).not.toHaveBeenCalled();
   });
 
+  it('offers nothing on the website, even with a newer release saved', async () => {
+    localStorage.setItem('cardipaw-update-check', '1');
+    localStorage.setItem(
+      'cardipaw-update-state',
+      JSON.stringify({ lastCheck: NOW, latest: '1.3.0' }),
+    );
+    mockNative(false);
+    const { check } = await load();
+    expect(check.available.value).toBeNull();
+    expect(check.showNotice.value).toBe(false);
+  });
+
   it('turning it on checks right away and offers a newer release', async () => {
     const { fetchLatest, check } = await load();
     check.setEnabled(true);
@@ -77,8 +89,14 @@ describe('useUpdateCheck', () => {
   it('saves the check time before asking, so a failure also waits a day', async () => {
     localStorage.setItem('cardipaw-update-check', '1');
     const { checkIfDue, fetchLatest, check } = await load({ latest: null });
+    let savedWhenAsked: unknown;
+    fetchLatest.mockImplementation(async () => {
+      savedWhenAsked = savedState().lastCheck;
+      return null;
+    });
     await checkIfDue();
     expect(fetchLatest).toHaveBeenCalledOnce();
+    expect(savedWhenAsked).toBe(NOW);
     expect(savedState()).toEqual({ lastCheck: NOW });
     expect(check.available.value).toBeNull();
     const again = await load({ latest: null }); // a restart reads the saved time
@@ -91,8 +109,9 @@ describe('useUpdateCheck', () => {
     const { checkIfDue, fetchLatest } = await load();
     const answer = deferred<Version | null>();
     fetchLatest.mockReturnValue(answer.promise);
-    const first = checkIfDue();
-    const second = checkIfDue();
+    const first = checkIfDue(NOW);
+    // A day later would pass the daily limit: only the pending check stops a second request.
+    const second = checkIfDue(NOW + DAY);
     answer.resolve([1, 3, 0]);
     await Promise.all([first, second]);
     expect(fetchLatest).toHaveBeenCalledOnce();

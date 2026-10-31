@@ -12,7 +12,7 @@ describe('fetchLatestRelease', () => {
   beforeEach(() => vi.stubGlobal('fetch', fetchMock.mockReset()));
   afterEach(() => vi.useRealTimers());
 
-  it('asks GitHub for the latest release without credentials or a referrer', async () => {
+  it('asks GitHub for the latest release without credentials, a referrer or a cached answer', async () => {
     reply({ tag_name: 'v1.10.0' });
     await expect(fetchLatestRelease()).resolves.toEqual([1, 10, 0]);
     // The same constant the app's Content-Security-Policy allows (src/native/csp.ts).
@@ -25,6 +25,7 @@ describe('fetchLatestRelease', () => {
         headers: { Accept: 'application/vnd.github+json' },
         credentials: 'omit',
         referrerPolicy: 'no-referrer',
+        cache: 'no-store',
       }),
     );
   });

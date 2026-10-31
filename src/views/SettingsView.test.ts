@@ -342,7 +342,9 @@ describe('SettingsView', () => {
 
   describe('updates', () => {
     const updatesSection = (w: VueWrapper) =>
-      w.findAll('section').find((s) => s.find('.section-title').text() === 'Updates');
+      w
+        .findAll('section')
+        .find((s) => s.element.querySelector('.section-title')?.textContent === 'Updates');
     const privacyText = async (w: VueWrapper) => {
       await privacyButton(w).trigger('click');
       return document.body.querySelector('[role="dialog"]')!.textContent;
@@ -383,6 +385,16 @@ describe('SettingsView', () => {
       );
       await toggle.trigger('click');
       expect(updates.setEnabled).toHaveBeenCalledWith(true);
+    });
+
+    it('show the switch on while the daily check is on', async () => {
+      mockNative();
+      updates.enabled.value = true;
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      const toggle = updatesSection(wrapper)!.get('[role="switch"]');
+      expect(toggle.attributes('aria-checked')).toBe('true');
+      await toggle.trigger('click');
+      expect(updates.setEnabled).toHaveBeenCalledWith(false);
     });
 
     it('describe what the daily check sends to the switch', async () => {

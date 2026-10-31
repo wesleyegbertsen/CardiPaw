@@ -1,11 +1,31 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h } from 'vue';
 import App from './App.vue';
 import * as db from './services/db';
 import { mountView, settle } from './test/mountView';
 import { blockStorage } from './test/blockStorage';
+import type { Version } from './utils/version';
+
+// The update check's own logic is tested in useUpdateCheck.test.ts; here it only decides
+// whether UpdateNotice has something to show.
+const updates = vi.hoisted(() => ({
+  available: undefined as unknown as { value: Version | null },
+  showNotice: undefined as unknown as { value: boolean },
+  dismiss: vi.fn(),
+}));
+vi.mock('./composables/useUpdateCheck', async () => {
+  const { ref } = await import('vue');
+  updates.available = ref(null);
+  updates.showNotice = ref(false);
+  return { useUpdateCheck: () => updates };
+});
 
 describe('App', () => {
+  beforeEach(() => {
+    updates.available.value = null;
+    updates.showNotice.value = false;
+  });
+
   it('marks the current nav item active and hides the nav on shared pages', async () => {
     const { wrapper, router } = await mountView(App, '/');
     const items = wrapper.findAll('.bottom-nav .nav-item');
@@ -21,6 +41,17 @@ describe('App', () => {
     await settle();
     expect(wrapper.find('.bottom-nav').exists()).toBe(false);
     expect(wrapper.find('.app-main').classes()).toContain('no-nav');
+  });
+
+  it('shows the update notice, but not on shared pages', async () => {
+    updates.available.value = [1, 3, 0];
+    updates.showNotice.value = true;
+    const { router } = await mountView(App, '/');
+    expect(document.body.querySelector('.update-notice')).not.toBeNull();
+
+    await router.push('/share');
+    await settle();
+    expect(document.body.querySelector('.update-notice')).toBeNull();
   });
 
   describe('route views', () => {
