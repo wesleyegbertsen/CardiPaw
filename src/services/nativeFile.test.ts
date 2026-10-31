@@ -185,4 +185,14 @@ describe('cleanUpExports', () => {
     );
     expect(warn).toHaveBeenCalledWith('Deleting an export failed', expect.any(Error));
   });
+
+  it('skips, quietly, an export a concurrent cleanup already deleted', async () => {
+    listExports(entry('gone'), entry('next'));
+    vi.mocked(Filesystem.rmdir).mockRejectedValueOnce(fsError('OS-PLUG-FILE-0008'));
+    await expect(cleanUpExports()).resolves.toBeUndefined();
+    expect(Filesystem.rmdir).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'exports/next' }),
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
 });

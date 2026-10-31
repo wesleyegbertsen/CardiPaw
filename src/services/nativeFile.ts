@@ -8,7 +8,7 @@ import { v4 as generateId } from 'uuid';
  * only this folder (android/app/src/main/res/xml/file_paths.xml), so keep the two in step.
  */
 const EXPORTS_DIR = 'exports';
-/** The plugin's "does not exist" code (FilesystemErrors.kt): nothing was exported yet. */
+/** The plugin's "does not exist" code (FilesystemErrors.kt). */
 const DOES_NOT_EXIST = 'OS-PLUG-FILE-0008';
 /**
  * Exports younger than this are kept by the next export and at start-up: the app they were
@@ -80,9 +80,8 @@ export async function cleanUpExports(olderThanMs = 0): Promise<void> {
   try {
     ({ files } = await Filesystem.readdir({ path: EXPORTS_DIR, directory: Directory.Cache }));
   } catch (e) {
-    // The Android bridge copies the plugin's error code onto the rejected error.
-    const nothingExported = (e as { code?: unknown } | null)?.code === DOES_NOT_EXIST;
-    if (!nothingExported) console.warn('Listing exports failed', e);
+    // No exports folder: nothing was exported yet.
+    if (!isDoesNotExist(e)) console.warn('Listing exports failed', e);
     return;
   }
   const cutoff = Date.now() - olderThanMs;
@@ -97,8 +96,14 @@ export async function cleanUpExports(olderThanMs = 0): Promise<void> {
         await Filesystem.deleteFile({ path, directory: Directory.Cache });
       }
     } catch (e) {
-      // One stuck export doesn't keep the others.
-      console.warn('Deleting an export failed', e);
+      // Quiet when a cleanup running at the same time already deleted it. Either way, one
+      // stuck export doesn't keep the others.
+      if (!isDoesNotExist(e)) console.warn('Deleting an export failed', e);
     }
   }
+}
+
+function isDoesNotExist(e: unknown): boolean {
+  // The Android bridge copies the plugin's error code onto the rejected error.
+  return (e as { code?: unknown } | null)?.code === DOES_NOT_EXIST;
 }
