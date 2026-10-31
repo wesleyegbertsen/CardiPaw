@@ -15,6 +15,7 @@ const NODE_TESTS = [
   'scripts/**/*.test.mjs',
   'src/composables/{useAudioBeep,useHaptics}.test.ts',
   'src/i18n/locales.test.ts',
+  'src/native/csp.test.ts',
   'src/services/db.test.ts',
   'src/stores/stores.test.ts',
   'src/test/androidResources.test.ts',
