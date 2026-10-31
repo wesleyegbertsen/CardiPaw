@@ -39,5 +39,7 @@
 
     <!-- Permissions -->
 
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- No INTERNET: Capacitor serves https://localhost from the bundled assets in-process
+         (WebViewLocalServer), so the app never needs the network and can't send data off the
+         device. Only add it back for live reload (server.url) or a feature that really needs it. -->
 </manifest>
