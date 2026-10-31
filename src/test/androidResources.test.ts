@@ -114,8 +114,18 @@ describe('Android resources', () => {
         windowSplashScreenBackground: '@color/app_background',
         windowSplashScreenAnimatedIcon: '@drawable/ic_launcher_foreground',
         windowSplashScreenIconBackgroundColor: '@color/ic_launcher_background',
+        'android:windowLightStatusBar': '@bool/light_system_bars',
+        'android:windowLightNavigationBar': '@bool/light_system_bars',
       },
     });
+  });
+
+  it('has dark system bar icons on the launch screen in light mode only', () => {
+    const lightBars = (folder: string) =>
+      readFileSync(join(RES, folder, 'bools.xml'), 'utf8').match(
+        /<bool name="light_system_bars">(true|false)<\/bool>/,
+      )?.[1];
+    expect([lightBars('values'), lightBars('values-night')]).toEqual(['true', 'false']);
   });
 
   it('uses the web app background colours, light and dark', () => {
