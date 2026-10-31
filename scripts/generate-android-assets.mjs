@@ -4,6 +4,8 @@
 //         node scripts/generate-android-assets.mjs --check         (exit 1 if the XML is stale)
 // --check compares only the XML: PNG bytes depend on the sharp/libvips version, so the
 // legacy PNGs aren't checked; regenerate them whenever favicon.svg changes.
+// The paw's placement (SCALE, OFFSET) assumes favicon.svg's single <path> and its
+// <g transform>; the script stops if either changes, rather than misplace the paw.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -23,6 +25,26 @@ function extract(svg, pattern, what) {
 const svg = readFileSync(join(ROOT, SOURCE), 'utf8');
 const tileColor = extract(svg, /<rect[^>]*fill="(#[0-9a-fA-F]{6})"/, '<rect fill="#rrggbb">');
 const pawPath = extract(svg, /<path d="([^"]+)"/, '<path d>');
+
+// The adaptive icon draws only this one path, placed by SCALE and OFFSET below, so a
+// second shape would be missing from it and a new transform would place the paw
+// differently in the favicon (and the legacy PNGs) than in the adaptive icon.
+const pathCount = svg.match(/<path\b/g).length;
+if (pathCount !== 1) {
+  throw new Error(
+    `${SOURCE} has ${pathCount} <path> elements; this script draws exactly one. ` +
+      'Update the foreground template (and SCALE, OFFSET) in scripts/generate-android-assets.mjs.',
+  );
+}
+const EXPECTED_TRANSFORM = 'translate(8, 8) scale(0.094)';
+const transform = extract(svg, /<g transform="([^"]+)"/, '<g transform>');
+if (transform !== EXPECTED_TRANSFORM) {
+  throw new Error(
+    `${SOURCE}: <g transform="${transform}">, expected "${EXPECTED_TRANSFORM}". ` +
+      'Recompute SCALE and OFFSET in scripts/generate-android-assets.mjs for the new ' +
+      'placement, then update EXPECTED_TRANSFORM.',
+  );
+}
 
 // The paw path is drawn in a 512-unit box (Font Awesome); its bounding box is
 // (0,32)-(512,480), so its centre is (256,256). An adaptive icon is a 108dp canvas whose
@@ -126,5 +148,6 @@ if (process.argv.includes('--check')) {
       .png({ compressionLevel: 9 })
       .toFile(join(dir, 'ic_launcher_round.png'));
   }
-  console.log(`Wrote ${Object.keys(xmlFiles).length} XML files and 10 PNGs under ${RES}`);
+  const pngCount = Object.keys(DENSITIES).length * 2;
+  console.log(`Wrote ${Object.keys(xmlFiles).length} XML files and ${pngCount} PNGs under ${RES}`);
 }
