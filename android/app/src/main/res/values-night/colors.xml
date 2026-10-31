@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The dark page background: --color-bg under [data-theme="dark"] in global.css. -->
+    <color name="app_background">#111113</color>
+</resources>

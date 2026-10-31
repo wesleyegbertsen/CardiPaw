@@ -16,6 +16,7 @@ const NODE_TESTS = [
   'src/i18n/locales.test.ts',
   'src/services/db.test.ts',
   'src/stores/stores.test.ts',
+  'src/test/androidResources.test.ts',
   'src/utils/{age,chartWindow,date,pdfText,petInitial,rateStatus,shareCodec,trend}.test.ts',
 ];
 
