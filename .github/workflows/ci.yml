@@ -33,8 +33,10 @@ jobs:
           context: .
           push: false
 
+  # Builds the debug APK and smoke-tests release signing. The name is a required status check
+  # in the default branch ruleset: rename both together, or every PR waits for a missing check.
   android:
-    name: Android debug APK
+    name: Android build
     runs-on: ubuntu-latest
 
     steps:
@@ -88,7 +90,6 @@ jobs:
 
       # Release smoke test: the version check, signing and verification that the release
       # runs (android-release.yml), here with a throwaway key so every PR proves them.
-      # The job keeps its name: "Android debug APK" is a required status check.
       - name: Stamp a test release version
         run: npm run set-version -- 1.2.3
 
