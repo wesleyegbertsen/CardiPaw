@@ -25,4 +25,7 @@ export function resetPetData(keepPetIds: string[]): void {
   useReadingsStore().$reset();
   useNotesStore().$reset();
   pruneTrackerPrefs(keepPetIds);
+  // The imported backup replaced every pet, while exports in the app's cache still hold the
+  // previous data, so all of them go. Never rejects.
+  if (isNative()) void cleanUpExports();
 }

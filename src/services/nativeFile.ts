@@ -72,8 +72,8 @@ export async function shareFile({
 
 /**
  * App only: deletes the exports last modified `olderThanMs` or more ago, or all of them
- * (the default). Never rejects: a leftover file isn't worth failing an export, the app start
- * or a pet delete over, so failures are only logged.
+ * (the default). Never rejects: a leftover file isn't worth failing an export, the app start,
+ * a pet delete or an import over, so failures are only logged.
  */
 export async function cleanUpExports(olderThanMs = 0): Promise<void> {
   let files: FileInfo[];
