@@ -121,7 +121,8 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       # Public (every APK contains it), so a variable: logs can show it on a mismatch.
       cert-sha256: ${{ vars.ANDROID_CERT_SHA256 }}
-    # Only the signing secrets, not inherit.
+    # Only the signing secrets, not inherit. They exist only in the android-signing environment,
+    # which android-release.yml's sign job names (a calling job can't).
     secrets:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -148,6 +149,26 @@ jobs:
         with:
           name: android-release-apk
           path: apk
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      # apksigner is a Java program.
+      - name: Setup Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Check again what gets published: the APK as downloaded here, against the variable.
+      - name: Verify Android APK
+        env:
+          ANDROID_CERT_SHA256: ${{ vars.ANDROID_CERT_SHA256 }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: node scripts/android-apk.mjs verify "apk/cardipaw-$VERSION.apk"
 
       - name: Generate changelog
         env:

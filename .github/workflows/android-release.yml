@@ -4,7 +4,8 @@ name: Android release APK
 # Gradle builds an unsigned APK in a job without secrets; a second job on a fresh runner,
 # which installs no npm packages and runs no Gradle, signs it with the SDK's apksigner.
 # So no dependency code (npm install scripts, Vite plugins, Capacitor's Gradle scripts)
-# can reach the signing key.
+# can reach the signing key. The secrets live in the android-signing environment, which only
+# the sign job names: no other job can read them, even by mistake.
 on:
   workflow_call:
     inputs:
@@ -21,7 +22,10 @@ on:
         # Not required here: when it is empty, the Verify step fails and says what to set.
         required: false
         type: string
-    # Not required here: when one is missing, the Sign step fails and names it.
+    # The caller still passes these by name, although they exist only in the android-signing
+    # environment: GitHub requires that for a reusable workflow, and only the sign job, which
+    # names the environment, gets their values. Not required here: when one is missing, the
+    # Sign step fails and names it.
     secrets:
       ANDROID_KEYSTORE_BASE64:
         description: The release keystore (.jks), base64 without line breaks
@@ -50,6 +54,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
+          # Nothing here pushes; don't leave the token in .git/config for dependency code.
+          persist-credentials: false
 
       - name: Setup Node 24
         uses: actions/setup-node@v6
@@ -94,13 +100,16 @@ jobs:
           name: android-unsigned-apk
           path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
-          retention-days: 1
+          # Long enough to re-run only the sign job, e.g. the next day after fixing a secret.
+          retention-days: 7
           overwrite: true
 
   sign:
     name: Sign and verify APK
     needs: build
     runs-on: ubuntu-latest
+    # Holds the signing secrets; restricted to main (see README, "Release signing").
+    environment: android-signing
     outputs:
       cert-sha256: ${{ steps.verify.outputs.cert-sha256 }}
 
@@ -117,6 +126,8 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
+          # No npm cache: nothing is installed here, and a restored cache is another job's files.
+          package-manager-cache: false
 
       # apksigner is a Java program; no Gradle cache here.
       - name: Setup Java 21
