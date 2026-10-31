@@ -357,7 +357,7 @@ gh api -X PUT 'repos/{owner}/{repo}/environments/android-signing' \
 gh api -X POST 'repos/{owner}/{repo}/environments/android-signing/deployment-branch-policies' \
   -f name=main -f type=branch
 
-keytool -genkeypair -v -keystore cardipaw-release.jks -alias cardipaw -keyalg RSA -keysize 4096 -validity 10000
+keytool -genkeypair -v -keystore cardipaw-release.jks -alias cardipaw -keyalg RSA -keysize 4096 -validity 36500
 base64 -w0 cardipaw-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 --env android-signing
 read -rsp 'Keystore password: ' p; echo; printf %s "$p" | gh secret set ANDROID_KEYSTORE_PASSWORD --env android-signing; unset p
 gh secret set ANDROID_KEY_ALIAS --env android-signing --body cardipaw
