@@ -1,6 +1,7 @@
 // Checks the Android resources that aapt only sees in the CI `android` job (there is no
 // Android SDK locally): references resolve, generated files aren't shadowed or stale,
 // and the launch screen uses the icon and the app's background colours.
+import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,5 +64,20 @@ describe('Android resources', () => {
       definitions(RES, file).map((key) => `${file.split('/')[0]}: ${key}`),
     );
     expect(keys.filter((key, i) => keys.indexOf(key) !== i)).toEqual([]);
+  });
+
+  it('has the launcher foreground only where the generator writes it', () => {
+    // A drawable-v24/ copy would win over drawable/ on every supported device (minSdk 24).
+    expect(
+      files.filter((f) => /^(drawable|mipmap)[^/]*\/ic_launcher_foreground\./.test(f)),
+    ).toEqual(['drawable/ic_launcher_foreground.xml']);
+  });
+
+  it('is up to date with public/favicon.svg', () => {
+    // Throws, printing the stale files, when the script exits 1.
+    execFileSync(process.execPath, ['scripts/generate-android-assets.mjs', '--check'], {
+      cwd: ROOT,
+      stdio: 'pipe',
+    });
   });
 });
