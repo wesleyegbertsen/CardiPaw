@@ -302,4 +302,21 @@ describe('SettingsView', () => {
     await flushPromises();
     expect(document.body.querySelector('[role="dialog"]')).toBeNull();
   });
+
+  describe('version', () => {
+    it('links a release to its release notes', async () => {
+      vi.stubGlobal('__APP_VERSION__', '1.2.0');
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(wrapper.get('.version-text a').attributes('href')).toBe(
+        'https://github.com/wesleyegbertsen/CardiPaw/releases/tag/v1.2.0',
+      );
+    });
+
+    it('shows a local build without a link', async () => {
+      vi.stubGlobal('__APP_VERSION__', '0.0.0');
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(wrapper.find('.version-text a').exists()).toBe(false);
+      expect(wrapper.get('.version-text span').text()).toBe('0.0.0');
+    });
+  });
 });

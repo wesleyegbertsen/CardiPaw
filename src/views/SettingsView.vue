@@ -5,14 +5,14 @@ import * as db from '../services/db';
 import { BackupError, downloadBackup, importBackup, parseBackup, type ValidatedBackup } from '../services/backup';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
+import { releaseTagUrl, releaseVersion } from '../utils/version';
 
 const isDev = import.meta.env.DEV;
 
 const appVersion = __APP_VERSION__;
 // Local builds keep package.json's placeholder 0.0.0; only released versions have release notes to link to.
-const releaseUrl = appVersion === '0.0.0'
-  ? null
-  : `https://github.com/wesleyegbertsen/CardiPaw/releases/tag/v${appVersion}`;
+const installed = releaseVersion(appVersion);
+const releaseUrl = installed ? releaseTagUrl(installed) : null;
 
 const { t, locale } = useI18n();
 
