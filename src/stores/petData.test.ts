@@ -1,10 +1,14 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as db from '../services/db';
+import { cleanUpExports } from '../services/nativeFile';
 import { forgetPetData, resetPetData } from './petData';
 import { useReadingsStore } from './readings';
 import { useNotesStore } from './notes';
 import { makeNote, makeReading } from '../test/fixtures';
+import { mockNative } from '../test/native';
+
+vi.mock('../services/nativeFile', () => ({ cleanUpExports: vi.fn(async () => {}) }));
 
 const PREFS_KEY = 'cardipaw-tracker-prefs';
 const pet2Reading = makeReading({ id: 'r2', petId: 'pet-2' });
@@ -44,5 +48,16 @@ describe('petData', () => {
     expect(useReadingsStore().readingsByPet).toEqual({});
     expect(useNotesStore().notesByPet).toEqual({});
     expect(JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null')).toEqual({ 'pet-2': prefs });
+  });
+
+  it('deletes every exported file on reset in the app', () => {
+    mockNative();
+    resetPetData([]);
+    expect(cleanUpExports).toHaveBeenCalledExactlyOnceWith();
+  });
+
+  it('has no exported files to delete on reset on the website', () => {
+    resetPetData([]);
+    expect(cleanUpExports).not.toHaveBeenCalled();
   });
 });

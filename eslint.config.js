@@ -26,9 +26,9 @@ export default defineConfig(
     },
   },
 
-  // Node scripts and tool config.
+  // Node scripts (repo and skill helpers) and tool config.
   {
-    files: ['scripts/**/*.mjs', '*.config.{js,ts}'],
+    files: ['scripts/**/*.mjs', '.claude/**/*.mjs', '*.config.{js,ts}'],
     languageOptions: { globals: globals.node },
   },
 

@@ -1,9 +1,13 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as db from '../services/db';
 import { usePetsStore } from './pets';
 import { failDeletesIn } from '../test/failDeletes';
 import { makePet } from '../test/fixtures';
+import { mockNative } from '../test/native';
+import { cleanUpExports } from '../services/nativeFile';
+
+vi.mock('../services/nativeFile', () => ({ cleanUpExports: vi.fn(async () => {}) }));
 
 const STORAGE_KEY = 'cardipaw-tracker-prefs';
 const prefs = { soundEnabled: false, vibrationEnabled: true };
@@ -33,5 +37,24 @@ describe('deleting a pet', () => {
     failDeletesIn('pets');
     await expect(usePetsStore().removePet('pet-1')).rejects.toMatchObject({ name: 'UnknownError' });
     expect(stored()).toEqual({ 'pet-1': prefs, 'pet-2': prefs });
+  });
+
+  // Backups and PDFs aren't tagged per pet, and a backup holds every pet: delete them all.
+  it('deletes the exported files in the app', async () => {
+    mockNative();
+    await usePetsStore().removePet('pet-1');
+    expect(cleanUpExports).toHaveBeenCalledExactlyOnceWith();
+  });
+
+  it('leaves the file system alone on the website', async () => {
+    await usePetsStore().removePet('pet-1');
+    expect(cleanUpExports).not.toHaveBeenCalled();
+  });
+
+  it('keeps the exported files when the delete fails', async () => {
+    mockNative();
+    failDeletesIn('pets');
+    await expect(usePetsStore().removePet('pet-1')).rejects.toMatchObject({ name: 'UnknownError' });
+    expect(cleanUpExports).not.toHaveBeenCalled();
   });
 });
