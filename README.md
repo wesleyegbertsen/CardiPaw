@@ -249,9 +249,9 @@ Every [release](https://github.com/wesleyegbertsen/CardiPaw/releases) includes t
 - Android refuses to install an older APK over a newer one. **Don't uninstall to get around that:** Android Auto Backup is disabled, so uninstalling deletes all of the app's data. If you really need to go back, [export](#data-export--import) first.
 - Export regularly anyway: the export file is the only backup of the app's data.
 
-**Checking an APK:** every release's notes list the SHA-256 of the certificate the APK is signed with, and it is the same for every release. You can compare it with the output of `apksigner verify --print-certs cardipaw-X.Y.Z.apk` (Android SDK build-tools), or with an app such as AppVerifier. If it ever differs, don't install that APK.
+**Checking an APK:** every release's notes list the SHA-256 of the certificate the APK is signed with, and it is the same for every release. You can compare it with the output of `apksigner verify --print-certs cardipaw-X.Y.Z.apk` (Android SDK build-tools), or with an app such as AppVerifier. Case and colons don't matter: those show `AB:CD:…`, the release notes lower-case hex without colons. If it ever differs, don't install that APK.
 
-**Coming from a CI debug build (#84):** those APKs are signed with a different key, so Android won't install a release over them. Once: export your data in the debug app, uninstall it, install the release APK and import the file.
+**Coming from a CI debug build:** those APKs are signed with a different key, so Android won't install a release over them. Once: export your data in the debug app, uninstall it, install the release APK and import the file.
 
 ## Releases & Versioning
 
@@ -321,7 +321,7 @@ CI builds a debug APK on every PR and attaches it to the run as the `cardipaw-de
 - **Never change `androidScheme` or `hostname` in `capacitor.config.ts`.** They define that origin: after a change, the app starts with no data for every user who installed an earlier version.
 - **Android Auto Backup is disabled** (`allowBackup="false"` and backup rules that exclude everything), so nothing is copied to Google's backup or to a new phone. The in-app export is the only backup: export regularly and keep the file somewhere safe.
 - Share links still point at `https://cardipaw.com`, so the people you send them to open them in their browser.
-- Google Play publishing is not set up yet (#85).
+- Google Play publishing is not set up yet ([#85](https://github.com/wesleyegbertsen/CardiPaw/issues/85)).
 - A debug APK is signed with a different key than the release APKs, so Android won't install one over the other. See [Android](#android) for moving your data.
 
 #### Release signing
@@ -333,33 +333,45 @@ The [Release workflow](.github/workflows/release.yml) calls [`android-release.ym
 - So no dependency code can reach the signing key.
 - The script also checks that the APK's version matches the release, and that the APK verifies with exactly one signer whose certificate matches `ANDROID_CERT_SHA256`.
 
-It needs, under Settings → Secrets and variables → Actions:
+It needs:
 
 | Name | Kind | Value |
 | --- | --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | secret | the keystore file, base64 on one line |
-| `ANDROID_KEYSTORE_PASSWORD` | secret | its password (a PKCS12 keystore, keytool's default, uses the same password for the key) |
-| `ANDROID_KEY_ALIAS` | secret | the key's alias, e.g. `cardipaw` |
-| `ANDROID_CERT_SHA256` | variable | the certificate's SHA-256 fingerprint; public, it is printed in every release's notes |
+| `ANDROID_KEYSTORE_BASE64` | secret in the `android-signing` environment | the keystore file, base64 on one line |
+| `ANDROID_KEYSTORE_PASSWORD` | secret in the `android-signing` environment | its password (a PKCS12 keystore, keytool's default, uses the same password for the key) |
+| `ANDROID_KEY_ALIAS` | secret in the `android-signing` environment | the key's alias, e.g. `cardipaw` |
+| `ANDROID_CERT_SHA256` | repository variable | the certificate's SHA-256 fingerprint; public, it is printed in every release's notes. Case and colons don't matter, so keytool's `AB:CD:…` works as is |
 
-If one is missing or wrong, the APK step fails with a message that names it, and nothing is tagged.
+The secrets live in a GitHub [environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments) that only the signing job names, so no other job can read them, and that only `main` may use.
 
-One-time setup (keytool comes with JDK 21; Android Studio has it in `jbr/bin`):
+If a secret or the variable is missing, or the APK's certificate doesn't match `ANDROID_CERT_SHA256`, the APK job fails with a message that names it. A wrong password or alias fails in `apksigner`, which says which. Either way nothing is tagged.
+
+One-time setup. keytool is in the JDK's `bin` folder, which usually isn't on the `PATH`: for example `"/c/Program Files/Java/jdk-21/bin/keytool"` in Git Bash or `& "$env:JAVA_HOME\bin\keytool"` in PowerShell; Android Studio has one in `jbr/bin`.
 
 ```bash
+# The environment, usable only from main (or in Settings → Environments: a new environment
+# android-signing whose deployment branches are limited to main).
+gh api -X PUT 'repos/{owner}/{repo}/environments/android-signing' \
+  -F 'deployment_branch_policy[protected_branches]=false' \
+  -F 'deployment_branch_policy[custom_branch_policies]=true'
+gh api -X POST 'repos/{owner}/{repo}/environments/android-signing/deployment-branch-policies' \
+  -f name=main -f type=branch
+
 keytool -genkeypair -v -keystore cardipaw-release.jks -alias cardipaw -keyalg RSA -keysize 4096 -validity 10000
-base64 -w0 cardipaw-release.jks | gh secret set ANDROID_KEYSTORE_BASE64
-gh secret set ANDROID_KEYSTORE_PASSWORD   # type it at the hidden prompt
-gh secret set ANDROID_KEY_ALIAS --body cardipaw
+base64 -w0 cardipaw-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 --env android-signing
+read -rsp 'Keystore password: ' p; echo; printf %s "$p" | gh secret set ANDROID_KEYSTORE_PASSWORD --env android-signing; unset p
+gh secret set ANDROID_KEY_ALIAS --env android-signing --body cardipaw
 keytool -list -v -keystore cardipaw-release.jks -alias cardipaw   # copy the "SHA256:" value
 gh variable set ANDROID_CERT_SHA256 --body "<that value>"
 ```
 
-In PowerShell, encode the keystore with `[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\cardipaw-release.jks")) | gh secret set ANDROID_KEYSTORE_BASE64`. Don't use `certutil -encode`: it adds header lines.
+Don't type the password into `gh secret set` itself in Git Bash: it has no hidden prompt there. The `read -rs` line above keeps it off the screen and out of the history. In PowerShell or Windows Terminal, `gh secret set ANDROID_KEYSTORE_PASSWORD --env android-signing` does prompt without echoing.
+
+In PowerShell, encode the keystore with `[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\cardipaw-release.jks")) | gh secret set ANDROID_KEYSTORE_BASE64 --env android-signing`. Don't use `certutil -encode`: it adds header lines.
 
 **The key is permanent.** Every future APK must be signed with it. If it is lost, no installed copy can ever be updated again, and users would have to uninstall, which deletes their data. Keep at least two offline backups of the `.jks` file and its password, and never commit it (`.gitignore` covers `*.jks`).
 
-**Google Play (#85):** use this key as Play's *app signing* key, not only as the upload key. Otherwise Play installs and GitHub APKs can't update each other.
+**Google Play ([#85](https://github.com/wesleyegbertsen/CardiPaw/issues/85)):** use this key as Play's *app signing* key, not only as the upload key. Otherwise Play installs and GitHub APKs can't update each other.
 
 ## Tech Stack
 
