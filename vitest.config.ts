@@ -12,7 +12,7 @@ process.env.TZ = 'UTC';
 // src/utils/html.test.ts overrides its environment with a `// @vitest-environment jsdom`
 // docblock: DOMPurify needs jsdom.
 const NODE_TESTS = [
-  'scripts/android-apk-lib.test.mjs',
+  'scripts/**/*.test.mjs',
   'src/composables/{useAudioBeep,useHaptics}.test.ts',
   'src/i18n/locales.test.ts',
   'src/services/db.test.ts',

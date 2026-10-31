@@ -58,7 +58,10 @@ function checkVersion(metadataPath, version) {
 function sign(input, output) {
   const missing = missingEnv(process.env, SIGNING_ENV);
   if (missing.length) {
-    throw new Error(`Release signing needs: ${missing.join(', ')} (see README, "Release signing")`);
+    throw new Error(
+      `Release signing needs: ${missing.join(', ')} (secrets in the android-signing ` +
+        'environment, see README, "Release signing")',
+    );
   }
   const keystore = decodeKeystoreBase64(process.env.ANDROID_KEYSTORE_BASE64);
   const dir = mkdtempSync(join(tmpdir(), 'cardipaw-sign-'));
@@ -68,7 +71,8 @@ function sign(input, output) {
     // AGP's unsigned output is already zip-aligned (verify checks it), and apksigner keeps that.
     // Passwords are read from the environment, never put on the command line. A PKCS12
     // keystore (keytool's default) uses the store password for the key too.
-    run(buildTool('apksigner'), [
+    const apksigner = buildTool('apksigner');
+    const signArgs = [
       'sign',
       '--ks',
       keystorePath,
@@ -91,7 +95,16 @@ function sign(input, output) {
       '--v4-signing-enabled',
       'false',
       input,
-    ]);
+    ];
+    try {
+      run(apksigner, signArgs);
+    } catch (err) {
+      // apksigner's own message (above) says which; a wrong password or alias is the usual cause.
+      throw new Error(
+        `${err.message}: check ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS ` +
+          '(environment android-signing)',
+      );
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

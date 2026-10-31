@@ -57,12 +57,22 @@ describe('expectedVersionCode', () => {
     expect(expectedVersionCode('2.999.999')).toBe(2999999);
   });
 
-  it.each(['1.1000.0', '1.0.1000', 'v1.2.3', '1.2.3-rc.1', '1.2', '', undefined, '0.0.0'])(
-    'rejects %j',
-    (version) => {
-      expect(() => expectedVersionCode(version)).toThrow();
-    },
-  );
+  it.each([
+    '1.1000.0',
+    '1.0.1000',
+    'v1.2.3',
+    '1.2.3-rc.1',
+    '1.2',
+    '',
+    undefined,
+    '0.0.0',
+    // Not SemVer, and 1.02.3 would get the same versionCode as 1.2.3.
+    '01.2.3',
+    '1.02.3',
+    '1.2.03',
+  ])('rejects %j', (version) => {
+    expect(() => expectedVersionCode(version)).toThrow();
+  });
 });
 
 describe('checkOutputMetadata', () => {
@@ -124,6 +134,10 @@ describe('decodeKeystoreBase64', () => {
     expect(decodeKeystoreBase64(`${base64.slice(0, 4)}\r\n${base64.slice(4)}\n`)).toEqual(bytes);
   });
 
+  it('ignores the BOM and CRLF that PowerShell 5.1 adds when it pipes the value', () => {
+    expect(decodeKeystoreBase64(`\uFEFF${base64}\r\n`)).toEqual(bytes);
+  });
+
   it('rejects certutil output without echoing it', () => {
     const certutil = `-----BEGIN CERTIFICATE-----\r\n${base64}\r\n-----END CERTIFICATE-----\r\n`;
     expect(() => decodeKeystoreBase64(certutil)).toThrow(/not `certutil -encode`/);
@@ -177,6 +191,7 @@ describe('checkApksignerOutput', () => {
       (o) => `${o}V2 Signer: certificate SHA-256 digest: ${'e'.repeat(64)}\n`,
     ],
     ['an upper-case digest', (o) => o.replace(DIGEST, DIGEST.toUpperCase())],
+    ['a digest with trailing characters', (o) => o.replace(DIGEST, `${DIGEST}ff`)],
   ])('fails closed on %s', (_, edit) => {
     const output = edit(VERIFIED_37);
     expect(output).not.toBe(VERIFIED_37);
