@@ -249,7 +249,7 @@ Every [release](https://github.com/wesleyegbertsen/CardiPaw/releases) includes t
 - Android refuses to install an older APK over a newer one. **Don't uninstall to get around that:** Android Auto Backup is disabled, so uninstalling deletes all of the app's data. If you really need to go back, [export](#data-export--import) first.
 - Export regularly anyway: the export file is the only backup of the app's data.
 
-**Checking an APK:** every release's notes list the SHA-256 of the certificate the APK is signed with, and it is the same for every release. You can compare it with the output of `apksigner verify --print-certs cardipaw-X.Y.Z.apk` (Android SDK build-tools), or with an app such as AppVerifier. Case and colons don't matter: those show `AB:CD:…`, the release notes lower-case hex without colons. If it ever differs, don't install that APK.
+**Checking an APK:** every release's notes list the SHA-256 of the certificate the APK is signed with, and it is the same for every release. You can compare it with the output of `apksigner verify --print-certs cardipaw-X.Y.Z.apk` (Android SDK build-tools), or with an app such as AppVerifier. apksigner prints it in the same form as the release notes (lower-case hex without colons); other tools may show `AB:CD:…`, and case and colons don't matter. If it ever differs, don't install that APK.
 
 **Coming from a CI debug build:** those APKs are signed with a different key, so Android won't install a release over them. Once: export your data in the debug app, uninstall it, install the release APK and import the file.
 
