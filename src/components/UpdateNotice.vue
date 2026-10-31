@@ -29,9 +29,14 @@ const { available, showNotice, dismiss } = useUpdateCheck();
 </template>
 
 <style scoped>
+/*
+ * Above the add button (the FAB sits at nav-offset + 20px and is 56px tall, plus a 12px gap)
+ * and above the nav (z-index 100), but under the modal overlays (500): an open dialog's
+ * backdrop dims the notice and catches taps on it.
+ */
 .update-notice {
   position: fixed;
-  bottom: calc(var(--nav-offset) + 8px);
+  bottom: calc(var(--nav-offset) + 88px);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -42,7 +47,7 @@ const { available, showNotice, dismiss } = useUpdateCheck();
   border-radius: var(--radius-lg);
   padding: 12px 16px;
   box-shadow: var(--shadow-lg);
-  z-index: 600;
+  z-index: 450;
   max-width: calc(100vw - 32px);
   flex-wrap: wrap;
   justify-content: center;
@@ -60,6 +65,9 @@ const { available, showNotice, dismiss } = useUpdateCheck();
 }
 
 .btn-view {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 6px 14px;
   border-radius: var(--radius-sm);
   font-size: 13px;
@@ -69,6 +77,9 @@ const { available, showNotice, dismiss } = useUpdateCheck();
 }
 
 .btn-close {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 6px 14px;
   border-radius: var(--radius-sm);
   font-size: 13px;
