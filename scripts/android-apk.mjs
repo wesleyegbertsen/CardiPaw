@@ -39,8 +39,15 @@ function run(tool, args) {
     return execFileSync(tool, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
   } catch (err) {
     if (err.stdout) console.log(err.stdout);
-    const why = err.code === 'ENOENT' ? 'not found' : `exit ${err.status ?? err.signal}`;
-    throw new Error(`${tool} ${args[0]} failed (${why})`);
+    if (err.code === 'ENOENT') {
+      // On Windows the build-tools ship apksigner.bat and zipalign.exe, which execFileSync
+      // can't find by these names: sign and verify run on Linux or macOS (or in CI).
+      const hint = process.platform === 'win32' ? '; sign and verify need Linux or macOS' : '';
+      const notFound = new Error(`${tool} not found${hint}`);
+      notFound.notFound = true;
+      throw notFound;
+    }
+    throw new Error(`${tool} ${args[0]} failed (exit ${err.status ?? err.signal})`);
   }
 }
 
@@ -99,6 +106,7 @@ function sign(input, output) {
     try {
       run(apksigner, signArgs);
     } catch (err) {
+      if (err.notFound) throw err;
       // apksigner's own message (above) says which; a wrong password or alias is the usual cause.
       throw new Error(
         `${err.message}: check ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS ` +
