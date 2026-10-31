@@ -3,9 +3,16 @@
 // and the launch screen uses the icon and the app's background colours.
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+
+// jsdom (a devDependency) has no type declarations installed; its XML mode throws on
+// malformed XML.
+const { JSDOM } = createRequire(import.meta.url)('jsdom') as {
+  JSDOM: new (xml: string, options: { contentType: 'text/xml' }) => unknown;
+};
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const RES = join(ROOT, 'android/app/src/main/res');
@@ -62,6 +69,33 @@ function colorResource(folder: string, name: string): string | undefined {
 
 describe('Android resources', () => {
   const files = resFiles(RES);
+
+  it('has only well-formed XML in res/ and the manifest', () => {
+    // aapt rejects malformed XML, e.g. "--" inside a comment (a CSS custom property name).
+    const malformed = [
+      ...files.filter((f) => f.endsWith('.xml')).map((f) => join(RES, f)),
+      MANIFEST,
+    ]
+      .map((path) => {
+        try {
+          new JSDOM(readFileSync(path, 'utf8'), { contentType: 'text/xml' });
+          return undefined;
+        } catch (err) {
+          return `${path.slice(ROOT.length)}: ${(err as Error).message.split('\n')[0]}`;
+        }
+      })
+      .filter(Boolean);
+    expect(malformed).toEqual([]);
+  });
+
+  it('generates no XML comment containing "--"', () => {
+    // The generated files are parsed above as checked in; this checks the script's own
+    // comment templates, so a change to them can't produce XML that aapt rejects.
+    const script = readFileSync(join(ROOT, 'scripts/generate-android-assets.mjs'), 'utf8');
+    const comments = [...script.matchAll(/<!--([\s\S]*?)-->/g)].map(([, body]) => body);
+    expect(comments.length).toBeGreaterThan(0);
+    expect(comments.filter((body) => body.includes('--'))).toEqual([]);
+  });
 
   it('resolves every @type/name reference in res/ and the manifest', () => {
     const defined = new Set(
