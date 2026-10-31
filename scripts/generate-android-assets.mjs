@@ -75,6 +75,30 @@ ${HEADER}
 </vector>
 `;
 
+// The notification icon in the status bar: Android draws only its alpha channel, in white
+// or the notification colour. 24dp, with the paw 20dp wide inside the 2dp padding that
+// status bar icons keep. capacitor.config.ts names it (LocalNotifications.smallIcon).
+const STAT_SCALE = 20 / 512;
+const STAT_OFFSET = (24 - 20) / 2;
+const statusBarIcon = `<?xml version="1.0" encoding="utf-8"?>
+${HEADER}
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:translateX="${STAT_OFFSET}"
+        android:translateY="${STAT_OFFSET}"
+        android:scaleX="${STAT_SCALE}"
+        android:scaleY="${STAT_SCALE}">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="${pawPath}" />
+    </group>
+</vector>
+`;
+
 // <monochrome> (Android 13 themed icons) uses only the alpha channel, so the white
 // foreground serves as is. Launchers before API 33 ignore the element.
 const adaptiveIcon = `<?xml version="1.0" encoding="utf-8"?>
@@ -95,6 +119,7 @@ ${HEADER}
 
 const xmlFiles = {
   'drawable/ic_launcher_foreground.xml': foreground,
+  'drawable/ic_stat_cardipaw.xml': statusBarIcon,
   'mipmap-anydpi-v26/ic_launcher.xml': adaptiveIcon,
   'mipmap-anydpi-v26/ic_launcher_round.xml': adaptiveIcon,
   'values/ic_launcher_background.xml': launcherBackground,

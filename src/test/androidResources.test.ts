@@ -167,6 +167,31 @@ describe('Android resources', () => {
     );
   });
 
+  it('leaves out the exact alarm permission that the notifications plugin declares', () => {
+    // Reminders are inexact, so the merged manifest must not ask for SCHEDULE_EXACT_ALARM.
+    const manifest = xmlWithoutComments(MANIFEST);
+    expect(manifest).toMatch(
+      /<manifest\b[^>]*\bxmlns:tools="http:\/\/schemas\.android\.com\/tools"/,
+    );
+    expect(manifest).toContain(
+      '<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />',
+    );
+  });
+
+  it('has the notification icon that capacitor.config.ts names', () => {
+    // The plugin looks smallIcon up as a drawable at runtime: a typo shows no icon at all.
+    const config = readFileSync(join(ROOT, 'capacitor.config.ts'), 'utf8');
+    const smallIcon = config.match(/\bsmallIcon:\s*'([^']+)'/)?.[1];
+    expect(smallIcon).toBe('ic_stat_cardipaw');
+    expect(files.filter((f) => f.startsWith('drawable/'))).toContain(`drawable/${smallIcon}.xml`);
+  });
+
+  it('has the notification icon only where the generator writes it', () => {
+    expect(files.filter((f) => /^(drawable|mipmap)[^/]*\/ic_stat_cardipaw\./.test(f))).toEqual([
+      'drawable/ic_stat_cardipaw.xml',
+    ]);
+  });
+
   it('is up to date with public/favicon.svg', () => {
     // Throws, printing the stale files, when the script exits 1.
     execFileSync(process.execPath, ['scripts/generate-android-assets.mjs', '--check'], {

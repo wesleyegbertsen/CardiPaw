@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="false"
@@ -38,6 +39,10 @@
     </application>
 
     <!-- Permissions -->
+
+    <!-- Reminders are inexact (isExactNotification: false in src/native/reminders.ts), so the
+         exact alarm permission that @capacitor/local-notifications declares is left out. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
 
     <!-- No INTERNET: Capacitor serves https://localhost from the bundled assets in-process
          (WebViewLocalServer), so the app never needs the network and can't send data off the
