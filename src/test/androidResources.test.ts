@@ -132,6 +132,38 @@ describe('Android resources', () => {
     ).toEqual(['drawable/ic_launcher_foreground.xml']);
   });
 
+  it('has the 48dp legacy launcher icons at every density (API 24-25)', () => {
+    // mipmap-anydpi-v26 resolves @mipmap/ic_launcher on API 26+ only, so the reference
+    // check above passes without these.
+    const densities = { mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 };
+    const expected = Object.fromEntries(
+      Object.entries(densities).flatMap(([density, px]) =>
+        ['ic_launcher', 'ic_launcher_round'].map((name) => [
+          `mipmap-${density}/${name}.png`,
+          `${px}x${px}`,
+        ]),
+      ),
+    );
+    const size = (file: string) => {
+      if (!files.includes(file)) return 'missing';
+      // A PNG's IHDR chunk holds the width and height (big-endian) at bytes 16-23.
+      const png = readFileSync(join(RES, file));
+      return `${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`;
+    };
+    expect(Object.fromEntries(Object.keys(expected).map((file) => [file, size(file)]))).toEqual(
+      expected,
+    );
+  });
+
+  it('opens MainActivity with the launch screen theme', () => {
+    const activity = xmlWithoutComments(MANIFEST).match(
+      /<activity\b[^>]*\bandroid:name="\.MainActivity"[^>]*>/,
+    )?.[0];
+    expect(activity?.match(/\bandroid:theme="([^"]*)"/)?.[1]).toBe(
+      '@style/AppTheme.NoActionBarLaunch',
+    );
+  });
+
   it('is up to date with public/favicon.svg', () => {
     // Throws, printing the stale files, when the script exits 1.
     execFileSync(process.execPath, ['scripts/generate-android-assets.mjs', '--check'], {
