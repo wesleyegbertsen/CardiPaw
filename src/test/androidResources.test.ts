@@ -192,6 +192,20 @@ describe('Android resources', () => {
     ]);
   });
 
+  it('registers the notification settings plugin under the name the web code calls', () => {
+    const java = join(ROOT, 'android/app/src/main/java/com/cardipaw/app');
+    const plugin = readFileSync(join(java, 'NotificationSettingsPlugin.java'), 'utf8');
+    const ts = readFileSync(join(ROOT, 'src/native/notificationSettings.ts'), 'utf8');
+    const javaName = plugin.match(/@CapacitorPlugin\(name = "([^"]+)"\)/)?.[1];
+    expect(javaName).toBe('NotificationSettings');
+    expect(ts.match(/registerPlugin<\w+>\('([^']+)'\)/)?.[1]).toBe(javaName);
+    // A plugin registered after super.onCreate isn't in the bridge: every call rejects.
+    const activity = readFileSync(join(java, 'MainActivity.java'), 'utf8');
+    const register = activity.indexOf('registerPlugin(NotificationSettingsPlugin.class);');
+    expect(register).toBeGreaterThan(-1);
+    expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
+  });
+
   it('is up to date with public/favicon.svg', () => {
     // Throws, printing the stale files, when the script exits 1.
     execFileSync(process.execPath, ['scripts/generate-android-assets.mjs', '--check'], {
