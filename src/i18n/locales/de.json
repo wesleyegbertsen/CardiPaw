@@ -349,5 +349,11 @@
       "p3": "Der Hinweis verschwindet von selbst, sobald sich die Werte beruhigen. Bei zu wenigen Messungen wird nichts angezeigt. Kein Hinweis heißt also nicht immer, dass alles in Ordnung ist.",
       "p4": "Messungen, während dein Tier wach, aufgeregt oder warm ist, können die Frequenz höher wirken lassen. Das gilt auch, wenn du Messungen im Schlaf und in Ruhe mischst, denn im Schlaf ist die Frequenz meist niedriger. Dies ist keine Diagnose. Wenn du dir Sorgen machst, wende dich an deinen Tierarzt, und sofort, wenn dein Tier Mühe beim Atmen hat."
     }
+  },
+  "reminders": {
+    "channelName": "Mess-Erinnerungen",
+    "channelDescription": "Erinnerungen, die Ruhe-Atemfrequenz deiner Tiere zu messen",
+    "notificationTitle": "Zeit, die Atemfrequenz von {name} zu messen",
+    "notificationBody": "Zähle die Atemzüge, während dein Tier ruht oder schläft."
   }
 }

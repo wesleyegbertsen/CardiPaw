@@ -349,5 +349,11 @@
       "p3": "The alert goes away on its own once readings settle. With too few readings nothing is shown, so no alert doesn't always mean all is well.",
       "p4": "Readings taken while awake, excited or warm can make the rate look higher, and so can mixing sleeping and resting readings, because the rate is usually lower during sleep. This is not a diagnosis. If you're worried, contact your vet, and if your pet is struggling to breathe, contact them straight away."
     }
+  },
+  "reminders": {
+    "channelName": "Measuring reminders",
+    "channelDescription": "Reminders to measure your pets' resting breathing rate",
+    "notificationTitle": "Time to measure {name}'s breathing rate",
+    "notificationBody": "Count the breaths while your pet is resting or asleep."
   }
 }

@@ -349,5 +349,11 @@
       "p3": "L'alerte disparaît d'elle-même lorsque les mesures se stabilisent. Avec trop peu de mesures, rien ne s'affiche : l'absence d'alerte ne signifie donc pas toujours que tout va bien.",
       "p4": "Des mesures prises pendant que votre animal est éveillé, excité ou a chaud peuvent faire paraître la fréquence plus élevée. C'est aussi le cas si vous mélangez des mesures prises pendant le sommeil et au repos, car la fréquence est généralement plus basse pendant le sommeil. Ceci n'est pas un diagnostic. En cas d'inquiétude, contactez votre vétérinaire, et sans attendre si votre animal a du mal à respirer."
     }
+  },
+  "reminders": {
+    "channelName": "Rappels de mesure",
+    "channelDescription": "Rappels pour mesurer la fréquence respiratoire au repos de vos animaux",
+    "notificationTitle": "{name} : c'est l'heure de mesurer sa fréquence respiratoire",
+    "notificationBody": "Comptez les respirations pendant que votre animal se repose ou dort."
   }
 }

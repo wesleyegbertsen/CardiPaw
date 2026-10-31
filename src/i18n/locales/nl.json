@@ -349,5 +349,11 @@
       "p3": "De melding verdwijnt vanzelf zodra de metingen weer rustiger zijn. Met te weinig metingen wordt niets getoond, dus geen melding betekent niet altijd dat alles goed is.",
       "p4": "Metingen terwijl je huisdier wakker, opgewonden of warm is, kunnen de frequentie hoger laten lijken. Dat geldt ook als je metingen in slaap en in rust door elkaar gebruikt, omdat de frequentie tijdens de slaap meestal lager is. Dit is geen diagnose. Maak je je zorgen, neem dan contact op met je dierenarts, en meteen als je huisdier moeite heeft met ademen."
     }
+  },
+  "reminders": {
+    "channelName": "Meetherinneringen",
+    "channelDescription": "Herinneringen om de rustademhalingsfrequentie van je huisdieren te meten",
+    "notificationTitle": "Tijd om de ademhaling van {name} te meten",
+    "notificationBody": "Tel de ademhalingen terwijl je huisdier rust of slaapt."
   }
 }
