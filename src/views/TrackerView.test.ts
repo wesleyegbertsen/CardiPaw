@@ -211,7 +211,7 @@ describe('TrackerView', () => {
   });
 
   it.each(['guided', 'manual'])('reports a failed %s save and lets the user retry', async (mode) => {
-    const { wrapper, addReading } = await mountTracker();
+    const { wrapper, addReading, replace } = await mountTracker();
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     addReading.mockRejectedValueOnce(new Error('quota exceeded'));
     if (mode === 'manual') {
@@ -226,6 +226,7 @@ describe('TrackerView', () => {
     await wrapper.get('.btn-save').trigger('click');
     await flushPromises();
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
     expect(wrapper.get('[role="alert"]').text()).toBe(
       'The reading could not be saved. Please try again.',
     );
@@ -241,7 +242,7 @@ describe('TrackerView', () => {
     retry.resolve(makeReading());
     await flushPromises();
     expect(addReading).toHaveBeenCalledTimes(2);
-    expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
+    expect(replace).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
   });
 
   describe('after a failed save', () => {
@@ -279,13 +280,14 @@ describe('TrackerView', () => {
     });
 
     it('drops the error on Discard', async () => {
-      const { wrapper, addReading } = await mountTracker();
+      const { wrapper, addReading, replace } = await mountTracker();
       await wrapper.findAll('.mode-pill')[1].trigger('click');
       await wrapper.get('.manual-rate-input').setValue('42');
       await failSave(wrapper, addReading);
 
       await wrapper.get('.btn-discard').trigger('click');
       expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+      expect(replace).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
     });
   });
 
@@ -418,7 +420,7 @@ describe('TrackerView', () => {
     it('shows a load error with a way back instead of the tracker when loading fails', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       const failure = new Error('blocked');
-      const { wrapper, push } = await mountTracker({ stored: failure });
+      const { wrapper, replace } = await mountTracker({ stored: failure });
       expect(wrapper.get('[role="alert"]').text()).toBe(
         'This could not be loaded. Go back and try again. Your data has not been deleted.',
       );
@@ -427,7 +429,7 @@ describe('TrackerView', () => {
       expect(error).toHaveBeenCalledWith('Loading pet failed', failure);
 
       await wrapper.get('.back-btn').trigger('click');
-      expect(push).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
+      expect(replace).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
     });
 
     it('goes home for a pet that does not exist, without leaving the tracker in history', async () => {

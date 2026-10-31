@@ -15,6 +15,8 @@ import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
 import { localDayKey, localMonthKey } from '../utils/date';
 import { aggregateByDay, formatPdfAge, htmlToPlainText, type Translator } from '../utils/pdfText';
 import { currentLocale } from '../i18n';
+import { isNative } from '../utils/platform';
+import { shareFile, type ShareFileOutcome } from '../services/nativeFile';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
@@ -173,7 +175,8 @@ export function usePdfExport() {
   const isGenerating = ref(false);
   const { t } = useI18n();
 
-  async function generatePdf(pet: Pet, readings: Reading[], selectedMonths: string[], newestFirst = true, includeNotes = false): Promise<void> {
+  /** 'saved' on the website; in the app, whether the share sheet shared the PDF or was closed. */
+  async function generatePdf(pet: Pet, readings: Reading[], selectedMonths: string[], newestFirst = true, includeNotes = false): Promise<'saved' | ShareFileOutcome> {
     isGenerating.value = true;
     const loc = currentLocale();
     try {
@@ -417,7 +420,20 @@ export function usePdfExport() {
 
       const dateSlug = localDayKey(new Date());
       const nameSlug = fileNameSlug(pet.name);
-      doc.save(nameSlug ? `cardipaw-${nameSlug}-${dateSlug}.pdf` : `cardipaw-${dateSlug}.pdf`);
+      const fileName = nameSlug ? `cardipaw-${nameSlug}-${dateSlug}.pdf` : `cardipaw-${dateSlug}.pdf`;
+      if (isNative()) {
+        // The WebView ignores doc.save()'s download; hand the file to the share sheet instead.
+        const dataUri = doc.output('datauristring');
+        return await shareFile({
+          name: fileName,
+          data: dataUri.slice(dataUri.indexOf(',') + 1),
+          encoding: 'base64',
+          subject: t('pdf.shareSubject', { name: pet.name }),
+          dialogTitle: t('pdf.shareTitle'),
+        });
+      }
+      doc.save(fileName);
+      return 'saved';
     } finally {
       isGenerating.value = false;
     }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { returnTo } from '../router/returnTo';
 import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
@@ -45,7 +46,7 @@ onMounted(async () => {
 });
 
 function goBack() {
-  router.push({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
+  returnTo(router, { name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
 }
 
 async function confirmDelete() {
@@ -56,7 +57,7 @@ async function confirmDelete() {
   deleteError.value = false;
   try {
     await readingsStore.removeReading(reading.value.id, petId);
-    router.push({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
+    returnTo(router, { name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
   } catch (e) {
     console.error('Deleting reading failed', e);
     deleteError.value = true;

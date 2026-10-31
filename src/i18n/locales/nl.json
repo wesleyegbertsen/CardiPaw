@@ -186,7 +186,9 @@
     "dataSection": "Gegevens",
     "dataDesc": "Je huisdierprofielen, metingen en notities worden lokaal op dit apparaat opgeslagen met IndexedDB. Exporteer ze om een back-up te maken of over te zetten naar een ander apparaat.",
     "exportName": "Gegevens exporteren",
-    "exportDesc": "Download alle huisdieren, metingen en notities als JSON",
+    "exportDesc": "Alle huisdieren, metingen en notities als JSON-bestand",
+    "exportShareTitle": "Je CardiPaw-back-up opslaan of delen",
+    "exportShareSubject": "CardiPaw-back-up {date}",
     "exported": "✓ Geëxporteerd",
     "export": "Exporteren",
     "importName": "Gegevens importeren",
@@ -266,6 +268,8 @@
     "encodeError": "De deellink kon niet worden gemaakt. Probeer het opnieuw.",
     "tooLarge": "Deze selectie is te groot om als link te delen. Selecteer minder maanden.",
     "shareNative": "Delen…",
+    "shareSubject": "{name} — CardiPaw-momentopname",
+    "shareDialogTitle": "Link naar momentopname delen",
     "copied": "Gekopieerd!",
     "copyLink": "Link kopiëren"
   },
@@ -310,6 +314,8 @@
     "howItWorks": "Hoe het werkt"
   },
   "pdf": {
+    "shareTitle": "Pdf-rapport delen",
+    "shareSubject": "CardiPaw-rapport – {name}",
     "reportTitle": "CardiPaw-rapport ademhalingsfrequentie",
     "dateTime": "Datum / tijd",
     "note": "Notitie",

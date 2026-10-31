@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { returnTo } from '../router/returnTo';
 import { useI18n } from 'vue-i18n';
 import { usePetsStore } from '../stores/pets';
 import PetPhotoUpload from '../components/PetPhotoUpload.vue';
@@ -99,7 +100,7 @@ async function submit() {
         normalCeiling:   typeof normalCeiling.value   === 'number' ? normalCeiling.value   : undefined,
         elevatedCeiling: typeof elevatedCeiling.value === 'number' ? elevatedCeiling.value : undefined,
       });
-      router.push({ name: 'pet', params: { id: petId } });
+      returnTo(router, { name: 'pet', params: { id: petId } });
     } else {
       const pet = await petsStore.addPet({
         name: name.value.trim(),
@@ -109,7 +110,7 @@ async function submit() {
         normalCeiling:   typeof normalCeiling.value   === 'number' ? normalCeiling.value   : undefined,
         elevatedCeiling: typeof elevatedCeiling.value === 'number' ? elevatedCeiling.value : undefined,
       });
-      router.push({ name: 'pet', params: { id: pet.id } });
+      router.replace({ name: 'pet', params: { id: pet.id } });
     }
   } catch (e) {
     console.error('Saving pet failed', e);
@@ -122,9 +123,9 @@ async function submit() {
 
 function goBack() {
   if (isEdit) {
-    router.push({ name: 'pet', params: { id: petId } });
+    returnTo(router, { name: 'pet', params: { id: petId } });
   } else {
-    router.push({ name: 'home' });
+    returnTo(router, { name: 'home' });
   }
 }
 </script>

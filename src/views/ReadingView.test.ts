@@ -42,8 +42,18 @@ describe('ReadingView', () => {
     expect(badge.text()).toBe('High');
   });
 
+  it('returns to the readings tab on back without adding a history entry', async () => {
+    const { wrapper, push, replace } = await mountView(ReadingView, location, {
+      pets: [makePet()],
+      readings: [makeReading()],
+    });
+    await wrapper.get('.back-btn').trigger('click');
+    expect(replace).toHaveBeenCalledWith(readingsTab);
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it('deletes the reading after confirming', async () => {
-    const { wrapper, push } = await mountView(ReadingView, location, {
+    const { wrapper, replace } = await mountView(ReadingView, location, {
       pets: [makePet()],
       readings: [makeReading()],
     });
@@ -51,11 +61,11 @@ describe('ReadingView', () => {
     document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
     await settle();
     expect(await db.getReadingsForPet('pet-1')).toEqual([]);
-    expect(push).toHaveBeenCalledWith(readingsTab);
+    expect(replace).toHaveBeenCalledWith(readingsTab);
   });
 
   it('keeps the reading on cancel', async () => {
-    const { wrapper, push } = await mountView(ReadingView, location, {
+    const { wrapper, push, replace } = await mountView(ReadingView, location, {
       pets: [makePet()],
       readings: [makeReading()],
     });
@@ -65,12 +75,13 @@ describe('ReadingView', () => {
     expect(useReadingsStore().getReadingsForPet('pet-1')).toHaveLength(1);
     expect(await db.getReadingsForPet('pet-1')).toHaveLength(1);
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('reports a failed delete and keeps the reading', async () => {
     vi.spyOn(db, 'deleteReading').mockRejectedValueOnce(new Error('quota'));
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { wrapper, push } = await mountView(ReadingView, location, {
+    const { wrapper, push, replace } = await mountView(ReadingView, location, {
       pets: [makePet()],
       readings: [makeReading()],
     });
@@ -86,12 +97,13 @@ describe('ReadingView', () => {
     expect(wrapper.find('.reading-body').exists()).toBe(true);
     expect(error).toHaveBeenCalledWith('Deleting reading failed', expect.any(Error));
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('deletes on a retry after a failed delete', async () => {
     vi.spyOn(db, 'deleteReading').mockRejectedValueOnce(new Error('quota'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { wrapper, push } = await mountView(ReadingView, location, {
+    const { wrapper, replace } = await mountView(ReadingView, location, {
       pets: [makePet()],
       readings: [makeReading()],
     });
@@ -101,7 +113,7 @@ describe('ReadingView', () => {
       await settle();
     }
     expect(await db.getReadingsForPet('pet-1')).toEqual([]);
-    expect(push).toHaveBeenCalledWith(readingsTab);
+    expect(replace).toHaveBeenCalledWith(readingsTab);
   });
 
   it('deletes once when confirm is clicked twice', async () => {

@@ -4,3 +4,5 @@ coverage
 public
 package-lock.json
 *.md
+dist-native
+android

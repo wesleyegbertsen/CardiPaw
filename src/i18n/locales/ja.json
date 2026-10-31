@@ -186,7 +186,9 @@
     "dataSection": "データ",
     "dataDesc": "ペットのプロフィール、測定値、メモはIndexedDBを使用してこのデバイスにローカル保存されています。バックアップや他のデバイスへの転送のためにエクスポートしてください。",
     "exportName": "データをエクスポート",
-    "exportDesc": "すべてのペット、測定値、メモをJSONでダウンロード",
+    "exportDesc": "すべてのペット、測定値、メモのJSONファイル",
+    "exportShareTitle": "CardiPawのバックアップを保存または共有",
+    "exportShareSubject": "CardiPawバックアップ {date}",
     "exported": "✓ エクスポート済み",
     "export": "エクスポート",
     "importName": "データをインポート",
@@ -266,6 +268,8 @@
     "encodeError": "共有リンクを作成できませんでした。もう一度お試しください。",
     "tooLarge": "この選択は大きすぎてリンクとして共有できません。月数を減らしてください。",
     "shareNative": "共有…",
+    "shareSubject": "{name} — CardiPawスナップショット",
+    "shareDialogTitle": "スナップショットのリンクを共有",
     "copied": "コピーしました！",
     "copyLink": "リンクをコピー"
   },
@@ -310,6 +314,8 @@
     "howItWorks": "使い方"
   },
   "pdf": {
+    "shareTitle": "PDFレポートを共有",
+    "shareSubject": "CardiPawレポート – {name}",
     "reportTitle": "CardiPaw 呼吸数レポート",
     "dateTime": "日時",
     "note": "メモ",

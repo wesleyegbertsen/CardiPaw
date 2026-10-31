@@ -1,0 +1,55 @@
+apply plugin: 'com.android.application'
+
+// versionCode = major*1e6 + minor*1e3 + patch from package.json (stamped by scripts/set-version.mjs
+// in releases): it rises with every SemVer release and stays under Play's 2100000000 cap.
+// The repo's package.json says 0.0.0, so the code is at least 1 (Android rejects 0).
+def appVersion = new groovy.json.JsonSlurper().parse(file('../../package.json')).version
+def versionParts = appVersion.tokenize('.-+').take(3).collect { it as int }
+if (versionParts[1] > 999 || versionParts[2] > 999) {
+    throw new GradleException("versionCode needs minor and patch <= 999, got ${appVersion}")
+}
+def appVersionCode = Math.max(1, versionParts[0] * 1000000 + versionParts[1] * 1000 + versionParts[2])
+
+android {
+    namespace = "com.cardipaw.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.cardipaw.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode appVersionCode
+        versionName appVersion
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'

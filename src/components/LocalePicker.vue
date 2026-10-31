@@ -3,6 +3,7 @@ import { nextTick, ref, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { GB, NL, DE, FR, JP } from 'country-flag-icons/string/3x2';
 import { SUPPORTED_LOCALES, LOCALE_NAMES, setLocale, type Locale } from '../i18n';
+import { useDismissable } from '../composables/useModal';
 
 const { locale } = useI18n();
 const open = ref(false);
@@ -34,6 +35,8 @@ function close() {
   open.value = false;
   triggerRef.value?.focus();
 }
+
+useDismissable(open, close);
 
 function onEscape(e: KeyboardEvent) {
   if (!open.value) return;

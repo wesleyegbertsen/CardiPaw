@@ -3,6 +3,7 @@ import { flushPromises, type VueWrapper } from '@vue/test-utils';
 import SettingsView from './SettingsView.vue';
 import * as backup from '../services/backup';
 import { mountView, settle } from '../test/mountView';
+import { deferred } from '../test/deferred';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
 
 // Keep parsing and validation real; only the IndexedDB-touching calls are faked.
@@ -40,7 +41,7 @@ const backupText = (extra: object = {}) =>
 
 describe('SettingsView', () => {
   beforeEach(() => {
-    vi.mocked(backup.downloadBackup).mockReset().mockResolvedValue();
+    vi.mocked(backup.downloadBackup).mockReset().mockResolvedValue('saved');
     vi.mocked(backup.importBackup).mockReset().mockResolvedValue();
   });
   afterEach(() => vi.useRealTimers());
@@ -48,7 +49,7 @@ describe('SettingsView', () => {
   it('says the data and the export include notes', async () => {
     const { wrapper } = await mountView(SettingsView, '/settings');
     expect(wrapper.text()).toContain('Your pet profiles, readings and notes are stored locally');
-    expect(wrapper.text()).toContain('Download all pets, readings and notes as JSON');
+    expect(wrapper.text()).toContain('All pets, readings and notes as a JSON file');
   });
 
   describe('import', () => {
@@ -226,6 +227,45 @@ describe('SettingsView', () => {
       await exportButton(wrapper).trigger('click');
       await settle();
       expect(status(wrapper)).toBe('✓ Exported');
+    });
+
+    it('ignores a second tap while the first export is in progress', async () => {
+      const pending = deferred<'saved'>();
+      vi.mocked(backup.downloadBackup).mockReturnValueOnce(pending.promise);
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      await exportButton(wrapper).trigger('click');
+      expect(exportButton(wrapper).attributes('disabled')).toBeDefined();
+      await exportButton(wrapper).trigger('click');
+      expect(backup.downloadBackup).toHaveBeenCalledTimes(1);
+
+      pending.resolve('saved');
+      await settle();
+      expect(exportButton(wrapper).attributes('disabled')).toBeUndefined();
+      expect(status(wrapper)).toBe('✓ Exported');
+    });
+
+    it('names the backup for the share sheet and the email subject', async () => {
+      // Only the clock: faking timers would stall fake-indexeddb.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2024-03-20T10:00:00.000Z'));
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      await exportButton(wrapper).trigger('click');
+      await settle();
+      expect(backup.downloadBackup).toHaveBeenCalledWith({
+        subject: 'CardiPaw backup Mar 20, 2024',
+        dialogTitle: 'Save or share your CardiPaw backup',
+      });
+    });
+
+    it('claims nothing when the app share sheet is closed without saving', async () => {
+      vi.mocked(backup.downloadBackup).mockResolvedValueOnce('cancelled');
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      await exportButton(wrapper).trigger('click');
+      await settle();
+      expect(backup.downloadBackup).toHaveBeenCalledTimes(1);
+      expect(status(wrapper)).toBe('');
+      expect(alerts(wrapper)).toEqual([]);
+      expect(exportButton(wrapper).text()).not.toContain('Exported');
     });
 
     it('reports a failed export instead of claiming success', async () => {

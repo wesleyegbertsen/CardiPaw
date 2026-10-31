@@ -186,7 +186,9 @@
     "dataSection": "Données",
     "dataDesc": "Vos profils d'animaux, vos mesures et vos notes sont stockés localement sur cet appareil via IndexedDB. Exportez-les pour les sauvegarder ou les transférer sur un autre appareil.",
     "exportName": "Exporter les données",
-    "exportDesc": "Télécharger tous les animaux, mesures et notes au format JSON",
+    "exportDesc": "Tous les animaux, mesures et notes au format JSON",
+    "exportShareTitle": "Enregistrer ou partager votre sauvegarde CardiPaw",
+    "exportShareSubject": "Sauvegarde CardiPaw {date}",
     "exported": "✓ Exporté",
     "export": "Exporter",
     "importName": "Importer des données",
@@ -266,6 +268,8 @@
     "encodeError": "Le lien de partage n'a pas pu être créé. Veuillez réessayer.",
     "tooLarge": "Cette sélection est trop volumineuse pour être partagée par lien. Sélectionnez moins de mois.",
     "shareNative": "Partager…",
+    "shareSubject": "{name} — Instantané CardiPaw",
+    "shareDialogTitle": "Partager le lien de l'instantané",
     "copied": "Copié !",
     "copyLink": "Copier le lien"
   },
@@ -310,6 +314,8 @@
     "howItWorks": "Comment ça marche"
   },
   "pdf": {
+    "shareTitle": "Partager le rapport PDF",
+    "shareSubject": "Rapport CardiPaw – {name}",
     "reportTitle": "Rapport de fréquence respiratoire CardiPaw",
     "dateTime": "Date / Heure",
     "note": "Note",

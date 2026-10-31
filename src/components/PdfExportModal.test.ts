@@ -35,7 +35,7 @@ function mountModal() {
 describe('PdfExportModal', () => {
   beforeEach(() => {
     isGenerating.value = false;
-    vi.mocked(generatePdf).mockReset().mockResolvedValue(undefined);
+    vi.mocked(generatePdf).mockReset().mockResolvedValue('saved');
   });
   afterEach(() => vi.useRealTimers());
 
@@ -118,6 +118,18 @@ describe('PdfExportModal', () => {
     expect(wrapper.emitted('close')).toBeUndefined();
     vi.advanceTimersByTime(1);
     expect(wrapper.emitted('close')).toHaveLength(1);
+  });
+
+  it('stays open when the app share sheet is closed without sharing', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    vi.mocked(generatePdf).mockResolvedValueOnce('cancelled');
+    const wrapper = mountModal();
+    exportButton().click();
+    await flushPromises();
+    vi.advanceTimersByTime(1000);
+    expect(wrapper.emitted('close')).toBeUndefined();
+    expect(q('[role="alert"]')).toBeNull();
+    expect(exportButton().disabled).toBe(false);
   });
 
   it('cannot be closed while generating', async () => {

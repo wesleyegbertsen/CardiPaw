@@ -1,11 +1,15 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BackupError, exportBackup, importBackup, parseBackup, validateBackup } from './backup';
+import { BackupError, downloadBackup, exportBackup, importBackup, parseBackup, validateBackup } from './backup';
+import { shareFile } from './nativeFile';
+import { mockNative } from '../test/native';
 import * as db from './db';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useNotesStore } from '../stores/notes';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
+
+vi.mock('./nativeFile', () => ({ shareFile: vi.fn(async () => 'shared') }));
 
 const backup = (data: Record<string, unknown> = {}) => ({
   version: 1,
@@ -225,5 +229,39 @@ describe('export and import', () => {
     expect(reload).toHaveBeenCalledOnce();
     expect(consoleError).toHaveBeenCalled();
     expect(byId(await db.getAllPets())).toEqual([makePet()]);
+  });
+});
+
+describe('downloadBackup', () => {
+  const share = { subject: 'Backup', dialogTitle: 'Save' };
+
+  beforeEach(async () => {
+    await db.importAllData(validateBackup(backup()).data);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2024-03-20T10:00:00.000Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('downloads the JSON file on the website', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:x');
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    await expect(downloadBackup(share)).resolves.toBe('saved');
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(shareFile).not.toHaveBeenCalled();
+  });
+
+  it('hands the JSON file to the share sheet in the app', async () => {
+    mockNative();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    await expect(downloadBackup(share)).resolves.toBe('shared');
+    expect(click).not.toHaveBeenCalled();
+    const [opts] = vi.mocked(shareFile).mock.calls[0];
+    expect(opts).toMatchObject({
+      name: 'cardipaw-export-2024-03-20.json',
+      encoding: 'utf8',
+      subject: 'Backup',
+      dialogTitle: 'Save',
+    });
+    expect(JSON.parse(opts.data).pets).toEqual([makePet()]);
   });
 });

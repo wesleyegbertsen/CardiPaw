@@ -8,6 +8,10 @@ import { Blank } from '../test/mountView';
 import { createTestI18n } from '../test/i18n';
 import { deferred } from '../test/deferred';
 import { makePet, makeReading } from '../test/fixtures';
+import { mockNative } from '../test/native';
+import { Share } from '@capacitor/share';
+
+vi.mock('@capacitor/share', () => ({ Share: { share: vi.fn(async () => ({})) } }));
 
 vi.mock('../utils/shareCodec', async (importOriginal) => {
   const real = await importOriginal<typeof import('../utils/shareCodec')>();
@@ -58,6 +62,14 @@ describe('ShareLinkModal', () => {
     const payload = await codec.decodeShare(d);
     expect(payload.readings).toHaveLength(2);
     expect(linkPreview().getAttribute('aria-label')).toBe('Share');
+  });
+
+  it("links to cardipaw.com in the app, not to the app's own https://localhost", async () => {
+    mockNative();
+    await mountModal();
+    const url = new URL(linkPreview().value);
+    expect(url.origin).toBe('https://cardipaw.com');
+    expect(url.searchParams.get('d')).toBeTruthy();
   });
 
   it('disables Copy while the new selection is being encoded', async () => {
@@ -231,6 +243,18 @@ describe('ShareLinkModal', () => {
         title: 'Ace — CardiPaw snapshot',
         url: linkPreview().value,
       });
+    });
+  });
+
+  it('shares through the Share plugin in the app', async () => {
+    mockNative();
+    await mountModal();
+    q<HTMLButtonElement>('.btn-secondary')!.click();
+    await flushPromises();
+    expect(Share.share).toHaveBeenCalledWith({
+      title: 'Ace — CardiPaw snapshot',
+      url: linkPreview().value,
+      dialogTitle: 'Share snapshot link',
     });
   });
 

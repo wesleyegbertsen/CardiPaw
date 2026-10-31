@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { returnTo } from '../router/returnTo';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAudioBeep } from '../composables/useAudioBeep';
@@ -156,7 +157,7 @@ async function saveReading() {
       notes: notes.value || undefined,
       source: isManual ? 'manual' : undefined,
     });
-    router.push({ name: 'pet', params: { id: petId } });
+    returnTo(router, { name: 'pet', params: { id: petId } });
   } catch (e) {
     console.error('Saving reading failed', e);
     saveError.value = true;
@@ -167,7 +168,7 @@ async function saveReading() {
 
 function discard() {
   saveError.value = false;
-  router.push({ name: 'pet', params: { id: petId } });
+  returnTo(router, { name: 'pet', params: { id: petId } });
 }
 
 function reset() {
