@@ -35,6 +35,31 @@ function xmlWithoutComments(path: string): string {
   return readFileSync(path, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
 }
 
+function styleItems(name: string): { parent: string | undefined; items: Record<string, string> } {
+  const xml = readFileSync(join(RES, 'values/styles.xml'), 'utf8');
+  const style = xml.match(
+    new RegExp(`<style name="${name}"(?: parent="([^"]*)")?>([\\s\\S]*?)</style>`),
+  );
+  if (!style) throw new Error(`values/styles.xml has no style ${name}`);
+  const items = [...style[2].matchAll(/<item name="([^"]+)"[^>]*>([^<]*)<\/item>/g)];
+  return { parent: style[1], items: Object.fromEntries(items.map(([, k, v]) => [k, v.trim()])) };
+}
+
+function cssBackground(selector: string): string {
+  const css = readFileSync(join(ROOT, 'src/assets/styles/global.css'), 'utf8');
+  const block = css.slice(css.indexOf(`${selector} {`));
+  const color = block.match(/--color-bg:\s*(#[0-9a-fA-F]{6})/);
+  if (!color) throw new Error(`global.css: no --color-bg under ${selector}`);
+  return color[1].toLowerCase();
+}
+
+function colorResource(folder: string, name: string): string | undefined {
+  const xml = readFileSync(join(RES, folder, 'colors.xml'), 'utf8');
+  return xml
+    .match(new RegExp(`<color name="${name}">(#[0-9a-fA-F]{6})</color>`))?.[1]
+    .toLowerCase();
+}
+
 describe('Android resources', () => {
   const files = resFiles(RES);
 
@@ -79,5 +104,24 @@ describe('Android resources', () => {
       cwd: ROOT,
       stdio: 'pipe',
     });
+  });
+
+  it('shows the paw on the app background at launch', () => {
+    // Theme.SplashScreen alone shows the generic Android icon (sym_def_app_icon).
+    expect(styleItems('AppTheme.NoActionBarLaunch')).toEqual({
+      parent: 'Theme.SplashScreen.IconBackground',
+      items: {
+        windowSplashScreenBackground: '@color/app_background',
+        windowSplashScreenAnimatedIcon: '@drawable/ic_launcher_foreground',
+        windowSplashScreenIconBackgroundColor: '@color/ic_launcher_background',
+      },
+    });
+  });
+
+  it('uses the web app background colours, light and dark', () => {
+    expect(colorResource('values', 'app_background')).toBe(cssBackground(':root'));
+    expect(colorResource('values-night', 'app_background')).toBe(
+      cssBackground('[data-theme="dark"]'),
+    );
   });
 });
