@@ -1,6 +1,6 @@
-// Checks the Android resources that aapt only sees in the CI `android` job (there is no
-// Android SDK locally): references resolve, generated files aren't shadowed or stale,
-// and the launch screen uses the icon and the app's background colours.
+// Checks the Android resources without an Android SDK (aapt only runs in a Gradle build: the
+// CI `android` job, or locally with the android-verify skill): references resolve, generated
+// files aren't shadowed or stale, and the launch screen uses the icon and the app's colours.
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
