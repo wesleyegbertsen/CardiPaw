@@ -3,6 +3,7 @@ import { useNotesStore } from './notes';
 import { forgetTrackerPrefs, pruneTrackerPrefs } from '../composables/useTrackerPrefs';
 import { cleanUpExports } from '../services/nativeFile';
 import { isNative } from '../utils/platform';
+import { forgetReminderSetting, pruneReminderSettings } from '../utils/reminderSettings';
 
 // Every per-pet cache and stored per-pet preference is handled here, so deleting
 // a pet or importing a backup cannot miss one when a new one is added.
@@ -12,6 +13,7 @@ export function forgetPetData(petId: string): void {
   useReadingsStore().clearReadingsForPet(petId);
   useNotesStore().clearNotesForPet(petId);
   forgetTrackerPrefs(petId);
+  forgetReminderSetting(petId);
   // Exported backups and PDF reports in the app's cache hold the pet's data. They aren't
   // tagged per pet (and a backup holds every pet), so all of them go. Never rejects.
   if (isNative()) void cleanUpExports();
@@ -25,6 +27,7 @@ export function resetPetData(keepPetIds: string[]): void {
   useReadingsStore().$reset();
   useNotesStore().$reset();
   pruneTrackerPrefs(keepPetIds);
+  pruneReminderSettings(keepPetIds);
   // The imported backup replaced every pet, while exports in the app's cache still hold the
   // previous data, so all of them go. Never rejects.
   if (isNative()) void cleanUpExports();
