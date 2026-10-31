@@ -357,6 +357,17 @@ describe('TrackerView', () => {
     expect(names).toEqual(['Sound', 'Vibration']);
   });
 
+  it('turns the sound off with its switch and remembers it for the pet', async () => {
+    const { wrapper } = await mountTracker();
+    const sound = wrapper.findAll('[role="switch"]')[0];
+    expect(sound.attributes('aria-checked')).toBe('true');
+    await sound.trigger('click');
+    expect(sound.attributes('aria-checked')).toBe('false');
+    expect(JSON.parse(localStorage.getItem('cardipaw-tracker-prefs')!)[pet.id]).toMatchObject({
+      soundEnabled: false,
+    });
+  });
+
   it('saves only once when Save is clicked twice in a row', async () => {
     const { wrapper, addReading } = await mountTracker();
     await wrapper.get('.heart-btn').trigger('click');
