@@ -1,7 +1,10 @@
 <script setup lang="ts">
-/** An on/off switch; the caller renders the visible label and passes its id. */
+/**
+ * An on/off switch; the caller renders the visible label and passes its id, and may pass the
+ * id of a description that screen readers announce with it.
+ */
 const on = defineModel<boolean>({ required: true });
-defineProps<{ labelledby: string; disabled?: boolean }>();
+defineProps<{ labelledby: string; describedby?: string; disabled?: boolean }>();
 </script>
 
 <template>
@@ -11,6 +14,7 @@ defineProps<{ labelledby: string; disabled?: boolean }>();
     role="switch"
     :aria-checked="on"
     :aria-labelledby="labelledby"
+    :aria-describedby="describedby"
     :disabled="disabled"
     @click="on = !on"
   />

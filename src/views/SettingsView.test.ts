@@ -384,6 +384,17 @@ describe('SettingsView', () => {
       expect(updates.setEnabled).toHaveBeenCalledWith(true);
     });
 
+    it('describe what the daily check sends to the switch', async () => {
+      mockNative();
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      const toggle = updatesSection(wrapper)!.get('[role="switch"]');
+      const describedby = toggle.attributes('aria-describedby');
+      expect(describedby).toBeTruthy();
+      expect(document.getElementById(describedby!)?.textContent).toContain(
+        'GitHub sees your IP address',
+      );
+    });
+
     it('are explained in the privacy information in the app', async () => {
       mockNative();
       const { wrapper } = await mountView(SettingsView, '/settings');

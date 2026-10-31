@@ -21,6 +21,7 @@ const releaseUrl = installed ? releaseTagUrl(installed) : null;
 const native = isNative();
 const { enabled: autoCheck, available, setEnabled } = useUpdateCheck();
 const autoCheckLabelId = useId();
+const autoCheckDescId = useId();
 
 const { t, locale } = useI18n();
 
@@ -300,11 +301,12 @@ function cancelImport() {
           <div class="action-card">
             <div>
               <div :id="autoCheckLabelId" class="action-name">{{ $t('settings.autoCheckName') }}</div>
-              <div class="action-desc">{{ $t('settings.autoCheckDesc') }}</div>
+              <div :id="autoCheckDescId" class="action-desc">{{ $t('settings.autoCheckDesc') }}</div>
             </div>
             <SlideToggle
               :model-value="autoCheck"
               :labelledby="autoCheckLabelId"
+              :describedby="autoCheckDescId"
               @update:model-value="setEnabled"
             />
           </div>
