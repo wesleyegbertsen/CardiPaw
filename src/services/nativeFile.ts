@@ -1,11 +1,21 @@
-import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
+import { Directory, Encoding, Filesystem, type FileInfo } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { v4 as generateId } from 'uuid';
+
+/**
+ * Exports are written to this folder in the cache directory, one folder per export. Only this
+ * folder is ever cleaned up: the rest of the cache belongs to the WebView. FileProvider shares
+ * only this folder (android/app/src/main/res/xml/file_paths.xml), so keep the two in step.
+ */
+const EXPORTS_DIR = 'exports';
+/** The plugin's "does not exist" code (FilesystemErrors.kt): nothing was exported yet. */
+const DOES_NOT_EXIST = 'OS-PLUG-FILE-0008';
 
 /** 'cancelled': the share sheet was closed without picking an app. */
 export type ShareFileOutcome = 'shared' | 'cancelled';
 
 export interface ShareFileOptions {
-  /** File name in the app's cache directory; a later export with the same name overwrites it. */
+  /** File name the receiving app sees. */
   name: string;
   /** UTF-8 text, or base64 for binary files. */
   data: string;
@@ -17,8 +27,9 @@ export interface ShareFileOptions {
 }
 
 /**
- * App only: writes the file to the cache directory and opens the Android share sheet, where
- * it can be saved (Files, Drive) or sent. The WebView ignores <a download>, so this replaces it.
+ * App only: writes the file to its own folder in the cache directory and opens the Android
+ * share sheet, where it can be saved (Files, Drive) or sent. The WebView ignores
+ * <a download>, so this replaces it. Earlier exports are deleted first.
  */
 export async function shareFile({
   name,
@@ -27,10 +38,16 @@ export async function shareFile({
   subject,
   dialogTitle,
 }: ShareFileOptions): Promise<ShareFileOutcome> {
+  // Not after sharing: Share.share resolves when the sheet closes, while the receiving app
+  // may still be reading the file. Before writing, so the new file is never the one removed.
+  await cleanUpExports();
   const { uri } = await Filesystem.writeFile({
-    path: name,
+    // A folder per export keeps the name the user sees, and a later export of the same name
+    // never overwrites a file another app may still be reading.
+    path: `${EXPORTS_DIR}/${generateId()}/${name}`,
     data,
     directory: Directory.Cache,
+    recursive: true, // creates the folders
     // Without an encoding the plugin decodes `data` as base64.
     ...(encoding === 'utf8' ? { encoding: Encoding.UTF8 } : {}),
   });
@@ -43,4 +60,37 @@ export async function shareFile({
     throw e;
   }
   return 'shared';
+}
+
+/**
+ * App only: deletes the exports last modified more than `olderThanMs` ago, or all of them
+ * (the default). Never rejects: a leftover file isn't worth failing an export, the app start
+ * or a pet delete over, so failures are only logged.
+ */
+export async function cleanUpExports(olderThanMs = 0): Promise<void> {
+  let files: FileInfo[];
+  try {
+    ({ files } = await Filesystem.readdir({ path: EXPORTS_DIR, directory: Directory.Cache }));
+  } catch (e) {
+    // The Android bridge copies the plugin's error code onto the rejected error.
+    const nothingExported = (e as { code?: unknown } | null)?.code === DOES_NOT_EXIST;
+    if (!nothingExported) console.warn('Listing exports failed', e);
+    return;
+  }
+  const cutoff = Date.now() - olderThanMs;
+  for (const file of files) {
+    // Not when deleting all: the clock may have been turned back since an export.
+    if (olderThanMs > 0 && file.mtime > cutoff) continue;
+    const path = `${EXPORTS_DIR}/${file.name}`;
+    try {
+      if (file.type === 'directory') {
+        await Filesystem.rmdir({ path, directory: Directory.Cache, recursive: true });
+      } else {
+        await Filesystem.deleteFile({ path, directory: Directory.Cache });
+      }
+    } catch (e) {
+      // One stuck export doesn't keep the others.
+      console.warn('Deleting an export failed', e);
+    }
+  }
 }
