@@ -167,6 +167,24 @@ describe('Android resources', () => {
     );
   });
 
+  it('declares INTERNET (the opt-in update check) and never REQUEST_INSTALL_PACKAGES', () => {
+    const permissions = [
+      ...xmlWithoutComments(MANIFEST).matchAll(/<uses-permission\s+android:name="([^"]+)"/g),
+    ].map(([, name]) => name);
+    expect(permissions).toEqual(['android.permission.INTERNET']);
+  });
+
+  it("keeps WebView's Safe Browsing and diagnostics from contacting Google", () => {
+    const meta = Object.fromEntries(
+      [...xmlWithoutComments(MANIFEST).matchAll(/<meta-data\s+android:name="([^"]+)"\s+android:value="([^"]+)"/g)]
+        .map(([, name, value]) => [name, value]),
+    );
+    expect(meta).toMatchObject({
+      'android.webkit.WebView.EnableSafeBrowsing': 'false',
+      'android.webkit.WebView.MetricsOptOut': 'true',
+    });
+  });
+
   it('is up to date with public/favicon.svg', () => {
     // Throws, printing the stale files, when the script exits 1.
     execFileSync(process.execPath, ['scripts/generate-android-assets.mjs', '--check'], {
