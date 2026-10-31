@@ -54,9 +54,12 @@ function styleItems(name: string): { parent: string | undefined; items: Record<s
 
 function cssBackground(selector: string): string {
   const css = readFileSync(join(ROOT, 'src/assets/styles/global.css'), 'utf8');
-  const block = css.slice(css.indexOf(`${selector} {`));
+  const start = css.indexOf(`${selector} {`);
+  if (start === -1) throw new Error(`global.css: no "${selector} {" block`);
+  // Only this block, so a value from a later block can't stand in for a missing one.
+  const block = css.slice(start, css.indexOf('}', start));
   const color = block.match(/--color-bg:\s*(#[0-9a-fA-F]{6})/);
-  if (!color) throw new Error(`global.css: no --color-bg under ${selector}`);
+  if (!color) throw new Error(`global.css: no --color-bg in the ${selector} block`);
   return color[1].toLowerCase();
 }
 
