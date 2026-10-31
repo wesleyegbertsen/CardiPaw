@@ -213,8 +213,9 @@
     "checkUpdatesName": "Check for updates",
     "checkUpdatesInstalled": "Installed: version {version}",
     "checkUpdatesAvailable": "Version {version} is available",
+    "checkUpdatesButton": "Open on GitHub",
     "autoCheckName": "Check automatically",
-    "autoCheckDesc": "Once a day, ask GitHub (api.github.com) whether there is a newer version. GitHub sees your IP address; no pet data is sent.",
+    "autoCheckDesc": "About once a day, ask GitHub (api.github.com) whether there is a newer version. GitHub sees your IP address; no pet data is sent.",
     "legalSection": "Legal",
     "privacyTitle": "Privacy Policy",
     "privacyDesc": "How your data is stored and used",
@@ -227,7 +228,7 @@
       "p2": "<strong>No tracking or analytics.</strong> CardiPaw does not use cookies, analytics services, advertising trackers, or any third-party data collection. There are no user accounts and no login.",
       "p3": "<strong>You are in control.</strong> You can export your data at any time from the Settings page, and deleting the app or clearing your browser's site data will permanently remove everything.",
       "p4": "<strong>No data sharing.</strong> Because your data never leaves your device, it is never shared with or accessible by anyone else.",
-      "p5": "<strong>Update check (Android app).</strong> If you turn on “Check automatically” in Settings under Updates, the app asks api.github.com once a day whether a newer version exists. GitHub then sees your IP address and your device's user agent (such as its Android version). No pet data is sent. It stays off unless you turn it on."
+      "p5": "<strong>Update check (Android app).</strong> If you turn on \"Check automatically\" in Settings under Updates, the app asks api.github.com about once a day whether a newer version exists. GitHub then sees your IP address and the information the app's browser engine sends with every request, such as its user agent (which includes the Android version and device model) and language. No pet data is sent. It stays off unless you turn it on."
     },
     "terms": {
       "p1": "<strong>Not medical advice.</strong> CardiPaw is an informational tool to help you log and track your pet's resting respiratory rate. It is not a substitute for professional veterinary diagnosis, advice, or treatment.",

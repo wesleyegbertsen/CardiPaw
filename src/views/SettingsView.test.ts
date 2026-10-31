@@ -361,6 +361,7 @@ describe('SettingsView', () => {
       const section = updatesSection(wrapper)!;
       expect(section.text()).toContain('Installed: version 1.2.0');
       const link = section.get('a.action-btn');
+      expect(link.text()).toBe('Open on GitHub');
       expect(link.attributes('href')).toBe('https://github.com/wesleyegbertsen/CardiPaw/releases/latest');
       expect(link.attributes('target')).toBe('_blank');
     });
@@ -398,7 +399,7 @@ describe('SettingsView', () => {
     it('are explained in the privacy information in the app', async () => {
       mockNative();
       const { wrapper } = await mountView(SettingsView, '/settings');
-      expect(await privacyText(wrapper)).toContain('api.github.com once a day');
+      expect(await privacyText(wrapper)).toContain('api.github.com about once a day');
     });
   });
 });

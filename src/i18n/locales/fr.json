@@ -213,8 +213,9 @@
     "checkUpdatesName": "Rechercher des mises à jour",
     "checkUpdatesInstalled": "Version installée : {version}",
     "checkUpdatesAvailable": "La version {version} est disponible",
+    "checkUpdatesButton": "Ouvrir sur GitHub",
     "autoCheckName": "Vérifier automatiquement",
-    "autoCheckDesc": "Une fois par jour, demander à GitHub (api.github.com) si une version plus récente existe. GitHub voit votre adresse IP ; aucune donnée sur vos animaux n'est envoyée.",
+    "autoCheckDesc": "Environ une fois par jour, demander à GitHub (api.github.com) si une version plus récente existe. GitHub voit votre adresse IP ; aucune donnée sur vos animaux n'est envoyée.",
     "legalSection": "Mentions légales",
     "privacyTitle": "Politique de confidentialité",
     "privacyDesc": "Comment vos données sont stockées et utilisées",
@@ -227,7 +228,7 @@
       "p2": "<strong>Aucun suivi ni analyse.</strong> CardiPaw n'utilise pas de cookies, de services d'analyse, de traceurs publicitaires ni aucune collecte de données par des tiers. Il n'y a pas de compte utilisateur ni de connexion.",
       "p3": "<strong>Vous gardez le contrôle.</strong> Vous pouvez exporter vos données à tout moment depuis la page Paramètres, et supprimer l'application ou effacer les données du site dans votre navigateur supprimera définitivement tout.",
       "p4": "<strong>Aucun partage de données.</strong> Comme vos données ne quittent jamais votre appareil, elles ne sont jamais partagées avec ni accessibles par quiconque d'autre.",
-      "p5": "<strong>Recherche de mises à jour (application Android).</strong> Si vous activez « Vérifier automatiquement » dans Paramètres, sous Mises à jour, l'application demande une fois par jour à api.github.com si une version plus récente existe. GitHub voit alors votre adresse IP et l'agent utilisateur de votre appareil (par exemple la version d'Android). Aucune donnée sur vos animaux n'est envoyée. Cette option reste désactivée tant que vous ne l'activez pas."
+      "p5": "<strong>Recherche de mises à jour (application Android).</strong> Si vous activez « Vérifier automatiquement » dans Paramètres, sous Mises à jour, l'application demande environ une fois par jour à api.github.com si une version plus récente existe. GitHub voit alors votre adresse IP et les informations que le moteur de navigateur de l'application envoie avec chaque requête, comme son agent utilisateur (qui comprend la version d'Android et le modèle de l'appareil) et la langue. Aucune donnée sur vos animaux n'est envoyée. Cette option reste désactivée tant que vous ne l'activez pas."
     },
     "terms": {
       "p1": "<strong>Pas un avis médical.</strong> CardiPaw est un outil d'information pour vous aider à enregistrer et suivre la fréquence respiratoire au repos de votre animal. Il ne remplace pas un diagnostic, un conseil ou un traitement vétérinaire professionnel.",

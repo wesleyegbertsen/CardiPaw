@@ -65,8 +65,10 @@ const showNotice = computed(
 );
 
 /**
- * App only, with the setting on, in a release build: asks GitHub at most once a day. The time
- * is saved before asking, so a failure (offline, rate limited) also waits a day.
+ * App only, with the setting on, in a release build: asks GitHub about once a day. The time
+ * is saved before asking, so a failure (offline, rate limited) also waits a day. Turning the
+ * setting off doesn't stop a check already under way; it finishes harmlessly, since nothing
+ * is shown while the setting is off.
  */
 export function checkIfDue(now = Date.now()): Promise<void> {
   if (!isNative() || !enabled.value || !releaseVersion(__APP_VERSION__)) return Promise.resolve();

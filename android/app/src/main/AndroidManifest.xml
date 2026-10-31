@@ -46,7 +46,7 @@
     <!-- Permissions -->
 
     <!-- INTERNET is only for the opt-in update check (src/composables/useUpdateCheck.ts, off by
-         default): at most one request a day to api.github.com. Android grants it at install time
+         default): about one request a day to api.github.com. Android grants it at install time
          to the whole app, not per feature; the opt-in only decides whether CardiPaw's own code
          makes the request. The app's Content-Security-Policy (src/native/csp.ts) limits what the
          page can fetch to the app itself and the one GitHub release URL the check asks; native

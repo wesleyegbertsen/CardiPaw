@@ -209,12 +209,13 @@
     "thresholdHighValue": "> 35 ademh./min",
     "disclaimer": "Dit zijn de algemene standaarddrempelwaarden. Je kunt per huisdier aangepaste grenzen instellen in het profiel van elk huisdier. Volg altijd het specifieke advies van je dierenarts over welke waarden je moet volgen, welke bereiken normaal zijn voor jouw huisdier en wanneer je hulp moet zoeken.",
     "updatesSection": "Updates",
-    "updatesDesc": "De app werkt zichzelf niet bij. Installeer om bij te werken de APK van een nieuwere release over deze heen; je gegevens blijven bewaard.",
+    "updatesDesc": "De app werkt zichzelf niet bij. Wil je bijwerken, installeer dan de APK van een nieuwere release over de huidige app heen; je gegevens blijven bewaard.",
     "checkUpdatesName": "Controleren op updates",
     "checkUpdatesInstalled": "Geïnstalleerd: versie {version}",
     "checkUpdatesAvailable": "Versie {version} is beschikbaar",
+    "checkUpdatesButton": "Openen op GitHub",
     "autoCheckName": "Automatisch controleren",
-    "autoCheckDesc": "Vraag één keer per dag aan GitHub (api.github.com) of er een nieuwere versie is. GitHub ziet je IP-adres; er worden geen huisdiergegevens verzonden.",
+    "autoCheckDesc": "Vraag ongeveer één keer per dag aan GitHub (api.github.com) of er een nieuwere versie is. GitHub ziet je IP-adres; er worden geen huisdiergegevens verzonden.",
     "legalSection": "Juridisch",
     "privacyTitle": "Privacybeleid",
     "privacyDesc": "Hoe je gegevens worden opgeslagen en gebruikt",
@@ -227,7 +228,7 @@
       "p2": "<strong>Geen tracking of analyse.</strong> CardiPaw gebruikt geen cookies, analysediensten, advertentietrackers of enige vorm van gegevensverzameling door derden. Er zijn geen gebruikersaccounts en geen login.",
       "p3": "<strong>Jij hebt de controle.</strong> Je kunt je gegevens op elk moment exporteren via de pagina Instellingen, en door de app te verwijderen of de sitegegevens van je browser te wissen verwijder je alles definitief.",
       "p4": "<strong>Geen gegevens delen.</strong> Omdat je gegevens je apparaat nooit verlaten, worden ze nooit met iemand anders gedeeld of voor anderen toegankelijk.",
-      "p5": "<strong>Updatecontrole (Android-app).</strong> Als je in Instellingen onder Updates “Automatisch controleren” aanzet, vraagt de app één keer per dag aan api.github.com of er een nieuwere versie is. GitHub ziet dan je IP-adres en de user agent van je apparaat (zoals de Android-versie). Er worden geen huisdiergegevens verzonden. Dit staat uit, tenzij je het zelf aanzet."
+      "p5": "<strong>Updatecontrole (Android-app).</strong> Als je in Instellingen onder Updates \"Automatisch controleren\" aanzet, vraagt de app ongeveer één keer per dag aan api.github.com of er een nieuwere versie is. GitHub ziet dan je IP-adres en de informatie die de browser-engine van de app met elk verzoek meestuurt, zoals de user agent (met daarin de Android-versie en het apparaatmodel) en de taal. Er worden geen huisdiergegevens verzonden. Dit staat uit, tenzij je het zelf aanzet."
     },
     "terms": {
       "p1": "<strong>Geen medisch advies.</strong> CardiPaw is een informatief hulpmiddel om de rustademhalingsfrequentie van je huisdier vast te leggen en te volgen. Het is geen vervanging voor professionele diergeneeskundige diagnose, advies of behandeling.",

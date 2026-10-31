@@ -295,7 +295,7 @@ function cancelImport() {
               :href="LATEST_RELEASE_URL"
               target="_blank"
               rel="noopener noreferrer"
-            >{{ $t('common.view') }}</a>
+            >{{ $t('settings.checkUpdatesButton') }}</a>
           </div>
 
           <div class="action-card">
