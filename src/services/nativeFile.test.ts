@@ -78,17 +78,21 @@ describe('shareFile', () => {
     expect(first).not.toBe(second);
   });
 
-  it('deletes every earlier export, however recent, before writing the new one', async () => {
-    // -HOUR: modified "in the future", as after the clock was turned back.
-    listExports(entry('old', 2 * HOUR), entry('just-shared'), entry('clock-turned-back', -HOUR));
+  it('deletes earlier exports older than an hour, only before writing the new one', async () => {
+    // Every listing, not just the first: a cleanup after sharing would delete 'old' again.
+    vi.mocked(Filesystem.readdir).mockResolvedValue({
+      files: [entry('old', 2 * HOUR), entry('recent', 10 * 60 * 1000)],
+    });
     await shareFile(opts);
-    expect(vi.mocked(Filesystem.rmdir).mock.calls).toEqual(
-      ['old', 'just-shared', 'clock-turned-back'].map((name) => [
-        { path: `exports/${name}`, directory: Directory.Cache, recursive: true },
-      ]),
-    );
-    const lastDelete = Math.max(...vi.mocked(Filesystem.rmdir).mock.invocationCallOrder);
-    expect(lastDelete).toBeLessThan(vi.mocked(Filesystem.writeFile).mock.invocationCallOrder[0]);
+    expect(Filesystem.rmdir).toHaveBeenCalledExactlyOnceWith({
+      path: 'exports/old',
+      directory: Directory.Cache,
+      recursive: true,
+    });
+    expect(Filesystem.readdir).toHaveBeenCalledOnce();
+    const order = (fn: unknown) => vi.mocked(fn as () => void).mock.invocationCallOrder[0];
+    expect(order(Filesystem.rmdir)).toBeLessThan(order(Filesystem.writeFile));
+    expect(order(Filesystem.readdir)).toBeLessThan(order(Share.share));
   });
 
   it('still shares when the earlier exports cannot be listed', async () => {
@@ -134,6 +138,32 @@ describe('cleanUpExports', () => {
     await cleanUpExports(HOUR);
     expect(Filesystem.rmdir).toHaveBeenCalledTimes(1);
     expect(Filesystem.rmdir).toHaveBeenCalledWith(expect.objectContaining({ path: 'exports/old' }));
+  });
+
+  it('deletes an export exactly the given age old, keeps one a moment younger', async () => {
+    // A frozen clock, so the ages are exact.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2024-03-15T18:00:00.000Z'));
+      listExports(entry('an-hour', HOUR), entry('just-under', HOUR - 1));
+      await cleanUpExports(HOUR);
+      expect(Filesystem.rmdir).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ path: 'exports/an-hour' }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('deletes every export by default, even one modified "in the future"', async () => {
+    // As after the clock was turned back since the export.
+    listExports(entry('old', 2 * HOUR), entry('just-shared'), entry('clock-turned-back', -HOUR));
+    await cleanUpExports();
+    expect(vi.mocked(Filesystem.rmdir).mock.calls).toEqual(
+      ['old', 'just-shared', 'clock-turned-back'].map((name) => [
+        { path: `exports/${name}`, directory: Directory.Cache, recursive: true },
+      ]),
+    );
   });
 
   it('deletes a stray file with deleteFile', async () => {

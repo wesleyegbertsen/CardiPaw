@@ -10,6 +10,12 @@ import { v4 as generateId } from 'uuid';
 const EXPORTS_DIR = 'exports';
 /** The plugin's "does not exist" code (FilesystemErrors.kt): nothing was exported yet. */
 const DOES_NOT_EXIST = 'OS-PLUG-FILE-0008';
+/**
+ * Exports younger than this are kept by the next export and at start-up: the app they were
+ * shared to may still open one later (a Gmail draft, a Drive upload), and Android can stop
+ * CardiPaw meanwhile.
+ */
+export const MAX_EXPORT_AGE_MS = 60 * 60 * 1000;
 
 /** 'cancelled': the share sheet was closed without picking an app. */
 export type ShareFileOutcome = 'shared' | 'cancelled';
@@ -29,7 +35,7 @@ export interface ShareFileOptions {
 /**
  * App only: writes the file to its own folder in the cache directory and opens the Android
  * share sheet, where it can be saved (Files, Drive) or sent. The WebView ignores
- * <a download>, so this replaces it. Earlier exports are deleted first.
+ * <a download>, so this replaces it. Earlier exports older than an hour are deleted first.
  */
 export async function shareFile({
   name,
@@ -38,9 +44,11 @@ export async function shareFile({
   subject,
   dialogTitle,
 }: ShareFileOptions): Promise<ShareFileOutcome> {
-  // Not after sharing: Share.share resolves when the sheet closes, while the receiving app
-  // may still be reading the file. Before writing, so the new file is never the one removed.
-  await cleanUpExports();
+  // Exports younger than an hour are kept: an app they were shared to may still open them
+  // later (a Gmail draft, a Drive upload). Not after sharing: Share.share resolves when the
+  // sheet closes, while the receiving app may still be reading the file. Before writing, so
+  // the new file is never the one removed.
+  await cleanUpExports(MAX_EXPORT_AGE_MS);
   const { uri } = await Filesystem.writeFile({
     // A folder per export keeps the name the user sees, and a later export of the same name
     // never overwrites a file another app may still be reading.
@@ -63,7 +71,7 @@ export async function shareFile({
 }
 
 /**
- * App only: deletes the exports last modified more than `olderThanMs` ago, or all of them
+ * App only: deletes the exports last modified `olderThanMs` or more ago, or all of them
  * (the default). Never rejects: a leftover file isn't worth failing an export, the app start
  * or a pet delete over, so failures are only logged.
  */

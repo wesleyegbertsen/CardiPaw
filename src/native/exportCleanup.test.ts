@@ -3,7 +3,11 @@ import { cleanUpExports } from '../services/nativeFile';
 import { mockNative } from '../test/native';
 import { cleanUpOldExports } from './exportCleanup';
 
-vi.mock('../services/nativeFile', () => ({ cleanUpExports: vi.fn(async () => {}) }));
+// The real MAX_EXPORT_AGE_MS, so the test below pins its value.
+vi.mock('../services/nativeFile', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../services/nativeFile')>()),
+  cleanUpExports: vi.fn(async () => {}),
+}));
 
 describe('cleanUpOldExports', () => {
   it('deletes the exports older than an hour in the app', () => {
