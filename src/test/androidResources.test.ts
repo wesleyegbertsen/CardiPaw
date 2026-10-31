@@ -106,7 +106,7 @@ describe('Android resources', () => {
     });
   });
 
-  it('shows the paw on the app background at launch', () => {
+  it('shows the paw on the app background at launch, then keeps that background', () => {
     // Theme.SplashScreen alone shows the generic Android icon (sym_def_app_icon).
     expect(styleItems('AppTheme.NoActionBarLaunch')).toEqual({
       parent: 'Theme.SplashScreen.IconBackground',
@@ -117,6 +117,9 @@ describe('Android resources', () => {
         'android:windowLightStatusBar': '@bool/light_system_bars',
         'android:windowLightNavigationBar': '@bool/light_system_bars',
       },
+    });
+    expect(styleItems('AppTheme.NoActionBar').items).toMatchObject({
+      'android:windowBackground': '@color/app_background',
     });
   });
 
