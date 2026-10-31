@@ -288,7 +288,12 @@ You need [Android Studio](https://developer.android.com/studio) with the Android
 ```bash
 npm run build:android # type-check, build the web files into dist-native/ and copy them into android/
 npm run android:open  # open the project in Android Studio, then run it on a device or emulator
+npm run generate-android-assets # regenerate the launcher icon from public/favicon.svg
 ```
+
+The launcher icon, and the icon on the launch screen, come from `public/favicon.svg`, the same source as the PWA icons. After changing it, run `npm run generate-android-assets` and commit the result; a test fails while the generated XML is out of date. The launch screen's background is `app_background` in `android/app/src/main/res/values*/colors.xml`, which a test keeps equal to `--color-bg` in `global.css`. The launch screen and the app's first frame follow the **system** dark mode, not the in-app theme setting, because Android shows them before the page loads.
+
+After changing the icon or the launch screen, check them on a device: the icon under round, squircle and themed (Android 13+) masks, and the launch screen in light and dark mode with no white flash before the page appears.
 
 CI builds a debug APK on every PR and attaches it to the run as the `cardipaw-debug-apk` artifact, so you can install it without Android Studio.
 
