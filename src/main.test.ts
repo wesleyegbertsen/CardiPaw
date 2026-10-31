@@ -3,9 +3,11 @@ import type { App } from 'vue';
 import { router } from './router';
 import { installBackButton } from './native/backButton';
 import { cleanUpOldExports } from './native/exportCleanup';
+import { installUpdateCheck } from './native/updateCheck';
 
 vi.mock('./native/backButton', () => ({ installBackButton: vi.fn() }));
 vi.mock('./native/exportCleanup', () => ({ cleanUpOldExports: vi.fn() }));
+vi.mock('./native/updateCheck', () => ({ installUpdateCheck: vi.fn() }));
 
 // main.ts mounts the app as an import side effect, which runs once per file:
 // keep this file to a single test.
@@ -13,7 +15,7 @@ let app: App | undefined;
 // Auto-unmount only tracks wrappers from mount(); main.ts uses createApp.
 afterEach(() => app?.unmount());
 
-it('mounts the app on #app with pinia, the router, i18n, the back button and export cleanup', async () => {
+it('mounts the app on #app with pinia, the router, i18n, the back button, export cleanup and the update check', async () => {
   document.body.innerHTML = '<div id="app"></div>';
   await import('./main');
 
@@ -25,6 +27,7 @@ it('mounts the app on #app with pinia, the router, i18n, the back button and exp
   expect($t('nav.settings')).toBe('Settings');
   expect(installBackButton).toHaveBeenCalledWith(router);
   expect(cleanUpOldExports).toHaveBeenCalledOnce();
+  expect(installUpdateCheck).toHaveBeenCalledOnce();
 
   // The home screen loads the (empty) pets store and renders in English.
   await vi.waitFor(() =>
