@@ -43,7 +43,7 @@ Tracking this consistently by hand (counting breaths, writing down numbers, tryi
 
 ## What Is a Resting Respiratory Rate?
 
-The RRR is measured by watching your pet's chest while they are resting or sleeping and counting the number of breaths over 30 seconds, then multiplying by 2 to get breaths per minute. Count chest movements: one rise and fall equals one breath. For cats and dogs, a normal RRR is generally **below 30 breaths/min**.
+The RRR is measured by watching your pet's chest while they are resting or sleeping and counting the number of breaths over a set time (15, 30 or 60 seconds), then converting that count to breaths per minute. Count chest movements: one rise and fall equals one breath. For cats and dogs, a normal RRR is generally **below 30 breaths/min**.
 
 ## Features
 
@@ -53,7 +53,7 @@ Add as many pets as you need, each with a name, species, photo, and date of birt
 
 ### Guided Tracking
 
-The built-in tracker walks you through a 30-second measurement. Tap the button each time your pet takes a breath, and CardiPaw calculates the rate automatically.
+The built-in tracker walks you through a 15, 30 or 60-second measurement (30 by default, remembered per pet). Tap the button each time your pet takes a breath, and CardiPaw calculates the rate automatically.
 
 ### Readings
 
