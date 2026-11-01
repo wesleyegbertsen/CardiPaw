@@ -53,7 +53,7 @@ Add as many pets as you need, each with a name, species, photo, and date of birt
 
 ### Guided Tracking
 
-The built-in tracker walks you through a 15, 30 or 60-second measurement (30 by default, remembered per pet). Tap the button each time your pet takes a breath, and CardiPaw calculates the rate automatically.
+The built-in tracker walks you through a 15-, 30- or 60-second measurement (30 by default, remembered per pet). Tap the button each time your pet takes a breath, and CardiPaw calculates the rate automatically.
 
 ### Readings
 

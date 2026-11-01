@@ -341,6 +341,7 @@ function formatDate(iso: string) {
   font-weight: 500;
   padding: 3px 10px;
   border-radius: var(--radius-full);
+  white-space: nowrap;
 }
 
 .source-chip.manual {

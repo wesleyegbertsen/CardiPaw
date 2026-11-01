@@ -315,7 +315,7 @@
     "step2Title": "Observez la poitrine",
     "step2Body": "Un soulèvement et un abaissement de la poitrine comptent pour une respiration. Trouvez un angle qui vous permet de bien voir le flanc ou le ventre de votre animal bouger.",
     "step3Title": "Appuyez à chaque respiration jusqu'à la fin du minuteur",
-    "step3Body": "Choisissez 15, 30 ou 60 secondes (plus c'est long, plus c'est précis), puis appuyez sur l'écran chaque fois que vous voyez une respiration. CardiPaw convertit votre décompte en respirations par minute.",
+    "step3Body": "Choisissez 15, 30 ou 60 secondes (plus la mesure est longue, plus elle est précise), puis appuyez sur l'écran chaque fois que vous voyez une respiration. CardiPaw convertit votre décompte en respirations par minute.",
     "step4Title": "Quand ne pas mesurer",
     "step4Body": "Ne prenez pas de mesure si votre animal halète, vient de manger, vient de se réveiller, est anxieux ou stressé, ou est en chaleur — cela peut augmenter temporairement la fréquence.",
     "stepCount": "Étape {current} sur {total}",
