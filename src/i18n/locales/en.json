@@ -219,7 +219,8 @@
       "p1": "<strong>Your data stays on your device.</strong> CardiPaw stores all information (pet profiles, readings, and notes) exclusively in your browser's IndexedDB. Nothing is ever transmitted to a server.",
       "p2": "<strong>No tracking or analytics.</strong> CardiPaw does not use cookies, analytics services, advertising trackers, or any third-party data collection. There are no user accounts and no login.",
       "p3": "<strong>You are in control.</strong> You can export your data at any time from the Settings page, and deleting the app or clearing your browser's site data will permanently remove everything.",
-      "p4": "<strong>No data sharing.</strong> Because your data never leaves your device, it is never shared with or accessible by anyone else."
+      "p4": "<strong>No data sharing.</strong> Because your data never leaves your device, it is never shared with or accessible by anyone else.",
+      "p5": "<strong>Reminders stay on your phone.</strong> In the Android app, reminders are scheduled on this phone; nothing about them is sent anywhere. Their settings stay on this device and aren't included in exports."
     },
     "terms": {
       "p1": "<strong>Not medical advice.</strong> CardiPaw is an informational tool to help you log and track your pet's resting respiratory rate. It is not a substitute for professional veterinary diagnosis, advice, or treatment.",

@@ -384,6 +384,7 @@ function cancelImport() {
       <p v-html="$t('settings.privacy.p2')" />
       <p v-html="$t('settings.privacy.p3')" />
       <p v-html="$t('settings.privacy.p4')" />
+      <p v-html="$t('settings.privacy.p5')" />
     </InfoModal>
 
     <InfoModal

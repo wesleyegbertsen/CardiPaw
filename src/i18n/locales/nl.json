@@ -219,7 +219,8 @@
       "p1": "<strong>Je gegevens blijven op je apparaat.</strong> CardiPaw slaat alle informatie (huisdierprofielen, metingen en notities) uitsluitend op in de IndexedDB van je browser. Er wordt nooit iets naar een server verzonden.",
       "p2": "<strong>Geen tracking of analyse.</strong> CardiPaw gebruikt geen cookies, analysediensten, advertentietrackers of enige vorm van gegevensverzameling door derden. Er zijn geen gebruikersaccounts en geen login.",
       "p3": "<strong>Jij hebt de controle.</strong> Je kunt je gegevens op elk moment exporteren via de pagina Instellingen, en door de app te verwijderen of de sitegegevens van je browser te wissen verwijder je alles definitief.",
-      "p4": "<strong>Geen gegevens delen.</strong> Omdat je gegevens je apparaat nooit verlaten, worden ze nooit met iemand anders gedeeld of voor anderen toegankelijk."
+      "p4": "<strong>Geen gegevens delen.</strong> Omdat je gegevens je apparaat nooit verlaten, worden ze nooit met iemand anders gedeeld of voor anderen toegankelijk.",
+      "p5": "<strong>Herinneringen blijven op je telefoon.</strong> In de Android-app worden herinneringen op deze telefoon ingepland; er wordt niets over verstuurd. De instellingen ervan blijven op dit apparaat en zitten niet in exports."
     },
     "terms": {
       "p1": "<strong>Geen medisch advies.</strong> CardiPaw is een informatief hulpmiddel om de rustademhalingsfrequentie van je huisdier vast te leggen en te volgen. Het is geen vervanging voor professionele diergeneeskundige diagnose, advies of behandeling.",

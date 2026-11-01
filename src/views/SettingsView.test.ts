@@ -297,6 +297,7 @@ describe('SettingsView', () => {
     await wrapper.findAll('.action-btn')[2].trigger('click');
     const dialog = document.body.querySelector('[role="dialog"]');
     expect(dialog?.querySelector('.dialog-title')?.textContent).toBe('Privacy Policy');
+    expect(dialog?.textContent).toContain('Reminders stay on your phone.');
 
     clickInBody('.btn-ok');
     await flushPromises();

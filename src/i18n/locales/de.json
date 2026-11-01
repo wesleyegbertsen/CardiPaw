@@ -219,7 +219,8 @@
       "p1": "<strong>Deine Daten bleiben auf deinem Gerät.</strong> CardiPaw speichert alle Informationen (Tierprofile, Messungen und Notizen) ausschließlich in der IndexedDB deines Browsers. Es wird niemals etwas an einen Server übertragen.",
       "p2": "<strong>Kein Tracking, keine Analyse.</strong> CardiPaw verwendet keine Cookies, Analysedienste, Werbetracker oder sonstige Datenerfassung durch Dritte. Es gibt keine Benutzerkonten und kein Login.",
       "p3": "<strong>Du hast die Kontrolle.</strong> Du kannst deine Daten jederzeit über die Seite „Einstellungen“ exportieren. Durch das Löschen der App oder das Leeren der Websitedaten deines Browsers wird alles dauerhaft entfernt.",
-      "p4": "<strong>Keine Datenweitergabe.</strong> Da deine Daten dein Gerät nie verlassen, werden sie niemals mit anderen geteilt oder für andere zugänglich gemacht."
+      "p4": "<strong>Keine Datenweitergabe.</strong> Da deine Daten dein Gerät nie verlassen, werden sie niemals mit anderen geteilt oder für andere zugänglich gemacht.",
+      "p5": "<strong>Erinnerungen bleiben auf deinem Smartphone.</strong> In der Android-App werden Erinnerungen auf diesem Smartphone geplant; nichts davon wird irgendwohin gesendet. Ihre Einstellungen bleiben auf diesem Gerät und sind nicht in Exporten enthalten."
     },
     "terms": {
       "p1": "<strong>Keine medizinische Beratung.</strong> CardiPaw ist ein informatives Hilfsmittel, um die Ruhe-Atemfrequenz deines Tieres zu erfassen und zu verfolgen. Es ersetzt keine professionelle tierärztliche Diagnose, Beratung oder Behandlung.",
