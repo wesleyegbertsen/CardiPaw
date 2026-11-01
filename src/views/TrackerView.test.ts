@@ -251,6 +251,13 @@ describe('TrackerView', () => {
       });
     });
 
+    it('does not start a measurement on a tap that just misses the length pills', async () => {
+      const { wrapper } = await mountTracker();
+      await wrapper.get('.length-row').trigger('click');
+      expect(wrapper.find('.timer-ring').exists()).toBe(false);
+      expect(audio.playBeep).not.toHaveBeenCalled();
+    });
+
     it('starts with the pet’s saved length', async () => {
       localStorage.setItem(
         'cardipaw-tracker-prefs',

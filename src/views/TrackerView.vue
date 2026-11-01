@@ -323,16 +323,19 @@ onUnmounted(() => {
       <div class="body-bottom">
         <template v-if="phase === 'idle'">
           <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
-          <div class="length-toggle" role="group" :aria-label="$t('tracker.lengthLabel')" @click.stop>
-            <button
-              v-for="s in MEASUREMENT_DURATIONS"
-              :key="s"
-              type="button"
-              class="length-pill"
-              :class="{ active: durationSeconds === s }"
-              :aria-pressed="durationSeconds === s"
-              @click="durationSeconds = s"
-            >{{ $t('tracker.lengthOption', { n: s }) }}</button>
+          <!-- Full width, so a tap just beside the pills doesn't start a measurement -->
+          <div class="length-row" @click.stop>
+            <div class="length-toggle" role="group" :aria-label="$t('tracker.lengthLabel')">
+              <button
+                v-for="s in MEASUREMENT_DURATIONS"
+                :key="s"
+                type="button"
+                class="length-pill"
+                :class="{ active: durationSeconds === s }"
+                :aria-pressed="durationSeconds === s"
+                @click="durationSeconds = s"
+              >{{ $t('tracker.lengthOption', { n: s }) }}</button>
+            </div>
           </div>
           <div class="option-row" @click.stop>
             <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
@@ -530,6 +533,11 @@ onUnmounted(() => {
   color: var(--color-primary);
 }
 
+.length-row {
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+}
 .length-toggle {
   display: inline-flex;
   /* Surface, not bg: it sits on the page background, unlike the mode toggle */
