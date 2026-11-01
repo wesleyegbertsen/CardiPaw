@@ -9,6 +9,7 @@ import nl from '../i18n/locales/nl.json';
 import { makePet, makeReading } from '../test/fixtures';
 import { failStorageWrites } from '../test/blockStorage';
 import { closeTopModal } from '../composables/useModal';
+import { deferred } from '../test/deferred';
 import { loadReminderSettings, saveReminderSetting } from '../utils/reminderSettings';
 import * as reminders from '../native/reminders';
 
@@ -197,6 +198,31 @@ describe('ReminderModal', () => {
     expect(q<HTMLButtonElement>('.btn-save')!.disabled).toBe(true);
   });
 
+  it('saves off with a valid time even after it was cleared', async () => {
+    saveReminderSetting('pet-1', { enabled: true, time: '07:30', days: [1] });
+    const wrapper = await open();
+    const input = q<HTMLInputElement>('input[type="time"]')!;
+    input.value = '';
+    input.dispatchEvent(new Event('input'));
+    await click('[role="switch"]');
+    await click('.btn-save');
+    expect(loadReminderSettings()['pet-1']).toMatchObject({ enabled: false, time: '22:00' });
+    expect(wrapper.emitted('close')).toHaveLength(1);
+  });
+
+  it('names tomorrow once today’s time has passed', async () => {
+    vi.setSystemTime(new Date('2026-06-10T23:00:00Z'));
+    saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [0, 1, 2, 3, 4, 5, 6] });
+    await open();
+    expect(q('.next')!.textContent).toBe('Next reminder: Thursday, June 11 at 10:00 PM');
+  });
+
+  it('names tomorrow when today already has a reading', async () => {
+    saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [0, 1, 2, 3, 4, 5, 6] });
+    await open('en', [makeReading({ date: '2026-06-10T07:00:00Z' })]);
+    expect(q('.next')!.textContent).toBe('Next reminder: Thursday, June 11 at 10:00 PM');
+  });
+
   it('saves off with valid days even after they were all cleared', async () => {
     saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [3] });
     await open();
@@ -272,6 +298,30 @@ describe('ReminderModal', () => {
       'Opening the notification settings failed',
       expect.any(Error),
     );
+  });
+
+  it('stays open while saving, then closes', async () => {
+    const held = deferred<void>();
+    R.applyReminders.mockReturnValueOnce(held.promise);
+    const wrapper = await open();
+    await click('[role="switch"]');
+    await click('.btn-save');
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(closeTopModal()).toBe(true);
+    await click('.overlay');
+    expect(wrapper.emitted('close')).toBeUndefined();
+    held.resolve();
+    await flushPromises();
+    expect(wrapper.emitted('close')).toHaveLength(1);
+  });
+
+  it('stops checking on resume once closed', async () => {
+    const remove = vi.fn();
+    vi.mocked(App.addListener).mockResolvedValueOnce({ remove });
+    const wrapper = await open();
+    wrapper.unmount();
+    await flushPromises();
+    expect(remove).toHaveBeenCalledOnce();
   });
 
   it('closes on the back button', async () => {

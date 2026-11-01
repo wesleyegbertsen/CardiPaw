@@ -59,6 +59,23 @@ describe('planReminders', () => {
     expect(reminderId(7, '2026-06-10')).toBe(planReminders({ ...daily, slot: 7 }, none, now)[0].id);
   });
 
+  it('keeps the slot in the ids above the day', () => {
+    expect(reminderId(2, '2026-06-10') - reminderId(1, '2026-06-10')).toBe(100_000);
+    expect(Math.floor(reminderId(MAX_SLOT, '2026-06-10') / 100_000)).toBe(MAX_SLOT);
+  });
+
+  it('finds the weekday of a day in a zone west of UTC', () => {
+    stubTimezone('America/Los_Angeles');
+    // 08:00 on Wednesday 10 June in Los Angeles.
+    const plan = planReminders({ ...daily, days: [1, 3] }, none, new Date('2026-06-10T15:00:00Z'));
+    expect(plan.map((p) => p.dayKey)).toEqual([
+      '2026-06-10',
+      '2026-06-15',
+      '2026-06-17',
+      '2026-06-22',
+    ]);
+  });
+
   it('uses local days and times in Amsterdam, across both DST changes', () => {
     stubTimezone('Europe/Amsterdam');
     const night = { ...daily, time: '02:30' };

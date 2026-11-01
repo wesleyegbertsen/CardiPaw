@@ -8,6 +8,9 @@ import { makeNote, makePet, makeReading } from '../test/fixtures';
 import { deferred } from '../test/deferred';
 import { touchEvent } from '../test/touch';
 import { createTestI18n } from '../test/i18n';
+import { createI18n } from 'vue-i18n';
+import en from '../i18n/locales/en.json';
+import nl from '../i18n/locales/nl.json';
 import * as db from '../services/db';
 import { closeTopModal } from '../composables/useModal';
 import { useReadingsStore } from '../stores/readings';
@@ -866,6 +869,22 @@ describe('PetDetailView', () => {
       expect(wrapper.get('.reminder-btn').attributes('aria-label')).toBe('Reminders for Ace: on');
     });
 
+    it('shows no summary for reminders that were turned off', async () => {
+      mockNative();
+      saveReminderSetting('pet-1', { enabled: false, time: '22:00', days: [1, 3, 5] });
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      expect(wrapper.find('.reminder-summary').exists()).toBe(false);
+      expect(wrapper.get('.reminder-btn').attributes('aria-label')).toBe('Reminders for Ace: off');
+    });
+
+    it('lists the days from Monday in Dutch, Sunday last', async () => {
+      mockNative();
+      saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [0, 1] });
+      const i18n = createI18n({ legacy: false, locale: 'nl', fallbackLocale: 'en', messages: { en, nl } });
+      const { wrapper } = await mountDetail('/pets/pet-1', { i18n });
+      expect(wrapper.get('.reminder-summary').text()).toBe('Herinnering: ma en zo om 22:00');
+    });
+
     it('shows the saved reminder once the dialog closes', async () => {
       mockNative();
       const { wrapper } = await mountDetail('/pets/pet-1');
@@ -898,6 +917,23 @@ describe('PetDetailView', () => {
       expect(wrapper.get('.reminder-summary').text()).toBe('Reminder: Mon, Wed, and Fri at 10:00 PM');
       expect(bell.attributes('aria-label')).toBe('Reminders for Ace: on');
       expect(bell.classes()).toContain('on');
+    });
+
+    it('no longer says paused once the dialog got the permission', async () => {
+      mockNative();
+      vi.mocked(reminders.reminderPermission).mockResolvedValue('rationale');
+      saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [1, 3, 5] });
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminders paused: notifications are off');
+      await wrapper.get('.reminder-btn').trigger('click');
+      await flushPromises();
+      // Granted from the dialog's save.
+      vi.mocked(reminders.reminderPermission).mockResolvedValue('granted');
+      document.body.querySelector<HTMLElement>('.btn-save')!.click();
+      await flushPromises();
+      expect(reminders.requestReminderPermission).toHaveBeenCalledOnce();
+      expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder: Mon, Wed, and Fri at 10:00 PM');
     });
 
     it('stops checking on resume once the page is gone', async () => {

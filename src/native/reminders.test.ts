@@ -135,6 +135,69 @@ describe('reminders', () => {
     expect(LN.cancel).toHaveBeenCalledWith({ notifications: [{ id: stale.id }] });
   });
 
+  it('tops up the reminders when the app starts', async () => {
+    mockNative();
+    install();
+    await vi.waitFor(() => expect(LN.schedule).toHaveBeenCalledOnce());
+  });
+
+  it("updates only the given pet's reminders", async () => {
+    mockNative();
+    install();
+    await syncReminders();
+    await db.savePet(makePet({ id: 'pet-2', name: 'Bo' }));
+    saveReminderSetting('pet-2', { enabled: true, time: '22:00', days: [0, 1, 2, 3, 4, 5, 6] });
+    // Out of date, but not this sync's business.
+    const other = pending(reminderId(2, '2026-06-10'), 'pet-2', '2026-06-10T21:00:00.000Z');
+    LN.getPending.mockResolvedValue({ notifications: [other] });
+    LN.schedule.mockClear();
+    LN.cancel.mockClear();
+    await syncReminders('pet-1');
+    const { notifications } = LN.schedule.mock.calls[0][0];
+    expect(notifications).toHaveLength(14);
+    expect(notifications.every((n) => n.extra.petId === 'pet-1')).toBe(true);
+    expect(LN.cancel).not.toHaveBeenCalled();
+  });
+
+  it('still drops the reminders of a deleted pet whose setting was kept', async () => {
+    mockNative();
+    install();
+    await syncReminders();
+    saveReminderSetting('pet-gone', { enabled: true, time: '22:00', days: [0, 1, 2, 3, 4, 5, 6] });
+    // At the very time its setting would plan.
+    const orphan = pending(reminderId(2, '2026-06-10'), 'pet-gone', '2026-06-10T22:00:00.000Z');
+    LN.getPending.mockResolvedValue({ notifications: [orphan] });
+    await syncReminders();
+    expect(LN.cancel).toHaveBeenCalledWith({ notifications: [{ id: orphan.id }] });
+    expect(LN.removeDeliveredNotificationsById).toHaveBeenCalledWith({ ids: [orphan.id] });
+  });
+
+  it("dismisses yesterday's reminder once yesterday has a reading", async () => {
+    mockNative();
+    install();
+    await syncReminders();
+    const yesterday = pending(reminderId(1, '2026-06-09'), 'pet-1', '2026-06-09T22:00:00.000Z');
+    LN.getPending.mockResolvedValue({ notifications: [yesterday] });
+    await db.saveReading(makeReading({ date: '2026-06-09T23:00:00Z' }));
+    await syncReminders('pet-1');
+    expect(LN.cancel).toHaveBeenCalledWith({ notifications: [{ id: yesterday.id }] });
+    expect(LN.removeDeliveredNotificationsById).toHaveBeenCalledWith({ ids: [yesterday.id] });
+  });
+
+  it("dismisses today's shown reminder after a reading, also once the plugin forgot it", async () => {
+    mockNative();
+    install();
+    await syncReminders();
+    // A time change cancels today's shown reminder (the plugin drops its record) but leaves
+    // it in the shade; a reading today should still clear it.
+    LN.getPending.mockResolvedValue({ notifications: [] });
+    await db.saveReading(makeReading({ date: '2026-06-10T07:00:00Z' }));
+    await syncReminders('pet-1');
+    expect(LN.removeDeliveredNotificationsById).toHaveBeenCalledWith({
+      ids: [reminderId(1, '2026-06-10')],
+    });
+  });
+
   it('still schedules on Android 7, which has no channels', async () => {
     mockNative();
     LN.createChannel.mockRejectedValue(
