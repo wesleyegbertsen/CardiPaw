@@ -20,6 +20,11 @@ import ConfirmDialog from '../components/ConfirmDialog.vue';
 import PdfExportModal from '../components/PdfExportModal.vue';
 import ShareLinkModal from '../components/ShareLinkModal.vue';
 import InfoModal from '../components/InfoModal.vue';
+import ReminderModal from '../components/ReminderModal.vue';
+import { WEEK_START, type Locale } from '../i18n';
+import { isNative } from '../utils/platform';
+import { loadReminderSettings } from '../utils/reminderSettings';
+import { formatDays, formatReminderTime } from '../utils/reminderFormat';
 import { useNotesStore } from '../stores/notes';
 
 const route = useRoute();
@@ -27,7 +32,7 @@ const router = useRouter();
 const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
 const notesStore = useNotesStore();
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
@@ -42,6 +47,24 @@ const notes = computed(() => notesStore.getNotesForPet(petId));
 const showDeleteDialog = ref(false);
 const showPdfModal = ref(false);
 const showShareModal = ref(false);
+// Reminders are local notifications, so they exist in the Android app only.
+const native = isNative();
+const showReminderModal = ref(false);
+const reminder = ref(native ? loadReminderSettings()[petId] : undefined);
+const reminderSummary = computed(() => {
+  const setting = reminder.value;
+  if (!setting?.enabled) return '';
+  const time = formatReminderTime(setting.time, locale.value);
+  if (setting.days.length === 7) return t('reminders.summaryDaily', { time });
+  const days = formatDays(setting.days, locale.value, WEEK_START[locale.value as Locale] ?? 1);
+  return t('reminders.summaryDays', { days, time });
+});
+
+function closeReminderModal() {
+  showReminderModal.value = false;
+  reminder.value = loadReminderSettings()[petId];
+}
+
 const TABS = ['chart', 'readings', 'notes'] as const;
 type Tab = typeof TABS[number];
 
@@ -434,6 +457,22 @@ async function deletePet() {
         </svg>
       </button>
       <div class="header-actions">
+        <button
+          v-if="native"
+          type="button"
+          class="icon-btn reminder-btn"
+          :class="{ on: reminder?.enabled }"
+          aria-haspopup="dialog"
+          :aria-label="$t(reminder?.enabled ? 'reminders.bellOn' : 'reminders.bellOff', { name: pet.name })"
+          @click="showReminderModal = true"
+        >
+          <svg v-if="reminder?.enabled" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
+          </svg>
+        </button>
         <button class="icon-btn" @click="showShareModal = true" :aria-label="$t('petDetail.share')">
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
             <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
@@ -476,6 +515,7 @@ async function deletePet() {
         <span class="pet-age">{{ ageDisplay }}</span>
       </div>
       <p class="last-measured" :class="{ stale: lastMeasured.isStale }">{{ lastMeasured.label }}</p>
+      <p v-if="reminderSummary" class="reminder-summary">{{ reminderSummary }}</p>
       <button v-if="showTrend" type="button" class="trend-badge" aria-haspopup="dialog" @click="showTrendInfo = true">
         <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
           <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
@@ -670,6 +710,13 @@ async function deletePet() {
       @close="showPdfModal = false"
     />
 
+    <ReminderModal
+      v-if="showReminderModal"
+      :pet="pet"
+      :readings="readings"
+      @close="closeReminderModal"
+    />
+
     <ShareLinkModal
       v-if="showShareModal"
       :pet="pet"
@@ -768,6 +815,16 @@ async function deletePet() {
 
 .icon-btn.danger {
   color: var(--color-danger);
+}
+
+.reminder-btn.on {
+  color: var(--color-primary);
+}
+
+.reminder-summary {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
 }
 
 .pet-hero {

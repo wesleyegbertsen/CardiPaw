@@ -354,6 +354,21 @@
     "channelName": "Mess-Erinnerungen",
     "channelDescription": "Erinnerungen, die Ruhe-Atemfrequenz deiner Tiere zu messen",
     "notificationTitle": "Zeit, die Atemfrequenz von {name} zu messen",
-    "notificationBody": "Zähle die Atemzüge, während dein Tier ruht oder schläft."
+    "notificationBody": "Zähle die Atemzüge, während dein Tier ruht oder schläft.",
+    "title": "Erinnerungen",
+    "bellOn": "Erinnerungen für {name}: an",
+    "bellOff": "Erinnerungen für {name}: aus",
+    "enable": "Ans Messen erinnern",
+    "time": "Uhrzeit",
+    "days": "Tage",
+    "noDays": "Wähle mindestens einen Tag.",
+    "next": "Nächste Erinnerung: {when}",
+    "skipHint": "An einem Tag, an dem {name} schon eine Messung hat, kommt keine Erinnerung. Ein Tag beginnt um Mitternacht.",
+    "localHint": "Erinnerungen werden auf diesem Smartphone geplant; nichts davon wird irgendwohin gesendet. Energiesparfunktionen mancher Smartphones können sie verzögern.",
+    "denied": "Benachrichtigungen für CardiPaw sind ausgeschaltet, deshalb können keine Erinnerungen erscheinen.",
+    "openSettings": "Benachrichtigungseinstellungen öffnen",
+    "summaryDaily": "Erinnerung täglich um {time}",
+    "summaryDays": "Erinnerung: {days} um {time}",
+    "save": "Speichern"
   }
 }

@@ -354,6 +354,21 @@
     "channelName": "Measuring reminders",
     "channelDescription": "Reminders to measure your pets' resting breathing rate",
     "notificationTitle": "Time to measure {name}'s breathing rate",
-    "notificationBody": "Count the breaths while your pet is resting or asleep."
+    "notificationBody": "Count the breaths while your pet is resting or asleep.",
+    "title": "Reminders",
+    "bellOn": "Reminders for {name}: on",
+    "bellOff": "Reminders for {name}: off",
+    "enable": "Remind me to measure",
+    "time": "Time",
+    "days": "Days",
+    "noDays": "Choose at least one day.",
+    "next": "Next reminder: {when}",
+    "skipHint": "There's no reminder on a day when {name} already has a reading. Days start at midnight.",
+    "localHint": "Reminders are scheduled on this phone; nothing about them is sent anywhere. Battery savers on some phones can delay them.",
+    "denied": "Notifications for CardiPaw are turned off, so reminders can't be shown.",
+    "openSettings": "Open notification settings",
+    "summaryDaily": "Reminder every day at {time}",
+    "summaryDays": "Reminder: {days} at {time}",
+    "save": "Save"
   }
 }

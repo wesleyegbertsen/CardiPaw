@@ -354,6 +354,21 @@
     "channelName": "Meetherinneringen",
     "channelDescription": "Herinneringen om de rustademhalingsfrequentie van je huisdieren te meten",
     "notificationTitle": "Tijd om de ademhaling van {name} te meten",
-    "notificationBody": "Tel de ademhalingen terwijl je huisdier rust of slaapt."
+    "notificationBody": "Tel de ademhalingen terwijl je huisdier rust of slaapt.",
+    "title": "Herinneringen",
+    "bellOn": "Herinneringen voor {name}: aan",
+    "bellOff": "Herinneringen voor {name}: uit",
+    "enable": "Herinner me aan meten",
+    "time": "Tijd",
+    "days": "Dagen",
+    "noDays": "Kies minstens één dag.",
+    "next": "Volgende herinnering: {when}",
+    "skipHint": "Op een dag waarop {name} al een meting heeft, krijg je geen herinnering. Een dag begint om middernacht.",
+    "localHint": "Herinneringen worden op deze telefoon ingepland; er wordt niets over verstuurd. Batterijbesparing op sommige telefoons kan ze vertragen.",
+    "denied": "Meldingen voor CardiPaw staan uit, dus herinneringen kunnen niet verschijnen.",
+    "openSettings": "Meldingsinstellingen openen",
+    "summaryDaily": "Herinnering elke dag om {time}",
+    "summaryDays": "Herinnering: {days} om {time}",
+    "save": "Opslaan"
   }
 }

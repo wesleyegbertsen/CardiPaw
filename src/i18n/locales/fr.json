@@ -354,6 +354,21 @@
     "channelName": "Rappels de mesure",
     "channelDescription": "Rappels pour mesurer la fréquence respiratoire au repos de vos animaux",
     "notificationTitle": "{name} : c'est l'heure de mesurer sa fréquence respiratoire",
-    "notificationBody": "Comptez les respirations pendant que votre animal se repose ou dort."
+    "notificationBody": "Comptez les respirations pendant que votre animal se repose ou dort.",
+    "title": "Rappels",
+    "bellOn": "Rappels pour {name} : activés",
+    "bellOff": "Rappels pour {name} : désactivés",
+    "enable": "Me rappeler de mesurer",
+    "time": "Heure",
+    "days": "Jours",
+    "noDays": "Choisissez au moins un jour.",
+    "next": "Prochain rappel : {when}",
+    "skipHint": "Pas de rappel un jour où {name} a déjà une mesure. Une journée commence à minuit.",
+    "localHint": "Les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Sur certains téléphones, l'économiseur de batterie peut les retarder.",
+    "denied": "Les notifications de CardiPaw sont désactivées, les rappels ne peuvent donc pas s'afficher.",
+    "openSettings": "Ouvrir les paramètres de notification",
+    "summaryDaily": "Rappel tous les jours à {time}",
+    "summaryDays": "Rappel : {days} à {time}",
+    "save": "Enregistrer"
   }
 }

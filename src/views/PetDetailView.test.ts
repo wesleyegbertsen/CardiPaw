@@ -13,6 +13,8 @@ import { closeTopModal } from '../composables/useModal';
 import { useReadingsStore } from '../stores/readings';
 import { trendReadings } from '../test/trendReadings';
 import type { Pet, Reading } from '../types';
+import { mockNative } from '../test/native';
+import { saveReminderSetting } from '../utils/reminderSettings';
 
 // Chart.js needs a canvas; the view's job is to hand the chart the right readings.
 vi.mock('../components/RRRChart.vue', async () => {
@@ -25,6 +27,16 @@ vi.mock('../components/RRRChart.vue', async () => {
     }),
   };
 });
+
+// The reminder dialog talks to the notifications plugin; the stores sync through it too.
+vi.mock('../native/reminders', () => ({
+  applyReminders: vi.fn(async () => {}),
+  reminderPermission: vi.fn(async () => 'granted'),
+  requestReminderPermission: vi.fn(async () => 'granted'),
+  openNotificationSettings: vi.fn(async () => {}),
+  syncReminders: vi.fn(async () => {}),
+}));
+vi.mock('@capacitor/app', () => ({ App: { addListener: vi.fn(async () => ({ remove: vi.fn() })) } }));
 
 const pet = makePet();
 
@@ -822,6 +834,48 @@ describe('PetDetailView', () => {
       await useReadingsStore(pinia).removeReading(readings.at(-1)!.id, 'pet-1');
       await settle();
       expect(wrapper.find('.trend-badge').exists()).toBe(false);
+    });
+  });
+
+  describe('reminders', () => {
+    afterEach(() => localStorage.clear());
+
+    it('has no reminder bell on the website', async () => {
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      expect(wrapper.find('.reminder-btn').exists()).toBe(false);
+      expect(wrapper.find('.reminder-summary').exists()).toBe(false);
+    });
+
+    it('opens the reminder dialog from the bell in the app', async () => {
+      mockNative();
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      const bell = wrapper.get('.reminder-btn');
+      expect(bell.attributes('aria-label')).toBe('Reminders for Ace: off');
+      await bell.trigger('click');
+      await flushPromises();
+      expect(document.body.querySelector('[role="dialog"] .dialog-title')?.textContent).toBe('Reminders');
+    });
+
+    it('says when reminders are on', async () => {
+      mockNative();
+      saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [1, 3, 5] });
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder: Mon, Wed, Fri at 10:00 PM');
+      expect(wrapper.get('.reminder-btn').attributes('aria-label')).toBe('Reminders for Ace: on');
+    });
+
+    it('shows the saved reminder once the dialog closes', async () => {
+      mockNative();
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      await wrapper.get('.reminder-btn').trigger('click');
+      await flushPromises();
+      document.body.querySelector<HTMLElement>('[role="switch"]')!.click();
+      await flushPromises();
+      document.body.querySelector<HTMLElement>('.btn-save')!.click();
+      await flushPromises();
+      expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder every day at 10:00 PM');
+      expect(wrapper.get('.reminder-btn').attributes('aria-label')).toBe('Reminders for Ace: on');
     });
   });
 });

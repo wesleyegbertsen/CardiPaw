@@ -354,6 +354,21 @@
     "channelName": "測定リマインダー",
     "channelDescription": "ペットの安静時呼吸数を測定するためのリマインダー",
     "notificationTitle": "{name}の呼吸数を測る時間です",
-    "notificationBody": "ペットが安静にしているときや眠っているときに呼吸を数えましょう。"
+    "notificationBody": "ペットが安静にしているときや眠っているときに呼吸を数えましょう。",
+    "title": "リマインダー",
+    "bellOn": "{name}のリマインダー：オン",
+    "bellOff": "{name}のリマインダー：オフ",
+    "enable": "測定をリマインド",
+    "time": "時刻",
+    "days": "曜日",
+    "noDays": "曜日を1つ以上選択してください。",
+    "next": "次のリマインダー：{when}",
+    "skipHint": "{name}の測定がすでにある日は、リマインダーは届きません。1日は午前0時に始まります。",
+    "localHint": "リマインダーはこのスマートフォン上で設定され、その内容がどこかに送信されることはありません。一部のスマートフォンでは、省電力機能によって遅れることがあります。",
+    "denied": "CardiPawの通知がオフになっているため、リマインダーを表示できません。",
+    "openSettings": "通知設定を開く",
+    "summaryDaily": "毎日{time}にリマインド",
+    "summaryDays": "{days}の{time}にリマインド",
+    "save": "保存"
   }
 }
