@@ -268,7 +268,7 @@ Whichever you use, check the signing certificate of a new APK (see **Checking an
 
 - A calendar day that already has a reading for the pet gets no reminder. Days start at midnight: a 00:30 reminder still comes after a reading at 23:30 the evening before.
 - Reminders are scheduled 14 days ahead and topped up whenever you open the app. If you don't open CardiPaw for two weeks, they stop until you do.
-- A reminder that was due while the phone was off appears shortly after it starts.
+- A reminder that came due while the phone was off is skipped; the later ones still come.
 - Battery savers on some phones (Xiaomi, Samsung and others) can delay reminders or drop them.
 - On a secured lock screen, Android shows that CardiPaw has a notification but hides its text.
 - Besides CardiPaw's "Measuring reminders", Android's notification settings for the app also list a "Default" channel; it comes with the notifications plugin.
