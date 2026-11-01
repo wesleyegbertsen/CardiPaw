@@ -14,12 +14,12 @@ interface TrackerPrefs {
   durationSeconds: MeasurementSeconds;
 }
 
-function loadAll(): Record<string, TrackerPrefs> {
+function loadAll(): Record<string, unknown> {
   try {
     const parsed: unknown = JSON.parse(readStorage(STORAGE_KEY) ?? '{}');
     // "null" would throw on lookup, and an array would silently drop every saved change.
     return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
-      ? (parsed as Record<string, TrackerPrefs>)
+      ? (parsed as Record<string, unknown>)
       : {};
   } catch {
     return {};
@@ -29,7 +29,11 @@ function loadAll(): Record<string, TrackerPrefs> {
 export function useTrackerPrefs(petId: string) {
   // Saved values are not trusted: a wrong type (e.g. the string "false", which is truthy)
   // falls back to the default instead of being used as is.
-  const saved = loadAll()[petId] as Partial<Record<keyof TrackerPrefs, unknown>> | null | undefined;
+  const raw = loadAll()[petId];
+  const saved =
+    typeof raw === 'object' && raw !== null
+      ? (raw as Partial<Record<keyof TrackerPrefs, unknown>>)
+      : undefined;
   const soundEnabled = ref(typeof saved?.soundEnabled === 'boolean' ? saved.soundEnabled : true);
   const vibrationEnabled = ref(
     typeof saved?.vibrationEnabled === 'boolean' ? saved.vibrationEnabled : true,

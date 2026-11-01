@@ -17,6 +17,7 @@ import { Blank } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
 import * as db from '../services/db';
 import type { Pet, Reading } from '../types';
+import type { MeasurementSeconds } from '../utils/measurement';
 
 const audio = vi.hoisted(() => ({ init: vi.fn(), playBeep: vi.fn(), playDoneSound: vi.fn() }));
 const haptics = vi.hoisted(() => ({ vibrateTap: vi.fn(), vibrateDone: vi.fn() }));
@@ -79,7 +80,7 @@ async function mountTracker({
 const ringOffset = (wrapper: VueWrapper) =>
   Number(wrapper.get('.ring-progress').attributes('stroke-dashoffset'));
 
-const lengthPill = (wrapper: VueWrapper, seconds: 15 | 30 | 60) =>
+const lengthPill = (wrapper: VueWrapper, seconds: MeasurementSeconds) =>
   wrapper.findAll('.length-pill').find((p) => p.text() === `${seconds} s`)!;
 const pressedLengths = (wrapper: VueWrapper) =>
   wrapper.findAll('.length-pill').map((p) => p.attributes('aria-pressed'));
