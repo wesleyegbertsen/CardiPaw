@@ -135,6 +135,23 @@ describe('validateBackup', () => {
     expect(data.pets[0]).toEqual(makePet());
     expect(data.readings[0]).toEqual(makeReading());
   });
+
+  it('keeps a guided reading’s measurement length', () => {
+    const reading = makeReading({ durationSeconds: 15 });
+    expect(validateBackup(backup({ readings: [reading] })).data.readings).toEqual([reading]);
+  });
+
+  it.each([
+    ['an unknown length', { durationSeconds: 45 }],
+    ['a length as text', { durationSeconds: '30' }],
+    ['a null length', { durationSeconds: null }],
+    ['a length on a manual entry', { source: 'manual', clickCount: 0, durationSeconds: 30 }],
+  ])('drops %s but keeps the reading', (_label, fields) => {
+    const { data, skipped } = validateBackup(backup({ readings: [{ ...makeReading(), ...fields }] }));
+    expect(skipped).toBe(0);
+    expect(data.readings).toHaveLength(1);
+    expect(data.readings[0]).not.toHaveProperty('durationSeconds');
+  });
 });
 
 describe('parseBackup', () => {
@@ -161,7 +178,7 @@ describe('export and import', () => {
 
   it('round-trips an export through JSON and import', async () => {
     await db.savePet(makePet());
-    await db.saveReading(makeReading());
+    await db.saveReading(makeReading({ durationSeconds: 60 }));
     await db.saveNote(makeNote({ pinnedAt: '2024-03-16T00:00:00.000Z' }));
     const exported = await exportBackup();
 

@@ -22,7 +22,7 @@ const MAX_SHARED_READINGS = 10_000;
 // The viewer draws one section and chart per month, so a few readings spread over
 // thousands of months would pass the other caps and still lock up the page.
 const MAX_SHARED_MONTHS = 240;
-// Guided rates (taps × 2) have no upper bound and older links hold decimals, so no integer or 300 cap.
+// Guided rates (taps × 60 / seconds) have no upper bound and older links hold decimals, so no integer or 300 cap.
 const MAX_SHARED_RATE = 1000;
 const MAX_PET_NAME_LENGTH = 100;
 

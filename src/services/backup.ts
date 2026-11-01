@@ -4,6 +4,7 @@ import { localDayKey } from '../utils/date';
 import { usePetsStore } from '../stores/pets';
 import { resetPetData } from '../stores/petData';
 import { isNative } from '../utils/platform';
+import { isMeasurementSeconds } from '../utils/measurement';
 import { shareFile, type ShareFileOptions, type ShareFileOutcome } from './nativeFile';
 
 export type BackupErrorCode = 'unreadable' | 'invalid';
@@ -95,7 +96,7 @@ function toPet(value: unknown): Pet | null {
 
 function toReading(value: unknown): Reading | null {
   if (!isObject(value)) return null;
-  const { id, petId, date, rate, clickCount, restState, notes, source } = value;
+  const { id, petId, date, rate, clickCount, restState, notes, source, durationSeconds } = value;
   if (!isNonEmptyString(id) || !isNonEmptyString(petId)) return null;
   // No usable rate (e.g. "" saved by an older edit form): the reading cannot be
   // shown or charted, and edited rates cannot be rebuilt from clickCount.
@@ -110,6 +111,8 @@ function toReading(value: unknown): Reading | null {
   if (restState === 'resting' || restState === 'sleeping') reading.restState = restState;
   if (typeof notes === 'string') reading.notes = notes;
   if (source === 'manual') reading.source = source;
+  // Only guided readings have a length; an unknown one is dropped, the reading kept.
+  else if (isMeasurementSeconds(durationSeconds)) reading.durationSeconds = durationSeconds;
   return reading;
 }
 
