@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { nextTick } from 'vue';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { effectScope, nextTick, type EffectScope } from 'vue';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import {
   LocalNotifications,
@@ -56,7 +56,12 @@ function pending(id: number, petId: string, at?: string): PendingLocalNotificati
   return { id, title: '', body: '', extra: { petId, at } };
 }
 
+// installReminders watches the locale; each test's watcher stops with its scope.
+let scope: EffectScope;
+const install = () => scope.run(() => installReminders(router, i18n));
+
 beforeEach(async () => {
+  scope = effectScope();
   localStorage.clear();
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-06-10T08:00:00Z'));
@@ -70,10 +75,19 @@ beforeEach(async () => {
   saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [0, 1, 2, 3, 4, 5, 6] });
 });
 
+// A sync a test started and didn't await (installReminders starts one) would otherwise call
+// the next test's mocks. Its own errors were the test's to check: drain them quietly.
+afterEach(async () => {
+  scope.stop();
+  mockNative();
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  await syncReminders();
+});
+
 describe('reminders', () => {
   it('does nothing on the website', async () => {
     mockNative(false);
-    installReminders(router, i18n);
+    install();
     await syncReminders();
     await applyReminders('pet-1');
     for (const fn of Object.values(LN)) expect(fn).not.toHaveBeenCalled();
@@ -82,7 +96,7 @@ describe('reminders', () => {
 
   it('schedules inexact, wake-up reminders on the reminders channel on install', async () => {
     mockNative();
-    installReminders(router, i18n);
+    install();
     await syncReminders();
     const { notifications } = LN.schedule.mock.calls[0][0];
     expect(notifications).toHaveLength(14);
@@ -115,7 +129,7 @@ describe('reminders', () => {
     // A stale reminder still goes.
     const stale = pending(reminderId(1, '2026-06-10'), 'pet-1', '2026-06-10T21:00:00.000Z');
     LN.getPending.mockResolvedValue({ notifications: [stale] });
-    installReminders(router, i18n);
+    install();
     await syncReminders();
     expect(LN.schedule).not.toHaveBeenCalled();
     expect(LN.cancel).toHaveBeenCalledWith({ notifications: [{ id: stale.id }] });
@@ -126,14 +140,14 @@ describe('reminders', () => {
     LN.createChannel.mockRejectedValue(
       Object.assign(new Error('not available'), { code: 'UNAVAILABLE' }),
     );
-    installReminders(router, i18n);
+    install();
     await syncReminders();
     expect(LN.schedule).toHaveBeenCalled();
   });
 
   it("cancels and dismisses today's reminder once today has a reading", async () => {
     mockNative();
-    installReminders(router, i18n);
+    install();
     const today = {
       id: reminderId(1, '2026-06-10'),
       title: '',
@@ -149,7 +163,7 @@ describe('reminders', () => {
 
   it("keeps a due reminder that hasn't shown yet, and drops one at a changed time", async () => {
     mockNative();
-    installReminders(router, i18n);
+    install();
     vi.setSystemTime(new Date('2026-06-10T22:03:00Z'));
     const id = reminderId(1, '2026-06-10');
     const due = {
@@ -170,7 +184,7 @@ describe('reminders', () => {
 
   it("brings today's reminder back when today's only reading is deleted before its time", async () => {
     mockNative();
-    installReminders(router, i18n);
+    install();
     const reading = makeReading({ date: '2026-06-10T07:00:00Z' });
     await db.saveReading(reading);
     await syncReminders('pet-1');
@@ -183,7 +197,7 @@ describe('reminders', () => {
 
   it('cancels and dismisses the reminders of a pet that is gone', async () => {
     mockNative();
-    installReminders(router, i18n);
+    install();
     const orphan = pending(reminderId(2, '2026-06-10'), 'pet-gone', '2026-06-10T22:00:00.000Z');
     LN.getPending.mockResolvedValue({ notifications: [orphan] });
     await syncReminders();
@@ -196,7 +210,7 @@ describe('reminders', () => {
 
   it('cancels and dismisses every reminder once they are turned off', async () => {
     mockNative();
-    installReminders(router, i18n);
+    install();
     saveReminderSetting('pet-1', { enabled: false, time: '22:00', days: [0, 1, 2, 3, 4, 5, 6] });
     const today = pending(reminderId(1, '2026-06-10'), 'pet-1', '2026-06-10T22:00:00.000Z');
     LN.getPending.mockResolvedValue({ notifications: [today] });
@@ -208,7 +222,7 @@ describe('reminders', () => {
 
   it("cancels yesterday's unmeasured reminder but leaves it in the shade", async () => {
     mockNative();
-    installReminders(router, i18n);
+    install();
     const yesterday = pending(reminderId(1, '2026-06-09'), 'pet-1', '2026-06-09T22:00:00.000Z');
     LN.getPending.mockResolvedValue({ notifications: [yesterday] });
     await syncReminders('pet-1');
@@ -219,7 +233,7 @@ describe('reminders', () => {
   it('logs and resolves when scheduling fails', async () => {
     mockNative();
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    installReminders(router, i18n);
+    install();
     const disabled = Object.assign(new Error('Notifications not enabled'), {
       code: 'NOTIFICATIONS_DISABLED',
     });
@@ -231,7 +245,7 @@ describe('reminders', () => {
   it('logs and schedules nothing when the channel fails for another reason', async () => {
     mockNative();
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    installReminders(router, i18n);
+    install();
     const failure = Object.assign(new Error('boom'), { code: 'EXCEPTION' });
     LN.createChannel.mockRejectedValue(failure);
     await expect(syncReminders()).resolves.toBeUndefined();
@@ -243,14 +257,14 @@ describe('reminders', () => {
     mockNative();
     // The install's own sync logs the same failure.
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    installReminders(router, i18n);
+    install();
     LN.schedule.mockRejectedValue(new Error('boom'));
     await expect(applyReminders('pet-1')).rejects.toThrow('boom');
   });
 
   it('reschedules in the new language', async () => {
     mockNative();
-    installReminders(router, i18n);
+    install();
     await syncReminders();
     LN.schedule.mockClear();
     try {
@@ -274,7 +288,8 @@ describe('reminders', () => {
   it("opens the pet's tracker when a reminder is tapped", async () => {
     mockNative();
     const push = vi.spyOn(router, 'push').mockResolvedValue(undefined);
-    installReminders(router, i18n);
+    install();
+    await syncReminders();
     const [, onTap] = LN.addListener.mock.calls.find(
       ([event]) => event === 'localNotificationActionPerformed',
     )!;
@@ -290,7 +305,7 @@ describe('reminders', () => {
 
   it('tops up the reminders when the app comes back to the foreground', async () => {
     mockNative();
-    installReminders(router, i18n);
+    install();
     await syncReminders();
     // The mock's calls are typed by the first overload ('backButton').
     const [, onResume] = vi
@@ -323,7 +338,7 @@ describe('reminders', () => {
 
   it('runs one sync at a time: a delete after a top-up cancels what it scheduled', async () => {
     mockNative();
-    installReminders(router, i18n);
+    install();
     await syncReminders();
     LN.schedule.mockClear();
     const held = deferred<{ notifications: PendingLocalNotificationSchema[] }>();
