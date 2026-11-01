@@ -354,7 +354,7 @@ async function save() {
 .day-btn {
   flex: 1;
   min-width: 0;
-  height: 40px;
+  min-height: 44px;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: 13px;
@@ -371,6 +371,11 @@ async function save() {
   border-color: var(--color-primary);
   color: var(--color-primary);
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+/* The primary pink is too light for small text on the tinted light background. */
+:root:not([data-theme='dark']) .day-btn.active {
+  color: var(--color-primary-dark);
 }
 
 .next {

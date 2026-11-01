@@ -46,6 +46,7 @@ async function sync(onlyPetId?: string): Promise<void> {
   const now = new Date();
   const today = localDayKey(now);
   const settings = loadReminderSettings();
+  // From db, not the stores: they import this module, and at startup they are still empty.
   const pets = await db.getAllPets();
   // Also holds delivered reminders still in the shade: the plugin keeps their record until
   // they are tapped or dismissed.
@@ -99,7 +100,10 @@ async function sync(onlyPetId?: string): Promise<void> {
         id: CHANNEL_ID,
         name: t('reminders.channelName'),
         description: t('reminders.channelDescription'),
+        // IMPORTANCE_DEFAULT: makes a sound, but doesn't pop up over what's on screen.
         importance: 3,
+        // VISIBILITY_PRIVATE: a secured lock screen hides the text (the pet's name); the
+        // README's privacy section relies on this.
         visibility: 0,
       });
     } catch (e) {
