@@ -26,8 +26,8 @@ describe('useTrackerPrefs', () => {
     await nextTick();
 
     expect(stored()).toEqual({
-      a: { soundEnabled: false, vibrationEnabled: true },
-      b: { soundEnabled: true, vibrationEnabled: false },
+      a: { soundEnabled: false, vibrationEnabled: true, durationSeconds: 30 },
+      b: { soundEnabled: true, vibrationEnabled: false, durationSeconds: 30 },
     });
     expect(useTrackerPrefs('a').soundEnabled.value).toBe(false);
     expect(useTrackerPrefs('a').vibrationEnabled.value).toBe(true);
@@ -56,13 +56,45 @@ describe('useTrackerPrefs', () => {
     expect(vibrationEnabled.value).toBe(true);
   });
 
+  it('defaults to a 30-second measurement', () => {
+    expect(useTrackerPrefs('a').durationSeconds.value).toBe(30);
+  });
+
+  it('saves and restores the measurement length per pet', async () => {
+    useTrackerPrefs('a').durationSeconds.value = 60;
+    await nextTick();
+    expect(stored().a).toEqual({ soundEnabled: true, vibrationEnabled: true, durationSeconds: 60 });
+    expect(useTrackerPrefs('a').durationSeconds.value).toBe(60);
+    expect(useTrackerPrefs('b').durationSeconds.value).toBe(30);
+  });
+
+  it.each([['the string "60"', '60'], ['45', 45], ['null', null], ['-1', -1]])(
+    'falls back to 30 seconds when the saved length is %s',
+    (_label, value) => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ a: { durationSeconds: value } }));
+      expect(useTrackerPrefs('a').durationSeconds.value).toBe(30);
+    },
+  );
+
+  it('keeps the saved length when another pref changes', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ a: { soundEnabled: true, vibrationEnabled: true, durationSeconds: 15 } }),
+    );
+    useTrackerPrefs('a').soundEnabled.value = false;
+    await nextTick();
+    expect(stored().a).toEqual({ soundEnabled: false, vibrationEnabled: true, durationSeconds: 15 });
+  });
+
   it('replaces a saved array so later changes are kept', async () => {
     // JSON.stringify drops string keys on an array, which used to lose every change.
     localStorage.setItem(STORAGE_KEY, '[]');
     useTrackerPrefs('a').soundEnabled.value = false;
     await nextTick();
 
-    expect(stored()).toEqual({ a: { soundEnabled: false, vibrationEnabled: true } });
+    expect(stored()).toEqual({
+      a: { soundEnabled: false, vibrationEnabled: true, durationSeconds: 30 },
+    });
     expect(useTrackerPrefs('a').soundEnabled.value).toBe(false);
   });
 
