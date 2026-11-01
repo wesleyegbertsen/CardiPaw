@@ -20,7 +20,10 @@ function isoAt(daysAgo, hour) {
   return d.toISOString();
 }
 
-// Returns a clickCount (taps in 30s); rate = clickCount * 2
+// Guided readings use every measurement length, 30 seconds (the default) most often.
+const DURATIONS = [15, 30, 30, 60];
+
+// Returns the taps in a 30-second measurement; rate = taps * 2
 function clickCountFor(profile) {
   const r = Math.random();
   if (profile === 'bella') {
@@ -61,8 +64,11 @@ function makeReadings(petId, profile, totalCount, daySpread) {
     .sort((a, b) => a.day - b.day || a.hour - b.hour)
     .map(({ day, hour }) => {
       const isManual = Math.random() < 0.20;
-      const clickCount = isManual ? 0 : clickCountFor(profile);
-      const rate = isManual ? clickCountFor(profile) * 2 : clickCount * 2;
+      const taps30 = clickCountFor(profile);
+      const durationSeconds = DURATIONS[randInt(0, DURATIONS.length - 1)];
+      // Each length divides 60, so the rate stays a whole number.
+      const clickCount = isManual ? 0 : Math.max(1, Math.round((taps30 * durationSeconds) / 30));
+      const rate = isManual ? taps30 * 2 : (clickCount * 60) / durationSeconds;
       return {
         id: crypto.randomUUID(),
         petId,
@@ -70,7 +76,7 @@ function makeReadings(petId, profile, totalCount, daySpread) {
         rate,
         clickCount,
         restState: Math.random() < 0.55 ? 'sleeping' : 'resting',
-        ...(isManual && { source: 'manual' }),
+        ...(isManual ? { source: 'manual' } : { durationSeconds }),
       };
     });
 }
@@ -89,6 +95,7 @@ function makeDailyReadings(petId, days, clicksFor) {
       rate: clickCount * 2,
       clickCount,
       restState: 'sleeping',
+      durationSeconds: 30,
     };
   });
 }
