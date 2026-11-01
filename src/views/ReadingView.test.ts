@@ -42,6 +42,17 @@ describe('ReadingView', () => {
     expect(badge.text()).toBe('High');
   });
 
+  it.each([
+    ['its measurement length', makeReading({ durationSeconds: 60 }), 'Guided (60 s)'],
+    ['30 seconds for one saved before lengths were selectable', makeReading(), 'Guided (30 s)'],
+  ])('labels a guided reading with %s', async (_label, reading, chip) => {
+    const { wrapper } = await mountView(ReadingView, location, {
+      pets: [makePet()],
+      readings: [reading],
+    });
+    expect(wrapper.get('.source-chip').text()).toBe(chip);
+  });
+
   it('returns to the readings tab on back without adding a history entry', async () => {
     const { wrapper, push, replace } = await mountView(ReadingView, location, {
       pets: [makePet()],

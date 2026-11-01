@@ -5,6 +5,7 @@ import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import type { Reading } from '../types';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
+import { readingSeconds } from '../utils/measurement';
 import { LazyRichTextEditor as RichTextEditor } from '../components/LazyRichTextEditor';
 import RestStateToggle from '../components/RestStateToggle.vue';
 import { useI18n } from 'vue-i18n';
@@ -34,7 +35,7 @@ const saving = ref(false);
 const saveError = ref(false);
 const loadError = ref(false);
 // v-model.number yields '' when the field is cleared; never store that as the rate.
-// Guided results (taps×2) can exceed 200, so an unchanged stored rate stays saveable.
+// Guided results (taps × 60 / seconds) can exceed 200, so an unchanged stored rate stays saveable.
 const rateValid = computed(() => isValidRate(editRate.value) || editRate.value === reading.value?.rate);
 
 let unmounted = false;
@@ -124,7 +125,7 @@ function formatDate(iso: string) {
       <div class="reading-meta-row">
         <p class="reading-date">{{ formatDate(reading.date) }}</p>
         <span class="source-chip" :class="reading.source === 'manual' ? 'manual' : 'guided'">
-          {{ reading.source === 'manual' ? $t('source.manualEntry') : $t('source.guided30') }}
+          {{ reading.source === 'manual' ? $t('source.manualEntry') : $t('source.guidedSeconds', { n: readingSeconds(reading) }) }}
         </span>
       </div>
 

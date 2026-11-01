@@ -38,7 +38,7 @@
     "manual": "Manuel",
     "guided": "Guidé",
     "manualEntry": "Saisie manuelle",
-    "guided30": "Guidé (30 s)"
+    "guidedSeconds": "Guidé ({n} s)"
   },
   "age": {
     "weeks": "1 semaine | {n} semaines",

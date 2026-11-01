@@ -38,7 +38,7 @@
     "manual": "Handmatig",
     "guided": "Begeleid",
     "manualEntry": "Handmatige invoer",
-    "guided30": "Begeleid (30 s)"
+    "guidedSeconds": "Begeleid ({n} s)"
   },
   "age": {
     "weeks": "1 week | {n} weken",
