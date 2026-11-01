@@ -45,6 +45,17 @@ describe('useTrackerPrefs', () => {
     expect(vibrationEnabled.value).toBe(true);
   });
 
+  it.each([
+    ['the string "false"', 'false'],
+    ['0', 0],
+    ['an object', {}],
+  ])('ignores a saved sound or vibration pref that is %s', (_label, value) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ a: { soundEnabled: value, vibrationEnabled: value } }));
+    const { soundEnabled, vibrationEnabled } = useTrackerPrefs('a');
+    expect(soundEnabled.value).toBe(true);
+    expect(vibrationEnabled.value).toBe(true);
+  });
+
   it('replaces a saved array so later changes are kept', async () => {
     // JSON.stringify drops string keys on an array, which used to lose every change.
     localStorage.setItem(STORAGE_KEY, '[]');

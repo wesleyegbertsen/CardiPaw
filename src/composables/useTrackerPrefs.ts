@@ -21,9 +21,13 @@ function loadAll(): Record<string, TrackerPrefs> {
 }
 
 export function useTrackerPrefs(petId: string) {
-  const saved = loadAll()[petId];
-  const soundEnabled = ref(saved?.soundEnabled ?? true);
-  const vibrationEnabled = ref(saved?.vibrationEnabled ?? true);
+  // Saved values are not trusted: a wrong type (e.g. the string "false", which is truthy)
+  // falls back to the default instead of being used as is.
+  const saved = loadAll()[petId] as Partial<Record<keyof TrackerPrefs, unknown>> | null | undefined;
+  const soundEnabled = ref(typeof saved?.soundEnabled === 'boolean' ? saved.soundEnabled : true);
+  const vibrationEnabled = ref(
+    typeof saved?.vibrationEnabled === 'boolean' ? saved.vibrationEnabled : true,
+  );
 
   watch([soundEnabled, vibrationEnabled], () => {
     const all = loadAll();
