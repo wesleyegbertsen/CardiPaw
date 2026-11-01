@@ -386,6 +386,7 @@
     "summaryDaily": "毎日{time}にリマインド",
     "summaryDays": "{days}の{time}にリマインド",
     "summaryBlocked": "リマインダー停止中：通知がオフです",
+    "applyError": "設定は保存されましたが、リマインダーを設定できませんでした。もう一度お試しください。",
     "save": "保存"
   }
 }

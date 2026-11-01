@@ -386,6 +386,7 @@
     "summaryDaily": "Herinnering elke dag om {time}",
     "summaryDays": "Herinnering: {days} om {time}",
     "summaryBlocked": "Herinneringen gepauzeerd: meldingen staan uit",
+    "applyError": "Je instellingen zijn opgeslagen, maar de herinneringen konden niet worden ingepland. Probeer het opnieuw.",
     "save": "Opslaan"
   }
 }

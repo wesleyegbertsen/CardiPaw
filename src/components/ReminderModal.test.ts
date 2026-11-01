@@ -146,6 +146,7 @@ describe('ReminderModal', () => {
     expect(wrapper.emitted('close')).toBeUndefined();
     expect(R.applyReminders).not.toHaveBeenCalled();
     expect(loadReminderSettings()['pet-1'].time).toBe('07:30');
+    expect(q<HTMLButtonElement>('.btn-save')!.disabled).toBe(false);
     // Android won't ask again: saving doesn't either.
     await click('.btn-save');
     expect(R.requestReminderPermission).toHaveBeenCalledOnce();
@@ -208,14 +209,18 @@ describe('ReminderModal', () => {
     expect(error).toHaveBeenCalledWith('Saving reminders failed', expect.any(Error));
   });
 
-  it('stays open with an error when scheduling fails', async () => {
+  it('stays open and says the settings were saved when scheduling fails', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     R.applyReminders.mockRejectedValueOnce(new Error('boom'));
     const wrapper = await open();
     await click('[role="switch"]');
     await click('.btn-save');
     expect(q('.error-msg')!.getAttribute('role')).toBe('alert');
-    expect(error).toHaveBeenCalledWith('Saving reminders failed', expect.any(Error));
+    expect(q('.error-msg')!.textContent).toBe(
+      "Your settings were saved, but the reminders couldn't be scheduled. Please try again.",
+    );
+    expect(loadReminderSettings()['pet-1'].enabled).toBe(true);
+    expect(error).toHaveBeenCalledWith('Scheduling reminders failed', expect.any(Error));
     expect(wrapper.emitted('close')).toBeUndefined();
     expect(q<HTMLButtonElement>('.btn-save')!.disabled).toBe(false);
   });

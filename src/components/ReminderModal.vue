@@ -35,7 +35,8 @@ const time = ref(stored.time);
 const days = ref<number[]>([...stored.days]);
 const permission = ref<ReminderPermission | null>(null);
 const saving = ref(false);
-const saveFailed = ref(false);
+// save: nothing was stored. apply: the setting was stored, scheduling it failed.
+const failure = ref<'save' | 'apply' | null>(null);
 
 const titleId = useId();
 const enableId = useId();
@@ -130,22 +131,30 @@ async function openSettings() {
 
 async function save() {
   saving.value = true;
-  saveFailed.value = false;
+  failure.value = null;
   try {
     // On without the permission isn't saved: the pet page would promise reminders that can't
     // show. The explanation above says why the dialog stays open.
     if (enabled.value && !(await askPermission())) return;
-    // Off, the emptied day list or time are kept valid: a setting without them can't be stored.
-    saveReminderSetting(props.pet.id, {
-      enabled: enabled.value,
-      time: isValidTime(time.value) ? time.value : DEFAULT_REMINDER.time,
-      days: days.value.length ? days.value : ALL_DAYS,
-    });
-    await applyReminders(props.pet.id);
-  } catch (e) {
-    console.error('Saving reminders failed', e);
-    saveFailed.value = true;
-    return;
+    try {
+      // Off, the emptied day list or time are kept valid: a setting without them can't be stored.
+      saveReminderSetting(props.pet.id, {
+        enabled: enabled.value,
+        time: isValidTime(time.value) ? time.value : DEFAULT_REMINDER.time,
+        days: days.value.length ? days.value : ALL_DAYS,
+      });
+    } catch (e) {
+      console.error('Saving reminders failed', e);
+      failure.value = 'save';
+      return;
+    }
+    try {
+      await applyReminders(props.pet.id);
+    } catch (e) {
+      console.error('Scheduling reminders failed', e);
+      failure.value = 'apply';
+      return;
+    }
   } finally {
     saving.value = false;
   }
@@ -230,7 +239,9 @@ async function save() {
           <p class="hint">{{ $t('reminders.localHint') }}</p>
         </template>
 
-        <p v-if="saveFailed" class="error-msg" role="alert">{{ $t('common.saveError') }}</p>
+        <p v-if="failure" class="error-msg" role="alert">
+          {{ $t(failure === 'apply' ? 'reminders.applyError' : 'common.saveError') }}
+        </p>
 
         <div class="dialog-footer">
           <button type="button" class="btn-cancel" :disabled="saving" @click="emit('close')">
