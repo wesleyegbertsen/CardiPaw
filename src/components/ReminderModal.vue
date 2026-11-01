@@ -5,6 +5,7 @@ import { App } from '@capacitor/app';
 import type { Pet, Reading } from '../types';
 import { WEEK_START, type Locale } from '../i18n';
 import { useModal } from '../composables/useModal';
+import SlideToggle from './SlideToggle.vue';
 import { localDayKey } from '../utils/date';
 import { planReminders } from '../utils/reminderSchedule';
 import {
@@ -84,8 +85,14 @@ onMounted(checkPermission);
 const resume = App.addListener('resume', () => void checkPermission());
 onBeforeUnmount(() => void resume.then((handle) => handle.remove()));
 
-async function toggle() {
-  if (enabled.value) {
+// SlideToggle flips the value it shows; turning on waits for the permission instead.
+const enabledModel = computed({
+  get: () => enabled.value,
+  set: (on: boolean) => void toggle(on),
+});
+
+async function toggle(on: boolean) {
+  if (!on) {
     enabled.value = false;
     return;
   }
@@ -162,16 +169,7 @@ async function save() {
 
         <div class="option-row">
           <span :id="enableId" class="option-label">{{ $t('reminders.enable') }}</span>
-          <button
-            type="button"
-            class="slide-toggle"
-            :class="{ on: enabled, disabled: switchDisabled }"
-            role="switch"
-            :aria-checked="enabled"
-            :aria-labelledby="enableId"
-            :disabled="switchDisabled"
-            @click="toggle"
-          />
+          <SlideToggle v-model="enabledModel" :labelledby="enableId" :disabled="switchDisabled" />
         </div>
 
         <div v-if="permission === 'denied'" class="denied">
@@ -233,7 +231,7 @@ async function save() {
 </template>
 
 <style scoped>
-/* .overlay, .dialog, the header, .slide-toggle, .error-msg and the footer follow PdfExportModal. */
+/* .overlay, .dialog, the header, .error-msg and the footer follow PdfExportModal. */
 .overlay {
   position: fixed;
   inset: 0;
@@ -309,50 +307,6 @@ async function save() {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.slide-toggle {
-  position: relative;
-  width: 40px;
-  height: 22px;
-  border-radius: var(--radius-full);
-  background: var(--color-bg);
-  border: 1.5px solid var(--color-border);
-  transition:
-    background 0.18s,
-    border-color 0.18s;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.slide-toggle::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--color-text-muted);
-  transition:
-    transform 0.18s,
-    background 0.18s;
-  box-shadow: var(--shadow-sm);
-}
-
-.slide-toggle.on {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.slide-toggle.on::after {
-  transform: translateX(18px);
-  background: #fff;
-}
-
-.slide-toggle.disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 .time-input {
