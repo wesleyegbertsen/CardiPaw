@@ -229,7 +229,7 @@
       "p3": "<strong>Vous gardez le contrôle.</strong> Vous pouvez exporter vos données à tout moment depuis la page Paramètres, et supprimer l'application ou effacer les données du site dans votre navigateur supprimera définitivement tout.",
       "p4": "<strong>Aucun partage de données.</strong> Comme vos données ne quittent jamais votre appareil, elles ne sont jamais partagées avec ni accessibles par quiconque d'autre.",
       "p5": "<strong>Recherche de mises à jour (application Android).</strong> Si vous activez « Vérifier automatiquement » dans Paramètres, sous Mises à jour, l'application demande environ une fois par jour à api.github.com si une version plus récente existe. GitHub voit alors votre adresse IP et les informations que le moteur de navigateur de l'application envoie avec chaque requête, comme son agent utilisateur (qui comprend la version d'Android et le modèle de l'appareil) et la langue. Aucune donnée sur vos animaux n'est envoyée. Cette option reste désactivée tant que vous ne l'activez pas.",
-      "p6": "<strong>Les rappels restent sur votre téléphone.</strong> Dans l'application Android, les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Leurs réglages restent sur cet appareil et ne sont pas inclus dans les exports."
+      "p6": "<strong>Les rappels restent sur votre téléphone.</strong> Dans l'application Android, les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Leurs paramètres restent sur cet appareil et ne sont pas inclus dans les exports."
     },
     "terms": {
       "p1": "<strong>Pas un avis médical.</strong> CardiPaw est un outil d'information pour vous aider à enregistrer et suivre la fréquence respiratoire au repos de votre animal. Il ne remplace pas un diagnostic, un conseil ou un traitement vétérinaire professionnel.",
@@ -378,6 +378,7 @@
     "time": "Heure",
     "days": "Jours",
     "noDays": "Choisissez au moins un jour.",
+    "noTime": "Choisissez une heure.",
     "next": "Prochain rappel : {when}",
     "skipHint": "Pas de rappel un jour où {name} a déjà une mesure. Une journée commence à minuit.",
     "localHint": "Les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Sur certains téléphones, l'économiseur de batterie peut les retarder.",

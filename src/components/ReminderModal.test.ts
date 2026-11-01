@@ -185,6 +185,18 @@ describe('ReminderModal', () => {
     expect(q<HTMLButtonElement>('.btn-save')!.disabled).toBe(true);
   });
 
+  it('asks for a time while there is none', async () => {
+    saveReminderSetting('pet-1', { enabled: true, time: '07:30', days: [1] });
+    await open();
+    const input = q<HTMLInputElement>('input[type="time"]')!;
+    input.value = '';
+    input.dispatchEvent(new Event('input'));
+    await flushPromises();
+    expect(q('.hint')!.textContent).toBe('Choose a time.');
+    expect(q('.next')).toBeNull();
+    expect(q<HTMLButtonElement>('.btn-save')!.disabled).toBe(true);
+  });
+
   it('saves off with valid days even after they were all cleared', async () => {
     saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [3] });
     await open();

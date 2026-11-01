@@ -234,7 +234,8 @@ async function save() {
             </div>
           </div>
           <p v-if="!days.length" class="hint">{{ $t('reminders.noDays') }}</p>
-          <p v-else-if="nextLabel" class="next">{{ $t('reminders.next', { when: nextLabel }) }}</p>
+          <p v-if="!isValidTime(time)" class="hint">{{ $t('reminders.noTime') }}</p>
+          <p v-if="nextLabel" class="next">{{ $t('reminders.next', { when: nextLabel }) }}</p>
           <p class="hint">{{ $t('reminders.skipHint', { name: pet.name }) }}</p>
           <p class="hint">{{ $t('reminders.localHint') }}</p>
         </template>

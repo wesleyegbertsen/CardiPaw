@@ -378,6 +378,7 @@
     "time": "Time",
     "days": "Days",
     "noDays": "Choose at least one day.",
+    "noTime": "Choose a time.",
     "next": "Next reminder: {when}",
     "skipHint": "There's no reminder on a day when {name} already has a reading. Days start at midnight.",
     "localHint": "Reminders are scheduled on this phone; nothing about them is sent anywhere. Battery savers on some phones can delay them.",

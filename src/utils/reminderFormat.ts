@@ -24,10 +24,12 @@ export function formatReminderTime(time: string, locale: string): string {
   }).format(new Date(Date.UTC(2026, 0, 4, hh, mm)));
 }
 
-/** The chosen days, in week order, e.g. "Mon, Wed, Fri". */
+/** The chosen days, in week order, e.g. "Mon, Wed, and Fri". */
 export function formatDays(days: number[], locale: string, weekStart: 0 | 1): string {
   const names = orderedWeekdays(weekStart)
     .filter((d) => days.includes(d))
     .map((d) => weekdayName(d, locale, 'short'));
-  return new Intl.ListFormat(locale, { type: 'unit', style: 'short' }).format(names);
+  // Japanese lists weekdays as 月・水・金; its list format would give 月、水、金.
+  if (locale === 'ja') return names.join('・');
+  return new Intl.ListFormat(locale, { type: 'conjunction', style: 'long' }).format(names);
 }

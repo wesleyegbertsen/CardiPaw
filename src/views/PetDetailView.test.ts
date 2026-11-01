@@ -862,7 +862,7 @@ describe('PetDetailView', () => {
       mockNative();
       saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [1, 3, 5] });
       const { wrapper } = await mountDetail('/pets/pet-1');
-      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder: Mon, Wed, Fri at 10:00 PM');
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder: Mon, Wed, and Fri at 10:00 PM');
       expect(wrapper.get('.reminder-btn').attributes('aria-label')).toBe('Reminders for Ace: on');
     });
 
@@ -895,7 +895,7 @@ describe('PetDetailView', () => {
         .mock.calls.find(([event]) => (event as string) === 'resume')!;
       (onResume as () => void)();
       await flushPromises();
-      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder: Mon, Wed, Fri at 10:00 PM');
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder: Mon, Wed, and Fri at 10:00 PM');
       expect(bell.attributes('aria-label')).toBe('Reminders for Ace: on');
       expect(bell.classes()).toContain('on');
     });

@@ -23,15 +23,16 @@ describe('weekdayName', () => {
 
 describe('formatDays', () => {
   it('lists the chosen days in week order, as each locale writes a list', () => {
-    expect(formatDays([5, 1, 3], 'en', 0)).toBe('Mon, Wed, Fri');
+    expect(formatDays([5, 1, 3], 'en', 0)).toBe('Mon, Wed, and Fri');
     expect(formatDays([1, 3, 5], 'de', 1)).toBe('Mo, Mi und Fr');
     expect(formatDays([1, 3, 5], 'fr', 1)).toBe('lun., mer. et ven.');
-    expect(formatDays([1, 3, 5], 'ja', 0)).toBe('月 水 金');
+    expect(formatDays([1, 3, 5], 'nl', 1)).toBe('ma, wo en vr');
+    expect(formatDays([1, 3, 5], 'ja', 0)).toBe('月・水・金');
   });
 
   it('puts Sunday last when the week starts on Monday', () => {
-    expect(formatDays([0, 1], 'en', 1)).toBe('Mon, Sun');
-    expect(formatDays([0, 1], 'en', 0)).toBe('Sun, Mon');
+    expect(formatDays([0, 1], 'en', 1)).toBe('Mon and Sun');
+    expect(formatDays([0, 1], 'en', 0)).toBe('Sun and Mon');
   });
 });
 
