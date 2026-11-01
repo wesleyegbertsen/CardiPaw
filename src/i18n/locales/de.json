@@ -373,6 +373,7 @@
     "title": "Erinnerungen",
     "bellOn": "Erinnerungen für {name}: an",
     "bellOff": "Erinnerungen für {name}: aus",
+    "bellPaused": "Erinnerungen für {name}: pausiert",
     "enable": "Ans Messen erinnern",
     "time": "Uhrzeit",
     "days": "Tage",
@@ -384,6 +385,7 @@
     "openSettings": "Benachrichtigungseinstellungen öffnen",
     "summaryDaily": "Erinnerung täglich um {time}",
     "summaryDays": "Erinnerung: {days} um {time}",
+    "summaryBlocked": "Erinnerungen pausiert: Benachrichtigungen sind aus",
     "save": "Speichern"
   }
 }

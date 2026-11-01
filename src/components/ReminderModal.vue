@@ -41,14 +41,16 @@ const titleId = useId();
 const enableId = useId();
 const timeId = useId();
 const daysId = useId();
+const deniedId = useId();
 const dialogRef = ref<HTMLElement | null>(null);
 useModal(dialogRef, { onClose: () => emit('close'), canClose: () => !saving.value });
 
 const weekdays = computed(() => orderedWeekdays(WEEK_START[locale.value as Locale] ?? 1));
-// Turning reminders on needs the permission; once Android won't ask any more, only its settings can give it.
-const switchDisabled = computed(
-  () => saving.value || (!enabled.value && permission.value === 'denied'),
-);
+// Refused at least once: say so, and point to Android's settings.
+const blocked = computed(() => permission.value === 'rationale' || permission.value === 'denied');
+// Turning reminders on needs the permission; once Android won't ask any more, only its
+// settings can give it. aria-disabled, not disabled: a disabled switch would lose focus.
+const switchBlocked = computed(() => !enabled.value && permission.value === 'denied');
 const canSave = computed(
   () => !saving.value && (!enabled.value || (days.value.length > 0 && isValidTime(time.value))),
 );
@@ -91,21 +93,25 @@ const enabledModel = computed({
   set: (on: boolean) => void toggle(on),
 });
 
+/** Asks Android when it still will; true once the permission is granted. */
+async function askPermission(): Promise<boolean> {
+  if (permission.value === 'granted') return true;
+  if (permission.value === 'denied') return false;
+  try {
+    permission.value = await requestReminderPermission();
+  } catch (e) {
+    console.error('Asking for the notification permission failed', e);
+    return false;
+  }
+  return permission.value === 'granted';
+}
+
 async function toggle(on: boolean) {
   if (!on) {
     enabled.value = false;
     return;
   }
-  if (permission.value !== 'granted') {
-    try {
-      permission.value = await requestReminderPermission();
-    } catch (e) {
-      console.error('Asking for the notification permission failed', e);
-      return;
-    }
-    if (permission.value !== 'granted') return;
-  }
-  enabled.value = true;
+  if (await askPermission()) enabled.value = true;
 }
 
 function toggleDay(day: number) {
@@ -126,6 +132,9 @@ async function save() {
   saving.value = true;
   saveFailed.value = false;
   try {
+    // On without the permission isn't saved: the pet page would promise reminders that can't
+    // show. The explanation above says why the dialog stays open.
+    if (enabled.value && !(await askPermission())) return;
     // Off, the emptied day list or time are kept valid: a setting without them can't be stored.
     saveReminderSetting(props.pet.id, {
       enabled: enabled.value,
@@ -169,11 +178,17 @@ async function save() {
 
         <div class="option-row">
           <span :id="enableId" class="option-label">{{ $t('reminders.enable') }}</span>
-          <SlideToggle v-model="enabledModel" :labelledby="enableId" :disabled="switchDisabled" />
+          <SlideToggle
+            v-model="enabledModel"
+            :labelledby="enableId"
+            :describedby="blocked ? deniedId : undefined"
+            :disabled="saving"
+            :aria-disabled="switchBlocked ? 'true' : undefined"
+          />
         </div>
 
-        <div v-if="permission === 'denied'" class="denied">
-          <p role="alert">{{ $t('reminders.denied') }}</p>
+        <div v-if="blocked" class="denied">
+          <p :id="deniedId" role="alert">{{ $t('reminders.denied') }}</p>
           <button type="button" class="settings-btn" @click="openSettings">
             {{ $t('reminders.openSettings') }}
           </button>

@@ -144,11 +144,11 @@ export function applyReminders(petId: string): Promise<void> {
   return enqueue(() => sync(petId));
 }
 
-export type ReminderPermission = 'granted' | 'prompt' | 'denied';
+/** rationale: asked and refused once; Android still shows its dialog once more. denied: it won't. */
+export type ReminderPermission = 'granted' | 'prompt' | 'rationale' | 'denied';
 
 function toPermission({ display }: PermissionStatus): ReminderPermission {
-  // prompt-with-rationale: asked and refused once; Android still shows its dialog once more.
-  return display === 'prompt-with-rationale' ? 'prompt' : display;
+  return display === 'prompt-with-rationale' ? 'rationale' : display;
 }
 
 export async function reminderPermission(): Promise<ReminderPermission> {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { App } from '@capacitor/app';
 import { returnTo } from '../router/returnTo';
 import { useI18n } from 'vue-i18n';
 import type { Reading } from '../types';
@@ -21,6 +22,7 @@ import PdfExportModal from '../components/PdfExportModal.vue';
 import ShareLinkModal from '../components/ShareLinkModal.vue';
 import InfoModal from '../components/InfoModal.vue';
 import ReminderModal from '../components/ReminderModal.vue';
+import { reminderPermission, type ReminderPermission } from '../native/reminders';
 import { WEEK_START, type Locale } from '../i18n';
 import { isNative } from '../utils/platform';
 import { loadReminderSettings } from '../utils/reminderSettings';
@@ -51,9 +53,20 @@ const showShareModal = ref(false);
 const native = isNative();
 const showReminderModal = ref(false);
 const reminder = ref(native ? loadReminderSettings()[petId] : undefined);
+// Null until checked, or when the check failed: then the reminders aren't called paused.
+const permission = ref<ReminderPermission | null>(null);
+// On, but Android won't show them: notifications for CardiPaw were turned off.
+const remindersPaused = computed(
+  () => reminder.value?.enabled === true && permission.value !== null && permission.value !== 'granted',
+);
+const remindersOn = computed(() => reminder.value?.enabled === true && !remindersPaused.value);
+const bellLabel = computed(() =>
+  remindersPaused.value ? 'reminders.bellPaused' : remindersOn.value ? 'reminders.bellOn' : 'reminders.bellOff',
+);
 const reminderSummary = computed(() => {
   const setting = reminder.value;
   if (!setting?.enabled) return '';
+  if (remindersPaused.value) return t('reminders.summaryBlocked');
   const time = formatReminderTime(setting.time, locale.value);
   if (setting.days.length === 7) return t('reminders.summaryDaily', { time });
   const days = formatDays(setting.days, locale.value, WEEK_START[locale.value as Locale] ?? 1);
@@ -63,6 +76,23 @@ const reminderSummary = computed(() => {
 function closeReminderModal() {
   showReminderModal.value = false;
   reminder.value = loadReminderSettings()[petId];
+  // The dialog may have asked for the permission.
+  void checkReminderPermission();
+}
+
+async function checkReminderPermission() {
+  try {
+    permission.value = await reminderPermission();
+  } catch (e) {
+    console.error('Checking the notification permission failed', e);
+  }
+}
+
+if (native) {
+  onMounted(checkReminderPermission);
+  // Back from Android's settings, where notifications may have been turned on or off.
+  const resume = App.addListener('resume', () => void checkReminderPermission());
+  onUnmounted(() => void resume.then((handle) => handle.remove()));
 }
 
 const TABS = ['chart', 'readings', 'notes'] as const;
@@ -461,12 +491,12 @@ async function deletePet() {
           v-if="native"
           type="button"
           class="icon-btn reminder-btn"
-          :class="{ on: reminder?.enabled }"
+          :class="{ on: remindersOn }"
           aria-haspopup="dialog"
-          :aria-label="$t(reminder?.enabled ? 'reminders.bellOn' : 'reminders.bellOff', { name: pet.name })"
+          :aria-label="$t(bellLabel, { name: pet.name })"
           @click="showReminderModal = true"
         >
-          <svg v-if="reminder?.enabled" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
+          <svg v-if="remindersOn" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
             <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
           </svg>
           <svg v-else viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">

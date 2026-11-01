@@ -46,6 +46,7 @@ const click = async (sel: string) => {
   q(sel)!.click();
   await flushPromises();
 };
+const toggleSwitch = () => q<HTMLButtonElement>('[role="switch"]')!;
 
 beforeEach(() => {
   localStorage.clear();
@@ -92,13 +93,84 @@ describe('ReminderModal', () => {
   it('does not ask again once Android won’t, and re-checks on return from the settings', async () => {
     R.reminderPermission.mockResolvedValue('denied');
     await open();
-    expect(q<HTMLButtonElement>('[role="switch"]')!.disabled).toBe(true);
+    expect(toggleSwitch().getAttribute('aria-disabled')).toBe('true');
+    await click('[role="switch"]');
+    expect(toggleSwitch().getAttribute('aria-checked')).toBe('false');
     R.reminderPermission.mockResolvedValue('granted');
     const onResume = vi.mocked(App.addListener).mock.calls[0][1] as () => void;
     onResume();
     await flushPromises();
-    expect(q<HTMLButtonElement>('[role="switch"]')!.disabled).toBe(false);
+    expect(toggleSwitch().hasAttribute('aria-disabled')).toBe(false);
+    expect(q('.denied')).toBeNull();
     expect(R.requestReminderPermission).not.toHaveBeenCalled();
+  });
+
+  it('explains after one refusal and lets the switch ask once more', async () => {
+    R.reminderPermission.mockResolvedValue('rationale');
+    await open();
+    expect(q('.denied [role="alert"]')!.textContent).toContain('turned off');
+    expect(q('.settings-btn')).not.toBeNull();
+    expect(toggleSwitch().hasAttribute('aria-disabled')).toBe(false);
+    await click('[role="switch"]');
+    expect(R.requestReminderPermission).toHaveBeenCalledOnce();
+    expect(toggleSwitch().getAttribute('aria-checked')).toBe('true');
+    expect(q('.denied')).toBeNull();
+  });
+
+  it('keeps the switch focused and described when Android stops asking', async () => {
+    R.reminderPermission.mockResolvedValue('rationale');
+    R.requestReminderPermission.mockResolvedValue('denied');
+    await open();
+    toggleSwitch().focus();
+    await click('[role="switch"]');
+    expect(toggleSwitch().disabled).toBe(false);
+    expect(toggleSwitch().getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(toggleSwitch());
+    const described = document.getElementById(toggleSwitch().getAttribute('aria-describedby')!);
+    expect(described!.textContent).toContain('turned off');
+    await click('[role="switch"]');
+    expect(R.requestReminderPermission).toHaveBeenCalledOnce();
+  });
+
+  it('asks on save when reminders are on without the permission, and stays open when refused', async () => {
+    saveReminderSetting('pet-1', { enabled: true, time: '07:30', days: [1] });
+    R.reminderPermission.mockResolvedValue('prompt');
+    R.requestReminderPermission.mockResolvedValue('denied');
+    const wrapper = await open();
+    expect(toggleSwitch().getAttribute('aria-checked')).toBe('true');
+    q<HTMLInputElement>('input[type="time"]')!.value = '08:00';
+    q('input[type="time"]')!.dispatchEvent(new Event('input'));
+    await click('.btn-save');
+    expect(R.requestReminderPermission).toHaveBeenCalledOnce();
+    expect(q('.denied [role="alert"]')).not.toBeNull();
+    expect(wrapper.emitted('close')).toBeUndefined();
+    expect(R.applyReminders).not.toHaveBeenCalled();
+    expect(loadReminderSettings()['pet-1'].time).toBe('07:30');
+    // Android won't ask again: saving doesn't either.
+    await click('.btn-save');
+    expect(R.requestReminderPermission).toHaveBeenCalledOnce();
+    expect(wrapper.emitted('close')).toBeUndefined();
+  });
+
+  it('saves after Android grants the permission on save', async () => {
+    saveReminderSetting('pet-1', { enabled: true, time: '07:30', days: [1] });
+    R.reminderPermission.mockResolvedValue('rationale');
+    R.requestReminderPermission.mockResolvedValue('granted');
+    const wrapper = await open();
+    await click('.btn-save');
+    expect(R.applyReminders).toHaveBeenCalledWith('pet-1');
+    expect(wrapper.emitted('close')).toHaveLength(1);
+  });
+
+  it('turns reminders off without asking for the permission', async () => {
+    saveReminderSetting('pet-1', { enabled: true, time: '07:30', days: [1] });
+    R.reminderPermission.mockResolvedValue('denied');
+    const wrapper = await open();
+    await click('[role="switch"]');
+    await click('.btn-save');
+    expect(R.requestReminderPermission).not.toHaveBeenCalled();
+    expect(loadReminderSettings()['pet-1'].enabled).toBe(false);
+    expect(wrapper.emitted('close')).toHaveLength(1);
   });
 
   it('orders the days from the locale’s week start and needs at least one', async () => {

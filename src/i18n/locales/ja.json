@@ -373,6 +373,7 @@
     "title": "リマインダー",
     "bellOn": "{name}のリマインダー：オン",
     "bellOff": "{name}のリマインダー：オフ",
+    "bellPaused": "{name}のリマインダー：停止中",
     "enable": "測定をリマインド",
     "time": "時刻",
     "days": "曜日",
@@ -384,6 +385,7 @@
     "openSettings": "通知設定を開く",
     "summaryDaily": "毎日{time}にリマインド",
     "summaryDays": "{days}の{time}にリマインド",
+    "summaryBlocked": "リマインダー停止中：通知がオフです",
     "save": "保存"
   }
 }

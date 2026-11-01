@@ -373,6 +373,7 @@
     "title": "Rappels",
     "bellOn": "Rappels pour {name} : activés",
     "bellOff": "Rappels pour {name} : désactivés",
+    "bellPaused": "Rappels pour {name} : en pause",
     "enable": "Me rappeler de mesurer",
     "time": "Heure",
     "days": "Jours",
@@ -384,6 +385,7 @@
     "openSettings": "Ouvrir les paramètres de notification",
     "summaryDaily": "Rappel tous les jours à {time}",
     "summaryDays": "Rappel : {days} à {time}",
+    "summaryBlocked": "Rappels en pause : notifications désactivées",
     "save": "Enregistrer"
   }
 }

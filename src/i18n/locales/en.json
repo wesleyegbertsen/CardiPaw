@@ -373,6 +373,7 @@
     "title": "Reminders",
     "bellOn": "Reminders for {name}: on",
     "bellOff": "Reminders for {name}: off",
+    "bellPaused": "Reminders for {name}: paused",
     "enable": "Remind me to measure",
     "time": "Time",
     "days": "Days",
@@ -384,6 +385,7 @@
     "openSettings": "Open notification settings",
     "summaryDaily": "Reminder every day at {time}",
     "summaryDays": "Reminder: {days} at {time}",
+    "summaryBlocked": "Reminders paused: notifications are off",
     "save": "Save"
   }
 }

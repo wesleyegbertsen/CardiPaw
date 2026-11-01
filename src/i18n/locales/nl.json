@@ -373,6 +373,7 @@
     "title": "Herinneringen",
     "bellOn": "Herinneringen voor {name}: aan",
     "bellOff": "Herinneringen voor {name}: uit",
+    "bellPaused": "Herinneringen voor {name}: gepauzeerd",
     "enable": "Herinner me aan meten",
     "time": "Tijd",
     "days": "Dagen",
@@ -384,6 +385,7 @@
     "openSettings": "Meldingsinstellingen openen",
     "summaryDaily": "Herinnering elke dag om {time}",
     "summaryDays": "Herinnering: {days} om {time}",
+    "summaryBlocked": "Herinneringen gepauzeerd: meldingen staan uit",
     "save": "Opslaan"
   }
 }

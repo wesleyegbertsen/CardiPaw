@@ -323,7 +323,7 @@ describe('reminders', () => {
     ['denied', 'denied'],
     ['prompt', 'prompt'],
     // Refused once: Android still shows its dialog one more time.
-    ['prompt-with-rationale', 'prompt'],
+    ['prompt-with-rationale', 'rationale'],
   ] as const)('reports the permission %s as %s', async (display, expected) => {
     LN.checkPermissions.mockResolvedValue({ display });
     LN.requestPermissions.mockResolvedValue({ display });
