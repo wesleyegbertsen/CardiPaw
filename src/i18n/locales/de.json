@@ -105,6 +105,7 @@
     "sound": "Ton",
     "vibration": "Vibration",
     "breathsCounted": "Atemzüge gezählt",
+    "secondsUnit": "Sek.",
     "unitSpaced": "Atemz. / Min",
     "basedOn": "Basierend auf {n} Atemzug in 30 Sekunden | Basierend auf {n} Atemzügen in 30 Sekunden",
     "saveReading": "Messung speichern",

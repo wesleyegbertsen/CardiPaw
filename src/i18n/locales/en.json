@@ -105,6 +105,7 @@
     "sound": "Sound",
     "vibration": "Vibration",
     "breathsCounted": "breaths counted",
+    "secondsUnit": "sec",
     "unitSpaced": "breaths / min",
     "basedOn": "Based on {n} breath in 30 seconds | Based on {n} breaths in 30 seconds",
     "saveReading": "Save reading",

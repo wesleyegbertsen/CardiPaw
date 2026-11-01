@@ -105,6 +105,7 @@
     "sound": "Son",
     "vibration": "Vibration",
     "breathsCounted": "respirations comptées",
+    "secondsUnit": "s",
     "unitSpaced": "resp. / min",
     "basedOn": "Basé sur {n} respiration en 30 secondes | Basé sur {n} respirations en 30 secondes",
     "saveReading": "Enregistrer la mesure",

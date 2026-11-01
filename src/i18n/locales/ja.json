@@ -105,6 +105,7 @@
     "sound": "音",
     "vibration": "バイブレーション",
     "breathsCounted": "回カウント済み",
+    "secondsUnit": "秒",
     "unitSpaced": "回 / 分",
     "basedOn": "30秒間で{n}回の呼吸に基づく",
     "saveReading": "測定値を保存",

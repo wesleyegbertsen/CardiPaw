@@ -105,6 +105,7 @@
     "sound": "Geluid",
     "vibration": "Trillen",
     "breathsCounted": "ademhalingen geteld",
+    "secondsUnit": "sec",
     "unitSpaced": "ademh. / min",
     "basedOn": "Op basis van {n} ademhaling in 30 seconden | Op basis van {n} ademhalingen in 30 seconden",
     "saveReading": "Meting opslaan",

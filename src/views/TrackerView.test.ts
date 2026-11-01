@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { createI18n } from 'vue-i18n';
+import type { Plugin } from 'vue';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import TrackerView from './TrackerView.vue';
 import { routes } from '../router';
@@ -8,6 +10,8 @@ import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { deferred } from '../test/deferred';
 import { createTestI18n } from '../test/i18n';
+import en from '../i18n/locales/en.json';
+import de from '../i18n/locales/de.json';
 import { Blank } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
 import * as db from '../services/db';
@@ -35,8 +39,12 @@ let router: Router;
 /**
  * `stored` set: the pets store starts empty, as on a reload straight into the tracker, and
  * loading pets resolves with `stored` (or rejects, for an Error; or settles with a Promise).
+ * `i18n` replaces the default English instance.
  */
-async function mountTracker({ stored }: { stored?: Pet[] | Error | Promise<Pet[]> } = {}) {
+async function mountTracker({
+  stored,
+  i18n = createTestI18n(),
+}: { stored?: Pet[] | Error | Promise<Pet[]>; i18n?: Plugin } = {}) {
   const pinia = createPinia();
   setActivePinia(pinia);
   const getAllPets = vi.spyOn(db, 'getAllPets');
@@ -61,7 +69,7 @@ async function mountTracker({ stored }: { stored?: Pet[] | Error | Promise<Pet[]
 
   const wrapper = mount(TrackerView, {
     attachTo: document.body,
-    global: { plugins: [pinia, router, createTestI18n()] },
+    global: { plugins: [pinia, router, i18n] },
   });
   await flushPromises();
   return { wrapper, addReading, getAllPets, push, replace };
@@ -69,6 +77,9 @@ async function mountTracker({ stored }: { stored?: Pet[] | Error | Promise<Pet[]
 
 const ringOffset = (wrapper: VueWrapper) =>
   Number(wrapper.get('.ring-progress').attributes('stroke-dashoffset'));
+
+const i18nFor = (locale: 'de') =>
+  createI18n({ legacy: false, locale, fallbackLocale: 'en', messages: { en, de } });
 
 describe('TrackerView', () => {
   beforeEach(() => {
@@ -151,6 +162,12 @@ describe('TrackerView', () => {
 
     expect(wrapper.get('.timer-number').text()).toBe('30');
     expect(ringOffset(wrapper)).toBeCloseTo(339.3);
+  });
+
+  it('shows the seconds unit in the app language', async () => {
+    const { wrapper } = await mountTracker({ i18n: i18nFor('de') });
+    await wrapper.get('.heart-btn').trigger('click');
+    expect(wrapper.get('.timer-unit').text()).toBe('Sek.');
   });
 
   it('saves a guided measurement and returns to the pet', async () => {
