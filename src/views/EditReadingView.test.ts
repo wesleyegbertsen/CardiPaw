@@ -60,6 +60,21 @@ describe('EditReadingView', () => {
     expect((wrapper.get('.notes-stub').element as HTMLTextAreaElement).value).toBe('<p>Calm</p>');
   });
 
+  it('shows a guided reading’s measurement length and keeps it when saved', async () => {
+    const { wrapper, rate } = await mountEdit(makeReading({ durationSeconds: 15 }));
+    const update = vi.spyOn(useReadingsStore(), 'updateReading');
+    expect(wrapper.get('.source-chip').text()).toBe('Guided (15 s)');
+    await rate.setValue('20');
+    await wrapper.get('form').trigger('submit');
+    await settle();
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ rate: 20, durationSeconds: 15 }));
+  });
+
+  it('labels a guided reading saved before lengths were selectable as 30 s', async () => {
+    const { wrapper } = await mountEdit(makeReading());
+    expect(wrapper.get('.source-chip').text()).toBe('Guided (30 s)');
+  });
+
   it('labels the rate, rest state and notes fields', async () => {
     const { wrapper, rate } = await mountEdit(makeReading({ restState: 'sleeping' }));
     expect(rate.attributes('id')).toBeTruthy();

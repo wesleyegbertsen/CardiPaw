@@ -22,6 +22,15 @@ const placeholders = (message: string) =>
   [...new Set([...message.matchAll(/\{\s*(\w+)\s*\}/g)].map((m) => m[1]))].sort();
 const branches = (message: string) => message.split('|').length;
 
+// Branch by branch when the counts match, so {n} can't go missing from one plural form;
+// otherwise (a single Japanese form) against all of English's branches together.
+function placeholdersMatch(message: string, english: string): boolean {
+  const ours = message.split('|');
+  const theirs = english.split('|');
+  if (ours.length !== theirs.length) return placeholders(message).join() === placeholders(english).join();
+  return ours.every((branch, i) => placeholders(branch).join() === placeholders(theirs[i]).join());
+}
+
 const base = new Map(flatten(en));
 const locales = { nl, de, fr, ja } as Record<string, Messages>;
 
@@ -30,7 +39,7 @@ describe.each(Object.entries(locales))('%s messages', (code, messages) => {
 
   it('use the same placeholders as English', () => {
     const mismatches = entries
-      .filter(([key, msg]) => placeholders(msg).join() !== placeholders(base.get(key)!).join())
+      .filter(([key, msg]) => !placeholdersMatch(msg, base.get(key)!))
       .map(([key, msg]) => `${key}: ${JSON.stringify(msg)}`);
     expect(mismatches).toEqual([]);
   });

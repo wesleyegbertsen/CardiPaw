@@ -1,19 +1,25 @@
 import { ref, watch } from 'vue';
 import { readStorage, writeStorage } from '../utils/storage';
+import {
+  DEFAULT_MEASUREMENT_SECONDS,
+  isMeasurementSeconds,
+  type MeasurementSeconds,
+} from '../utils/measurement';
 
 const STORAGE_KEY = 'cardipaw-tracker-prefs';
 
 interface TrackerPrefs {
   soundEnabled: boolean;
   vibrationEnabled: boolean;
+  durationSeconds: MeasurementSeconds;
 }
 
-function loadAll(): Record<string, TrackerPrefs> {
+function loadAll(): Record<string, unknown> {
   try {
     const parsed: unknown = JSON.parse(readStorage(STORAGE_KEY) ?? '{}');
     // "null" would throw on lookup, and an array would silently drop every saved change.
     return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
-      ? (parsed as Record<string, TrackerPrefs>)
+      ? (parsed as Record<string, unknown>)
       : {};
   } catch {
     return {};
@@ -21,20 +27,33 @@ function loadAll(): Record<string, TrackerPrefs> {
 }
 
 export function useTrackerPrefs(petId: string) {
-  const saved = loadAll()[petId];
-  const soundEnabled = ref(saved?.soundEnabled ?? true);
-  const vibrationEnabled = ref(saved?.vibrationEnabled ?? true);
+  // Saved values are not trusted: a wrong type (e.g. the string "false", which is truthy)
+  // falls back to the default instead of being used as is.
+  const raw = loadAll()[petId];
+  const saved =
+    typeof raw === 'object' && raw !== null
+      ? (raw as Partial<Record<keyof TrackerPrefs, unknown>>)
+      : undefined;
+  const soundEnabled = ref(typeof saved?.soundEnabled === 'boolean' ? saved.soundEnabled : true);
+  const vibrationEnabled = ref(
+    typeof saved?.vibrationEnabled === 'boolean' ? saved.vibrationEnabled : true,
+  );
+  const durationSeconds = ref<MeasurementSeconds>(
+    isMeasurementSeconds(saved?.durationSeconds) ? saved.durationSeconds : DEFAULT_MEASUREMENT_SECONDS,
+  );
 
-  watch([soundEnabled, vibrationEnabled], () => {
+  // Writes the whole object, so every pref must be both watched and written here.
+  watch([soundEnabled, vibrationEnabled, durationSeconds], () => {
     const all = loadAll();
     all[petId] = {
       soundEnabled: soundEnabled.value,
       vibrationEnabled: vibrationEnabled.value,
+      durationSeconds: durationSeconds.value,
     };
     writeStorage(STORAGE_KEY, JSON.stringify(all));
   });
 
-  return { soundEnabled, vibrationEnabled };
+  return { soundEnabled, vibrationEnabled, durationSeconds };
 }
 
 /** Removes a deleted pet's saved prefs. Never throws, even when storage is unavailable. */

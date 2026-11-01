@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { createI18n } from 'vue-i18n';
+import type { Plugin } from 'vue';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import TrackerView from './TrackerView.vue';
 import { routes } from '../router';
@@ -8,10 +10,14 @@ import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { deferred } from '../test/deferred';
 import { createTestI18n } from '../test/i18n';
+import en from '../i18n/locales/en.json';
+import de from '../i18n/locales/de.json';
+import ja from '../i18n/locales/ja.json';
 import { Blank } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
 import * as db from '../services/db';
 import type { Pet, Reading } from '../types';
+import type { MeasurementSeconds } from '../utils/measurement';
 
 const audio = vi.hoisted(() => ({ init: vi.fn(), playBeep: vi.fn(), playDoneSound: vi.fn() }));
 const haptics = vi.hoisted(() => ({ vibrateTap: vi.fn(), vibrateDone: vi.fn() }));
@@ -35,8 +41,12 @@ let router: Router;
 /**
  * `stored` set: the pets store starts empty, as on a reload straight into the tracker, and
  * loading pets resolves with `stored` (or rejects, for an Error; or settles with a Promise).
+ * `i18n` replaces the default English instance.
  */
-async function mountTracker({ stored }: { stored?: Pet[] | Error | Promise<Pet[]> } = {}) {
+async function mountTracker({
+  stored,
+  i18n = createTestI18n(),
+}: { stored?: Pet[] | Error | Promise<Pet[]>; i18n?: Plugin } = {}) {
   const pinia = createPinia();
   setActivePinia(pinia);
   const getAllPets = vi.spyOn(db, 'getAllPets');
@@ -61,7 +71,7 @@ async function mountTracker({ stored }: { stored?: Pet[] | Error | Promise<Pet[]
 
   const wrapper = mount(TrackerView, {
     attachTo: document.body,
-    global: { plugins: [pinia, router, createTestI18n()] },
+    global: { plugins: [pinia, router, i18n] },
   });
   await flushPromises();
   return { wrapper, addReading, getAllPets, push, replace };
@@ -69,6 +79,13 @@ async function mountTracker({ stored }: { stored?: Pet[] | Error | Promise<Pet[]
 
 const ringOffset = (wrapper: VueWrapper) =>
   Number(wrapper.get('.ring-progress').attributes('stroke-dashoffset'));
+
+const lengthPill = (wrapper: VueWrapper, seconds: MeasurementSeconds) =>
+  wrapper.findAll('.length-pill').find((p) => p.text() === `${seconds} s`)!;
+const pressedLengths = (wrapper: VueWrapper) =>
+  wrapper.findAll('.length-pill').map((p) => p.attributes('aria-pressed'));
+const i18nFor = (locale: 'de' | 'ja') =>
+  createI18n({ legacy: false, locale, fallbackLocale: 'en', messages: { en, de, ja } });
 
 describe('TrackerView', () => {
   beforeEach(() => {
@@ -153,6 +170,135 @@ describe('TrackerView', () => {
     expect(ringOffset(wrapper)).toBeCloseTo(339.3);
   });
 
+  it('shows the seconds unit in the app language', async () => {
+    const { wrapper } = await mountTracker({ i18n: i18nFor('de') });
+    await wrapper.get('.heart-btn').trigger('click');
+    expect(wrapper.get('.timer-unit').text()).toBe('Sek.');
+  });
+
+  describe('measurement length', () => {
+    it('counts taps for 15 seconds and saves the length with the reading', async () => {
+      const { wrapper, addReading } = await mountTracker();
+      await lengthPill(wrapper, 15).trigger('click');
+      const heart = wrapper.get('.heart-btn');
+      await heart.trigger('click');
+      await heart.trigger('click');
+      await heart.trigger('click');
+      expect(wrapper.get('.timer-number').text()).toBe('15');
+
+      await vi.advanceTimersByTimeAsync(14_000);
+      expect(wrapper.find('.result-number').exists()).toBe(false);
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(wrapper.get('.result-number').text()).toBe('12');
+      expect(wrapper.get('.result-note').text()).toBe('Based on 3 breaths in 15 seconds');
+
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledWith(
+        expect.objectContaining({ rate: 12, clickCount: 3, durationSeconds: 15 }),
+      );
+    });
+
+    it('runs a 60-second measurement', async () => {
+      const { wrapper, addReading } = await mountTracker();
+      await lengthPill(wrapper, 60).trigger('click');
+      await wrapper.get('.heart-btn').trigger('click');
+      vi.setSystemTime(Date.now() + 15_000);
+      await vi.advanceTimersByTimeAsync(250);
+      expect(wrapper.get('.timer-number').text()).toBe('45');
+      expect(ringOffset(wrapper)).toBeCloseTo((339.3 * 45) / 60);
+
+      await vi.advanceTimersByTimeAsync(44_000);
+      expect(wrapper.find('.result-number').exists()).toBe(false);
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(wrapper.get('.result-number').text()).toBe('1');
+      expect(wrapper.get('.result-note').text()).toBe('Based on 1 breath in 60 seconds');
+
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledWith(
+        expect.objectContaining({ rate: 1, clickCount: 1, durationSeconds: 60 }),
+      );
+    });
+
+    it('never shows more than 60 seconds when the clock moves back', async () => {
+      const { wrapper } = await mountTracker();
+      await lengthPill(wrapper, 60).trigger('click');
+      await wrapper.get('.heart-btn').trigger('click');
+      vi.setSystemTime(Date.now() - 60_000);
+      await vi.advanceTimersByTimeAsync(250);
+
+      expect(wrapper.get('.timer-number').text()).toBe('60');
+      expect(ringOffset(wrapper)).toBeCloseTo(339.3);
+    });
+
+    it('offers the lengths as pressed buttons in a labelled group, 30 seconds by default', async () => {
+      const { wrapper } = await mountTracker();
+      const group = wrapper.get('.length-toggle');
+      expect(group.attributes('role')).toBe('group');
+      expect(group.attributes('aria-label')).toBe('Measurement length');
+      expect(wrapper.findAll('.length-pill').map((p) => p.text())).toEqual(['15 s', '30 s', '60 s']);
+      expect(pressedLengths(wrapper)).toEqual(['false', 'true', 'false']);
+    });
+
+    it('picks a length without starting a measurement and remembers it for the pet', async () => {
+      const { wrapper } = await mountTracker();
+      await lengthPill(wrapper, 60).trigger('click');
+      expect(pressedLengths(wrapper)).toEqual(['false', 'false', 'true']);
+      expect(wrapper.find('.timer-ring').exists()).toBe(false);
+      expect(audio.playBeep).not.toHaveBeenCalled();
+      expect(JSON.parse(localStorage.getItem('cardipaw-tracker-prefs')!)[pet.id]).toMatchObject({
+        durationSeconds: 60,
+      });
+    });
+
+    it('does not start a measurement on a tap that just misses the length pills', async () => {
+      const { wrapper } = await mountTracker();
+      await wrapper.get('.length-row').trigger('click');
+      expect(wrapper.find('.timer-ring').exists()).toBe(false);
+      expect(audio.playBeep).not.toHaveBeenCalled();
+    });
+
+    it('starts with the pet’s saved length', async () => {
+      localStorage.setItem(
+        'cardipaw-tracker-prefs',
+        JSON.stringify({ [pet.id]: { soundEnabled: true, vibrationEnabled: true, durationSeconds: 60 } }),
+      );
+      const { wrapper } = await mountTracker();
+      expect(pressedLengths(wrapper)).toEqual(['false', 'false', 'true']);
+      await wrapper.get('.heart-btn').trigger('click');
+      expect(wrapper.get('.timer-number').text()).toBe('60');
+    });
+
+    it('hides the length choice while measuring', async () => {
+      const { wrapper } = await mountTracker();
+      expect(wrapper.find('.length-toggle').exists()).toBe(true);
+      await wrapper.get('.heart-btn').trigger('click');
+      expect(wrapper.find('.length-toggle').exists()).toBe(false);
+    });
+
+    it('keeps the chosen length on Try again', async () => {
+      const { wrapper } = await mountTracker();
+      await lengthPill(wrapper, 15).trigger('click');
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(15_000);
+      await wrapper.get('.btn-retry').trigger('click');
+
+      expect(pressedLengths(wrapper)).toEqual(['true', 'false', 'false']);
+      await wrapper.get('.heart-btn').trigger('click');
+      expect(wrapper.get('.timer-number').text()).toBe('15');
+    });
+
+    it('describes the result in Japanese with one form for any count', async () => {
+      const { wrapper } = await mountTracker({ i18n: i18nFor('ja') });
+      await wrapper.findAll('.length-pill')[2].trigger('click');
+      await wrapper.get('.heart-btn').trigger('click');
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(wrapper.get('.result-note').text()).toBe('60秒間で2回の呼吸に基づく');
+    });
+  });
+
   it('saves a guided measurement and returns to the pet', async () => {
     const { wrapper, addReading } = await mountTracker();
     await wrapper.get('.heart-btn').trigger('click');
@@ -172,6 +318,7 @@ describe('TrackerView', () => {
       restState: 'sleeping',
       notes: '<p>calm</p>',
       source: undefined,
+      durationSeconds: 30,
     });
     expect(router.currentRoute.value.name).toBe('pet');
   });
@@ -195,6 +342,8 @@ describe('TrackerView', () => {
       notes: undefined,
       source: 'manual',
     });
+    // toHaveBeenCalledWith treats an undefined property as missing, so check it directly.
+    expect(addReading.mock.calls[0][0].durationSeconds).toBeUndefined();
     expect(router.currentRoute.value.name).toBe('pet');
   });
 
