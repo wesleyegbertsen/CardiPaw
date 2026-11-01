@@ -1,18 +1,27 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef } from 'vue';
+import { computed, onBeforeUnmount, ref, shallowRef, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as db from '../services/db';
 import { BackupError, downloadBackup, importBackup, parseBackup, type ValidatedBackup } from '../services/backup';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
+import SlideToggle from '../components/SlideToggle.vue';
+import { useUpdateCheck } from '../composables/useUpdateCheck';
+import { isNative } from '../utils/platform';
+import { formatVersion, LATEST_RELEASE_URL, releaseTagUrl, releaseVersion } from '../utils/version';
 
 const isDev = import.meta.env.DEV;
 
 const appVersion = __APP_VERSION__;
 // Local builds keep package.json's placeholder 0.0.0; only released versions have release notes to link to.
-const releaseUrl = appVersion === '0.0.0'
-  ? null
-  : `https://github.com/wesleyegbertsen/CardiPaw/releases/tag/v${appVersion}`;
+const installed = releaseVersion(appVersion);
+const releaseUrl = installed ? releaseTagUrl(installed) : null;
+
+// App only: the website and the PWA update themselves.
+const native = isNative();
+const { enabled: autoCheck, available, setEnabled } = useUpdateCheck();
+const autoCheckLabelId = useId();
+const autoCheckDescId = useId();
 
 const { t, locale } = useI18n();
 
@@ -268,6 +277,42 @@ function cancelImport() {
         </p>
       </section>
 
+      <section v-if="native" class="section">
+        <h2 class="section-title">{{ $t('settings.updatesSection') }}</h2>
+        <p class="section-desc">{{ $t('settings.updatesDesc') }}</p>
+        <div class="action-cards">
+          <div class="action-card">
+            <div>
+              <div class="action-name">{{ $t('settings.checkUpdatesName') }}</div>
+              <div class="action-desc">
+                {{ available
+                  ? $t('settings.checkUpdatesAvailable', { version: formatVersion(available) })
+                  : $t('settings.checkUpdatesInstalled', { version: appVersion }) }}
+              </div>
+            </div>
+            <a
+              class="action-btn"
+              :href="LATEST_RELEASE_URL"
+              target="_blank"
+              rel="noopener noreferrer"
+            >{{ $t('settings.checkUpdatesButton') }}</a>
+          </div>
+
+          <div class="action-card">
+            <div>
+              <div :id="autoCheckLabelId" class="action-name">{{ $t('settings.autoCheckName') }}</div>
+              <div :id="autoCheckDescId" class="action-desc">{{ $t('settings.autoCheckDesc') }}</div>
+            </div>
+            <SlideToggle
+              :model-value="autoCheck"
+              :labelledby="autoCheckLabelId"
+              :describedby="autoCheckDescId"
+              @update:model-value="setEnabled"
+            />
+          </div>
+        </div>
+      </section>
+
       <section class="section">
         <h2 class="section-title">{{ $t('settings.legalSection') }}</h2>
         <div class="action-cards">
@@ -384,7 +429,8 @@ function cancelImport() {
       <p v-html="$t('settings.privacy.p2')" />
       <p v-html="$t('settings.privacy.p3')" />
       <p v-html="$t('settings.privacy.p4')" />
-      <p v-html="$t('settings.privacy.p5')" />
+      <p v-if="native" v-html="$t('settings.privacy.p5')" />
+      <p v-if="native" v-html="$t('settings.privacy.p6')" />
     </InfoModal>
 
     <InfoModal

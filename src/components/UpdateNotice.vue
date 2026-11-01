@@ -1,0 +1,96 @@
+<script setup lang="ts">
+// App only: a newer release found by the opt-in update check (Settings > Updates).
+import { useUpdateCheck } from '../composables/useUpdateCheck';
+import { formatVersion, releaseTagUrl } from '../utils/version';
+
+const { available, showNotice, dismiss } = useUpdateCheck();
+</script>
+
+<template>
+  <Teleport to="body">
+    <!-- status, not alert: news of an update must not interrupt what the user is doing. -->
+    <div v-if="showNotice && available" class="update-notice" role="status">
+      <span class="update-message">{{
+        $t('updateNotice.available', { version: formatVersion(available) })
+      }}</span>
+      <div class="update-actions">
+        <a
+          class="btn-view"
+          :href="releaseTagUrl(available)"
+          target="_blank"
+          rel="noopener noreferrer"
+          @click="dismiss"
+          >{{ $t('updateNotice.view') }}</a
+        >
+        <button class="btn-close" @click="dismiss">{{ $t('updateNotice.dismiss') }}</button>
+      </div>
+    </div>
+  </Teleport>
+</template>
+
+<style scoped>
+/*
+ * Above the add button (the FAB sits at nav-offset + 20px and is 56px tall, plus a 12px gap)
+ * and above the nav (z-index 100), but under the modal overlays (500): an open dialog's
+ * backdrop dims the notice and catches taps on it.
+ */
+.update-notice {
+  position: fixed;
+  bottom: calc(var(--nav-offset) + 88px);
+  /* Both sides pinned and auto margins centre it: with left: 50% the box could only grow
+     into half the screen, so the buttons wrapped. */
+  left: 16px;
+  right: 16px;
+  width: fit-content;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-lg);
+  z-index: 450;
+  max-width: calc(100vw - 32px);
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
+}
+
+.update-message {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.update-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-view {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-primary);
+}
+
+.btn-close {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+}
+</style>

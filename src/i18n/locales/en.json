@@ -208,6 +208,14 @@
     "thresholdElevatedValue": "31–35 breaths/min",
     "thresholdHighValue": "> 35 breaths/min",
     "disclaimer": "These are the global default thresholds. You can configure custom ceilings per pet in each pet's profile. Always follow your veterinarian's specific guidance on what values to monitor, what ranges are normal for your pet, and when to seek care.",
+    "updatesSection": "Updates",
+    "updatesDesc": "The app doesn't update itself. To update, install a newer release's APK over this one; your data stays.",
+    "checkUpdatesName": "Check for updates",
+    "checkUpdatesInstalled": "Installed: version {version}",
+    "checkUpdatesAvailable": "Version {version} is available",
+    "checkUpdatesButton": "Open on GitHub",
+    "autoCheckName": "Check automatically",
+    "autoCheckDesc": "About once a day, ask GitHub (api.github.com) whether there is a newer version. GitHub sees your IP address; no pet data is sent.",
     "legalSection": "Legal",
     "privacyTitle": "Privacy Policy",
     "privacyDesc": "How your data is stored and used",
@@ -216,11 +224,12 @@
     "sourceTitle": "Source Code",
     "sourceDesc": "CardiPaw is open source on GitHub",
     "privacy": {
-      "p1": "<strong>Your data stays on your device.</strong> CardiPaw stores all information (pet profiles, readings, and notes) exclusively in your browser's IndexedDB. Nothing is ever transmitted to a server.",
+      "p1": "<strong>Your data stays on your device.</strong> CardiPaw stores all information (pet profiles, readings, and notes) exclusively in your browser's IndexedDB. Your data is never sent to a server.",
       "p2": "<strong>No tracking or analytics.</strong> CardiPaw does not use cookies, analytics services, advertising trackers, or any third-party data collection. There are no user accounts and no login.",
       "p3": "<strong>You are in control.</strong> You can export your data at any time from the Settings page, and deleting the app or clearing your browser's site data will permanently remove everything.",
       "p4": "<strong>No data sharing.</strong> Because your data never leaves your device, it is never shared with or accessible by anyone else.",
-      "p5": "<strong>Reminders stay on your phone.</strong> In the Android app, reminders are scheduled on this phone; nothing about them is sent anywhere. Their settings stay on this device and aren't included in exports."
+      "p5": "<strong>Update check (Android app).</strong> If you turn on \"Check automatically\" in Settings under Updates, the app asks api.github.com about once a day whether a newer version exists. GitHub then sees your IP address and the information the app's browser engine sends with every request, such as its user agent (which includes the Android version and device model) and language. No pet data is sent. It stays off unless you turn it on.",
+      "p6": "<strong>Reminders stay on your phone.</strong> In the Android app, reminders are scheduled on this phone; nothing about them is sent anywhere. Their settings stay on this device and aren't included in exports."
     },
     "terms": {
       "p1": "<strong>Not medical advice.</strong> CardiPaw is an informational tool to help you log and track your pet's resting respiratory rate. It is not a substitute for professional veterinary diagnosis, advice, or treatment.",
@@ -350,6 +359,11 @@
       "p3": "The alert goes away on its own once readings settle. With too few readings nothing is shown, so no alert doesn't always mean all is well.",
       "p4": "Readings taken while awake, excited or warm can make the rate look higher, and so can mixing sleeping and resting readings, because the rate is usually lower during sleep. This is not a diagnosis. If you're worried, contact your vet, and if your pet is struggling to breathe, contact them straight away."
     }
+  },
+  "updateNotice": {
+    "available": "CardiPaw {version} is available.",
+    "view": "View release",
+    "dismiss": "Dismiss"
   },
   "reminders": {
     "channelName": "Measuring reminders",

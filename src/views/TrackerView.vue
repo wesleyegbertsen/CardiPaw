@@ -11,6 +11,7 @@ import { useOnboarding } from '../composables/useOnboarding';
 import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
 import OnboardingModal from '../components/OnboardingModal.vue';
 import RestStateToggle from '../components/RestStateToggle.vue';
+import SlideToggle from '../components/SlideToggle.vue';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
 
 const route = useRoute();
@@ -321,25 +322,11 @@ onUnmounted(() => {
           <p class="timer-note">{{ $t('tracker.measurement30') }}</p>
           <div class="option-row" @click.stop>
             <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
-            <button
-              class="slide-toggle"
-              :class="{ on: soundEnabled }"
-              role="switch"
-              :aria-checked="soundEnabled"
-              :aria-labelledby="soundLabelId"
-              @click="soundEnabled = !soundEnabled"
-            />
+            <SlideToggle v-model="soundEnabled" :labelledby="soundLabelId" />
           </div>
           <div v-if="hapticsSupported" class="option-row" @click.stop>
             <span :id="vibrationLabelId" class="toggle-label">{{ $t('tracker.vibration') }}</span>
-            <button
-              class="slide-toggle"
-              :class="{ on: vibrationEnabled }"
-              role="switch"
-              :aria-checked="vibrationEnabled"
-              :aria-labelledby="vibrationLabelId"
-              @click="vibrationEnabled = !vibrationEnabled"
-            />
+            <SlideToggle v-model="vibrationEnabled" :labelledby="vibrationLabelId" />
           </div>
         </template>
         <div v-else class="breath-count">
@@ -715,41 +702,6 @@ onUnmounted(() => {
 .toggle-label {
   font-size: 13px;
   color: var(--color-text-muted);
-}
-
-.slide-toggle {
-  position: relative;
-  width: 40px;
-  height: 22px;
-  border-radius: var(--radius-full);
-  background: var(--color-bg);
-  border: 1.5px solid var(--color-border);
-  transition: background 0.18s, border-color 0.18s;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.slide-toggle::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--color-text-muted);
-  transition: transform 0.18s, background 0.18s;
-  box-shadow: var(--shadow-sm);
-}
-
-.slide-toggle.on {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.slide-toggle.on::after {
-  transform: translateX(18px);
-  background: #fff;
 }
 
 /* tracker-main fills remaining height; mode-toggle-bar floats above it */

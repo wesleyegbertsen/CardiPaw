@@ -15,10 +15,11 @@ const NODE_TESTS = [
   'scripts/**/*.test.mjs',
   'src/composables/{useAudioBeep,useHaptics}.test.ts',
   'src/i18n/locales.test.ts',
-  'src/services/db.test.ts',
+  'src/native/csp.test.ts',
+  'src/services/{db,githubRelease}.test.ts',
   'src/stores/stores.test.ts',
   'src/test/androidResources.test.ts',
-  'src/utils/{age,chartWindow,date,pdfText,petInitial,rateStatus,reminderFormat,reminderSchedule,shareCodec,trend}.test.ts',
+  'src/utils/{age,chartWindow,date,pdfText,petInitial,rateStatus,reminderFormat,reminderSchedule,shareCodec,trend,version}.test.ts',
 ];
 
 // Kept separate from vite.config.ts so tests don't load the PWA plugin.

@@ -5,6 +5,8 @@ import * as backup from '../services/backup';
 import { mountView, settle } from '../test/mountView';
 import { deferred } from '../test/deferred';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
+import { mockNative } from '../test/native';
+import type { Version } from '../utils/version';
 
 // Keep parsing and validation real; only the IndexedDB-touching calls are faked.
 vi.mock('../services/backup', async (importOriginal) => {
@@ -12,8 +14,23 @@ vi.mock('../services/backup', async (importOriginal) => {
   return { ...real, downloadBackup: vi.fn(), importBackup: vi.fn() };
 });
 
+// The update check's own logic is tested in useUpdateCheck.test.ts.
+const updates = vi.hoisted(() => ({
+  enabled: undefined as unknown as { value: boolean },
+  available: undefined as unknown as { value: Version | null },
+  setEnabled: vi.fn(),
+}));
+vi.mock('../composables/useUpdateCheck', async () => {
+  const { ref } = await import('vue');
+  updates.enabled = ref(false);
+  updates.available = ref(null);
+  return { useUpdateCheck: () => updates };
+});
+
 const exportButton = (w: VueWrapper) => w.findAll('.action-btn')[0];
 const importButton = (w: VueWrapper) => w.findAll('.action-btn')[1];
+const privacyButton = (w: VueWrapper) =>
+  w.findAll('.action-card').find((card) => card.text().includes('Privacy Policy'))!.get('.action-btn');
 const status = (w: VueWrapper) => w.get('[role="status"]').text();
 const alerts = (w: VueWrapper) => w.findAll('[role="alert"]').map((a) => a.text());
 const dialogMessage = () => document.body.querySelector('[role="alertdialog"] .message');
@@ -43,6 +60,9 @@ describe('SettingsView', () => {
   beforeEach(() => {
     vi.mocked(backup.downloadBackup).mockReset().mockResolvedValue('saved');
     vi.mocked(backup.importBackup).mockReset().mockResolvedValue();
+    updates.enabled.value = false;
+    updates.available.value = null;
+    updates.setEnabled.mockReset();
   });
   afterEach(() => vi.useRealTimers());
 
@@ -294,13 +314,115 @@ describe('SettingsView', () => {
 
   it('opens and closes the privacy information', async () => {
     const { wrapper } = await mountView(SettingsView, '/settings');
-    await wrapper.findAll('.action-btn')[2].trigger('click');
+    await privacyButton(wrapper).trigger('click');
     const dialog = document.body.querySelector('[role="dialog"]');
     expect(dialog?.querySelector('.dialog-title')?.textContent).toBe('Privacy Policy');
-    expect(dialog?.textContent).toContain('Reminders stay on your phone.');
+    // Reminders exist only in the app.
+    expect(dialog?.textContent).not.toContain('Reminders stay on your phone.');
 
     clickInBody('.btn-ok');
     await flushPromises();
     expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('explains reminders in the privacy information in the app', async () => {
+    mockNative();
+    const { wrapper } = await mountView(SettingsView, '/settings');
+    await privacyButton(wrapper).trigger('click');
+    expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain(
+      'Reminders stay on your phone.',
+    );
+  });
+
+  describe('version', () => {
+    it('links a release to its release notes', async () => {
+      vi.stubGlobal('__APP_VERSION__', '1.2.0');
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(wrapper.get('.version-text a').attributes('href')).toBe(
+        'https://github.com/wesleyegbertsen/CardiPaw/releases/tag/v1.2.0',
+      );
+    });
+
+    it('shows a local build without a link', async () => {
+      vi.stubGlobal('__APP_VERSION__', '0.0.0');
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(wrapper.find('.version-text a').exists()).toBe(false);
+      expect(wrapper.get('.version-text span').text()).toBe('0.0.0');
+    });
+  });
+
+  describe('updates', () => {
+    const updatesSection = (w: VueWrapper) =>
+      w
+        .findAll('section')
+        .find((s) => s.element.querySelector('.section-title')?.textContent === 'Updates');
+    const privacyText = async (w: VueWrapper) => {
+      await privacyButton(w).trigger('click');
+      return document.body.querySelector('[role="dialog"]')!.textContent;
+    };
+
+    it('are not offered on the website', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(updatesSection(wrapper)).toBeUndefined();
+      expect(await privacyText(wrapper)).not.toContain('Update check');
+    });
+
+    it('show the installed version and open the latest release in the app', async () => {
+      mockNative();
+      vi.stubGlobal('__APP_VERSION__', '1.2.0');
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      const section = updatesSection(wrapper)!;
+      expect(section.text()).toContain('Installed: version 1.2.0');
+      const link = section.get('a.action-btn');
+      expect(link.text()).toBe('Open on GitHub');
+      expect(link.attributes('href')).toBe('https://github.com/wesleyegbertsen/CardiPaw/releases/latest');
+      expect(link.attributes('target')).toBe('_blank');
+    });
+
+    it('name a newer release the check found', async () => {
+      mockNative();
+      updates.available.value = [1, 3, 0];
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(updatesSection(wrapper)!.text()).toContain('Version 1.3.0 is available');
+    });
+
+    it('turn the daily check on with a switch that is off by default', async () => {
+      mockNative();
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      const toggle = updatesSection(wrapper)!.get('[role="switch"]');
+      expect(toggle.attributes('aria-checked')).toBe('false');
+      expect(document.getElementById(toggle.attributes('aria-labelledby')!)?.textContent).toBe(
+        'Check automatically',
+      );
+      await toggle.trigger('click');
+      expect(updates.setEnabled).toHaveBeenCalledWith(true);
+    });
+
+    it('show the switch on while the daily check is on', async () => {
+      mockNative();
+      updates.enabled.value = true;
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      const toggle = updatesSection(wrapper)!.get('[role="switch"]');
+      expect(toggle.attributes('aria-checked')).toBe('true');
+      await toggle.trigger('click');
+      expect(updates.setEnabled).toHaveBeenCalledWith(false);
+    });
+
+    it('describe what the daily check sends to the switch', async () => {
+      mockNative();
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      const toggle = updatesSection(wrapper)!.get('[role="switch"]');
+      const describedby = toggle.attributes('aria-describedby');
+      expect(describedby).toBeTruthy();
+      expect(document.getElementById(describedby!)?.textContent).toContain(
+        'GitHub sees your IP address',
+      );
+    });
+
+    it('are explained in the privacy information in the app', async () => {
+      mockNative();
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(await privacyText(wrapper)).toContain('api.github.com about once a day');
+    });
   });
 });

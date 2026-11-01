@@ -208,6 +208,14 @@
     "thresholdElevatedValue": "31–35 resp./min",
     "thresholdHighValue": "> 35 resp./min",
     "disclaimer": "Ce sont les seuils par défaut globaux. Vous pouvez configurer des plafonds personnalisés par animal dans chaque profil. Suivez toujours les conseils spécifiques de votre vétérinaire concernant les valeurs à surveiller, les plages normales pour votre animal et le moment de consulter.",
+    "updatesSection": "Mises à jour",
+    "updatesDesc": "L'application ne se met pas à jour toute seule. Pour la mettre à jour, installez l'APK d'une version plus récente par-dessus celle-ci ; vos données sont conservées.",
+    "checkUpdatesName": "Rechercher des mises à jour",
+    "checkUpdatesInstalled": "Version installée : {version}",
+    "checkUpdatesAvailable": "La version {version} est disponible",
+    "checkUpdatesButton": "Ouvrir sur GitHub",
+    "autoCheckName": "Vérifier automatiquement",
+    "autoCheckDesc": "Environ une fois par jour, demander à GitHub (api.github.com) si une version plus récente existe. GitHub voit votre adresse IP ; aucune donnée sur vos animaux n'est envoyée.",
     "legalSection": "Mentions légales",
     "privacyTitle": "Politique de confidentialité",
     "privacyDesc": "Comment vos données sont stockées et utilisées",
@@ -216,11 +224,12 @@
     "sourceTitle": "Code source",
     "sourceDesc": "CardiPaw est open source sur GitHub",
     "privacy": {
-      "p1": "<strong>Vos données restent sur votre appareil.</strong> CardiPaw stocke toutes les informations (profils d'animaux, mesures et notes) exclusivement dans l'IndexedDB de votre navigateur. Rien n'est jamais transmis à un serveur.",
+      "p1": "<strong>Vos données restent sur votre appareil.</strong> CardiPaw stocke toutes les informations (profils d'animaux, mesures et notes) exclusivement dans l'IndexedDB de votre navigateur. Vos données ne sont jamais envoyées à un serveur.",
       "p2": "<strong>Aucun suivi ni analyse.</strong> CardiPaw n'utilise pas de cookies, de services d'analyse, de traceurs publicitaires ni aucune collecte de données par des tiers. Il n'y a pas de compte utilisateur ni de connexion.",
       "p3": "<strong>Vous gardez le contrôle.</strong> Vous pouvez exporter vos données à tout moment depuis la page Paramètres, et supprimer l'application ou effacer les données du site dans votre navigateur supprimera définitivement tout.",
       "p4": "<strong>Aucun partage de données.</strong> Comme vos données ne quittent jamais votre appareil, elles ne sont jamais partagées avec ni accessibles par quiconque d'autre.",
-      "p5": "<strong>Les rappels restent sur votre téléphone.</strong> Dans l'application Android, les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Leurs réglages restent sur cet appareil et ne sont pas inclus dans les exports."
+      "p5": "<strong>Recherche de mises à jour (application Android).</strong> Si vous activez « Vérifier automatiquement » dans Paramètres, sous Mises à jour, l'application demande environ une fois par jour à api.github.com si une version plus récente existe. GitHub voit alors votre adresse IP et les informations que le moteur de navigateur de l'application envoie avec chaque requête, comme son agent utilisateur (qui comprend la version d'Android et le modèle de l'appareil) et la langue. Aucune donnée sur vos animaux n'est envoyée. Cette option reste désactivée tant que vous ne l'activez pas.",
+      "p6": "<strong>Les rappels restent sur votre téléphone.</strong> Dans l'application Android, les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Leurs réglages restent sur cet appareil et ne sont pas inclus dans les exports."
     },
     "terms": {
       "p1": "<strong>Pas un avis médical.</strong> CardiPaw est un outil d'information pour vous aider à enregistrer et suivre la fréquence respiratoire au repos de votre animal. Il ne remplace pas un diagnostic, un conseil ou un traitement vétérinaire professionnel.",
@@ -350,6 +359,11 @@
       "p3": "L'alerte disparaît d'elle-même lorsque les mesures se stabilisent. Avec trop peu de mesures, rien ne s'affiche : l'absence d'alerte ne signifie donc pas toujours que tout va bien.",
       "p4": "Des mesures prises pendant que votre animal est éveillé, excité ou a chaud peuvent faire paraître la fréquence plus élevée. C'est aussi le cas si vous mélangez des mesures prises pendant le sommeil et au repos, car la fréquence est généralement plus basse pendant le sommeil. Ceci n'est pas un diagnostic. En cas d'inquiétude, contactez votre vétérinaire, et sans attendre si votre animal a du mal à respirer."
     }
+  },
+  "updateNotice": {
+    "available": "CardiPaw {version} est disponible.",
+    "view": "Voir la version",
+    "dismiss": "Fermer"
   },
   "reminders": {
     "channelName": "Rappels de mesure",
