@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import LocalePicker from './LocalePicker.vue';
 import { setLocale } from '../i18n';
+import { closeTopModal } from '../composables/useModal';
 import { createTestI18n } from '../test/i18n';
 
 vi.mock('../i18n', async (importOriginal) => ({
@@ -102,6 +103,17 @@ describe('LocalePicker', () => {
     await close(wrapper);
     expect(wrapper.find('.lang-dropdown').exists()).toBe(false);
     expect(document.activeElement).toBe(wrapper.get('.lang-trigger').element);
+  });
+
+  it('closes on the Android back button, which it leaves alone once closed', async () => {
+    const wrapper = mountPicker();
+    await wrapper.get('.lang-trigger').trigger('click');
+    await flushPromises();
+    expect(closeTopModal()).toBe(true);
+    await flushPromises();
+    expect(wrapper.find('.lang-dropdown').exists()).toBe(false);
+    expect(document.activeElement).toBe(wrapper.get('.lang-trigger').element);
+    expect(closeTopModal()).toBe(false);
   });
 
   it('closes when focus moves out of the picker, not when it moves inside or nowhere', async () => {

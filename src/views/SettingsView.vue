@@ -1,20 +1,29 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef } from 'vue';
+import { computed, onBeforeUnmount, ref, shallowRef, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as db from '../services/db';
 import { BackupError, downloadBackup, importBackup, parseBackup, type ValidatedBackup } from '../services/backup';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
+import SlideToggle from '../components/SlideToggle.vue';
+import { useUpdateCheck } from '../composables/useUpdateCheck';
+import { isNative } from '../utils/platform';
+import { formatVersion, LATEST_RELEASE_URL, releaseTagUrl, releaseVersion } from '../utils/version';
 
 const isDev = import.meta.env.DEV;
 
 const appVersion = __APP_VERSION__;
 // Local builds keep package.json's placeholder 0.0.0; only released versions have release notes to link to.
-const releaseUrl = appVersion === '0.0.0'
-  ? null
-  : `https://github.com/wesleyegbertsen/CardiPaw/releases/tag/v${appVersion}`;
+const installed = releaseVersion(appVersion);
+const releaseUrl = installed ? releaseTagUrl(installed) : null;
 
-const { t } = useI18n();
+// App only: the website and the PWA update themselves.
+const native = isNative();
+const { enabled: autoCheck, available, setEnabled } = useUpdateCheck();
+const autoCheckLabelId = useId();
+const autoCheckDescId = useId();
+
+const { t, locale } = useI18n();
 
 const importInput = ref<HTMLInputElement | null>(null);
 const showImportConfirm = ref(false);
@@ -38,6 +47,7 @@ const importError = ref('');
 const exportSuccess = ref(false);
 const importSuccess = ref(false);
 const importing = ref(false);
+const exporting = ref(false);
 const exportError = ref(false);
 // Spoken by the status region; the buttons show the same text
 const statusPaused = ref(false);
@@ -67,14 +77,26 @@ function reannounceStatus() {
 }
 
 async function exportData() {
+  // The share sheet takes a moment to open; a second tap would open a second one.
+  if (exporting.value) return;
+  exporting.value = true;
   exportError.value = false;
+  let outcome: Awaited<ReturnType<typeof downloadBackup>>;
   try {
-    await downloadBackup();
+    const date = new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium' }).format(new Date());
+    outcome = await downloadBackup({
+      subject: t('settings.exportShareSubject', { date }),
+      dialogTitle: t('settings.exportShareTitle'),
+    });
   } catch (e) {
     console.error('Backup export failed', e);
     exportError.value = true;
     return;
+  } finally {
+    exporting.value = false;
   }
+  // Closing the app's share sheet saves nothing, so there is nothing to confirm.
+  if (outcome === 'cancelled') return;
   if (exportSuccess.value) reannounceStatus();
   exportSuccess.value = true;
   clearTimeout(exportTimer);
@@ -186,7 +208,7 @@ function cancelImport() {
                 <div class="action-desc">{{ $t('settings.exportDesc') }}</div>
               </div>
             </div>
-            <button class="action-btn" @click="exportData">
+            <button class="action-btn" :disabled="exporting" @click="exportData">
               {{ exportSuccess ? $t('settings.exported') : $t('settings.export') }}
             </button>
           </div>
@@ -253,6 +275,42 @@ function cancelImport() {
           >{{ appVersion }}</a>
           <span v-else>{{ appVersion }}</span>
         </p>
+      </section>
+
+      <section v-if="native" class="section">
+        <h2 class="section-title">{{ $t('settings.updatesSection') }}</h2>
+        <p class="section-desc">{{ $t('settings.updatesDesc') }}</p>
+        <div class="action-cards">
+          <div class="action-card">
+            <div>
+              <div class="action-name">{{ $t('settings.checkUpdatesName') }}</div>
+              <div class="action-desc">
+                {{ available
+                  ? $t('settings.checkUpdatesAvailable', { version: formatVersion(available) })
+                  : $t('settings.checkUpdatesInstalled', { version: appVersion }) }}
+              </div>
+            </div>
+            <a
+              class="action-btn"
+              :href="LATEST_RELEASE_URL"
+              target="_blank"
+              rel="noopener noreferrer"
+            >{{ $t('settings.checkUpdatesButton') }}</a>
+          </div>
+
+          <div class="action-card">
+            <div>
+              <div :id="autoCheckLabelId" class="action-name">{{ $t('settings.autoCheckName') }}</div>
+              <div :id="autoCheckDescId" class="action-desc">{{ $t('settings.autoCheckDesc') }}</div>
+            </div>
+            <SlideToggle
+              :model-value="autoCheck"
+              :labelledby="autoCheckLabelId"
+              :describedby="autoCheckDescId"
+              @update:model-value="setEnabled"
+            />
+          </div>
+        </div>
       </section>
 
       <section class="section">
@@ -371,6 +429,8 @@ function cancelImport() {
       <p v-html="$t('settings.privacy.p2')" />
       <p v-html="$t('settings.privacy.p3')" />
       <p v-html="$t('settings.privacy.p4')" />
+      <p v-if="native" v-html="$t('settings.privacy.p5')" />
+      <p v-if="native" v-html="$t('settings.privacy.p6')" />
     </InfoModal>
 
     <InfoModal

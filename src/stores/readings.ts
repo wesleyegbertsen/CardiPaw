@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import type { Reading } from '../types';
 import * as db from '../services/db';
 import { v4 as generateId } from 'uuid';
+import { syncReminders } from '../native/reminders';
 
 export const useReadingsStore = defineStore('readings', () => {
   const readingsByPet = ref<Record<string, Reading[]>>({});
@@ -26,6 +27,8 @@ export const useReadingsStore = defineStore('readings', () => {
   async function addReading(data: Omit<Reading, 'id'>) {
     const reading: Reading = { id: generateId(), ...data };
     await db.saveReading(reading);
+    // Today's reminder goes once today has a reading.
+    void syncReminders(reading.petId);
     if (!readingsByPet.value[data.petId]) {
       readingsByPet.value[data.petId] = [];
     }
@@ -39,6 +42,8 @@ export const useReadingsStore = defineStore('readings', () => {
 
   async function removeReading(id: string, petId: string) {
     await db.deleteReading(id);
+    // Deleting today's only reading brings today's reminder back.
+    void syncReminders(petId);
     if (readingsByPet.value[petId]) {
       readingsByPet.value[petId] = readingsByPet.value[petId].filter(r => r.id !== id);
     }

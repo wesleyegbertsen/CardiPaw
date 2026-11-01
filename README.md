@@ -15,6 +15,7 @@
   - [PDF Report](#pdf-report)
   - [Share](#share)
   - [Pet Notes](#pet-notes)
+  - [Reminders](#reminders)
   - [Data Export & Import](#data-export--import)
   - [Languages](#languages)
 - [Contributing a Translation](#contributing-a-translation)
@@ -22,9 +23,12 @@
   - [Adding a new language](#adding-a-new-language)
 - [Status Thresholds](#status-thresholds)
 - [Docker](#docker)
+- [Android](#android)
 - [Releases & Versioning](#releases--versioning)
   - [PR titles](#pr-titles)
 - [Development](#development)
+  - [Android app](#android-app)
+    - [Release signing](#release-signing)
 - [Tech Stack](#tech-stack)
 
 ## Try It
@@ -45,7 +49,7 @@ The RRR is measured by watching your pet's chest while they are resting or sleep
 
 ### Multiple Pets
 
-Add as many pets as you need, each with a name, species, photo, and date of birth. All data is stored locally on your device and nothing is sent to any server.
+Add as many pets as you need, each with a name, species, photo, and date of birth. All data is stored locally on your device, and your pet data is never sent to any server.
 
 ### Guided Tracking
 
@@ -95,6 +99,10 @@ Create a shareable link for any pet directly from the detail view — for exampl
 ### Pet Notes
 
 Each pet has a general-purpose **Notes** tab where you can write anything that does not fit neatly into a reading: medication changes, vet visit summaries, behavioural observations, or anything else you want to keep alongside the RRR data. Notes are stored locally with the rest of your pet's data and are included in the data export.
+
+### Reminders
+
+In the [Android app](#android), the bell on a pet's page sets up a reminder to measure that pet at a time and on the weekdays you choose. A day that already has a reading for the pet gets no reminder.
 
 ### Data Export & Import
 
@@ -234,6 +242,37 @@ services:
 
 Every release is also published under its version, e.g. `wesleyegbertsen/cardipaw:1.4.2`, plus floating `:1.4` and `:1` tags. Pin one of those instead of `latest` if you want to control when you upgrade.
 
+## Android
+
+Every [release](https://github.com/wesleyegbertsen/CardiPaw/releases) includes the Android app as `cardipaw-X.Y.Z.apk`. CardiPaw is not on Google Play yet.
+
+1. Download the APK on your phone from the latest release and open it.
+2. Allow your browser or file manager to install unknown apps when Android asks. Google Play Protect may warn about an app it doesn't know; that is expected for apps installed outside Play.
+
+**Updating:** install the APK of a newer release over the installed app. Your pets and readings stay. The app does not update itself. To find out about new releases:
+
+- **Settings → Updates** shows the installed version and opens the latest release on GitHub in your browser. This needs no network access in the app.
+- **Check automatically** (in the same place, off by default) asks `api.github.com` about once a day whether a newer release exists and shows a notice when there is one. GitHub then sees your IP address and the information the app's browser engine sends with every request, such as its user agent (which includes the Android version and device model) and language. No pet data is sent.
+- Or let something outside the app watch for you: [Obtainium](https://github.com/ImranR98/Obtainium) (add `https://github.com/wesleyegbertsen/CardiPaw`; it can also install the APK), or on GitHub choose **Watch → Custom → Releases** on this repository to get an email per release.
+
+Whichever you use, check the signing certificate of a new APK (see **Checking an APK** below).
+
+- Android refuses to install an older APK over a newer one. **Don't uninstall to get around that:** Android Auto Backup is disabled, so uninstalling deletes all of the app's data. If you really need to go back, [export](#data-export--import) first.
+- Export regularly anyway: the export file is the only backup of the app's data.
+
+**Checking an APK:** every release's notes list the SHA-256 of the certificate the APK is signed with, and it is the same for every release. You can compare it with the output of `apksigner verify --print-certs cardipaw-X.Y.Z.apk` (Android SDK build-tools), or with an app such as AppVerifier. apksigner prints it in the same form as the release notes (lower-case hex without colons); other tools may show `AB:CD:…`, and case and colons don't matter. If it ever differs, don't install that APK.
+
+**Coming from a CI debug build:** those APKs are signed with a different key, so Android won't install a release over them. Once: export your data in the debug app, uninstall it, install the release APK and import the file.
+
+**Reminders:** tap the bell on a pet's page to be reminded to measure that pet, at a time and on the weekdays you pick. Reminders are local notifications scheduled on your phone; nothing about them is sent anywhere. Their settings stay on the phone and aren't included in exports, so after importing your data on a new phone, turn them on again.
+
+- A calendar day that already has a reading for the pet gets no reminder. Days start at midnight: a 00:30 reminder still comes after a reading at 23:30 the evening before.
+- Reminders are scheduled 14 days ahead and topped up whenever you open the app. If you don't open CardiPaw for two weeks, they stop until you do.
+- A reminder that came due while the phone was off is skipped; the later ones still come.
+- Battery savers on some phones (Xiaomi, Samsung and others) can delay reminders or drop them.
+- On a secured lock screen, Android shows that CardiPaw has a notification but hides its text.
+- Besides CardiPaw's "Measuring reminders", Android's notification settings for the app also list a "Default" channel; it comes with the notifications plugin.
+
 ## Releases & Versioning
 
 CardiPaw follows [Semantic Versioning](https://semver.org/). The version is shown at the bottom of the About section on the Settings page and links to its release notes.
@@ -244,8 +283,10 @@ Releases are automated by the [Release workflow](.github/workflows/release.yml),
 2. The commit must pass the same [checks as CI](#development) (lint, type-check, tests, locale check, build and `npm audit`); otherwise nothing is released.
 3. [GitVersion](https://gitversion.net/) determines the next version from the commit messages since that release (see [PR titles](#pr-titles) below and [`GitVersion.yml`](GitVersion.yml)).
 4. [`scripts/set-version.mjs`](scripts/set-version.mjs) stamps that version into `package.json` and `package-lock.json`, from which the app reads it at build time. You can run it locally with `npm run set-version -- 1.2.3`.
-5. The website is deployed and the Docker image is pushed with the new version tags.
-6. The commit is tagged `vX.Y.Z` and a GitHub release is created whose changelog lists every commit merged since the previous release.
+5. The website is deployed, the Docker image is pushed with the new version tags, and the Android APK is built and signed (see [Release signing](#release-signing)).
+6. The commit is tagged `vX.Y.Z` and a GitHub release is created with the APK attached and a changelog that lists every commit merged since the previous release.
+
+If the deploy, the Docker image or the APK fails, nothing is tagged, and the next run retries with the same version.
 
 The version is not committed back to the repository: the git tags are the source of truth, so `package.json` stays at `0.0.0` on `main`.
 
@@ -274,9 +315,84 @@ npm run check-locale  # key parity of every locale against en.json
 npm run build
 ```
 
-CI runs all of these, plus `npm audit --omit=dev --audit-level=high`, on every PR and every push to `main`, and the Release workflow runs them again before it deploys. Tests live next to the code they cover as `*.test.ts` and use [Vitest](https://vitest.dev/); IndexedDB is provided by [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) and components are mounted with [Vue Test Utils](https://test-utils.vuejs.org/). Tests run in [happy-dom](https://github.com/capricorn86/happy-dom), except the pure-logic files listed in the `node` project in `vitest.config.ts`, which run in plain Node.
+CI runs all of these, plus `npm audit --omit=dev --audit-level=high`, on every PR and every push to `main`, and the Release workflow runs them again before it deploys. Tests live next to the code they cover as `*.test.ts` (`*.test.mjs` for the Node scripts in `scripts/`) and use [Vitest](https://vitest.dev/); IndexedDB is provided by [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) and components are mounted with [Vue Test Utils](https://test-utils.vuejs.org/). Tests run in [happy-dom](https://github.com/capricorn86/happy-dom), except the pure-logic files listed in the `node` project in `vitest.config.ts`, which run in plain Node.
 
 A Prettier config is included for new code (`npm run format:check`, `npm run format`). The existing code has not been reformatted yet, so CI does not enforce it.
+
+### Android app
+
+The same app also runs as an Android app, built with [Capacitor](https://capacitorjs.com/). The native project lives in [`android/`](android/) and its settings in [`capacitor.config.ts`](capacitor.config.ts).
+
+You need [Android Studio](https://developer.android.com/studio) with the Android SDK 36 platform, JDK 21 and Node 22 or newer.
+
+```bash
+npm run build:android # type-check, build the web files into dist-native/ and copy them into android/
+npm run android:open  # open the project in Android Studio, then run it on a device or emulator
+npm run generate-android-assets # regenerate the launcher icon from public/favicon.svg
+```
+
+The launcher icon, and the icon on the launch screen, come from `public/favicon.svg`, the same source as the PWA icons. After changing it, run `npm run generate-android-assets` and commit the result; a test fails while the generated XML is out of date. The launch screen's background is `app_background` in `android/app/src/main/res/values*/colors.xml`, which a test keeps equal to `--color-bg` in `global.css`. The launch screen and the app's first frame follow the **system** dark mode, not the in-app theme setting, because Android shows them before the page loads.
+
+After changing the icon or the launch screen, check them on a device: the icon under round, squircle and themed (Android 13+) masks, and the launch screen in light and dark mode with no white flash before the page appears.
+
+CI builds a debug APK on every PR and attaches it to the run as the `cardipaw-debug-apk` artifact, so you can install it without Android Studio. The same job also builds a release APK, signs it with a throwaway key and verifies it, so every PR tests the release signing (see below).
+
+- **The app's data is separate from cardipaw.com.** The app serves itself from `https://localhost`, so its IndexedDB and settings belong to that origin. To move data between the website and the app, use Export on one and Import on the other.
+- **Never change `androidScheme` or `hostname` in `capacitor.config.ts`.** They define that origin: after a change, the app starts with no data for every user who installed an earlier version.
+- **Android Auto Backup is disabled** (`allowBackup="false"` and backup rules that exclude everything), so nothing is copied to Google's backup or to a new phone. The in-app export is the only backup: export regularly and keep the file somewhere safe.
+- **The app has the `INTERNET` permission, only for the opt-in update check.** Android grants it at install time to the whole app; the setting only decides whether CardiPaw's own code makes the request. The page's Content-Security-Policy is nginx.conf's with the one URL the check asks, `https://api.github.com/repos/wesleyegbertsen/CardiPaw/releases/latest`, added to `connect-src` ([`src/native/csp.ts`](src/native/csp.ts)), so the page itself can't fetch anything else, not even other GitHub API URLs. Native plugins aren't covered by the CSP: Capacitor's built-in CapacitorHttp and `@capacitor/filesystem`'s `downloadFile` could still make requests, so dependency hygiene matters as much as before. WebView Safe Browsing and WebView metrics are turned off in the manifest. Local and CI debug builds are version 0.0.0 and never check; to try the check, stamp a version first (`npm run set-version -- 0.1.0`, then revert `package.json` and `package-lock.json`).
+- Share links still point at `https://cardipaw.com`, so the people you send them to open them in their browser.
+- Google Play publishing is not set up yet ([#85](https://github.com/wesleyegbertsen/CardiPaw/issues/85)).
+- A debug APK is signed with a different key than the release APKs, so Android won't install one over the other. See [Android](#android) for moving your data.
+
+#### Release signing
+
+The [Release workflow](.github/workflows/release.yml) calls [`android-release.yml`](.github/workflows/android-release.yml):
+
+- One job builds an **unsigned** release APK with Gradle.
+- A second job, on a fresh runner that installs no npm packages and runs no Gradle, signs it with the SDK's `apksigner` through [`scripts/android-apk.mjs`](scripts/android-apk.mjs).
+- So no dependency code can reach the signing key.
+- The script also checks that the APK's version matches the release, and that the APK verifies with exactly one signer whose certificate matches `ANDROID_CERT_SHA256`.
+
+It needs:
+
+| Name | Kind | Value |
+| --- | --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | secret in the `android-signing` environment | the keystore file, base64 on one line |
+| `ANDROID_KEYSTORE_PASSWORD` | secret in the `android-signing` environment | its password (a PKCS12 keystore, keytool's default, uses the same password for the key) |
+| `ANDROID_KEY_ALIAS` | secret in the `android-signing` environment | the key's alias, e.g. `cardipaw` |
+| `ANDROID_CERT_SHA256` | repository variable | the certificate's SHA-256 fingerprint; public, it is printed in every release's notes. Case and colons don't matter, so keytool's `AB:CD:…` works as is |
+
+The secrets live in a GitHub [environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments) that only the signing job names, so no other job can read them, and that only `main` may use.
+
+If a secret or the variable is missing, or the APK's certificate doesn't match `ANDROID_CERT_SHA256`, the APK job fails with a message that names it. A wrong password or alias fails in `apksigner`, which says which. Either way nothing is tagged.
+
+One-time setup. keytool is in the JDK's `bin` folder, which usually isn't on the `PATH`: for example `"/c/Program Files/Java/jdk-21/bin/keytool"` in Git Bash or `& "$env:JAVA_HOME\bin\keytool"` in PowerShell; Android Studio has one in `jbr/bin`.
+
+```bash
+# The environment, usable only from main (or in Settings → Environments: a new environment
+# android-signing whose deployment branches are limited to main).
+gh api -X PUT 'repos/{owner}/{repo}/environments/android-signing' \
+  -F 'deployment_branch_policy[protected_branches]=false' \
+  -F 'deployment_branch_policy[custom_branch_policies]=true'
+gh api -X POST 'repos/{owner}/{repo}/environments/android-signing/deployment-branch-policies' \
+  -f name=main -f type=branch
+
+keytool -genkeypair -v -keystore cardipaw-release.jks -alias cardipaw -keyalg RSA -keysize 4096 -validity 36500
+base64 -w0 cardipaw-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 --env android-signing
+read -rsp 'Keystore password: ' p; echo; printf %s "$p" | gh secret set ANDROID_KEYSTORE_PASSWORD --env android-signing; unset p
+gh secret set ANDROID_KEY_ALIAS --env android-signing --body cardipaw
+keytool -list -v -keystore cardipaw-release.jks -alias cardipaw   # copy the "SHA256:" value
+gh variable set ANDROID_CERT_SHA256 --body "<that value>"
+```
+
+Don't type the password into `gh secret set` itself in Git Bash: it has no hidden prompt there. The `read -rs` line above keeps it off the screen and out of the history. In PowerShell or Windows Terminal, `gh secret set ANDROID_KEYSTORE_PASSWORD --env android-signing` does prompt without echoing.
+
+In PowerShell, encode the keystore with `[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\cardipaw-release.jks")) | gh secret set ANDROID_KEYSTORE_BASE64 --env android-signing`. Don't use `certutil -encode`: it adds header lines.
+
+**The key is permanent.** Every future APK must be signed with it. If it is lost, no installed copy can ever be updated again, and users would have to uninstall, which deletes their data. Keep at least two offline backups of the `.jks` file and its password, and never commit it (`.gitignore` covers `*.jks`).
+
+**Google Play ([#85](https://github.com/wesleyegbertsen/CardiPaw/issues/85)):** use this key as Play's *app signing* key, not only as the upload key. Otherwise Play installs and GitHub APKs can't update each other.
 
 ## Tech Stack
 

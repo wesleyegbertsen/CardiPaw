@@ -1,0 +1,171 @@
+name: Android release APK
+
+# Called by the Release workflow with the version determined by GitVersion.
+# Gradle builds an unsigned APK in a job without secrets; a second job on a fresh runner,
+# which installs no npm packages and runs no Gradle, signs it with the SDK's apksigner.
+# So no dependency code (npm install scripts, Vite plugins, Capacitor's Gradle scripts)
+# can reach the signing key. The secrets live in the android-signing environment, which only
+# the sign job names: no other job can read them, even by mistake.
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to build
+        required: true
+        type: string
+      version:
+        description: Release version (SemVer, without "v")
+        required: true
+        type: string
+      cert-sha256:
+        description: Expected signing certificate SHA-256 (repository variable ANDROID_CERT_SHA256)
+        # Not required here: when it is empty, the Verify step fails and says what to set.
+        required: false
+        type: string
+    # The caller still passes these by name, although they exist only in the android-signing
+    # environment: GitHub requires that for a reusable workflow, and only the sign job, which
+    # names the environment, gets their values. Not required here: when one is missing, the
+    # Sign step fails and names it.
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        description: The release keystore (.jks), base64 without line breaks
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        description: Its password (a PKCS12 keystore uses it for the key too)
+        required: false
+      ANDROID_KEY_ALIAS:
+        description: The key's alias in the keystore
+        required: false
+    outputs:
+      cert-sha256:
+        description: The verified signing certificate SHA-256 (lower-case hex)
+        value: ${{ jobs.sign.outputs.cert-sha256 }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build unsigned APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+          # Nothing here pushes; don't leave the token in .git/config for dependency code.
+          persist-credentials: false
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # After npm ci: set-version also rewrites package-lock.json. build.gradle reads the version.
+      - name: Set version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: npm run set-version -- "$VERSION"
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: Build the app's web files and copy them into android/
+        run: npm run build:android
+
+      - name: Build unsigned release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Check version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: node scripts/android-apk.mjs check-version android/app/build/outputs/apk/release/output-metadata.json "$VERSION"
+
+      - name: Upload unsigned APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-unsigned-apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+          # Long enough to re-run only the sign job, e.g. the next day after fixing a secret.
+          retention-days: 7
+          overwrite: true
+
+  sign:
+    name: Sign and verify APK
+    needs: build
+    runs-on: ubuntu-latest
+    # Holds the signing secrets; restricted to main (see README, "Release signing").
+    environment: android-signing
+    outputs:
+      cert-sha256: ${{ steps.verify.outputs.cert-sha256 }}
+
+    steps:
+      # Only scripts/: this job runs nothing but scripts/android-apk.mjs (Node built-ins).
+      - name: Checkout scripts
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+          sparse-checkout: scripts
+          persist-credentials: false
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          # No npm cache: nothing is installed here, and a restored cache is another job's files.
+          package-manager-cache: false
+
+      # apksigner is a Java program; no Gradle cache here.
+      - name: Setup Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Download unsigned APK
+        uses: actions/download-artifact@v8
+        with:
+          name: android-unsigned-apk
+          path: ${{ runner.temp }}/unsigned
+
+      # The only step that sees the key. The script decodes it into a private temp dir and deletes it.
+      - name: Sign APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/signed"
+          node scripts/android-apk.mjs sign \
+            "$RUNNER_TEMP/unsigned/app-release-unsigned.apk" "$RUNNER_TEMP/signed/cardipaw-$VERSION.apk"
+
+      - name: Verify signature
+        id: verify
+        env:
+          ANDROID_CERT_SHA256: ${{ inputs.cert-sha256 }}
+          VERSION: ${{ inputs.version }}
+        run: node scripts/android-apk.mjs verify "$RUNNER_TEMP/signed/cardipaw-$VERSION.apk"
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-release-apk
+          path: ${{ runner.temp }}/signed/cardipaw-${{ inputs.version }}.apk
+          if-no-files-found: error
+          retention-days: 7
+          overwrite: true

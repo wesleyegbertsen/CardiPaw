@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import type { Pet } from '../types';
 import * as db from '../services/db';
 import { forgetPetData } from './petData';
+import { syncReminders } from '../native/reminders';
 import { v4 as generateId } from 'uuid';
 
 export const usePetsStore = defineStore('pets', () => {
@@ -63,6 +64,8 @@ export const usePetsStore = defineStore('pets', () => {
     await db.savePet(updated);
     const index = pets.value.findIndex((p) => p.id === id);
     if (index !== -1) pets.value[index] = updated;
+    // Scheduled reminders carry the name in their text.
+    if (updated.name !== existing.name) void syncReminders(id);
   }
 
   async function removePet(id: string) {

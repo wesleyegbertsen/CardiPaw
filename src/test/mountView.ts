@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { defineComponent, h, type Component } from 'vue';
+import { defineComponent, h, type Component, type Plugin } from 'vue';
 import { flushPromises, mount, type ComponentMountingOptions, type Stubs } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type RouteLocationRaw } from 'vue-router';
@@ -51,6 +51,8 @@ export interface MountViewOptions<C extends Component = Component> extends SeedD
   props?: ComponentMountingOptions<C>['props'];
   /** What every route renders (default `Blank`); set it to observe what a RouterView does. */
   routeComponent?: Component;
+  /** An i18n instance; default: English (createTestI18n). */
+  i18n?: Plugin;
 }
 
 /**
@@ -61,7 +63,13 @@ export interface MountViewOptions<C extends Component = Component> extends SeedD
 export async function mountView<C extends Component>(
   component: C,
   location: RouteLocationRaw,
-  { stubs, props, routeComponent = Blank, ...data }: MountViewOptions<C> = {},
+  {
+    stubs,
+    props,
+    routeComponent = Blank,
+    i18n = createTestI18n(),
+    ...data
+  }: MountViewOptions<C> = {},
 ) {
   await seed(data);
   const pinia = createPinia();
@@ -79,7 +87,7 @@ export async function mountView<C extends Component>(
   const wrapper = mount(component as Component, {
     attachTo: document.body,
     props,
-    global: { plugins: [pinia, router, createTestI18n()], stubs },
+    global: { plugins: [pinia, router, i18n], stubs },
   });
   await settle();
   return { wrapper, router, pinia, push, replace };

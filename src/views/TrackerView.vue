@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted, useId } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { returnTo } from '../router/returnTo';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
 import { useAudioBeep } from '../composables/useAudioBeep';
@@ -10,6 +11,7 @@ import { useOnboarding } from '../composables/useOnboarding';
 import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
 import OnboardingModal from '../components/OnboardingModal.vue';
 import RestStateToggle from '../components/RestStateToggle.vue';
+import SlideToggle from '../components/SlideToggle.vue';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
 import { MEASUREMENT_OPTIONS, rateFromTaps } from '../utils/measurement';
 
@@ -160,7 +162,7 @@ async function saveReading() {
       source: isManual ? 'manual' : undefined,
       durationSeconds: isManual ? undefined : measurementSeconds.value,
     });
-    router.push({ name: 'pet', params: { id: petId } });
+    returnTo(router, { name: 'pet', params: { id: petId } });
   } catch (e) {
     console.error('Saving reading failed', e);
     saveError.value = true;
@@ -171,7 +173,7 @@ async function saveReading() {
 
 function discard() {
   saveError.value = false;
-  router.push({ name: 'pet', params: { id: petId } });
+  returnTo(router, { name: 'pet', params: { id: petId } });
 }
 
 function reset() {
@@ -343,25 +345,11 @@ onUnmounted(() => {
             <div class="toggle-rows">
               <div class="option-row">
                 <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
-                <button
-                  class="slide-toggle"
-                  :class="{ on: soundEnabled }"
-                  role="switch"
-                  :aria-checked="soundEnabled"
-                  :aria-labelledby="soundLabelId"
-                  @click="soundEnabled = !soundEnabled"
-                />
+                <SlideToggle v-model="soundEnabled" :labelledby="soundLabelId" />
               </div>
               <div v-if="hapticsSupported" class="option-row">
                 <span :id="vibrationLabelId" class="toggle-label">{{ $t('tracker.vibration') }}</span>
-                <button
-                  class="slide-toggle"
-                  :class="{ on: vibrationEnabled }"
-                  role="switch"
-                  :aria-checked="vibrationEnabled"
-                  :aria-labelledby="vibrationLabelId"
-                  @click="vibrationEnabled = !vibrationEnabled"
-                />
+                <SlideToggle v-model="vibrationEnabled" :labelledby="vibrationLabelId" />
               </div>
             </div>
           </div>
@@ -794,41 +782,6 @@ onUnmounted(() => {
 .toggle-label {
   font-size: 13px;
   color: var(--color-text-muted);
-}
-
-.slide-toggle {
-  position: relative;
-  width: 40px;
-  height: 22px;
-  border-radius: var(--radius-full);
-  background: var(--color-bg);
-  border: 1.5px solid var(--color-border);
-  transition: background 0.18s, border-color 0.18s;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.slide-toggle::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--color-text-muted);
-  transition: transform 0.18s, background 0.18s;
-  box-shadow: var(--shadow-sm);
-}
-
-.slide-toggle.on {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.slide-toggle.on::after {
-  transform: translateX(18px);
-  background: #fff;
 }
 
 /* tracker-main fills remaining height; mode-toggle-bar floats above it */

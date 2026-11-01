@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { returnTo } from '../router/returnTo';
 import { useNotesStore } from '../stores/notes';
 import { usePetsStore } from '../stores/pets';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
@@ -44,7 +45,7 @@ onMounted(async () => {
 });
 
 function goBack() {
-  router.push({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
+  returnTo(router, { name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
 }
 
 async function togglePin() {
@@ -75,7 +76,7 @@ async function confirmDelete() {
   deleteError.value = false;
   try {
     await notesStore.removeNote(note.value.id, petId);
-    router.push({ name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
+    returnTo(router, { name: 'pet', params: { id: petId }, query: { tab: 'notes' } });
   } catch (e) {
     console.error('Deleting note failed', e);
     deleteError.value = true;

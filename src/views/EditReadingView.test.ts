@@ -31,8 +31,8 @@ async function mountEdit(reading: Reading = makeReading()) {
 
 describe('EditReadingView', () => {
   it('goes to the pet’s readings for an unknown reading', async () => {
-    const { push } = await mountView(EditReadingView, location, { pets: [makePet()] });
-    expect(push).toHaveBeenCalledWith({
+    const { replace } = await mountView(EditReadingView, location, { pets: [makePet()] });
+    expect(replace).toHaveBeenCalledWith({
       name: 'pet',
       params: { id: 'pet-1' },
       query: { tab: 'readings' },
@@ -42,11 +42,12 @@ describe('EditReadingView', () => {
   it('does not go to the pet’s readings after the user already left', async () => {
     const load = deferred<Reading[]>();
     vi.spyOn(db, 'getReadingsForPet').mockReturnValueOnce(load.promise);
-    const { push, wrapper } = await mountView(EditReadingView, location, { pets: [makePet()] });
+    const { push, replace, wrapper } = await mountView(EditReadingView, location, { pets: [makePet()] });
     wrapper.unmount();
     load.resolve([]);
     await settle();
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('prefills the rate, rest state and notes', async () => {
@@ -221,10 +222,11 @@ describe('EditReadingView', () => {
   it('reports a failed load', async () => {
     vi.spyOn(db, 'getReadingsForPet').mockRejectedValueOnce(new Error('idb broken'));
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { wrapper, push } = await mountView(EditReadingView, location, { pets: [makePet()] });
+    const { wrapper, push, replace } = await mountView(EditReadingView, location, { pets: [makePet()] });
     expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded');
     expect(error).toHaveBeenCalledWith('Loading reading failed', expect.any(Error));
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('hides the form when loading fails for a reading cached from an earlier visit', async () => {

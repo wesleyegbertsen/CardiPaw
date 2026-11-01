@@ -33,6 +33,16 @@ describe('NoteView', () => {
     expect(wrapper.findAll('.header-actions button')).toHaveLength(0);
   });
 
+  it('returns to the notes tab on back without adding a history entry', async () => {
+    const { wrapper, push, replace } = await mountView(NoteView, location, {
+      pets: [makePet()],
+      notes: [makeNote()],
+    });
+    await wrapper.get('.back-btn').trigger('click');
+    expect(replace).toHaveBeenCalledWith(notesTab);
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it('pins and unpins without marking the note as edited', async () => {
     const { wrapper } = await mountView(NoteView, location, {
       pets: [makePet()],
@@ -53,7 +63,7 @@ describe('NoteView', () => {
   });
 
   it('deletes the note after confirming', async () => {
-    const { wrapper, push } = await mountView(NoteView, location, {
+    const { wrapper, replace } = await mountView(NoteView, location, {
       pets: [makePet()],
       notes: [makeNote()],
     });
@@ -61,11 +71,11 @@ describe('NoteView', () => {
     document.body.querySelector<HTMLButtonElement>('.btn-confirm')!.click();
     await settle();
     expect(await db.getNotesForPet('pet-1')).toEqual([]);
-    expect(push).toHaveBeenCalledWith(notesTab);
+    expect(replace).toHaveBeenCalledWith(notesTab);
   });
 
   it('keeps the note on cancel', async () => {
-    const { wrapper, push } = await mountView(NoteView, location, {
+    const { wrapper, push, replace } = await mountView(NoteView, location, {
       pets: [makePet()],
       notes: [makeNote()],
     });
@@ -75,12 +85,13 @@ describe('NoteView', () => {
     expect(useNotesStore().getNotesForPet('pet-1')).toHaveLength(1);
     expect(await db.getNotesForPet('pet-1')).toHaveLength(1);
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('reports a failed delete and keeps the note', async () => {
     vi.spyOn(db, 'deleteNote').mockRejectedValueOnce(new Error('quota'));
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { wrapper, push } = await mountView(NoteView, location, {
+    const { wrapper, push, replace } = await mountView(NoteView, location, {
       pets: [makePet()],
       notes: [makeNote()],
     });
@@ -95,12 +106,13 @@ describe('NoteView', () => {
     expect(wrapper.find('.note-body').exists()).toBe(true);
     expect(error).toHaveBeenCalledWith('Deleting note failed', expect.any(Error));
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('deletes on a retry after a failed delete', async () => {
     vi.spyOn(db, 'deleteNote').mockRejectedValueOnce(new Error('quota'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { wrapper, push } = await mountView(NoteView, location, {
+    const { wrapper, replace } = await mountView(NoteView, location, {
       pets: [makePet()],
       notes: [makeNote()],
     });
@@ -110,7 +122,7 @@ describe('NoteView', () => {
       await settle();
     }
     expect(await db.getNotesForPet('pet-1')).toEqual([]);
-    expect(push).toHaveBeenCalledWith(notesTab);
+    expect(replace).toHaveBeenCalledWith(notesTab);
   });
 
   it('deletes once when confirm is clicked twice', async () => {
@@ -162,7 +174,7 @@ describe('NoteView', () => {
     const pending = deferred<void>();
     vi.spyOn(db, 'deleteNote').mockReturnValueOnce(pending.promise);
     const saveNote = vi.spyOn(db, 'saveNote');
-    const { wrapper, push } = await mountView(NoteView, location, {
+    const { wrapper, replace } = await mountView(NoteView, location, {
       pets: [makePet()],
       notes: [makeNote()],
     });
@@ -172,14 +184,14 @@ describe('NoteView', () => {
     pending.resolve();
     await settle();
     expect(saveNote).not.toHaveBeenCalled();
-    expect(push).toHaveBeenCalledWith(notesTab);
+    expect(replace).toHaveBeenCalledWith(notesTab);
   });
 
   it('ignores delete while a pin is in flight', async () => {
     const pending = deferred<void>();
     vi.spyOn(db, 'saveNote').mockReturnValueOnce(pending.promise);
     const deleteNote = vi.spyOn(db, 'deleteNote');
-    const { wrapper, push } = await mountView(NoteView, location, {
+    const { wrapper, push, replace } = await mountView(NoteView, location, {
       pets: [makePet()],
       notes: [makeNote()],
     });
@@ -190,6 +202,7 @@ describe('NoteView', () => {
     await settle();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
     expect(wrapper.find('[aria-label="Unpin note"]').exists()).toBe(true);
   });
 

@@ -55,7 +55,7 @@ onMounted(async () => {
   // The user may have left while the reading loaded; don't pull them away from another page.
   if (unmounted) return;
   if (!reading.value) {
-    router.push({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
+    router.replace({ name: 'pet', params: { id: petId }, query: { tab: 'readings' } });
     return;
   }
   editRate.value = reading.value.rate;

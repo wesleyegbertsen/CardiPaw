@@ -4,6 +4,7 @@ import { RouterView, RouterLink, useRoute } from 'vue-router';
 import { usePetsStore } from './stores/pets';
 import { useThemeStore } from './stores/theme';
 import UpdateBanner from './components/UpdateBanner.vue';
+import UpdateNotice from './components/UpdateNotice.vue';
 
 const petsStore = usePetsStore();
 const themeStore = useThemeStore();
@@ -22,6 +23,7 @@ onMounted(() => {
 <template>
   <div class="app-layout">
     <UpdateBanner />
+    <UpdateNotice v-if="!isShareView" />
     <main class="app-main" :class="{ 'no-nav': isShareView }">
       <RouterView :key="route.path" />
     </main>
@@ -49,24 +51,26 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
 }
 
 .app-main {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: var(--nav-height);
+  padding-bottom: var(--nav-offset);
 }
 
 .app-main.no-nav {
-  padding-bottom: 0;
+  padding-bottom: var(--safe-bottom);
 }
 
 .bottom-nav {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
-  height: var(--nav-height);
+  left: var(--safe-left);
+  right: var(--safe-right);
+  height: var(--nav-offset);
+  padding-bottom: var(--safe-bottom);
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
   display: flex;

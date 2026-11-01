@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h, nextTick, ref, type Ref } from 'vue';
 import { mount } from '@vue/test-utils';
-import { useModal } from './useModal';
+import { closeTopModal, useDismissable, useModal } from './useModal';
 
 // opener() adds buttons outside any wrapper; remove them even when a test fails early.
 afterEach(() => document.body.replaceChildren());
@@ -148,5 +148,57 @@ describe('useModal', () => {
     busy = false;
     press('Escape');
     expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe('closeTopModal', () => {
+  it('is false when no dialog is open', () => {
+    expect(closeTopModal()).toBe(false);
+  });
+
+  it('closes only the innermost dialog', () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    mount(makeDialog(outer), { attachTo: document.body });
+    mount(makeDialog(inner), { attachTo: document.body });
+    expect(closeTopModal()).toBe(true);
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
+  });
+
+  it('respects canClose, like Escape', () => {
+    const onClose = vi.fn();
+    const Dialog = defineComponent({
+      setup() {
+        const dialogRef = ref<HTMLElement | null>(null);
+        useModal(dialogRef, { onClose, canClose: () => false });
+        return () => h('div', { ref: dialogRef, tabindex: -1 });
+      },
+    });
+    mount(Dialog, { attachTo: document.body });
+    expect(closeTopModal()).toBe(true);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('forgets a dialog once it closes', () => {
+    const w = mount(makeDialog(vi.fn()), { attachTo: document.body });
+    w.unmount();
+    expect(closeTopModal()).toBe(false);
+  });
+
+  it('closes an open popup, and forgets it when it unmounts while open', () => {
+    const close = vi.fn();
+    const open = ref(true);
+    const Popup = defineComponent({
+      setup() {
+        useDismissable(open, close);
+        return () => h('div');
+      },
+    });
+    const w = mount(Popup);
+    expect(closeTopModal()).toBe(true);
+    expect(close).toHaveBeenCalledTimes(1);
+    w.unmount();
+    expect(closeTopModal()).toBe(false);
   });
 });

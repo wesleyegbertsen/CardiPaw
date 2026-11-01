@@ -12,11 +12,14 @@ process.env.TZ = 'UTC';
 // src/utils/html.test.ts overrides its environment with a `// @vitest-environment jsdom`
 // docblock: DOMPurify needs jsdom.
 const NODE_TESTS = [
+  'scripts/**/*.test.mjs',
   'src/composables/{useAudioBeep,useHaptics}.test.ts',
   'src/i18n/locales.test.ts',
-  'src/services/db.test.ts',
+  'src/native/csp.test.ts',
+  'src/services/{db,githubRelease}.test.ts',
   'src/stores/stores.test.ts',
-  'src/utils/{age,chartWindow,date,measurement,pdfText,petInitial,rateStatus,shareCodec,trend}.test.ts',
+  'src/test/androidResources.test.ts',
+  'src/utils/{age,chartWindow,date,measurement,pdfText,petInitial,rateStatus,reminderFormat,reminderSchedule,shareCodec,trend,version}.test.ts',
 ];
 
 // Kept separate from vite.config.ts so tests don't load the PWA plugin.

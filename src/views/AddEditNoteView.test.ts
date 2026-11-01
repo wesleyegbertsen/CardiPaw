@@ -63,6 +63,28 @@ describe('AddEditNoteView', () => {
       expect(replace).toHaveBeenCalledWith(notesTab);
     });
 
+    it('steps back to the notes tab when leaving, when it is the previous screen', async () => {
+      const { wrapper, router, push, replace } = await mountNote('/pets/pet-1/notes/add');
+      router.options.history.state.back = '/pets/pet-1?tab=notes';
+      const back = vi.spyOn(router, 'back').mockImplementation(() => {});
+      await wrapper.get('.back-btn').trigger('click');
+      expect(back).toHaveBeenCalledTimes(1);
+      expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('steps back to the notes tab after saving, when it is the previous screen', async () => {
+      const { wrapper, router, push, replace } = await mountNote('/pets/pet-1/notes/add');
+      router.options.history.state.back = '/pets/pet-1?tab=notes';
+      const back = vi.spyOn(router, 'back').mockImplementation(() => {});
+      await wrapper.get('#note-title').setValue('Vet');
+      await wrapper.get('form').trigger('submit');
+      await settle();
+      expect(back).toHaveBeenCalledTimes(1);
+      expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
+    });
+
     it('reports a failed save and stays on the form', async () => {
       vi.spyOn(db, 'saveNote').mockRejectedValueOnce(new Error('quota'));
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -165,18 +187,19 @@ describe('AddEditNoteView', () => {
     });
 
     it('goes to the notes tab for an unknown note', async () => {
-      const { push } = await mountNote(location);
-      expect(push).toHaveBeenCalledWith(notesTab);
+      const { replace } = await mountNote(location);
+      expect(replace).toHaveBeenCalledWith(notesTab);
     });
 
     it('does not go to the notes tab after the user already left', async () => {
       const load = deferred<Note[]>();
       vi.spyOn(db, 'getNotesForPet').mockReturnValueOnce(load.promise);
-      const { push, wrapper } = await mountNote(location);
+      const { push, replace, wrapper } = await mountNote(location);
       wrapper.unmount();
       load.resolve([]);
       await settle();
       expect(push).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
     });
 
     it('never adds a note when saved before the note has loaded', async () => {

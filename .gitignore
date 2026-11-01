@@ -140,3 +140,9 @@ vite.config.ts.timestamp-*
 
 # Generated seed data (run `npm run seed` to regenerate)
 public/seed-data.json
+
+# Native (Capacitor) web build and Android signing keys
+dist-native
+*.jks
+*.keystore
+keystore.properties

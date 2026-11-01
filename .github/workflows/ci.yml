@@ -32,3 +32,109 @@ jobs:
         with:
           context: .
           push: false
+
+  # Builds the debug APK and smoke-tests release signing. The name is a required status check
+  # in the default branch ruleset: rename both together, or every PR waits for a missing check.
+  android:
+    name: Android build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Capacitor 8 needs JDK 21; the Android SDK preinstalled on the runner is used as is.
+      - name: Setup Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      # android/gradle/wrapper/gradle-wrapper.jar is a committed binary that runs on every build.
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: Build the app's web files and copy them into android/
+        run: npm run build:android
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      # package.json says 0.0.0 outside releases: versionCode is floored at 1 (Android rejects 0).
+      - name: Check version
+        run: |
+          node -e "
+            const [m] = require('./android/app/build/outputs/apk/debug/output-metadata.json').elements;
+            console.log(m);
+            if (m.versionCode !== 1 || m.versionName !== '0.0.0') process.exit(1);
+          "
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: cardipaw-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      # Release smoke test: the version check, signing and verification that the release
+      # runs (android-release.yml), here with a throwaway key so every PR proves them.
+      - name: Stamp a test release version
+        run: npm run set-version -- 1.2.3
+
+      # Unsigned: Gradle never sees a key, scripts/android-apk.mjs signs with apksigner.
+      - name: Build unsigned release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      # The release's sign job has only scripts/ and no node_modules. Running a copy outside
+      # the repo fails here too if the script ever imports an npm package or a file elsewhere.
+      - name: Copy scripts/ out of the repo
+        run: cp -r scripts "$RUNNER_TEMP/apk-scripts"
+
+      - name: Check release version
+        run: node "$RUNNER_TEMP/apk-scripts/android-apk.mjs" check-version android/app/build/outputs/apk/release/output-metadata.json 1.2.3
+
+      - name: Sign with a throwaway key and verify
+        shell: bash
+        run: |
+          script="$RUNNER_TEMP/apk-scripts/android-apk.mjs"
+          ks="$RUNNER_TEMP/throwaway.p12"
+          apk="$RUNNER_TEMP/cardipaw-1.2.3.apk"
+          export ANDROID_KEY_ALIAS=smoke
+          ANDROID_KEYSTORE_PASSWORD="$(openssl rand -hex 16)"
+          export ANDROID_KEYSTORE_PASSWORD
+          keytool -genkeypair -keystore "$ks" -storetype PKCS12 -alias smoke -keyalg RSA \
+            -keysize 2048 -validity 1 -dname CN=cardipaw-ci-smoke \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" -noprompt
+          ANDROID_KEYSTORE_BASE64="$(base64 -w0 "$ks")"
+          export ANDROID_KEYSTORE_BASE64
+          # keytool's "AB:CD:…" form, as the maintainer copies it into ANDROID_CERT_SHA256.
+          ANDROID_CERT_SHA256="$(keytool -list -v -keystore "$ks" -alias smoke \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" | sed -n 's/^[[:space:]]*SHA256: //p')"
+          export ANDROID_CERT_SHA256
+
+          node "$script" sign \
+            android/app/build/outputs/apk/release/app-release-unsigned.apk "$apk"
+          # The release reads the verified fingerprint from the step output, normalized.
+          GITHUB_OUTPUT="$RUNNER_TEMP/verify-output" node "$script" verify "$apk"
+          expected="$(tr -d ':[:space:]' <<< "$ANDROID_CERT_SHA256" | tr 'A-F' 'a-f')"
+          grep -Fx "cert-sha256=$expected" "$RUNNER_TEMP/verify-output"
+
+          # Fail closed: a different certificate must be rejected, for that reason.
+          if out="$(ANDROID_CERT_SHA256="$(printf '%064d' 0)" node "$script" verify "$apk" 2>&1)"; then
+            echo "::error::verify accepted the wrong signing certificate"
+            exit 1
+          fi
+          grep -F "not ANDROID_CERT_SHA256 ($(printf '%064d' 0))" <<< "$out"

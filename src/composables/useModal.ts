@@ -26,6 +26,44 @@ const TABBABLE = [
 
 // Open dialogs, innermost last: only the top one handles keys.
 const stack: symbol[] = [];
+// How each open dialog asks to close (Escape's rule), for the Android back button.
+const closers = new Map<symbol, () => void>();
+
+/** Android back button: asks the innermost dialog to close. False when no dialog is open. */
+export function closeTopModal(): boolean {
+  const id = stack[stack.length - 1];
+  if (!id) return false;
+  closers.get(id)?.();
+  return true;
+}
+
+/**
+ * For a popup that isn't a modal, such as a disclosure dropdown: while `open`, the Android
+ * back button closes it like a dialog. Its keys and focus stay the popup's own business.
+ */
+export function useDismissable(open: Ref<boolean>, close: () => void) {
+  const id = Symbol('dismissable');
+
+  function remove() {
+    const i = stack.indexOf(id);
+    if (i >= 0) stack.splice(i, 1);
+    closers.delete(id);
+  }
+
+  watch(
+    open,
+    (isOpen) => {
+      if (!isOpen) {
+        remove();
+      } else if (!closers.has(id)) {
+        stack.push(id);
+        closers.set(id, close);
+      }
+    },
+    { immediate: true },
+  );
+  onBeforeUnmount(remove);
+}
 
 function tabbables(root: HTMLElement): HTMLElement[] {
   return [...root.querySelectorAll<HTMLElement>(TABBABLE)].filter(
@@ -44,6 +82,12 @@ export function useModal(dialogRef: Ref<HTMLElement | null>, options: UseModalOp
   let active = false;
   let returnFocus: HTMLElement | null = null;
 
+  function requestClose(): boolean {
+    if (options.canClose && !options.canClose()) return false;
+    options.onClose();
+    return true;
+  }
+
   function focusInitial() {
     const dialog = dialogRef.value;
     if (!dialog) return;
@@ -59,10 +103,9 @@ export function useModal(dialogRef: Ref<HTMLElement | null>, options: UseModalOp
     if (!dialog) return;
 
     if (e.key === 'Escape') {
-      if (options.canClose && !options.canClose()) return;
+      if (!requestClose()) return;
       e.preventDefault();
       e.stopPropagation();
-      options.onClose();
       return;
     }
 
@@ -92,6 +135,7 @@ export function useModal(dialogRef: Ref<HTMLElement | null>, options: UseModalOp
     const current = document.activeElement;
     returnFocus = current instanceof HTMLElement && current !== document.body ? current : null;
     stack.push(id);
+    closers.set(id, requestClose);
     window.addEventListener('keydown', onKeydown);
     focusInitial();
   }
@@ -102,6 +146,7 @@ export function useModal(dialogRef: Ref<HTMLElement | null>, options: UseModalOp
     window.removeEventListener('keydown', onKeydown);
     const i = stack.indexOf(id);
     if (i >= 0) stack.splice(i, 1);
+    closers.delete(id);
     const target = returnFocus;
     returnFocus = null;
     if (target?.isConnected) target.focus();

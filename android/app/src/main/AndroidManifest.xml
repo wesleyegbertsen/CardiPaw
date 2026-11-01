@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+
+        <!-- The WebView only shows the app's own https://localhost pages (Capacitor opens other
+             hosts in the browser), so Safe Browsing has nothing to check: keep it from contacting
+             Google. Also opt out of WebView's diagnostic uploads to Google. -->
+        <meta-data android:name="android.webkit.WebView.EnableSafeBrowsing" android:value="false" />
+        <meta-data android:name="android.webkit.WebView.MetricsOptOut" android:value="true" />
+    </application>
+
+    <!-- Permissions -->
+
+    <!-- Reminders are inexact (isExactNotification: false in src/native/reminders.ts), so the
+         exact alarm permission that @capacitor/local-notifications declares is left out. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
+
+    <!-- INTERNET is only for the opt-in update check (src/composables/useUpdateCheck.ts, off by
+         default): about one request a day to api.github.com. Android grants it at install time
+         to the whole app, not per feature; the opt-in only decides whether CardiPaw's own code
+         makes the request. The app's Content-Security-Policy (src/native/csp.ts) limits what the
+         page can fetch to the app itself and the one GitHub release URL the check asks; native
+         plugin calls, such as the built-in CapacitorHttp, are outside the CSP. The app is still served in-process
+         (WebViewLocalServer), so it works offline. Never add REQUEST_INSTALL_PACKAGES: the user
+         installs updates. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

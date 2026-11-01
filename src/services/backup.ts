@@ -4,6 +4,8 @@ import { localDayKey } from '../utils/date';
 import { isMeasurementSeconds } from '../utils/measurement';
 import { usePetsStore } from '../stores/pets';
 import { resetPetData } from '../stores/petData';
+import { isNative } from '../utils/platform';
+import { shareFile, type ShareFileOptions, type ShareFileOutcome } from './nativeFile';
 
 export type BackupErrorCode = 'unreadable' | 'invalid';
 
@@ -201,16 +203,24 @@ export function exportBackup(): Promise<ExportPayload> {
   return db.exportAllData();
 }
 
-/** Exports all data and triggers a JSON file download in the browser. */
-export async function downloadBackup(): Promise<void> {
+/**
+ * Exports all data as a JSON file: a download on the website, the share sheet in the app
+ * (`share` names it there). 'cancelled' means the share sheet was closed without saving.
+ */
+export async function downloadBackup(
+  share: Pick<ShareFileOptions, 'subject' | 'dialogTitle'>,
+): Promise<'saved' | ShareFileOutcome> {
   const json = JSON.stringify(await exportBackup());
+  const name = `cardipaw-export-${localDayKey(new Date())}.json`;
+  if (isNative()) return shareFile({ name, data: json, encoding: 'utf8', ...share });
   const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = `cardipaw-export-${localDayKey(new Date())}.json`;
+  a.download = name;
   a.click();
   // Revoking synchronously can cancel the download in some browsers.
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  return 'saved';
 }
 
 /**
