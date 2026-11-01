@@ -35,11 +35,23 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- The WebView only shows the app's own https://localhost pages (Capacitor opens other
+             hosts in the browser), so Safe Browsing has nothing to check: keep it from contacting
+             Google. Also opt out of WebView's diagnostic uploads to Google. -->
+        <meta-data android:name="android.webkit.WebView.EnableSafeBrowsing" android:value="false" />
+        <meta-data android:name="android.webkit.WebView.MetricsOptOut" android:value="true" />
     </application>
 
     <!-- Permissions -->
 
-    <!-- No INTERNET: Capacitor serves https://localhost from the bundled assets in-process
-         (WebViewLocalServer), so the app never needs the network and can't send data off the
-         device. Only add it back for live reload (server.url) or a feature that really needs it. -->
+    <!-- INTERNET is only for the opt-in update check (src/composables/useUpdateCheck.ts, off by
+         default): about one request a day to api.github.com. Android grants it at install time
+         to the whole app, not per feature; the opt-in only decides whether CardiPaw's own code
+         makes the request. The app's Content-Security-Policy (src/native/csp.ts) limits what the
+         page can fetch to the app itself and the one GitHub release URL the check asks; native
+         plugin calls, such as the built-in CapacitorHttp, are outside the CSP. The app is still served in-process
+         (WebViewLocalServer), so it works offline. Never add REQUEST_INSTALL_PACKAGES: the user
+         installs updates. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 </manifest>

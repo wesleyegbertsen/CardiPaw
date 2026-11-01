@@ -48,7 +48,7 @@ The RRR is measured by watching your pet's chest while they are resting or sleep
 
 ### Multiple Pets
 
-Add as many pets as you need, each with a name, species, photo, and date of birth. All data is stored locally on your device and nothing is sent to any server.
+Add as many pets as you need, each with a name, species, photo, and date of birth. All data is stored locally on your device, and your pet data is never sent to any server.
 
 ### Guided Tracking
 
@@ -244,7 +244,13 @@ Every [release](https://github.com/wesleyegbertsen/CardiPaw/releases) includes t
 1. Download the APK on your phone from the latest release and open it.
 2. Allow your browser or file manager to install unknown apps when Android asks. Google Play Protect may warn about an app it doesn't know; that is expected for apps installed outside Play.
 
-**Updating:** install the APK of a newer release over the installed app. Your pets and readings stay. The app does not update itself, so check the releases page now and then.
+**Updating:** install the APK of a newer release over the installed app. Your pets and readings stay. The app does not update itself. To find out about new releases:
+
+- **Settings → Updates** shows the installed version and opens the latest release on GitHub in your browser. This needs no network access in the app.
+- **Check automatically** (in the same place, off by default) asks `api.github.com` about once a day whether a newer release exists and shows a notice when there is one. GitHub then sees your IP address and the information the app's browser engine sends with every request, such as its user agent (which includes the Android version and device model) and language. No pet data is sent.
+- Or let something outside the app watch for you: [Obtainium](https://github.com/ImranR98/Obtainium) (add `https://github.com/wesleyegbertsen/CardiPaw`; it can also install the APK), or on GitHub choose **Watch → Custom → Releases** on this repository to get an email per release.
+
+Whichever you use, check the signing certificate of a new APK (see **Checking an APK** below).
 
 - Android refuses to install an older APK over a newer one. **Don't uninstall to get around that:** Android Auto Backup is disabled, so uninstalling deletes all of the app's data. If you really need to go back, [export](#data-export--import) first.
 - Export regularly anyway: the export file is the only backup of the app's data.
@@ -320,6 +326,7 @@ CI builds a debug APK on every PR and attaches it to the run as the `cardipaw-de
 - **The app's data is separate from cardipaw.com.** The app serves itself from `https://localhost`, so its IndexedDB and settings belong to that origin. To move data between the website and the app, use Export on one and Import on the other.
 - **Never change `androidScheme` or `hostname` in `capacitor.config.ts`.** They define that origin: after a change, the app starts with no data for every user who installed an earlier version.
 - **Android Auto Backup is disabled** (`allowBackup="false"` and backup rules that exclude everything), so nothing is copied to Google's backup or to a new phone. The in-app export is the only backup: export regularly and keep the file somewhere safe.
+- **The app has the `INTERNET` permission, only for the opt-in update check.** Android grants it at install time to the whole app; the setting only decides whether CardiPaw's own code makes the request. The page's Content-Security-Policy is nginx.conf's with the one URL the check asks, `https://api.github.com/repos/wesleyegbertsen/CardiPaw/releases/latest`, added to `connect-src` ([`src/native/csp.ts`](src/native/csp.ts)), so the page itself can't fetch anything else, not even other GitHub API URLs. Native plugins aren't covered by the CSP: Capacitor's built-in CapacitorHttp and `@capacitor/filesystem`'s `downloadFile` could still make requests, so dependency hygiene matters as much as before. WebView Safe Browsing and WebView metrics are turned off in the manifest. Local and CI debug builds are version 0.0.0 and never check; to try the check, stamp a version first (`npm run set-version -- 0.1.0`, then revert `package.json` and `package-lock.json`).
 - Share links still point at `https://cardipaw.com`, so the people you send them to open them in their browser.
 - Google Play publishing is not set up yet ([#85](https://github.com/wesleyegbertsen/CardiPaw/issues/85)).
 - A debug APK is signed with a different key than the release APKs, so Android won't install one over the other. See [Android](#android) for moving your data.
