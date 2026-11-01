@@ -537,6 +537,11 @@ onUnmounted(() => {
   align-self: stretch;
   display: flex;
   justify-content: center;
+  /* A margin of safety around the small pills: a tap just beside or between
+     them must not start a measurement. The negative margin keeps the layout
+     unchanged; the padding reaches into the gaps around the row. */
+  padding: 6px 16px;
+  margin: -6px 0;
 }
 .length-toggle {
   display: inline-flex;
