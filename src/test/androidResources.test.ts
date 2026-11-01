@@ -167,10 +167,52 @@ describe('Android resources', () => {
     );
   });
 
+  it('leaves out the exact alarm permission that the notifications plugin declares', () => {
+    // Reminders are inexact, so the merged manifest must not ask for SCHEDULE_EXACT_ALARM.
+    const manifest = xmlWithoutComments(MANIFEST);
+    expect(manifest).toMatch(
+      /<manifest\b[^>]*\bxmlns:tools="http:\/\/schemas\.android\.com\/tools"/,
+    );
+    expect(manifest).toContain(
+      '<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />',
+    );
+  });
+
+  it('has the notification icon that capacitor.config.ts names', () => {
+    // The plugin looks smallIcon up as a drawable at runtime: a typo shows no icon at all.
+    const config = readFileSync(join(ROOT, 'capacitor.config.ts'), 'utf8');
+    const smallIcon = config.match(/\bsmallIcon:\s*'([^']+)'/)?.[1];
+    expect(smallIcon).toBe('ic_stat_cardipaw');
+    expect(files.filter((f) => f.startsWith('drawable/'))).toContain(`drawable/${smallIcon}.xml`);
+  });
+
+  it('has the notification icon only where the generator writes it', () => {
+    expect(files.filter((f) => /^(drawable|mipmap)[^/]*\/ic_stat_cardipaw\./.test(f))).toEqual([
+      'drawable/ic_stat_cardipaw.xml',
+    ]);
+  });
+
+  it('registers the notification settings plugin under the name the web code calls', () => {
+    const java = join(ROOT, 'android/app/src/main/java/com/cardipaw/app');
+    const plugin = readFileSync(join(java, 'NotificationSettingsPlugin.java'), 'utf8');
+    const ts = readFileSync(join(ROOT, 'src/native/notificationSettings.ts'), 'utf8');
+    const javaName = plugin.match(/@CapacitorPlugin\(name = "([^"]+)"\)/)?.[1];
+    expect(javaName).toBe('NotificationSettings');
+    expect(ts.match(/registerPlugin<\w+>\('([^']+)'\)/)?.[1]).toBe(javaName);
+    // A plugin registered after super.onCreate isn't in the bridge: every call rejects.
+    const activity = readFileSync(join(java, 'MainActivity.java'), 'utf8');
+    const register = activity.indexOf('registerPlugin(NotificationSettingsPlugin.class);');
+    expect(register).toBeGreaterThan(-1);
+    expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
+  });
+
   it('declares INTERNET (the opt-in update check) and never REQUEST_INSTALL_PACKAGES', () => {
+    // A tools:node="remove" entry takes a plugin's permission out; it declares nothing.
     const permissions = [
-      ...xmlWithoutComments(MANIFEST).matchAll(/<uses-permission\s+android:name="([^"]+)"/g),
-    ].map(([, name]) => name);
+      ...xmlWithoutComments(MANIFEST).matchAll(/<uses-permission\s+android:name="([^"]+)"([^>]*)>/g),
+    ]
+      .filter(([, , rest]) => !rest.includes('tools:node="remove"'))
+      .map(([, name]) => name);
     expect(permissions).toEqual(['android.permission.INTERNET']);
   });
 

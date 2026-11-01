@@ -430,6 +430,7 @@ function cancelImport() {
       <p v-html="$t('settings.privacy.p3')" />
       <p v-html="$t('settings.privacy.p4')" />
       <p v-if="native" v-html="$t('settings.privacy.p5')" />
+      <p v-if="native" v-html="$t('settings.privacy.p6')" />
     </InfoModal>
 
     <InfoModal

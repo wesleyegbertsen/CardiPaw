@@ -15,6 +15,9 @@ const config: CapacitorConfig = {
     // The page extends under the system bars (viewport-fit=cover, added in capacitor mode
     // by vite.config.ts) and global.css pads it with env(safe-area-inset-*).
     SystemBars: { insetsHandling: 'native', initialViewportFitValueHint: 'cover' },
+    // ic_stat_cardipaw comes from scripts/generate-android-assets.mjs; the colour is
+    // global.css --color-primary.
+    LocalNotifications: { smallIcon: 'ic_stat_cardipaw', iconColor: '#e05c7a' },
   },
 };
 

@@ -317,10 +317,21 @@ describe('SettingsView', () => {
     await privacyButton(wrapper).trigger('click');
     const dialog = document.body.querySelector('[role="dialog"]');
     expect(dialog?.querySelector('.dialog-title')?.textContent).toBe('Privacy Policy');
+    // Reminders exist only in the app.
+    expect(dialog?.textContent).not.toContain('Reminders stay on your phone.');
 
     clickInBody('.btn-ok');
     await flushPromises();
     expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('explains reminders in the privacy information in the app', async () => {
+    mockNative();
+    const { wrapper } = await mountView(SettingsView, '/settings');
+    await privacyButton(wrapper).trigger('click');
+    expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain(
+      'Reminders stay on your phone.',
+    );
   });
 
   describe('version', () => {

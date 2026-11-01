@@ -15,6 +15,7 @@
   - [PDF Report](#pdf-report)
   - [Share](#share)
   - [Pet Notes](#pet-notes)
+  - [Reminders](#reminders)
   - [Data Export & Import](#data-export--import)
   - [Languages](#languages)
 - [Contributing a Translation](#contributing-a-translation)
@@ -98,6 +99,10 @@ Create a shareable link for any pet directly from the detail view — for exampl
 ### Pet Notes
 
 Each pet has a general-purpose **Notes** tab where you can write anything that does not fit neatly into a reading: medication changes, vet visit summaries, behavioural observations, or anything else you want to keep alongside the RRR data. Notes are stored locally with the rest of your pet's data and are included in the data export.
+
+### Reminders
+
+In the [Android app](#android), the bell on a pet's page sets up a reminder to measure that pet at a time and on the weekdays you choose. A day that already has a reading for the pet gets no reminder.
 
 ### Data Export & Import
 
@@ -258,6 +263,15 @@ Whichever you use, check the signing certificate of a new APK (see **Checking an
 **Checking an APK:** every release's notes list the SHA-256 of the certificate the APK is signed with, and it is the same for every release. You can compare it with the output of `apksigner verify --print-certs cardipaw-X.Y.Z.apk` (Android SDK build-tools), or with an app such as AppVerifier. apksigner prints it in the same form as the release notes (lower-case hex without colons); other tools may show `AB:CD:…`, and case and colons don't matter. If it ever differs, don't install that APK.
 
 **Coming from a CI debug build:** those APKs are signed with a different key, so Android won't install a release over them. Once: export your data in the debug app, uninstall it, install the release APK and import the file.
+
+**Reminders:** tap the bell on a pet's page to be reminded to measure that pet, at a time and on the weekdays you pick. Reminders are local notifications scheduled on your phone; nothing about them is sent anywhere. Their settings stay on the phone and aren't included in exports, so after importing your data on a new phone, turn them on again.
+
+- A calendar day that already has a reading for the pet gets no reminder. Days start at midnight: a 00:30 reminder still comes after a reading at 23:30 the evening before.
+- Reminders are scheduled 14 days ahead and topped up whenever you open the app. If you don't open CardiPaw for two weeks, they stop until you do.
+- A reminder that came due while the phone was off is skipped; the later ones still come.
+- Battery savers on some phones (Xiaomi, Samsung and others) can delay reminders or drop them.
+- On a secured lock screen, Android shows that CardiPaw has a notification but hides its text.
+- Besides CardiPaw's "Measuring reminders", Android's notification settings for the app also list a "Default" channel; it comes with the notifications plugin.
 
 ## Releases & Versioning
 

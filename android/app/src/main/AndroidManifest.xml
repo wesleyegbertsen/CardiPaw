@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="false"
@@ -44,6 +45,10 @@
     </application>
 
     <!-- Permissions -->
+
+    <!-- Reminders are inexact (isExactNotification: false in src/native/reminders.ts), so the
+         exact alarm permission that @capacitor/local-notifications declares is left out. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
 
     <!-- INTERNET is only for the opt-in update check (src/composables/useUpdateCheck.ts, off by
          default): about one request a day to api.github.com. Android grants it at install time

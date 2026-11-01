@@ -7,8 +7,11 @@ import { useReadingsStore } from './readings';
 import { useNotesStore } from './notes';
 import { makeNote, makeReading } from '../test/fixtures';
 import { mockNative } from '../test/native';
+import { loadReminderSettings, saveReminderSetting } from '../utils/reminderSettings';
 
 vi.mock('../services/nativeFile', () => ({ cleanUpExports: vi.fn(async () => {}) }));
+// mockNative() would send syncReminders to the plugin; src/stores/reminderHooks.test.ts covers the calls.
+vi.mock('../native/reminders', () => ({ syncReminders: vi.fn(async () => {}) }));
 
 const PREFS_KEY = 'cardipaw-tracker-prefs';
 const pet2Reading = makeReading({ id: 'r2', petId: 'pet-2' });
@@ -48,6 +51,17 @@ describe('petData', () => {
     expect(useReadingsStore().readingsByPet).toEqual({});
     expect(useNotesStore().notesByPet).toEqual({});
     expect(JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null')).toEqual({ 'pet-2': prefs });
+  });
+
+  it('drops a deleted pet’s reminder setting, and prunes them on reset', () => {
+    const setting = { enabled: true, time: '22:00', days: [1] };
+    for (const petId of ['pet-1', 'pet-2', 'pet-3']) saveReminderSetting(petId, setting);
+
+    forgetPetData('pet-1');
+    expect(Object.keys(loadReminderSettings())).toEqual(['pet-2', 'pet-3']);
+
+    resetPetData(['pet-3']);
+    expect(loadReminderSettings()).toEqual({ 'pet-3': { ...setting, slot: 3 } });
   });
 
   it('deletes every exported file on reset in the app', () => {

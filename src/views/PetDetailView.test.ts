@@ -8,11 +8,18 @@ import { makeNote, makePet, makeReading } from '../test/fixtures';
 import { deferred } from '../test/deferred';
 import { touchEvent } from '../test/touch';
 import { createTestI18n } from '../test/i18n';
+import { createI18n } from 'vue-i18n';
+import en from '../i18n/locales/en.json';
+import nl from '../i18n/locales/nl.json';
 import * as db from '../services/db';
 import { closeTopModal } from '../composables/useModal';
 import { useReadingsStore } from '../stores/readings';
 import { trendReadings } from '../test/trendReadings';
 import type { Pet, Reading } from '../types';
+import { mockNative } from '../test/native';
+import { saveReminderSetting } from '../utils/reminderSettings';
+import * as reminders from '../native/reminders';
+import { App } from '@capacitor/app';
 
 // Chart.js needs a canvas; the view's job is to hand the chart the right readings.
 vi.mock('../components/RRRChart.vue', async () => {
@@ -25,6 +32,16 @@ vi.mock('../components/RRRChart.vue', async () => {
     }),
   };
 });
+
+// The reminder dialog talks to the notifications plugin; the stores sync through it too.
+vi.mock('../native/reminders', () => ({
+  applyReminders: vi.fn(async () => {}),
+  reminderPermission: vi.fn(async () => 'granted'),
+  requestReminderPermission: vi.fn(async () => 'granted'),
+  openNotificationSettings: vi.fn(async () => {}),
+  syncReminders: vi.fn(async () => {}),
+}));
+vi.mock('@capacitor/app', () => ({ App: { addListener: vi.fn(async () => ({ remove: vi.fn() })) } }));
 
 const pet = makePet();
 
@@ -822,6 +839,112 @@ describe('PetDetailView', () => {
       await useReadingsStore(pinia).removeReading(readings.at(-1)!.id, 'pet-1');
       await settle();
       expect(wrapper.find('.trend-badge').exists()).toBe(false);
+    });
+  });
+
+  describe('reminders', () => {
+    afterEach(() => localStorage.clear());
+
+    it('has no reminder bell on the website', async () => {
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      expect(wrapper.find('.reminder-btn').exists()).toBe(false);
+      expect(wrapper.find('.reminder-summary').exists()).toBe(false);
+    });
+
+    it('opens the reminder dialog from the bell in the app', async () => {
+      mockNative();
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      const bell = wrapper.get('.reminder-btn');
+      expect(bell.attributes('aria-label')).toBe('Reminders for Ace: off');
+      await bell.trigger('click');
+      await flushPromises();
+      expect(document.body.querySelector('[role="dialog"] .dialog-title')?.textContent).toBe('Reminders');
+    });
+
+    it('says when reminders are on', async () => {
+      mockNative();
+      saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [1, 3, 5] });
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder: Mon, Wed, and Fri at 10:00 PM');
+      expect(wrapper.get('.reminder-btn').attributes('aria-label')).toBe('Reminders for Ace: on');
+    });
+
+    it('shows no summary for reminders that were turned off', async () => {
+      mockNative();
+      saveReminderSetting('pet-1', { enabled: false, time: '22:00', days: [1, 3, 5] });
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      expect(wrapper.find('.reminder-summary').exists()).toBe(false);
+      expect(wrapper.get('.reminder-btn').attributes('aria-label')).toBe('Reminders for Ace: off');
+    });
+
+    it('lists the days from Monday in Dutch, Sunday last', async () => {
+      mockNative();
+      saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [0, 1] });
+      const i18n = createI18n({ legacy: false, locale: 'nl', fallbackLocale: 'en', messages: { en, nl } });
+      const { wrapper } = await mountDetail('/pets/pet-1', { i18n });
+      expect(wrapper.get('.reminder-summary').text()).toBe('Herinnering: ma en zo om 22:00');
+    });
+
+    it('shows the saved reminder once the dialog closes', async () => {
+      mockNative();
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      await wrapper.get('.reminder-btn').trigger('click');
+      await flushPromises();
+      document.body.querySelector<HTMLElement>('[role="switch"]')!.click();
+      await flushPromises();
+      document.body.querySelector<HTMLElement>('.btn-save')!.click();
+      await flushPromises();
+      expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder every day at 10:00 PM');
+      expect(wrapper.get('.reminder-btn').attributes('aria-label')).toBe('Reminders for Ace: on');
+    });
+
+    it('says reminders are paused while notifications are off, and checks again on resume', async () => {
+      mockNative();
+      vi.mocked(reminders.reminderPermission).mockResolvedValue('denied');
+      saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [1, 3, 5] });
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      const bell = wrapper.get('.reminder-btn');
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminders paused: notifications are off');
+      expect(bell.attributes('aria-label')).toBe('Reminders for Ace: paused');
+      expect(bell.classes()).not.toContain('on');
+      vi.mocked(reminders.reminderPermission).mockResolvedValue('granted');
+      const [, onResume] = vi
+        .mocked(App.addListener)
+        .mock.calls.find(([event]) => (event as string) === 'resume')!;
+      (onResume as () => void)();
+      await flushPromises();
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder: Mon, Wed, and Fri at 10:00 PM');
+      expect(bell.attributes('aria-label')).toBe('Reminders for Ace: on');
+      expect(bell.classes()).toContain('on');
+    });
+
+    it('no longer says paused once the dialog got the permission', async () => {
+      mockNative();
+      vi.mocked(reminders.reminderPermission).mockResolvedValue('rationale');
+      saveReminderSetting('pet-1', { enabled: true, time: '22:00', days: [1, 3, 5] });
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminders paused: notifications are off');
+      await wrapper.get('.reminder-btn').trigger('click');
+      await flushPromises();
+      // Granted from the dialog's save.
+      vi.mocked(reminders.reminderPermission).mockResolvedValue('granted');
+      document.body.querySelector<HTMLElement>('.btn-save')!.click();
+      await flushPromises();
+      expect(reminders.requestReminderPermission).toHaveBeenCalledOnce();
+      expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+      expect(wrapper.get('.reminder-summary').text()).toBe('Reminder: Mon, Wed, and Fri at 10:00 PM');
+    });
+
+    it('stops checking on resume once the page is gone', async () => {
+      mockNative();
+      const remove = vi.fn();
+      vi.mocked(App.addListener).mockResolvedValueOnce({ remove });
+      const { wrapper } = await mountDetail('/pets/pet-1');
+      expect(App.addListener).toHaveBeenCalledWith('resume', expect.any(Function));
+      wrapper.unmount();
+      await flushPromises();
+      expect(remove).toHaveBeenCalledOnce();
     });
   });
 });

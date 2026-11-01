@@ -228,7 +228,8 @@
       "p2": "<strong>No tracking or analytics.</strong> CardiPaw does not use cookies, analytics services, advertising trackers, or any third-party data collection. There are no user accounts and no login.",
       "p3": "<strong>You are in control.</strong> You can export your data at any time from the Settings page, and deleting the app or clearing your browser's site data will permanently remove everything.",
       "p4": "<strong>No data sharing.</strong> Because your data never leaves your device, it is never shared with or accessible by anyone else.",
-      "p5": "<strong>Update check (Android app).</strong> If you turn on \"Check automatically\" in Settings under Updates, the app asks api.github.com about once a day whether a newer version exists. GitHub then sees your IP address and the information the app's browser engine sends with every request, such as its user agent (which includes the Android version and device model) and language. No pet data is sent. It stays off unless you turn it on."
+      "p5": "<strong>Update check (Android app).</strong> If you turn on \"Check automatically\" in Settings under Updates, the app asks api.github.com about once a day whether a newer version exists. GitHub then sees your IP address and the information the app's browser engine sends with every request, such as its user agent (which includes the Android version and device model) and language. No pet data is sent. It stays off unless you turn it on.",
+      "p6": "<strong>Reminders stay on your phone.</strong> In the Android app, reminders are scheduled on this phone; nothing about them is sent anywhere. Their settings stay on this device and aren't included in exports."
     },
     "terms": {
       "p1": "<strong>Not medical advice.</strong> CardiPaw is an informational tool to help you log and track your pet's resting respiratory rate. It is not a substitute for professional veterinary diagnosis, advice, or treatment.",
@@ -363,5 +364,30 @@
     "available": "CardiPaw {version} is available.",
     "view": "View release",
     "dismiss": "Dismiss"
+  },
+  "reminders": {
+    "channelName": "Measuring reminders",
+    "channelDescription": "Reminders to measure your pets' resting breathing rate",
+    "notificationTitle": "Time to measure {name}'s breathing rate",
+    "notificationBody": "Count the breaths while your pet is resting or asleep.",
+    "title": "Reminders",
+    "bellOn": "Reminders for {name}: on",
+    "bellOff": "Reminders for {name}: off",
+    "bellPaused": "Reminders for {name}: paused",
+    "enable": "Remind me to measure",
+    "time": "Time",
+    "days": "Days",
+    "noDays": "Choose at least one day.",
+    "noTime": "Choose a time.",
+    "next": "Next reminder: {when}",
+    "skipHint": "There's no reminder on a day when {name} already has a reading. Days start at midnight.",
+    "localHint": "Reminders are scheduled on this phone; nothing about them is sent anywhere. Battery savers on some phones can delay them.",
+    "denied": "Notifications for CardiPaw are turned off, so reminders can't be shown.",
+    "openSettings": "Open notification settings",
+    "summaryDaily": "Reminder every day at {time}",
+    "summaryDays": "Reminder: {days} at {time}",
+    "summaryBlocked": "Reminders paused: notifications are off",
+    "applyError": "Your settings were saved, but the reminders couldn't be scheduled. Please try again.",
+    "save": "Save"
   }
 }

@@ -60,7 +60,8 @@ defineProps<{ labelledby: string; describedby?: string; disabled?: boolean }>();
   background: #fff;
 }
 
-.slide-toggle:disabled {
+.slide-toggle:disabled,
+.slide-toggle[aria-disabled='true'] {
   opacity: 0.4;
   cursor: default;
 }
