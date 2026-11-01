@@ -13,6 +13,7 @@ import OnboardingModal from '../components/OnboardingModal.vue';
 import RestStateToggle from '../components/RestStateToggle.vue';
 import SlideToggle from '../components/SlideToggle.vue';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
+import { MEASUREMENT_DURATIONS, breathsPerMinute, type MeasurementSeconds } from '../utils/measurement';
 
 const route = useRoute();
 const router = useRouter();
@@ -23,7 +24,7 @@ const { isSupported: hapticsSupported, vibrateTap, vibrateDone } = useHaptics();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
-const { soundEnabled, vibrationEnabled } = useTrackerPrefs(petId);
+const { soundEnabled, vibrationEnabled, durationSeconds } = useTrackerPrefs(petId);
 const { hasSeenOnboarding, markSeen } = useOnboarding();
 const showOnboarding = ref(!hasSeenOnboarding.value);
 
@@ -41,8 +42,9 @@ type Phase = 'idle' | 'running' | 'done';
 type Mode = 'guided' | 'manual';
 const phase = ref<Phase>('idle');
 const mode = ref<Mode>('guided');
-const MEASUREMENT_SECONDS = 30;
-const timeLeft = ref(MEASUREMENT_SECONDS);
+// Length of the current measurement: the pet's chosen length, fixed when it starts.
+const runSeconds = ref<MeasurementSeconds>(durationSeconds.value);
+const timeLeft = ref<number>(durationSeconds.value);
 // Wall-clock end of the measurement. Timers are throttled in background tabs, on a
 // locked screen or in battery saver, so the count is timed by the clock, not by ticks.
 let endsAt = 0;
@@ -72,7 +74,7 @@ function switchMode(next: Mode) {
   saveError.value = false;
 }
 
-const resultRate = computed(() => clickCount.value * (60 / MEASUREMENT_SECONDS));
+const resultRate = computed(() => breathsPerMinute(clickCount.value, runSeconds.value));
 
 function handleHeartClick() {
   if (phase.value === 'idle') {
@@ -88,8 +90,9 @@ function onHeartEnter(e: KeyboardEvent) {
 }
 
 function startTracking() {
-  endsAt = Date.now() + MEASUREMENT_SECONDS * 1000;
-  timeLeft.value = MEASUREMENT_SECONDS;
+  runSeconds.value = durationSeconds.value;
+  endsAt = Date.now() + runSeconds.value * 1000;
+  timeLeft.value = runSeconds.value;
   phase.value = 'running';
   clickCount.value = 1; // first click counts as the first breath
   if (soundEnabled.value) playBeep(880, 0.15, 0.3);
@@ -113,11 +116,11 @@ function tick() {
 }
 
 // Updates the seconds left from the clock and ends the measurement once time is up,
-// however late this runs. Returns whether it has ended. Capped at 30 so a clock set
-// back mid-measurement cannot show more time than a measurement has.
+// however late this runs. Returns whether it has ended. Capped at the measurement's
+// length so a clock set back mid-measurement cannot show more time than it has.
 function finishIfOver(): boolean {
   timeLeft.value = Math.min(
-    MEASUREMENT_SECONDS,
+    runSeconds.value,
     Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)),
   );
   if (timeLeft.value > 0) return false;
@@ -157,6 +160,7 @@ async function saveReading() {
       restState: restState.value,
       notes: notes.value || undefined,
       source: isManual ? 'manual' : undefined,
+      durationSeconds: isManual ? undefined : runSeconds.value,
     });
     returnTo(router, { name: 'pet', params: { id: petId } });
   } catch (e) {
@@ -178,7 +182,7 @@ function reset() {
     intervalId.value = null;
   }
   phase.value = 'idle';
-  timeLeft.value = MEASUREMENT_SECONDS;
+  timeLeft.value = durationSeconds.value;
   clickCount.value = 0;
   isPulsing.value = false;
   restState.value = undefined;
@@ -289,7 +293,7 @@ onUnmounted(() => {
             <circle
               cx="60" cy="60" r="54"
               class="ring-progress"
-              :stroke-dashoffset="(339.3 * timeLeft) / MEASUREMENT_SECONDS"
+              :stroke-dashoffset="(339.3 * timeLeft) / runSeconds"
             />
           </svg>
           <div class="timer-text">
@@ -319,7 +323,17 @@ onUnmounted(() => {
       <div class="body-bottom">
         <template v-if="phase === 'idle'">
           <p class="tap-hint">{{ $t('tracker.tapAnywhereToStart') }}</p>
-          <p class="timer-note">{{ $t('tracker.measurement30') }}</p>
+          <div class="length-toggle" role="group" :aria-label="$t('tracker.lengthLabel')" @click.stop>
+            <button
+              v-for="s in MEASUREMENT_DURATIONS"
+              :key="s"
+              type="button"
+              class="length-pill"
+              :class="{ active: durationSeconds === s }"
+              :aria-pressed="durationSeconds === s"
+              @click="durationSeconds = s"
+            >{{ $t('tracker.lengthOption', { n: s }) }}</button>
+          </div>
           <div class="option-row" @click.stop>
             <span :id="soundLabelId" class="toggle-label">{{ $t('tracker.sound') }}</span>
             <SlideToggle v-model="soundEnabled" :labelledby="soundLabelId" />
@@ -349,7 +363,7 @@ onUnmounted(() => {
         <div class="result-label">{{ $t('common.breathsPerMin') }}</div>
       </div>
 
-      <p class="result-note">{{ $t('tracker.basedOn', clickCount) }}</p>
+      <p class="result-note">{{ $t('tracker.basedOn', { n: clickCount, seconds: runSeconds }, clickCount) }}</p>
 
       <RestStateToggle v-model="restState" />
 
@@ -516,9 +530,28 @@ onUnmounted(() => {
   color: var(--color-primary);
 }
 
-.timer-note {
+.length-toggle {
+  display: inline-flex;
+  /* Surface, not bg: it sits on the page background, unlike the mode toggle */
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 3px;
+}
+.length-pill {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--radius-full);
   font-size: 13px;
+  font-weight: 500;
   color: var(--color-text-muted);
+  background: transparent;
+  white-space: nowrap;
+  transition: background-color 0.2s, color 0.2s;
+}
+.length-pill.active {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 /* Timer ring */
