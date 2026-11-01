@@ -18,7 +18,7 @@ const NODE_TESTS = [
   'src/services/db.test.ts',
   'src/stores/stores.test.ts',
   'src/test/androidResources.test.ts',
-  'src/utils/{age,chartWindow,date,pdfText,petInitial,rateStatus,reminderSchedule,shareCodec,trend}.test.ts',
+  'src/utils/{age,chartWindow,date,pdfText,petInitial,rateStatus,reminderFormat,reminderSchedule,shareCodec,trend}.test.ts',
 ];
 
 // Kept separate from vite.config.ts so tests don't load the PWA plugin.
