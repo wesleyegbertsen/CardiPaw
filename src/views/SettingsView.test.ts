@@ -540,6 +540,41 @@ describe('SettingsView', () => {
         expect(result()).toBe("You're up to date.");
       });
 
+      it('hides the last answer while checking again', async () => {
+        const { button, result } = await mountChecking();
+        await button().trigger('click');
+        await flushPromises();
+        expect(result()).toBe("You're up to date.");
+        const answer = deferred<CheckOutcome | null>();
+        updates.checkNow.mockReturnValueOnce(answer.promise);
+        await button().trigger('click');
+        expect(button().text()).toBe('Checking…');
+        expect(result()).toBe('');
+      });
+
+      it('forgets the answer when a check in the background succeeds', async () => {
+        const { button, result } = await mountChecking();
+        await button().trigger('click');
+        await flushPromises();
+        expect(result()).toBe("You're up to date.");
+        // The daily check, e.g. on resume, may find a newer release than the tap did.
+        updates.lastChecked.value = Date.parse('2026-05-02T12:00:00Z');
+        await flushPromises();
+        expect(result()).toBe('');
+      });
+
+      it("keeps the answer of the tap's own successful check", async () => {
+        updates.checkNow.mockImplementationOnce(async () => {
+          await Promise.resolve();
+          updates.lastChecked.value = Date.parse('2026-05-02T12:00:00Z');
+          return { status: 'up-to-date' };
+        });
+        const { button, result } = await mountChecking();
+        await button().trigger('click');
+        await flushPromises();
+        expect(result()).toBe("You're up to date.");
+      });
+
       it('forgets the answer when the daily check is turned off', async () => {
         const { section, button, result } = await mountChecking();
         await button().trigger('click');

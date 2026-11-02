@@ -40,7 +40,7 @@ const checkResult = ref<CheckOutcome | null>(null);
 const checkResultPaused = ref(false);
 const checkResultText = computed(() => {
   const result = checkResult.value;
-  if (!result || checkResultPaused.value) return '';
+  if (!result || checkResultPaused.value || checkingUpdates.value) return '';
   if (result.status === 'available') {
     return t('settings.checkUpdatesAvailable', { version: formatVersion(result.version) });
   }
@@ -50,6 +50,15 @@ const checkResultText = computed(() => {
 watch(autoCheck, () => {
   checkResult.value = null;
 });
+// A check the tap didn't start (daily, on resume) may have found something newer.
+// Sync, so a tap's own check is still running when its success is saved.
+watch(
+  lastChecked,
+  () => {
+    if (!checkingUpdates.value) checkResult.value = null;
+  },
+  { flush: 'sync' },
+);
 
 const importInput = ref<HTMLInputElement | null>(null);
 const showImportConfirm = ref(false);
@@ -358,7 +367,7 @@ function cancelImport() {
             />
           </div>
 
-          <div v-if="autoCheck && installed" class="action-card">
+          <div v-if="autoCheck && installed" class="action-card check-now-card">
             <div>
               <div class="action-desc">{{ lastCheckedText }}</div>
               <p class="action-desc" role="status">{{ checkResultText }}</p>
@@ -562,6 +571,11 @@ function cancelImport() {
   background: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+}
+
+/* Its text wraps beside the button, so keep the two apart. */
+.check-now-card {
+  gap: 12px;
 }
 
 .action-info {
