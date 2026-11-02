@@ -252,7 +252,7 @@ Every [release](https://github.com/wesleyegbertsen/CardiPaw/releases) includes t
 **Updating:** install the APK of a newer release over the installed app. Your pets and readings stay. The app does not update itself. To find out about new releases:
 
 - **Settings → Updates** shows the installed version and opens the latest release on GitHub in your browser. This needs no network access in the app.
-- **Check automatically** (in the same place, off by default) asks `api.github.com` about once a day whether a newer release exists and shows a notice when there is one. GitHub then sees your IP address and the information the app's browser engine sends with every request, such as its user agent (which includes the Android version and device model) and language. No pet data is sent.
+- **Check automatically** (in the same place, off by default) asks `api.github.com` about once a day, and whenever you tap **Check now**, whether a newer release exists, and shows a notice when there is one. While it's on, the same place shows when it last checked. GitHub then sees your IP address and the information the app's browser engine sends with every request, such as its user agent (which includes the Android version and device model) and language. No pet data is sent.
 - Or let something outside the app watch for you: [Obtainium](https://github.com/ImranR98/Obtainium) (add `https://github.com/wesleyegbertsen/CardiPaw`; it can also install the APK), or on GitHub choose **Watch → Custom → Releases** on this repository to get an email per release.
 
 Whichever you use, check the signing certificate of a new APK (see **Checking an APK** below).
