@@ -41,9 +41,17 @@ function loadState(): UpdateState {
     const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
     const isVersion = (v: unknown): v is string =>
       typeof v === 'string' && parseVersion(v) !== null;
+    // Version 1.3.0 saved no lastSuccess, only latest after a successful check. Its lastCheck
+    // dates the last attempt, which was most likely that success; if it failed instead, this
+    // is a little too recent, until the next successful check saves the real time.
+    const success = isTime(lastSuccess)
+      ? lastSuccess
+      : isTime(lastCheck) && isVersion(latest)
+        ? lastCheck
+        : undefined;
     return {
       ...(isTime(lastCheck) && { lastCheck }),
-      ...(isTime(lastSuccess) && { lastSuccess }),
+      ...(success !== undefined && { lastSuccess: success }),
       ...(isVersion(latest) && { latest }),
       ...(isVersion(dismissed) && { dismissed }),
     };

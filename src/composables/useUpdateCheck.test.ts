@@ -7,6 +7,7 @@ import type { Version } from '../utils/version';
 vi.mock('../services/githubRelease', () => ({ fetchLatestRelease: vi.fn() }));
 
 const DAY = 24 * 60 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
 const MINUTE = 60 * 1000;
 const NOW = new Date('2026-05-01T12:00:00Z').getTime();
 
@@ -228,6 +229,27 @@ describe('useUpdateCheck', () => {
       expect(check.lastChecked.value).toBe(NOW);
       expect(savedState()).toMatchObject({ lastCheck: NOW + DAY, lastSuccess: NOW });
       expect((await load()).check.lastChecked.value).toBe(NOW);
+    });
+
+    it('counts a check by the previous version that found a release as successful', async () => {
+      // Version 1.3.0 saved lastCheck and latest, but no lastSuccess.
+      localStorage.setItem(
+        'cardipaw-update-state',
+        JSON.stringify({ lastCheck: NOW - HOUR, latest: '1.3.0' }),
+      );
+      const { fetchLatest, check } = await load();
+      expect(check.lastChecked.value).toBe(NOW - HOUR);
+      expect(await check.checkNow(NOW - HOUR + 30 * 1000)).toEqual({
+        status: 'available',
+        version: [1, 3, 0],
+      });
+      expect(fetchLatest).not.toHaveBeenCalled();
+    });
+
+    it('counts a check by the previous version that found nothing as never checked', async () => {
+      localStorage.setItem('cardipaw-update-state', JSON.stringify({ lastCheck: NOW - HOUR }));
+      const { check } = await load();
+      expect(check.lastChecked.value).toBeNull();
     });
 
     it('leaves a dismissed release dismissed', async () => {
