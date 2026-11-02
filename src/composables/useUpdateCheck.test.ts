@@ -7,6 +7,7 @@ import type { Version } from '../utils/version';
 vi.mock('../services/githubRelease', () => ({ fetchLatestRelease: vi.fn() }));
 
 const DAY = 24 * 60 * 60 * 1000;
+const MINUTE = 60 * 1000;
 const NOW = new Date('2026-05-01T12:00:00Z').getTime();
 
 // The setting and the state are read once, when the module is first imported.
@@ -35,6 +36,7 @@ describe('useUpdateCheck', () => {
   it('is off by default and asks nothing', async () => {
     const { checkIfDue, fetchLatest, check } = await load();
     await checkIfDue();
+    expect(await check.checkNow()).toBeNull();
     expect(check.enabled.value).toBe(false);
     expect(fetchLatest).not.toHaveBeenCalled();
   });
@@ -44,12 +46,14 @@ describe('useUpdateCheck', () => {
     mockNative(false);
     const web = await load();
     await web.checkIfDue();
+    expect(await web.check.checkNow()).toBeNull();
     expect(web.fetchLatest).not.toHaveBeenCalled();
 
     mockNative(true);
     vi.stubGlobal('__APP_VERSION__', '0.0.0');
     const local = await load();
     await local.checkIfDue();
+    expect(await local.check.checkNow()).toBeNull();
     expect(local.fetchLatest).not.toHaveBeenCalled();
   });
 
@@ -166,11 +170,12 @@ describe('useUpdateCheck', () => {
       'not json',
       '[]',
       'null',
-      '{"lastCheck":"x","latest":"<b>9</b>","dismissed":5}',
+      '{"lastCheck":"x","lastSuccess":"y","latest":"<b>9</b>","dismissed":5}',
     ]) {
       localStorage.setItem('cardipaw-update-state', saved);
       const { checkIfDue, fetchLatest, check } = await load({ latest: null });
       expect(check.available.value, saved).toBeNull();
+      expect(check.lastChecked.value, saved).toBeNull();
       await checkIfDue();
       expect(fetchLatest, saved).toHaveBeenCalledOnce();
     }
@@ -183,5 +188,123 @@ describe('useUpdateCheck', () => {
     await checkIfDue();
     expect(check.enabled.value).toBe(false);
     expect(fetchLatest).not.toHaveBeenCalled();
+  });
+
+  describe('check now', () => {
+    beforeEach(() => localStorage.setItem('cardipaw-update-check', '1'));
+
+    it('asks GitHub within a day of the last check, saving the time first', async () => {
+      localStorage.setItem('cardipaw-update-state', JSON.stringify({ lastCheck: NOW }));
+      const { fetchLatest, check } = await load();
+      let savedWhenAsked: unknown;
+      fetchLatest.mockImplementation(async () => {
+        savedWhenAsked = savedState().lastCheck;
+        return [1, 3, 0];
+      });
+      await check.checkNow(NOW + MINUTE);
+      expect(fetchLatest).toHaveBeenCalledOnce();
+      expect(savedWhenAsked).toBe(NOW + MINUTE);
+    });
+
+    it('reports a newer release, an up-to-date app and a failure', async () => {
+      for (const [latest, outcome] of [
+        [[1, 3, 0], { status: 'available', version: [1, 3, 0] }],
+        [[1, 2, 0], { status: 'up-to-date' }],
+        [null, { status: 'failed' }],
+      ] as const) {
+        localStorage.removeItem('cardipaw-update-state');
+        const { check } = await load({ latest: latest && [...latest] });
+        expect(await check.checkNow(NOW)).toEqual(outcome);
+      }
+    });
+
+    it('counts only a successful check as last checked, also after a restart', async () => {
+      const { fetchLatest, check } = await load();
+      expect(check.lastChecked.value).toBeNull();
+      await check.checkNow(NOW);
+      expect(check.lastChecked.value).toBe(NOW);
+      fetchLatest.mockResolvedValue(null);
+      await check.checkNow(NOW + DAY);
+      expect(check.lastChecked.value).toBe(NOW);
+      expect(savedState()).toMatchObject({ lastCheck: NOW + DAY, lastSuccess: NOW });
+      expect((await load()).check.lastChecked.value).toBe(NOW);
+    });
+
+    it('leaves a dismissed release dismissed', async () => {
+      localStorage.setItem(
+        'cardipaw-update-state',
+        JSON.stringify({ lastCheck: NOW - DAY, latest: '1.3.0', dismissed: '1.3.0' }),
+      );
+      const { check } = await load();
+      await check.checkNow(NOW);
+      expect(check.showNotice.value).toBe(false);
+      expect(savedState().dismissed).toBe('1.3.0');
+    });
+
+    it('repeats the last answer within a minute instead of asking again', async () => {
+      const { fetchLatest, check } = await load();
+      await check.checkNow(NOW);
+      expect(await check.checkNow(NOW + MINUTE - 1)).toEqual({
+        status: 'available',
+        version: [1, 3, 0],
+      });
+      expect(fetchLatest).toHaveBeenCalledOnce();
+      await check.checkNow(NOW + MINUTE);
+      expect(fetchLatest).toHaveBeenCalledTimes(2);
+    });
+
+    it('repeats a failure within a minute, also after a restart', async () => {
+      // An earlier check found 1.3.0; that answer must not stand in for the failed one.
+      localStorage.setItem(
+        'cardipaw-update-state',
+        JSON.stringify({ lastCheck: NOW - DAY, lastSuccess: NOW - DAY, latest: '1.3.0' }),
+      );
+      const { check } = await load({ latest: null });
+      expect(await check.checkNow(NOW)).toEqual({ status: 'failed' });
+      const again = await load(); // GitHub would answer now, but a minute hasn't passed
+      expect(await again.check.checkNow(NOW + MINUTE / 2)).toEqual({ status: 'failed' });
+      expect(again.fetchLatest).not.toHaveBeenCalled();
+    });
+
+    it('repeats an answer the daily check found a moment ago', async () => {
+      const { checkIfDue, fetchLatest, check } = await load({ latest: [1, 2, 0] });
+      await checkIfDue(NOW);
+      expect(await check.checkNow(NOW + 1000)).toEqual({ status: 'up-to-date' });
+      expect(fetchLatest).toHaveBeenCalledOnce();
+    });
+
+    it('waits for a check under way instead of asking again', async () => {
+      const { checkIfDue, fetchLatest, check } = await load();
+      const answer = deferred<Version | null>();
+      fetchLatest.mockReturnValue(answer.promise);
+      const daily = checkIfDue(NOW);
+      // A day later would pass both limits: only the pending check stops more requests.
+      const taps = [check.checkNow(NOW + DAY), check.checkNow(NOW + DAY)];
+      answer.resolve([1, 3, 0]);
+      await daily;
+      expect(await Promise.all(taps)).toEqual([
+        { status: 'available', version: [1, 3, 0] },
+        { status: 'available', version: [1, 3, 0] },
+      ]);
+      expect(fetchLatest).toHaveBeenCalledOnce();
+    });
+
+    it('asks when the clock was turned back, then waits a minute again', async () => {
+      localStorage.setItem('cardipaw-update-state', JSON.stringify({ lastCheck: NOW + DAY }));
+      const { fetchLatest, check } = await load();
+      await check.checkNow(NOW);
+      await check.checkNow(NOW + 1000);
+      expect(fetchLatest).toHaveBeenCalledOnce();
+    });
+
+    it('pushes the next daily check a day out', async () => {
+      const { checkIfDue, fetchLatest, check } = await load();
+      await checkIfDue(NOW);
+      await check.checkNow(NOW + 2 * MINUTE);
+      await checkIfDue(NOW + DAY);
+      expect(fetchLatest).toHaveBeenCalledTimes(2);
+      await checkIfDue(NOW + 2 * MINUTE + DAY);
+      expect(fetchLatest).toHaveBeenCalledTimes(3);
+    });
   });
 });
