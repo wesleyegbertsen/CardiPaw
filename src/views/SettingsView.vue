@@ -367,7 +367,7 @@ function cancelImport() {
             />
           </div>
 
-          <div v-if="autoCheck && installed" class="action-card check-now-card">
+          <div v-if="autoCheck && installed" class="action-card">
             <div>
               <div class="action-desc">{{ lastCheckedText }}</div>
               <p class="action-desc" role="status">{{ checkResultText }}</p>
@@ -567,15 +567,12 @@ function cancelImport() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Text that wraps beside a button or switch must not touch it. */
+  gap: 12px;
   padding: 16px;
   background: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-}
-
-/* Its text wraps beside the button, so keep the two apart. */
-.check-now-card {
-  gap: 12px;
 }
 
 .action-info {
