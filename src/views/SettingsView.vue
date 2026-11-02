@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef, useId } from 'vue';
+import { computed, onBeforeUnmount, ref, shallowRef, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as db from '../services/db';
 import { BackupError, downloadBackup, importBackup, parseBackup, type ValidatedBackup } from '../services/backup';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
 import SlideToggle from '../components/SlideToggle.vue';
-import { useUpdateCheck } from '../composables/useUpdateCheck';
+import { useUpdateCheck, type CheckOutcome } from '../composables/useUpdateCheck';
 import { isNative } from '../utils/platform';
 import { formatVersion, LATEST_RELEASE_URL, releaseTagUrl, releaseVersion } from '../utils/version';
 
@@ -19,11 +19,37 @@ const releaseUrl = installed ? releaseTagUrl(installed) : null;
 
 // App only: the website and the PWA update themselves.
 const native = isNative();
-const { enabled: autoCheck, available, setEnabled } = useUpdateCheck();
+const { enabled: autoCheck, available, lastChecked, setEnabled, checkNow } = useUpdateCheck();
 const autoCheckLabelId = useId();
 const autoCheckDescId = useId();
 
 const { t, locale } = useI18n();
+
+const lastCheckedText = computed(() =>
+  lastChecked.value === null
+    ? t('settings.neverChecked')
+    : t('settings.lastChecked', {
+        date: new Intl.DateTimeFormat(locale.value, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(lastChecked.value),
+      }),
+);
+const checkingUpdates = ref(false);
+const checkResult = ref<CheckOutcome | null>(null);
+const checkResultPaused = ref(false);
+const checkResultText = computed(() => {
+  const result = checkResult.value;
+  if (!result || checkResultPaused.value) return '';
+  if (result.status === 'available') {
+    return t('settings.checkUpdatesAvailable', { version: formatVersion(result.version) });
+  }
+  return result.status === 'up-to-date' ? t('settings.upToDate') : t('settings.checkFailed');
+});
+// An answer from before the switch was turned off is stale when it comes back on.
+watch(autoCheck, () => {
+  checkResult.value = null;
+});
 
 const importInput = ref<HTMLInputElement | null>(null);
 const showImportConfirm = ref(false);
@@ -62,10 +88,12 @@ const statusMessage = computed(() => {
 let exportTimer: ReturnType<typeof setTimeout> | undefined;
 let importTimer: ReturnType<typeof setTimeout> | undefined;
 let statusPauseTimer: ReturnType<typeof setTimeout> | undefined;
+let checkPauseTimer: ReturnType<typeof setTimeout> | undefined;
 onBeforeUnmount(() => {
   clearTimeout(exportTimer);
   clearTimeout(importTimer);
   clearTimeout(statusPauseTimer);
+  clearTimeout(checkPauseTimer);
 });
 
 // Screen readers skip a live region whose text comes back unchanged within one update,
@@ -101,6 +129,25 @@ async function exportData() {
   exportSuccess.value = true;
   clearTimeout(exportTimer);
   exportTimer = setTimeout(() => { exportSuccess.value = false; }, 3000);
+}
+
+async function onCheckNow() {
+  checkingUpdates.value = true;
+  let result: CheckOutcome | null;
+  try {
+    result = await checkNow();
+  } finally {
+    checkingUpdates.value = false;
+  }
+  // Like reannounceStatus: the same answer twice is announced twice
+  if (checkResult.value) {
+    checkResultPaused.value = true;
+    clearTimeout(checkPauseTimer);
+    checkPauseTimer = setTimeout(() => {
+      checkResultPaused.value = false;
+    }, 100);
+  }
+  checkResult.value = result;
 }
 
 function triggerImport() {
@@ -310,6 +357,16 @@ function cancelImport() {
               @update:model-value="setEnabled"
             />
           </div>
+
+          <div v-if="autoCheck && installed" class="action-card">
+            <div>
+              <div class="action-desc">{{ lastCheckedText }}</div>
+              <p class="action-desc" role="status">{{ checkResultText }}</p>
+            </div>
+            <button class="action-btn" :disabled="checkingUpdates" @click="onCheckNow">
+              {{ checkingUpdates ? $t('settings.checking') : $t('settings.checkNow') }}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -387,7 +444,7 @@ function cancelImport() {
               </div>
             </div>
             <button
-              class="action-btn dev-btn"
+              class="action-btn"
               :disabled="seedStatus === 'loading' || importing"
               @click="loadSeedData"
             >
@@ -407,11 +464,7 @@ function cancelImport() {
                 <div class="action-desc">Delete all local data and reload — fixes version mismatches</div>
               </div>
             </div>
-            <button
-              class="action-btn dev-btn"
-              :disabled="resetStatus === 'working'"
-              @click="resetDatabase"
-            >
+            <button class="action-btn" :disabled="resetStatus === 'working'" @click="resetDatabase">
               {{ resetStatus === 'working' ? 'Resetting…' : 'Reset DB' }}
             </button>
           </div>
@@ -569,6 +622,11 @@ function cancelImport() {
   background: var(--color-border);
 }
 
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .error-msg {
   margin-top: 12px;
   font-size: 13px;
@@ -647,10 +705,5 @@ function cancelImport() {
 .dev-icon {
   background: var(--color-primary-light);
   color: var(--color-primary);
-}
-
-.dev-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 </style>
