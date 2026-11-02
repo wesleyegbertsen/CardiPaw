@@ -14,7 +14,11 @@ import {
 const ENABLED_KEY = 'cardipaw-update-check';
 const STATE_KEY = 'cardipaw-update-state';
 export const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
-/** Check now waits this long after any check, so repeated taps can't use up GitHub's 60 requests an hour. */
+/**
+ * Check now asks only once this long has passed since any check, so together with the daily
+ * check the app never asks more than 60 times an hour, GitHub's limit without signing in.
+ * Tapping every minute for an hour still reaches that limit.
+ */
 export const MIN_MANUAL_INTERVAL_MS = 60 * 1000;
 
 interface UpdateState {
