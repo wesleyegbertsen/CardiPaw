@@ -540,6 +540,40 @@ describe('SettingsView', () => {
         expect(result()).toBe("You're up to date.");
       });
 
+      it('restarts the pause before a repeated answer on another quick tap', async () => {
+        const { button, result } = await mountChecking();
+        await button().trigger('click');
+        await flushPromises();
+        vi.useFakeTimers();
+        await button().trigger('click');
+        await flushPromises();
+        vi.advanceTimersByTime(50);
+        await button().trigger('click');
+        await flushPromises();
+        vi.advanceTimersByTime(50);
+        await flushPromises();
+        expect(result()).toBe('');
+        vi.advanceTimersByTime(50);
+        await flushPromises();
+        expect(result()).toBe("You're up to date.");
+      });
+
+      it('offers Check now again after an unexpected error', async () => {
+        const error = new Error('broken');
+        updates.checkNow.mockRejectedValueOnce(error);
+        const { wrapper, button } = await mountChecking();
+        // Vue hands an event handler's rejection to the app's error handler.
+        const handled: unknown[] = [];
+        wrapper.vm.$.appContext.config.errorHandler = (err: unknown) => {
+          handled.push(err);
+        };
+        await button().trigger('click');
+        await flushPromises();
+        expect(handled).toEqual([error]);
+        expect(button().text()).toBe('Check now');
+        expect(button().attributes('disabled')).toBeUndefined();
+      });
+
       it('hides the last answer while checking again', async () => {
         const { button, result } = await mountChecking();
         await button().trigger('click');
@@ -588,7 +622,7 @@ describe('SettingsView', () => {
         expect(result()).toBe('');
       });
 
-      it('drops an answer that comes back after the daily check was turned off', async () => {
+      it('forgets an answer that came back while the daily check was off', async () => {
         const answer = deferred<CheckOutcome | null>();
         updates.checkNow.mockReturnValueOnce(answer.promise);
         const { button, result } = await mountChecking();
