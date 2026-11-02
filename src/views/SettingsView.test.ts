@@ -431,7 +431,9 @@ describe('SettingsView', () => {
     it('are explained in the privacy information in the app', async () => {
       mockNative();
       const { wrapper } = await mountView(SettingsView, '/settings');
-      expect(await privacyText(wrapper)).toContain('api.github.com about once a day');
+      expect(await privacyText(wrapper)).toContain(
+        'api.github.com about once a day, and whenever you tap "Check now",',
+      );
     });
 
     describe('check now', () => {
