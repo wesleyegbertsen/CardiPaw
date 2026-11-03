@@ -1,0 +1,67 @@
+// Prints the list for the release notes' "What's changed": one line per first-parent commit in
+// <range>, with the "Release notes" section of its PR's description quoted under it.
+// The release (release.yml) runs it; CI (ci.yml) checks that it runs from outside the repo.
+// Node built-ins only: the release job installs no npm dependencies.
+// Usage:
+//   node scripts/release-notes.mjs <range>
+//       env: GITHUB_REPOSITORY (owner/name), GH_TOKEN (pull-requests: read),
+//            GITHUB_STEP_SUMMARY (optional, gets the warnings)
+// A PR that can't be read, or isn't the commit's merge, keeps its line and gets a warning on
+// stderr; only bad usage or a git failure exits non-zero.
+
+import { execFileSync, spawnSync } from 'child_process';
+import { appendFileSync } from 'fs';
+import {
+  buildChangelog,
+  parseGitLog,
+  warningCommand,
+  warningsSummary,
+} from './release-notes-lib.mjs';
+
+const MAX_BUFFER = 64 * 1024 * 1024;
+
+function fetchPr(repo, number) {
+  const result = spawnSync(
+    'gh',
+    ['pr', 'view', String(number), '--repo', repo, '--json', 'body,state,mergeCommit'],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: MAX_BUFFER },
+  );
+  if (result.error) return { error: `gh could not run: ${result.error.message}` };
+  if (result.status !== 0) {
+    const reason = result.stderr.trim().split('\n')[0] || `signal ${result.signal}`;
+    return { error: `gh pr view failed (exit ${result.status}): ${reason}` };
+  }
+  return { json: result.stdout };
+}
+
+function main(range) {
+  const repo = process.env.GITHUB_REPOSITORY;
+  const log = execFileSync(
+    'git',
+    ['log', '--first-parent', '--format=%H%x00%h%x00%s', '--end-of-options', range],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: MAX_BUFFER },
+  );
+  const { markdown, warnings } = buildChangelog(parseGitLog(log), (number) =>
+    fetchPr(repo, number),
+  );
+  for (const warning of warnings) console.error(warningCommand(warning));
+  if (warnings.length && process.env.GITHUB_STEP_SUMMARY) {
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, warningsSummary(warnings));
+  }
+  process.stdout.write(markdown);
+}
+
+const args = process.argv.slice(2);
+if (args.length !== 1 || !process.env.GITHUB_REPOSITORY) {
+  console.error(
+    'Usage: node scripts/release-notes.mjs <range>\n' +
+      '       env: GITHUB_REPOSITORY (owner/name), GH_TOKEN, GITHUB_STEP_SUMMARY (optional)',
+  );
+  process.exit(1);
+}
+try {
+  main(args[0]);
+} catch (err) {
+  console.error(`Error: ${err.message}`);
+  process.exit(1);
+}
