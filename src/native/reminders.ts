@@ -20,7 +20,11 @@ import {
 import { loadReminderSettings } from '../utils/reminderSettings';
 import { NotificationSettings } from './notificationSettings';
 
-export const CHANNEL_ID = 'reminders';
+// A new id, not 'reminders' with vibration added: Android ignores changes to an existing
+// channel's settings, and creating a deleted id again brings its old settings back.
+export const CHANNEL_ID = 'reminders-v2';
+// Before #120: created without vibration (the plugin's default), so reminders never vibrated.
+const OLD_CHANNEL_ID = 'reminders';
 type AppI18n = typeof appI18n;
 
 // Set by installReminders. Only a type import of ../i18n above: loading it needs a DOM, and
@@ -74,9 +78,10 @@ async function sync(onlyPetId?: string): Promise<void> {
     const planned = new Map(plan.map((p) => [p.id, p.at.toISOString()]));
     for (const n of ours) {
       if (petIdOf(n) !== petId) continue;
-      // Same day and time: keep it, even when due (an inexact alarm may still be on its way).
+      // Same day and time on the current channel: keep it, even when due (an inexact alarm
+      // may still be on its way). getPending doesn't return the channel, hence extra.channel.
       const at = planned.get(n.id);
-      if (at !== undefined && at === n.extra?.at) continue;
+      if (at !== undefined && at === n.extra?.at && n.extra?.channel === CHANNEL_ID) continue;
       cancel.add(n.id);
       // A shown reminder goes once it no longer applies; one for a changed time or a past
       // unmeasured day stays in the shade.
@@ -105,6 +110,8 @@ async function sync(onlyPetId?: string): Promise<void> {
         // VISIBILITY_PRIVATE: a secured lock screen hides the text (the pet's name); the
         // README's privacy section relies on this.
         visibility: 0,
+        // The plugin's default is false.
+        vibration: true,
       });
     } catch (e) {
       // Android 7 has no channels: the plugin rejects with UNAVAILABLE.
@@ -112,6 +119,18 @@ async function sync(onlyPetId?: string): Promise<void> {
     }
     // Only when granted (checked above): schedule() itself would show the Android 13+ prompt.
     await LocalNotifications.schedule({ notifications: toSchedule });
+  }
+  // Last, and only in a full sync: every reminder from before #120 has been cancelled, and the
+  // future ones scheduled again on the new channel. Due ones from before can't be (a past `at`
+  // would fire at once) and deleting the channel also clears any still shown: accepted, once.
+  // A sync for one pet leaves the others' reminders on it, and they would no longer show.
+  if (!onlyPetId) {
+    try {
+      await LocalNotifications.deleteChannel({ id: OLD_CHANNEL_ID });
+    } catch (e) {
+      // Android 7 has no channels: the plugin rejects with UNAVAILABLE.
+      if ((e as { code?: string }).code !== 'UNAVAILABLE') throw e;
+    }
   }
 }
 
@@ -131,8 +150,9 @@ function notification(
     autoCancel: true,
     // The default (true) sends the user to "Alarms & reminders" on Android 12+.
     isExactNotification: false,
-    // getPending returns `at` as Java Date text; sync compares this one instead.
-    extra: { petId, at: at.toISOString() },
+    // getPending returns `at` as Java Date text; sync compares this one instead. It returns no
+    // channelId either: `channel` tells sync which channel a reminder is on.
+    extra: { petId, at: at.toISOString(), channel: CHANNEL_ID },
   };
 }
 
