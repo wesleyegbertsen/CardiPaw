@@ -8,6 +8,7 @@ const HEADING = /^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*$/;
 const NOTES_TITLE = /^release notes[ \t]*:?$/i;
 const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 const FENCE_CLOSE = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
+const MAX_NOTES = 2000;
 
 /** `git log --format=%H%x00%h%x00%s` output → [{ hash, shortHash, subject }]. */
 export function parseGitLog(output) {
@@ -205,6 +206,13 @@ function readPr(number, hash, result) {
     return { warning: `PR #${number}: its description is not text` };
   }
   const notes = extractReleaseNotes(pr.body ?? '');
+  // Left out rather than cut short, which could leave a code fence open. GitHub refuses a release
+  // over 125,000 characters, so a PR can't make every retry of the release fail.
+  if (notes !== null && notes.length > MAX_NOTES) {
+    return {
+      warning: `PR #${number}: its release notes are ${notes.length} characters long, over the limit of ${MAX_NOTES}`,
+    };
+  }
   const unsafe = notes === null ? null : unsafeMarkup(notes);
   if (unsafe) {
     return {

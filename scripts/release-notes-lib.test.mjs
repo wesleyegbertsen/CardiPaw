@@ -257,6 +257,22 @@ describe('buildChangelog', () => {
     });
   });
 
+  it('quotes notes of up to 2000 characters, and leaves out longer ones with a warning', () => {
+    const commits = [{ hash: HASH_A, shortHash: 'ad6b58e', subject: 'feat: x (#7)' }];
+    const notes = `${'a'.repeat(1000)}\n\n${'b'.repeat(998)}`;
+    expect(notes).toHaveLength(2000);
+    expect(buildChangelog(commits, () => merged(HASH_A, `## Release notes\n${notes}`))).toEqual({
+      markdown: `- feat: x (#7) (ad6b58e)\n  > ${'a'.repeat(1000)}\n  >\n  > ${'b'.repeat(998)}\n`,
+      warnings: [],
+    });
+    expect(buildChangelog(commits, () => merged(HASH_A, `## Release notes\n${notes}b`))).toEqual({
+      markdown: '- feat: x (#7) (ad6b58e)\n',
+      warnings: [
+        'PR #7: its release notes are 2001 characters long, over the limit of 2000; listed without release notes',
+      ],
+    });
+  });
+
   describe('with gh api graphql’s real output', () => {
     // PR #119 as gh printed it, body shortened.
     const GH_119 = String.raw`{"data":{"repository":{"pullRequest":{"body":"Closes #106.\n\n## Summary\n\nWith **Check automatically** on, Settings › Updates now has a third card:","state":"MERGED","mergedAt":"2026-11-02T01:44:20Z","lastEditedAt":null,"mergeCommit":{"oid":"ad6b58e8db9ed35428d94edf930b9a6661b60993"}}}}}`;
