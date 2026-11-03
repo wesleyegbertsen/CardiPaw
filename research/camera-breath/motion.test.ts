@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { estimate } from './estimate.ts';
-import { colProfile, profileMotion, profileShift, rowProfile, topStrip } from './motion.ts';
+import {
+  LK_DEFAULTS,
+  backgroundPoints,
+  colProfile,
+  gridPoints,
+  lkMotion,
+  lkTrack,
+  pcaWeights,
+  profileMotion,
+  profileShift,
+  rowProfile,
+  topStrip,
+} from './motion.ts';
 import type { Frame, Roi } from './motion.ts';
 
 function lcg(seed: number): () => number {
@@ -203,5 +215,144 @@ describe('profileMotion', () => {
     expect(m.signal.length).toBe(n);
     expect(Math.abs(m.signal[n - 1] - 0.1 * (n - 1))).toBeLessThan(0.5);
     expect(m.quality.borderRms).toBe(0);
+  });
+});
+
+function gaussian(seed: number): () => number {
+  const next = lcg(seed);
+  return () => Math.sqrt(-2 * Math.log(1 - next())) * Math.cos(2 * Math.PI * next());
+}
+
+describe('lkTrack', () => {
+  const tex = texture(20, 64, 64);
+  const ref = shiftFrame(tex, 64, 64, 0, 0);
+  const CENTRE: ReadonlyArray<readonly [number, number]> = [[32, 32]];
+
+  it('recovers a 1.5 px shift within 0.1', () => {
+    const t = lkTrack(ref, shiftFrame(tex, 64, 64, 0.5, 1.5), CENTRE, LK_DEFAULTS)[0];
+    expect(t.ok).toBe(true);
+    expect(Math.abs(t.dx - 0.5)).toBeLessThan(0.1);
+    expect(Math.abs(t.dy - 1.5)).toBeLessThan(0.1);
+  });
+
+  it('recovers 7 px only with the pyramid', () => {
+    // Single-level LK converges at 4 px on this smooth texture; 7 px is past its half window.
+    const cur = shiftFrame(tex, 64, 64, 0, 7);
+    const two = lkTrack(ref, cur, CENTRE, LK_DEFAULTS)[0];
+    const one = lkTrack(ref, cur, CENTRE, { ...LK_DEFAULTS, levels: 1 })[0];
+    expect(two.ok).toBe(true);
+    expect(Math.abs(two.dy - 7)).toBeLessThan(0.3);
+    expect(Math.abs(one.dy - 7)).toBeGreaterThan(0.5);
+    expect(one.ok).toBe(false);
+  });
+
+  it('a flat patch with σ = 4 noise is invalid and a contrast-20 patch valid', () => {
+    const g = gaussian(3);
+    const flat: Frame = {
+      width: 64,
+      height: 64,
+      data: Uint8Array.from({ length: 64 * 64 }, () => Math.round(128 + 4 * g())),
+    };
+    const f = lkTrack(flat, flat, CENTRE, LK_DEFAULTS)[0];
+    // λmin ≈ 231 after the 3×3 blur; the raw noise gradients would give ≈ 1544 and pass.
+    expect(f.lmin).toBeLessThan(300);
+    expect(f.ok).toBe(false);
+    const textured = shiftFrame(texture(21, 64, 64, 20), 64, 64, 0, 0);
+    const t = lkTrack(textured, textured, CENTRE, LK_DEFAULTS)[0];
+    expect(t.lmin).toBeGreaterThan(300);
+    expect(t.ok).toBe(true);
+  });
+
+  it('gridPoints and backgroundPoints stay clear of their rectangle edges', () => {
+    const grid = gridPoints({ x: 48, y: 24, w: 96, h: 96 }, 5);
+    expect(grid).toHaveLength(25);
+    expect(grid[0]).toEqual([64, 40]);
+    expect(grid[24]).toEqual([128, 104]);
+    const bg = backgroundPoints({ x: 0, y: 0, w: 192, h: 40 }, 7);
+    expect(bg).toHaveLength(16);
+    expect(bg.every(([x, y]) => x >= 9 && x <= 177 && (y === 9 || y === 31))).toBe(true);
+    // A strip thinner than two windows puts both rows on the same y, kept once.
+    expect(backgroundPoints({ x: 0, y: 0, w: 64, h: 18 }, 7).map(([, y]) => y)).toEqual([9, 9]);
+  });
+});
+
+describe('pcaWeights', () => {
+  const n = 300;
+  const g = gaussian(9);
+  // Ten rows carry the same 30 bpm motion, fifteen only noise.
+  const rows = Array.from({ length: 25 }, (_, k) =>
+    Float64Array.from({ length: n }, (_, i) => (k < 10 ? sin(30, i / 30) : 0) + 0.3 * g()),
+  );
+
+  it('puts ≥ 90 % of Σ|w| on the 10 moving rows out of 25', () => {
+    const w = pcaWeights(rows);
+    let moving = 0;
+    let all = 0;
+    w.forEach((v, k) => {
+      all += Math.abs(v);
+      if (k < 10) moving += Math.abs(v);
+    });
+    expect(moving / all).toBeGreaterThanOrEqual(0.9); // a plain mean would give 40 %
+    expect(Math.hypot(...w)).toBeCloseTo(1, 9);
+  });
+
+  it('sign is deterministic: the largest weight is positive and the sum is in phase', () => {
+    const w = pcaWeights(rows);
+    expect(pcaWeights(rows)).toEqual(w);
+    let big = 0;
+    w.forEach((v, k) => {
+      if (Math.abs(v) > Math.abs(w[big])) big = k;
+    });
+    expect(w[big]).toBeGreaterThan(0);
+    let dot = 0;
+    for (let i = 0; i < n; i++) {
+      let s = 0;
+      for (let k = 0; k < 25; k++) s += w[k] * rows[k][i];
+      dot += s * sin(30, i / 30);
+    }
+    expect(dot).toBeGreaterThan(0);
+  });
+});
+
+describe('lkMotion', () => {
+  const W = 64;
+  const H = 96;
+  const BODY: Roi = { x: 0, y: 48, w: W, h: 40 };
+  const FPS = 24;
+
+  it('subtracts a sinusoidal 24 bpm global shake: ROI 2·sin(24 bpm) + 1·sin(30 bpm) reads 30 through estimate()', () => {
+    const wall = texture(30, W, H);
+    const body = texture(31, W, H);
+    function* frames() {
+      for (let i = 0; i < 20 * FPS; i++) {
+        const t = i / FPS;
+        const global = 2 * sin(24, t);
+        const frame = shiftFrame(wall, W, H, 0, global);
+        yield paste(frame, shiftFrame(body, W, H, 0, global + sin(30, t)), BODY);
+      }
+    }
+    const m = lkMotion(frames(), BODY, FPS);
+    expect(m.quality.borderRms).toBeGreaterThan(1); // the 2 px global motion is real shake
+    expect(m.quality.validTrackRatio).toBeGreaterThan(0.9);
+    const r = estimate(m.signal, FPS);
+    expect(r.bpm).not.toBeNull();
+    expect(Math.abs(r.bpm! - 30)).toBeLessThan(1);
+  });
+
+  it('background flow is 0 and borderRms 0 when every background point is invalid', () => {
+    // Black top strip (letterbox bars or a flat wall): no texture, no valid point.
+    const body = texture(32, W, H);
+    function* frames() {
+      for (let i = 0; i < 12 * FPS; i++) {
+        const frame: Frame = { width: W, height: H, data: new Uint8Array(W * H) };
+        yield paste(frame, shiftFrame(body, W, H, 0, sin(30, i / FPS)), BODY);
+      }
+    }
+    const m = lkMotion(frames(), BODY, FPS);
+    expect(m.quality.borderRms).toBe(0);
+    expect(m.signal.every((v) => Number.isFinite(v))).toBe(true);
+    const r = estimate(m.signal, FPS, m.quality);
+    expect(r.reasons).toEqual([]);
+    expect(Math.abs(r.bpm! - 30)).toBeLessThan(1);
   });
 });
