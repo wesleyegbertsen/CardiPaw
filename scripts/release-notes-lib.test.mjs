@@ -6,6 +6,7 @@ import {
   formatNotes,
   parseGitLog,
   prNumber,
+  unsafeMarkup,
   warningCommand,
   warningsSummary,
 } from './release-notes-lib.mjs';
@@ -151,6 +152,51 @@ describe('extractReleaseNotes', () => {
   });
 });
 
+describe('unsafeMarkup', () => {
+  it.each([
+    // Rendered by GitHub: the <h1> ends up outside the release's list.
+    ['</blockquote></li></ul>\n<h1>ESCAPED</h1>', 'raw HTML'],
+    ['a <br/> b', 'raw HTML'],
+    ['<img src=x>', 'raw HTML'],
+    ['<details', 'raw HTML'],
+    ['x</b>', 'raw HTML'],
+    // A fence indented in a list item ends with the item, so the tag after it is not code.
+    ['- a\n  ```\nb\n</blockquote><h1>X</h1>', 'raw HTML'],
+    // An autolink binds tighter than a code span: the backtick in it doesn't open one.
+    ['see <http://x/`> <b>B</b>`', 'raw HTML'],
+    // An escaped backtick doesn't open a code span.
+    ['\\`<b>x</b>`', 'raw HTML'],
+    // Code spans are only recognised within a line.
+    ['`a\n<b>`', 'raw HTML'],
+    ['See [^1].', 'a footnote'],
+    ['[^note]: text', 'a footnote'],
+    ['[x]: https://example.com', 'a link reference definition'],
+    ['   [x]: y', 'a link reference definition'],
+    // Rendered by GitHub: a definition nested in a list item still links [zz] anywhere.
+    ['- a\n\n    [zz]: https://example.com', 'a link reference definition'],
+    ['> [x]: y', 'a link reference definition'],
+    ['[a\nb]: y', 'a link reference definition'],
+  ])('%j contains %s', (notes, kind) => {
+    expect(unsafeMarkup(notes)).toBe(kind);
+  });
+
+  it.each([
+    'Use `<br>` and ``a ` <b> ``.',
+    'If `a < b` or `Array<string>`',
+    '```html\n<div>[^1]\n[x]: y\n```',
+    '~~~\n<b>\n~~~',
+    '````\n```\n<b>\n```\n````',
+    '```\n<b> to the end',
+    '<https://example.com> and <mailto:a@b.c> and <a@b.c>',
+    'x<y, 1 < 2, a <- b, <3',
+    '\\<b> is shown as text, as is \\[^1] and \\[x]: y',
+    'A [link](https://example.com), [x] and a [ ] task',
+    '- [x] done',
+  ])('%j is safe', (notes) => {
+    expect(unsafeMarkup(notes)).toBeNull();
+  });
+});
+
 describe('formatNotes', () => {
   it('quotes each line, with no trailing space on blank ones', () => {
     expect(formatNotes('A\n\n  B')).toEqual(['  > A', '  >', '  >   B']);
@@ -189,6 +235,21 @@ describe('buildChangelog', () => {
     expect(buildChangelog(commits, () => merged(HASH_A, body))).toEqual({
       markdown: '- feat: x (#7) (ad6b58e)\n  > Line 1\n  >\n  > Line 2\n- fix: y (af2c125)\n',
       warnings: [],
+    });
+  });
+
+  it.each([
+    ['<h1>X</h1>', 'raw HTML'],
+    ['A[^1]', 'a footnote'],
+    ['[x]: https://example.com', 'a link reference definition'],
+  ])('leaves out notes with %j and warns that they contain %s', (notes, kind) => {
+    const commits = [{ hash: HASH_A, shortHash: 'ad6b58e', subject: 'feat: x (#7)' }];
+    const body = `## Release notes\n${notes}\n## Changes\nC`;
+    expect(buildChangelog(commits, () => merged(HASH_A, body))).toEqual({
+      markdown: '- feat: x (#7) (ad6b58e)\n',
+      warnings: [
+        `PR #7: its release notes contain ${kind}, which can break out of the quote; listed without release notes`,
+      ],
     });
   });
 

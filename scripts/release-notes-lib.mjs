@@ -96,6 +96,76 @@ export function formatNotes(notes) {
   return notes.split('\n').map((line) => (line === '' ? '  >' : `  > ${line}`));
 }
 
+// Markup that reaches outside the quote: raw HTML can close the release's list (GitHub keeps
+// </blockquote></li></ul>), a footnote renders at the end of the release, and a link reference
+// definition applies to the whole release, even when it's nested in a list item.
+const HTML_TAG = /<\/?[A-Za-z][A-Za-z0-9-]*(?=[\s/>]|$)/;
+const FOOTNOTE = /\[\^[^\]\n]+\]/;
+const LINK_DEFINITION = /\[[^\]]*\]:/;
+const ESCAPED = /^\\[!-/:-@[-`{-~]/;
+const AUTOLINK =
+  /^<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\s<>]*|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*)>/;
+
+/**
+ * `line` without its code spans, backslash escapes and autolinks, scanned left to right as
+ * GitHub does: an escaped backtick or one inside an autolink doesn't open a code span. Only
+ * spans within the line count; a span across lines stays text, which can only drop notes.
+ */
+function outsideCodeSpans(line) {
+  let text = '';
+  let i = 0;
+  while (i < line.length) {
+    const rest = line.slice(i);
+    const skip = ESCAPED.exec(rest) ?? (rest[0] === '<' ? AUTOLINK.exec(rest) : null);
+    if (skip) {
+      text += ' ';
+      i += skip[0].length;
+      continue;
+    }
+    if (rest[0] !== '`') {
+      text += rest[0];
+      i++;
+      continue;
+    }
+    const run = /^`+/.exec(rest)[0];
+    const closing = new RegExp(`(?<!\`)\`{${run.length}}(?!\`)`, 'g');
+    closing.lastIndex = run.length;
+    const close = closing.exec(rest);
+    if (close) {
+      text += ' ';
+      i += close.index + run.length;
+    } else {
+      text += run;
+      i += run.length;
+    }
+  }
+  return text;
+}
+
+/**
+ * What in `notes` could break out of their quote: 'raw HTML', 'a footnote',
+ * 'a link reference definition', or null. Code fences and code spans are skipped, but only fences
+ * that start at the left margin: one indented in a list item ends with the item, while this
+ * would still see it as open.
+ */
+export function unsafeMarkup(notes) {
+  const text = [];
+  let fence = null;
+  for (const line of notes.split('\n')) {
+    if (fence) {
+      if (closesFence(line, fence)) fence = null;
+      continue;
+    }
+    fence = line.startsWith(' ') ? null : openFence(line);
+    if (!fence) text.push(outsideCodeSpans(line));
+  }
+  const visible = text.join('\n');
+  if (HTML_TAG.test(visible)) return 'raw HTML';
+  if (FOOTNOTE.test(visible)) return 'a footnote';
+  if (LINK_DEFINITION.test(visible)) return 'a link reference definition';
+  return null;
+}
+
 /**
  * fetchPr's result for PR `number` → { notes } (a string, or null for none) or { warning }.
  * Notes are only used from a merged PR whose merge commit is `hash`.
@@ -118,7 +188,14 @@ function readPr(number, hash, result) {
   if (pr.body != null && typeof pr.body !== 'string') {
     return { warning: `PR #${number}: its description is not text` };
   }
-  return { notes: extractReleaseNotes(pr.body ?? '') };
+  const notes = extractReleaseNotes(pr.body ?? '');
+  const unsafe = notes === null ? null : unsafeMarkup(notes);
+  if (unsafe) {
+    return {
+      warning: `PR #${number}: its release notes contain ${unsafe}, which can break out of the quote`,
+    };
+  }
+  return { notes };
 }
 
 /**
