@@ -33,12 +33,31 @@ function back() {
 }
 
 const SWIPE_THRESHOLD = 40;
+const AXIS_LOCK_THRESHOLD = 10; // px
 let touchStartX = 0;
 let touchStartY = 0;
+let swipeAxis: 'x' | 'y' | null = null;
 
 function onTouchStart(e: TouchEvent) {
   touchStartX = e.touches[0].clientX;
   touchStartY = e.touches[0].clientY;
+  swipeAxis = null;
+}
+
+// Claim the moves of anything but a vertical drag, or Chrome on Android keeps an invisible fling
+// going after a sideways swipe and drops the next tap on Next or Back (#118; see onTabTouchMove
+// in PetDetailView.vue). Only decides preventDefault: onTouchEnd still decides the swipe.
+function onTouchMove(e: TouchEvent) {
+  if (swipeAxis === 'y') return;
+  if (swipeAxis === null) {
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    if (Math.abs(dx) >= AXIS_LOCK_THRESHOLD || Math.abs(dy) >= AXIS_LOCK_THRESHOLD) {
+      swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (swipeAxis === 'y') return;
+    }
+  }
+  if (e.cancelable) e.preventDefault();
 }
 
 function onTouchEnd(e: TouchEvent) {
@@ -59,7 +78,13 @@ function onTouchEnd(e: TouchEvent) {
           <button class="btn-skip" @click="emit('close')">{{ $t('onboarding.skip') }}</button>
         </div>
 
-        <div class="dialog-body" aria-live="polite" @touchstart="onTouchStart" @touchend="onTouchEnd">
+        <div
+          class="dialog-body"
+          aria-live="polite"
+          @touchstart="onTouchStart"
+          @touchmove="onTouchMove"
+          @touchend="onTouchEnd"
+        >
           <Transition :name="transitionName" mode="out-in">
             <div class="step-content" :key="step">
               <div class="icon-badge">
