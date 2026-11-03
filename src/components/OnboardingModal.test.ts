@@ -92,7 +92,7 @@ describe('OnboardingModal', () => {
     mountModal();
     expect(
       await swipe(-60, 4, [
-        [-5, 0],
+        [-7, 0],
         [-30, 2],
         [-60, 4],
       ]),
@@ -108,10 +108,20 @@ describe('OnboardingModal', () => {
         [3, 20],
         [-30, 80],
       ]),
-    ).toEqual([true, false, false]);
+    ).toEqual([false, false, false]);
     expect(stepCount()).toBe('Step 1 of 4');
     // The next touch starts undecided again.
     expect(await swipe(-60, 0, [[-30, 0]])).toEqual([true]);
+  });
+
+  // On WebKit and Gecko, claiming the first move of a touch stops it from ever scrolling.
+  it('leaves a vertical-leaning or tiny move to the browser before the axis locks', async () => {
+    mountModal();
+    expect(await swipe(2, 9, [[2, 9]])).toEqual([false]);
+    expect(await swipe(-5, 0, [[-5, 0]])).toEqual([false]);
+    // A 45 degree move counts as vertical.
+    expect(await swipe(-10, 10, [[-10, 10]])).toEqual([false]);
+    expect(stepCount()).toBe('Step 1 of 4');
   });
 
   it('closes on Skip, Escape and the backdrop', async () => {

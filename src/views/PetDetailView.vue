@@ -159,6 +159,7 @@ function isPanelCollapsed(i: number) {
 }
 
 const SWIPE_LOCK_THRESHOLD = 10; // px
+const SWIPE_CLAIM_MIN = 6; // px; see onTabTouchMove
 const SWIPE_COMMIT_RATIO = 0.25;
 const SWIPE_FLICK_VELOCITY = 0.3; // px/ms
 const SWIPE_EDGE_RESISTANCE = 0.3;
@@ -185,16 +186,21 @@ function onTabTouchMove(e: TouchEvent) {
   if (swipeAxis === 'ignore' || swipeAxis === 'y') return;
   const dx = e.touches[0].clientX - touchStartX;
   const dy = e.touches[0].clientY - touchStartY;
-  // Claim every move until the axis locks, not only once it locks to x (#15 did that and still
-  // failed on phones, #118). With touch-action: pan-y, Chrome on Android runs a fling for a
+  // Claim sideways moves before the axis locks too, not only once it locks to x (#15 did that and
+  // still failed on phones, #118). With touch-action: pan-y, Chrome on Android runs a fling for a
   // sideways swipe even though nothing scrolls; the next touch only stops that fling and its tap
   // is dropped. Chrome holds back moves inside its ~8px touch slop, so the first move we see is
   // often still under SWIPE_LOCK_THRESHOLD, and it is the only cancelable one: once Chrome starts
-  // scrolling, later moves can't be cancelled. Never claim a vertical scroll, and keep this
-  // listener non-passive.
+  // scrolling, later moves can't be cancelled. But WebKit and Gecko follow the spec: claiming the
+  // first move ends scrolling for the whole touch. So before the lock, only claim a move that
+  // leans sideways by at least SWIPE_CLAIM_MIN (below Chrome's slop, above jitter). A touch whose
+  // first move is claimed and then turns vertical won't scroll there. Never claim after a 'y'
+  // lock, and keep this listener non-passive.
   if (swipeAxis === null) {
     if (Math.abs(dx) < SWIPE_LOCK_THRESHOLD && Math.abs(dy) < SWIPE_LOCK_THRESHOLD) {
-      if (e.cancelable) e.preventDefault();
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) >= SWIPE_CLAIM_MIN && e.cancelable) {
+        e.preventDefault();
+      }
       return;
     }
     swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';

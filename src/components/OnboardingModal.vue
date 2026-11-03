@@ -34,6 +34,7 @@ function back() {
 
 const SWIPE_THRESHOLD = 40;
 const AXIS_LOCK_THRESHOLD = 10; // px
+const CLAIM_MIN = 6; // px; see onTouchMove
 let touchStartX = 0;
 let touchStartY = 0;
 let swipeAxis: 'x' | 'y' | null = null;
@@ -44,18 +45,24 @@ function onTouchStart(e: TouchEvent) {
   swipeAxis = null;
 }
 
-// Claim the moves of anything but a vertical drag, or Chrome on Android keeps an invisible fling
-// going after a sideways swipe and drops the next tap on Next or Back (#118; see onTabTouchMove
-// in PetDetailView.vue). Only decides preventDefault: onTouchEnd still decides the swipe.
+// Claim the moves of a sideways drag, or Chrome on Android keeps an invisible fling going after
+// a sideways swipe and drops the next tap on Next or Back (#118; see onTabTouchMove in
+// PetDetailView.vue). Before the axis locks, only claim a move leaning sideways by CLAIM_MIN or
+// more: on WebKit and Gecko, claiming the first move ends scrolling for the whole touch. Only
+// decides preventDefault: onTouchEnd still decides the swipe.
 function onTouchMove(e: TouchEvent) {
   if (swipeAxis === 'y') return;
   if (swipeAxis === null) {
     const dx = e.touches[0].clientX - touchStartX;
     const dy = e.touches[0].clientY - touchStartY;
-    if (Math.abs(dx) >= AXIS_LOCK_THRESHOLD || Math.abs(dy) >= AXIS_LOCK_THRESHOLD) {
-      swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
-      if (swipeAxis === 'y') return;
+    if (Math.abs(dx) < AXIS_LOCK_THRESHOLD && Math.abs(dy) < AXIS_LOCK_THRESHOLD) {
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) >= CLAIM_MIN && e.cancelable) {
+        e.preventDefault();
+      }
+      return;
     }
+    swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    if (swipeAxis === 'y') return;
   }
   if (e.cancelable) e.preventDefault();
 }

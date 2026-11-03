@@ -655,11 +655,30 @@ describe('PetDetailView', () => {
 
     // A real touchmove is cancelable only until Chrome starts its own scroll. A sideways swipe the
     // browser kept would leave an invisible fling that eats the next tap (#118).
-    it('claims the touch before the swipe axis is decided', async () => {
+    it('claims a sideways move before the swipe axis is decided', async () => {
       const { start, claims, dragging } = await mountSwipe();
       await start();
-      expect(await claims(-5)).toBe(true);
+      // Under 6px it could be jitter at the start of a scroll.
+      expect(await claims(-5)).toBe(false);
       expect(await claims(-9, 2)).toBe(true);
+      expect(dragging()).toBe(false);
+    });
+
+    // On WebKit and Gecko, claiming the first move of a touch stops it from ever scrolling.
+    it('leaves a vertical-leaning move to the browser before the axis locks', async () => {
+      const { start, claims, dragging } = await mountSwipe();
+      await start();
+      expect(await claims(2, 9)).toBe(false);
+      expect(dragging()).toBe(false);
+      // The axis is still open, so the touch can still become a swipe.
+      expect(await claims(-30, 9)).toBe(true);
+      expect(dragging()).toBe(true);
+    });
+
+    it('treats a 45 degree move as vertical', async () => {
+      const { start, claims, dragging } = await mountSwipe();
+      await start();
+      expect(await claims(-10, 10)).toBe(false);
       expect(dragging()).toBe(false);
     });
 
