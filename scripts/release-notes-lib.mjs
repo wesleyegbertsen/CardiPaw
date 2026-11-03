@@ -54,10 +54,14 @@ function closesFence(line, fence) {
   return !!match && match[1][0] === fence[0] && match[1].length >= fence.length;
 }
 
+// A section that only says this is an explicit "no release notes", as in Kubernetes' PRs.
+const NO_NOTES = /^(?:none|n\/a|-)\.?$/i;
+
 /**
  * The text under the first "Release notes" heading (any level, outside code fences), up to the
- * next heading of the same or a higher level; null when there is none or it's empty. HTML
- * comments are removed first: GitHub doesn't show them, and the PR template's placeholder is one.
+ * next heading of the same or a higher level; null when there is none, it's empty, or it only
+ * says NONE, N/A or -. HTML comments are removed first: GitHub doesn't show them, and the PR
+ * template's placeholder is one.
  */
 export function extractReleaseNotes(body) {
   const lines = body
@@ -92,7 +96,8 @@ export function extractReleaseNotes(body) {
   const section = lines.slice(start, end).map((line) => (line.trim() === '' ? '' : line));
   while (section.length && section[0] === '') section.shift();
   while (section.length && section.at(-1) === '') section.pop();
-  return section.length ? section.join('\n') : null;
+  if (!section.length || (section.length === 1 && NO_NOTES.test(section[0].trim()))) return null;
+  return section.join('\n');
 }
 
 /** Notes as a quote inside the commit's list item: the list stays tight, other items render as before. */

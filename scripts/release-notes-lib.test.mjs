@@ -136,6 +136,25 @@ describe('extractReleaseNotes', () => {
     expect(extractReleaseNotes('## Release notes\n<!-- nothing -->\n\n## Changes\nC')).toBeNull();
   });
 
+  it.each(['NONE', 'None.', 'none', 'N/A', 'n/a.', '-', '  NONE  \n', '\nN/A\n\n'])(
+    'returns null for a section that only says %j: an explicit "no release notes"',
+    (text) => {
+      expect(extractReleaseNotes(`## Release notes\n${text}\n## Changes\nC`)).toBeNull();
+      expect(extractReleaseNotes(`## Release notes\r\n${text}`)).toBeNull();
+    },
+  );
+
+  it('keeps notes that only start or end with "none" or "n/a"', () => {
+    expect(extractReleaseNotes('## Release notes\nNone of your data changes.')).toBe(
+      'None of your data changes.',
+    );
+    expect(extractReleaseNotes('## Release notes\nNONE\nBut the theme resets.')).toBe(
+      'NONE\nBut the theme resets.',
+    );
+    expect(extractReleaseNotes('## Release notes\nNot n/a')).toBe('Not n/a');
+    expect(extractReleaseNotes('## Release notes\n- None')).toBe('- None');
+  });
+
   it('returns null for the PR template as it is', () => {
     const template = readFileSync(
       new URL('../.github/pull_request_template.md', import.meta.url),
