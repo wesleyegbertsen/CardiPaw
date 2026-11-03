@@ -136,6 +136,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # "Generate changelog" reads each merged PR's description with gh.
+      pull-requests: read
 
     steps:
       - name: Checkout
@@ -172,6 +174,7 @@ jobs:
 
       - name: Generate changelog
         env:
+          GH_TOKEN: ${{ github.token }}
           PREVIOUS_TAG: ${{ needs.check.outputs.previous-tag }}
           SHA: ${{ needs.check.outputs.sha }}
           VERSION: ${{ needs.version.outputs.version }}
@@ -186,10 +189,11 @@ jobs:
           {
             echo "## What's changed"
             echo
-            # --first-parent lists each merged PR once (squash-merge or merge commit), not the commits inside it.
-            # GitHub turns the "(#123)" in squash-merge subjects into links to the PR.
-            git log --first-parent --pretty=format:'- %s (%h)' "$range"
-            echo
+            # One line per merged PR (--first-parent lists each squash-merge once), with the
+            # "Release notes" section of its description quoted under it. GitHub turns the "(#123)"
+            # in squash-merge subjects into links to the PR. A PR that can't be read keeps its line
+            # and gets a warning; the release goes on.
+            node scripts/release-notes.mjs "$range"
             echo
             if [ -n "$PREVIOUS_TAG" ]; then
               echo "**Full changelog**: https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...v$VERSION"
