@@ -16,7 +16,15 @@ let suspendTimer: ReturnType<typeof setTimeout> | undefined;
 function getContext(): AudioContext {
   // The browser can close a context on its own, and a closed one never plays again.
   if (!ctx || ctx.state === 'closed') {
-    ctx = new AudioContext();
+    const created = new AudioContext();
+    // A context can start running after the last tracker closed, when the suspend delay has
+    // passed it by: iOS returns it from 'interrupted' once a call ends, and a browser can
+    // grant a resume it held back. It would render silence until the next visit ends, so it
+    // gets the same delayed suspend. A replaced context is ignored.
+    created.addEventListener('statechange', () => {
+      if (created === ctx && created.state === 'running' && users === 0) scheduleSuspend();
+    });
+    ctx = created;
   }
   return ctx;
 }
@@ -88,6 +96,11 @@ function suspendIfIdle(): void {
   ctx.suspend().catch((e: unknown) => console.warn('Suspending audio failed', e));
 }
 
+function scheduleSuspend(): void {
+  clearTimeout(suspendTimer);
+  suspendTimer = setTimeout(suspendIfIdle, SUSPEND_DELAY_MS);
+}
+
 /**
  * The tracker's sounds, played through one AudioContext shared by every caller. The context
  * is suspended shortly after the last caller's component unmounts, so it renders nothing
@@ -100,7 +113,7 @@ export function useAudioBeep() {
   onScopeDispose(() => {
     users--;
     if (users > 0) return;
-    suspendTimer = setTimeout(suspendIfIdle, SUSPEND_DELAY_MS);
+    scheduleSuspend();
   });
   return { init, playBeep, playDoneSound };
 }

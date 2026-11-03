@@ -16,21 +16,33 @@ class FakeGain {
   connect = vi.fn();
 }
 
+// iOS adds 'interrupted' (during a call), which TypeScript's DOM types leave out.
+type State = AudioContextState | 'interrupted';
+
 class FakeAudioContext {
   static instances: FakeAudioContext[] = [];
-  state: AudioContextState = 'suspended';
+  state: State = 'suspended';
   currentTime = 10;
   destination = {};
   oscillators: FakeOscillator[] = [];
   gains: FakeGain[] = [];
+  stateListeners: (() => void)[] = [];
   resume = vi.fn(async () => {
-    this.state = 'running';
+    this.changeState('running');
   });
   suspend = vi.fn(async () => {
-    this.state = 'suspended';
+    this.changeState('suspended');
   });
   constructor() {
     FakeAudioContext.instances.push(this);
+  }
+  addEventListener(type: string, listener: () => void) {
+    if (type === 'statechange') this.stateListeners.push(listener);
+  }
+  // As the browser does, and tells the context's listeners.
+  changeState(state: State) {
+    this.state = state;
+    this.stateListeners.forEach((listener) => listener());
   }
   createOscillator() {
     const osc = new FakeOscillator();
@@ -186,6 +198,37 @@ describe('useAudioBeep', () => {
       tracker.close();
       vi.advanceTimersByTime(1000);
       expect(FakeAudioContext.instances[0].suspend).not.toHaveBeenCalled();
+    });
+
+    it('suspends a context that starts running again after the tracker closed', async () => {
+      const tracker = open();
+      tracker.audio.init();
+      await flushPromises();
+      const [ctx] = FakeAudioContext.instances;
+      ctx.changeState('interrupted'); // iOS, during a call
+      tracker.close();
+      vi.advanceTimersByTime(1000);
+      expect(ctx.suspend).not.toHaveBeenCalled();
+
+      ctx.changeState('running'); // the call ended
+      vi.advanceTimersByTime(900);
+      expect(ctx.suspend).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(100);
+      expect(ctx.suspend).toHaveBeenCalledOnce();
+    });
+
+    it('keeps a context running that starts again while the tracker is open', async () => {
+      const tracker = open();
+      tracker.audio.init();
+      await flushPromises();
+      const [ctx] = FakeAudioContext.instances;
+      ctx.changeState('interrupted');
+      ctx.changeState('running');
+      vi.advanceTimersByTime(2000);
+      expect(ctx.suspend).not.toHaveBeenCalled();
+      tracker.close();
+      vi.advanceTimersByTime(1000);
+      expect(ctx.suspend).toHaveBeenCalledOnce();
     });
 
     it('logs a suspend that fails', async () => {
