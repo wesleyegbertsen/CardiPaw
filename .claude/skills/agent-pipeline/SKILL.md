@@ -158,9 +158,8 @@ commit. List what remains.
    comments and an unused `Closes #` line), then add any of the sections below
    that it lacks. Without a template, use these sections:
    - Summary, including the process used
-   - Release notes (optional): only what users need to know that the title
-     can't say, like a setting that gets reset. Leave it out when the title
-     says enough.
+   - Release notes: only what users need to know that the title can't say,
+     like a setting that gets reset. Write NONE when the title says enough.
    - Changes / bug fixes, each noting that its test failed before the fix
    - Infrastructure
    - Verification: commands, numbers, manual checks
