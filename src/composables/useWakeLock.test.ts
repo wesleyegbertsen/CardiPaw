@@ -163,6 +163,16 @@ describe('useWakeLock', () => {
     expect(sentinels[0].release).toHaveBeenCalledOnce();
   });
 
+  it('lets go of the lock only once', async () => {
+    const lock = use();
+    lock.acquire();
+    await flushPromises();
+    lock.release();
+    lock.release();
+    scope.stop();
+    expect(sentinels[0].release).toHaveBeenCalledOnce();
+  });
+
   it('releases when its component goes away, and stops listening', async () => {
     const lock = use();
     lock.acquire();
