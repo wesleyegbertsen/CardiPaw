@@ -6,6 +6,8 @@ import { defineComponent, h, type Plugin } from 'vue';
 import {
   createMemoryHistory,
   createRouter,
+  isNavigationFailure,
+  NavigationFailureType,
   RouterView,
   useRoute,
   type RouteLocationRaw,
@@ -842,7 +844,9 @@ describe('TrackerView', () => {
     it('keeps the count when a reminder opens this pet’s tracker', async () => {
       const { wrapper } = await mountTracker();
       await wrapper.get('.heart-btn').trigger('click');
-      await router.push({ name: 'tracker', params: { id: pet.id } });
+      // The same location: vue-router stops it as a duplicate before any guard runs.
+      const result = await router.push({ name: 'tracker', params: { id: pet.id } });
+      expect(isNavigationFailure(result, NavigationFailureType.duplicated)).toBe(true);
       expect(dialog()).toBeNull();
       expect(wrapper.get('.count-number').text()).toBe('1');
     });
@@ -909,6 +913,23 @@ describe('TrackerView', () => {
       await flushPromises();
       expect(router.currentRoute.value.name).toBe('tracker');
       expect(document.activeElement).toBe(wrapper.get('.result').element);
+    });
+
+    it('keeps focus on the back arrow when the count ends behind the dialog and the user cancels', async () => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      await wrapper.get('.heart-btn').trigger('click');
+      const back = wrapper.get<HTMLButtonElement>('.back-btn');
+      back.element.focus();
+      await back.trigger('click');
+      await flushPromises();
+      expect(dialog()).not.toBeNull();
+
+      await vi.advanceTimersByTimeAsync(30_000);
+      clickInDialog('.btn-cancel');
+      await flushPromises();
+      expect(router.currentRoute.value.name).toBe('tracker');
+      expect(wrapper.find('.result').exists()).toBe(true);
+      expect(document.activeElement).toBe(back.element);
     });
 
     describe('while saving', () => {
