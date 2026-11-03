@@ -3,8 +3,21 @@ import { ref, useId } from 'vue';
 import { useModal } from '../composables/useModal';
 
 // confirmLabel names what confirming does (e.g. Discard); without it the button says Confirm.
-defineProps<{ message: string; confirmLabel?: string }>();
+// confirmDelayMs: for that long after opening, taps on the confirm button do nothing.
+const props = withDefaults(
+  defineProps<{ message: string; confirmLabel?: string; confirmDelayMs?: number }>(),
+  { confirmDelayMs: 0 },
+);
 const emit = defineEmits<{ confirm: []; cancel: [] }>();
+
+// A dialog that opens under the user's finger (e.g. mid-tapping) must not take the next
+// tap as a yes. The button stays enabled and looks the same: disabling it would flicker
+// and could drop focus. Cancel, Escape and the backdrop work at once.
+const openedAt = Date.now();
+function onConfirmClick() {
+  if (Date.now() - openedAt < props.confirmDelayMs) return;
+  emit('confirm');
+}
 
 const id = useId();
 const dialogRef = ref<HTMLElement | null>(null);
@@ -30,7 +43,7 @@ useModal(dialogRef, { onClose: () => emit('cancel'), initialFocus: cancelRef });
         <p :id="`${id}-message`" class="message">{{ message }}</p>
         <div class="actions">
           <button ref="cancelRef" class="btn-cancel" @click="$emit('cancel')">{{ $t('common.cancel') }}</button>
-          <button class="btn-confirm" @click="$emit('confirm')">{{ confirmLabel ?? $t('common.confirm') }}</button>
+          <button class="btn-confirm" @click="onConfirmClick">{{ confirmLabel ?? $t('common.confirm') }}</button>
         </div>
       </div>
     </div>

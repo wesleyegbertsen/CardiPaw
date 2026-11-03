@@ -112,6 +112,11 @@ const petPage = { name: 'pet', params: { id: pet.id } } as const;
 const dialog = () => document.body.querySelector<HTMLElement>('[role="alertdialog"]');
 const clickInDialog = (button: '.btn-cancel' | '.btn-confirm') =>
   dialog()!.querySelector<HTMLElement>(button)!.click();
+// Discard ignores taps for its first 500 ms (breath taps meant for the heart), so wait first.
+const discardInDialog = () => {
+  vi.advanceTimersByTime(500);
+  clickInDialog('.btn-confirm');
+};
 
 describe('TrackerView', () => {
   beforeEach(() => {
@@ -707,6 +712,25 @@ describe('TrackerView', () => {
       expect(wrapper.get('.result-number').text()).toBe('4');
     });
 
+    // The dialog opens over the heart: the next breath tap may land on Discard.
+    it('ignores a Discard tap right after the dialog opens', async () => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      await wrapper.get('.heart-btn').trigger('click');
+      router.back();
+      await flushPromises();
+      clickInDialog('.btn-confirm');
+      await flushPromises();
+      expect(dialog()).not.toBeNull();
+      expect(router.currentRoute.value.name).toBe('tracker');
+      expect(wrapper.get('.count-number').text()).toBe('1');
+
+      await vi.advanceTimersByTimeAsync(500);
+      clickInDialog('.btn-confirm');
+      await flushPromises();
+      expect(dialog()).toBeNull();
+      expect(router.currentRoute.value.name).toBe('pet');
+    });
+
     it('asks before leaving a finished result that is not saved', async () => {
       const { wrapper } = await mountTracker({ from: petPage });
       await wrapper.get('.heart-btn').trigger('click');
@@ -786,7 +810,7 @@ describe('TrackerView', () => {
       await flushPromises();
       expect(dialog()).not.toBeNull();
 
-      clickInDialog('.btn-confirm');
+      discardInDialog();
       await flushPromises();
       expect(router.currentRoute.value.name).toBe('home');
       expect(wrapper.find('.tracker').exists()).toBe(false);
@@ -809,7 +833,7 @@ describe('TrackerView', () => {
 
       void router.push(other);
       await flushPromises();
-      clickInDialog('.btn-confirm');
+      discardInDialog();
       await flushPromises();
       expect(router.currentRoute.value.params.id).toBe('pet-2');
       expect(wrapper.get('.pet-name-label').text()).toBe('Bo');
@@ -833,7 +857,7 @@ describe('TrackerView', () => {
       await flushPromises();
       expect(document.body.querySelectorAll('[role="alertdialog"]')).toHaveLength(1);
 
-      clickInDialog('.btn-confirm');
+      discardInDialog();
       await flushPromises();
       expect(settled).toBe(2);
       expect(router.currentRoute.value.name).toBe('settings');
@@ -926,7 +950,7 @@ describe('TrackerView', () => {
       it('stays where the user went when they discard before it finishes', async () => {
         const { wrapper, addReading } = await mountTracker({ from: petPage });
         const save = await startSave(wrapper, addReading);
-        clickInDialog('.btn-confirm');
+        discardInDialog();
         await flushPromises();
         expect(router.currentRoute.value.name).toBe('settings');
 

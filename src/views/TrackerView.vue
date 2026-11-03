@@ -212,6 +212,10 @@ const hasUnsaved = computed(() =>
     : phase.value !== 'idle',
 );
 
+// The leave dialog's Discard sits over the heart on small screens: after a stray back
+// swipe mid-count, the next breath tap would land on it and throw the count away.
+const LEAVE_DISCARD_DELAY_MS = 500;
+
 // Answers the open leave dialog (true leaves, false stays); null while none is open.
 const answerLeave = ref<((leave: boolean) => void) | null>(null);
 let pendingLeave: Promise<boolean> | null = null;
@@ -307,6 +311,7 @@ onUnmounted(() => {
       v-if="answerLeave"
       :message="$t('tracker.leaveConfirm')"
       :confirm-label="$t('common.discard')"
+      :confirm-delay-ms="LEAVE_DISCARD_DELAY_MS"
       @confirm="answerLeave?.(true)"
       @cancel="stayOnTracker"
     />
