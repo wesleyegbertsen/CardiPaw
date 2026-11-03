@@ -1,10 +1,13 @@
+import { execFileSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { describe, expect, it } from 'vitest';
 import {
   buildChangelog,
   extractReleaseNotes,
   formatNotes,
+  GIT_LOG_FORMAT,
   parseGitLog,
+  PR_QUERY,
   prNumber,
   unsafeMarkup,
   warningCommand,
@@ -38,6 +41,39 @@ describe('parseGitLog', () => {
   it('throws on a record it does not recognise', () => {
     expect(() => parseGitLog(`${HASH_A}\0ad6b58e\n`)).toThrow('Unexpected git log record');
     expect(() => parseGitLog('- feat: x (ad6b58e)\n')).toThrow('Unexpected git log record');
+    expect(() => parseGitLog(`${'g'.repeat(40)}\0ggggggg\0feat: x\n`)).toThrow(
+      'Unexpected git log record',
+    );
+  });
+
+  it('accepts a SHA-256 commit hash', () => {
+    const hash = `${HASH_A}${'0'.repeat(24)}`;
+    expect(parseGitLog(`${hash}\0ad6b58e\0feat: x\n`)).toEqual([
+      { hash, shortHash: 'ad6b58e', subject: 'feat: x' },
+    ]);
+  });
+
+  it('parses what git log prints with GIT_LOG_FORMAT', () => {
+    // -1: CI's checkout has only one commit.
+    const output = execFileSync('git', ['log', '-1', `--format=${GIT_LOG_FORMAT}`], {
+      encoding: 'utf8',
+    });
+    const commits = parseGitLog(output);
+    expect(commits).toHaveLength(1);
+    expect(commits[0].hash).toMatch(/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/);
+    expect(commits[0].hash.startsWith(commits[0].shortHash)).toBe(true);
+    expect(commits[0].subject).not.toBe('');
+  });
+});
+
+describe('PR_QUERY', () => {
+  it('asks for every field the changelog reads, with the variables the script passes', () => {
+    for (const field of ['body', 'state', 'mergedAt', 'lastEditedAt', 'mergeCommit { oid }']) {
+      expect(PR_QUERY).toContain(` ${field} `);
+    }
+    expect(PR_QUERY).toContain('repository(owner: $owner, name: $name)');
+    expect(PR_QUERY).toContain('pullRequest(number: $number)');
+    expect(PR_QUERY).toMatch(/^query\(\$owner: String!, \$name: String!, \$number: Int!\)/);
   });
 });
 
@@ -152,6 +188,31 @@ describe('extractReleaseNotes', () => {
 
   it('runs an unclosed fence to the end of the body', () => {
     expect(extractReleaseNotes('## Release notes\n```\n## inside\n')).toBe('```\n## inside');
+  });
+
+  it('does not close a backtick fence with tildes, or with a line that has an info string', () => {
+    expect(extractReleaseNotes('## Release notes\n```\n~~~\n## a\n```\nB\n## End')).toBe(
+      '```\n~~~\n## a\n```\nB',
+    );
+    expect(extractReleaseNotes('## Release notes\n```\n```js\n## a\n```\nB\n## End')).toBe(
+      '```\n```js\n## a\n```\nB',
+    );
+  });
+
+  it('does not open a fence indented by 4 spaces', () => {
+    expect(extractReleaseNotes('## Release notes\n    ```\n## End')).toBe('    ```');
+  });
+
+  it('treats a lone CR as a line end', () => {
+    expect(extractReleaseNotes('## Release notes\rA\r\rB\r## End\rX')).toBe('A\n\nB');
+  });
+
+  it('cuts the notes at a "<!--" in a code span, like an unclosed comment', () => {
+    // GitHub shows `<!--` as code, but this hides the rest of the body: the notes come out
+    // shorter, never longer, than what the PR shows.
+    expect(extractReleaseNotes('## Release notes\nType `<!--` to\nhide.\n## Changes\nC')).toBe(
+      'Type `',
+    );
   });
 
   it('uses the first "Release notes" section', () => {

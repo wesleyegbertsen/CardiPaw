@@ -13,6 +13,7 @@ import { execFileSync, spawnSync } from 'child_process';
 import { appendFileSync } from 'fs';
 import {
   buildChangelog,
+  GIT_LOG_FORMAT,
   parseGitLog,
   PR_QUERY,
   warningCommand,
@@ -52,7 +53,7 @@ function main(range) {
   const repo = process.env.GITHUB_REPOSITORY;
   const log = execFileSync(
     'git',
-    ['log', '--first-parent', '--format=%H%x00%h%x00%s', '--end-of-options', range],
+    ['log', '--first-parent', `--format=${GIT_LOG_FORMAT}`, '--end-of-options', range],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: MAX_BUFFER },
   );
   const { markdown, warnings } = buildChangelog(parseGitLog(log), (number) =>

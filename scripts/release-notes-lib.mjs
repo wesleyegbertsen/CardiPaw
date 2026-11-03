@@ -10,7 +10,10 @@ const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 const FENCE_CLOSE = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
 const MAX_NOTES = 2000;
 
-/** `git log --format=%H%x00%h%x00%s` output → [{ hash, shortHash, subject }]. */
+/** For `git log --format=…`: full hash, short hash and subject, NUL-separated. */
+export const GIT_LOG_FORMAT = '%H%x00%h%x00%s';
+
+/** `git log --format=${GIT_LOG_FORMAT}` output → [{ hash, shortHash, subject }]. */
 export function parseGitLog(output) {
   return output
     .split('\n')
