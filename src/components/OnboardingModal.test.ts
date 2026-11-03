@@ -114,6 +114,18 @@ describe('OnboardingModal', () => {
     expect(await swipe(-60, 0, [[-30, 0]])).toEqual([true]);
   });
 
+  // The browser kept that drag and may fling it, which would eat the tap on the new page (#118).
+  it('does not turn the page after a drag that locked vertical', async () => {
+    mountModal();
+    expect(
+      await swipe(-60, 10, [
+        [2, 12],
+        [-60, 10],
+      ]),
+    ).toEqual([false, false]);
+    expect(stepCount()).toBe('Step 1 of 4');
+  });
+
   // On WebKit and Gecko, claiming the first move of a touch stops it from ever scrolling.
   it('leaves a vertical-leaning or tiny move to the browser before the axis locks', async () => {
     mountModal();

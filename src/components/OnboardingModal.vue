@@ -68,6 +68,9 @@ function onTouchMove(e: TouchEvent) {
 }
 
 function onTouchEnd(e: TouchEvent) {
+  // A drag that locked vertical was left to the browser, which may still fling it; a page turn
+  // now would put Next or Back under a tap that the fling eats (#118).
+  if (swipeAxis === 'y') return;
   const dx = e.changedTouches[0].clientX - touchStartX;
   const dy = e.changedTouches[0].clientY - touchStartY;
   if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
