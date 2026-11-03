@@ -505,17 +505,29 @@ describe('PetDetailView', () => {
       Object.defineProperty(viewport, 'clientWidth', { value: WIDTH });
 
       // Fingers start at (200, 100); dx/dy are relative to that, `time` is in ms.
-      async function fire(type: string, dx: number, dy: number, time: number, fingers = 1) {
+      async function fire(
+        type: string,
+        dx: number,
+        dy: number,
+        time: number,
+        fingers = 1,
+        cancelable = false,
+      ) {
         const points = Array.from({ length: fingers }, () => ({
           clientX: 200 + dx,
           clientY: 100 + dy,
         }));
-        viewport.dispatchEvent(touchEvent(type, points, time));
+        const event = touchEvent(type, points, time, { cancelable });
+        viewport.dispatchEvent(event);
         await nextTick();
+        return event;
       }
       const start = (time = 0, fingers = 1) => fire('touchstart', 0, 0, time, fingers);
       const move = (dx: number, dy = 0, time = 0) => fire('touchmove', dx, dy, time);
       const end = (dx: number, dy = 0, time = 0) => fire('touchend', dx, dy, time);
+      /** A cancelable move, as sent before the browser scrolls; true if the view claimed it. */
+      const claims = async (dx: number, dy = 0) =>
+        (await fire('touchmove', dx, dy, 0, 1, true)).defaultPrevented;
       /** A one-finger horizontal swipe by `dx` px that lifts after `ms`. */
       async function swipe(dx: number, ms: number) {
         await start();
@@ -529,7 +541,7 @@ describe('PetDetailView', () => {
       const dragging = () => track().classes().includes('dragging');
       const collapsed = () =>
         wrapper.findAll('.tab-panel').map((p) => p.classes().includes('collapsed'));
-      return { ...mounted, fire, start, move, end, swipe, transform, dragging, collapsed };
+      return { ...mounted, fire, start, move, end, claims, swipe, transform, dragging, collapsed };
     }
 
     it('moves to the next tab after a slow drag past a quarter of the width', async () => {
@@ -639,6 +651,44 @@ describe('PetDetailView', () => {
       await end(-200, 40, 2000);
       await settle();
       expect(replace).not.toHaveBeenCalled();
+    });
+
+    // A real touchmove is cancelable only until Chrome starts its own scroll. A sideways swipe the
+    // browser kept would leave an invisible fling that eats the next tap (#118).
+    it('claims the touch before the swipe axis is decided', async () => {
+      const { start, claims, dragging } = await mountSwipe();
+      await start();
+      expect(await claims(-5)).toBe(true);
+      expect(await claims(-9, 2)).toBe(true);
+      expect(dragging()).toBe(false);
+    });
+
+    it('claims every move of a sideways drag', async () => {
+      const { start, claims, dragging } = await mountSwipe();
+      await start();
+      expect(await claims(-30)).toBe(true);
+      expect(await claims(-120)).toBe(true);
+      expect(dragging()).toBe(true);
+    });
+
+    it('leaves a vertical scroll to the browser once it locks', async () => {
+      const { start, claims } = await mountSwipe();
+      await start();
+      expect(await claims(0, 20)).toBe(false);
+      expect(await claims(-30, 80)).toBe(false);
+    });
+
+    it('does not claim moves while the jump picker is open, or with two fingers', async () => {
+      const picker = await mountSwipe();
+      await picker.wrapper.get('.range-label-btn').trigger('click');
+      await picker.start();
+      expect(await picker.claims(-30)).toBe(false);
+
+      const twoFingers = await mountSwipe();
+      await twoFingers.start();
+      await twoFingers.move(-50);
+      await twoFingers.start(500, 2);
+      expect(await twoFingers.claims(-80)).toBe(false);
     });
 
     it('cancels the drag when a second finger touches', async () => {

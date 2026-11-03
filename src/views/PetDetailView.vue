@@ -185,12 +185,23 @@ function onTabTouchMove(e: TouchEvent) {
   if (swipeAxis === 'ignore' || swipeAxis === 'y') return;
   const dx = e.touches[0].clientX - touchStartX;
   const dy = e.touches[0].clientY - touchStartY;
+  // Claim every move until the axis locks, not only once it locks to x (#15 did that and still
+  // failed on phones, #118). With touch-action: pan-y, Chrome on Android runs a fling for a
+  // sideways swipe even though nothing scrolls; the next touch only stops that fling and its tap
+  // is dropped. Chrome holds back moves inside its ~8px touch slop, so the first move we see is
+  // often still under SWIPE_LOCK_THRESHOLD, and it is the only cancelable one: once Chrome starts
+  // scrolling, later moves can't be cancelled. Never claim a vertical scroll, and keep this
+  // listener non-passive.
   if (swipeAxis === null) {
-    if (Math.abs(dx) < SWIPE_LOCK_THRESHOLD && Math.abs(dy) < SWIPE_LOCK_THRESHOLD) return;
+    if (Math.abs(dx) < SWIPE_LOCK_THRESHOLD && Math.abs(dy) < SWIPE_LOCK_THRESHOLD) {
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
     swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
     if (swipeAxis === 'y') return;
     isDragging.value = true;
   }
+  if (e.cancelable) e.preventDefault();
   const pastEdge = (dx > 0 && trackIndex.value === 0) || (dx < 0 && trackIndex.value === TABS.length - 1);
   dragOffset.value = pastEdge ? dx * SWIPE_EDGE_RESISTANCE : dx;
 }
