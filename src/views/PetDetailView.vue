@@ -640,7 +640,7 @@ async function deletePet() {
     >
       <div
         class="tab-track"
-        :class="{ dragging: isDragging }"
+        :class="{ dragging: isDragging, sliding: isAnimating }"
         :style="{ transform: `translateX(calc(${-trackIndex * 100}% + ${dragOffset}px))` }"
         @transitionend.self="isAnimating = false"
       >
@@ -1067,6 +1067,12 @@ async function deletePet() {
   display: flex;
   align-items: flex-start;
   transition: transform 0.3s ease-out;
+}
+
+/* Mid-slide, the panel being left can still be under the finger, so a tap would open an item
+   from the wrong tab. Touches then land on .tab-viewport, so a new swipe still works. */
+.tab-track.sliding {
+  pointer-events: none;
 }
 
 .tab-panel {

@@ -771,6 +771,28 @@ describe('PetDetailView', () => {
       expect(collapsed()).toEqual([true, false, true]);
     });
 
+    // While the track slides, the panel being left is still under the finger: a tap there would
+    // open an item from the wrong tab. `.sliding` turns off pointer events on the track.
+    it('ignores taps on the panels while the track slides', async () => {
+      const { wrapper, start, move, swipe } = await mountSwipe();
+      const sliding = () => wrapper.get('.tab-track').classes().includes('sliding');
+      expect(sliding()).toBe(false);
+
+      await start();
+      await move(-60);
+      expect(sliding()).toBe(false);
+      await swipe(-120, 2000);
+      expect(sliding()).toBe(true);
+      await wrapper.get('.tab-track').trigger('transitionend');
+      expect(sliding()).toBe(false);
+
+      await tabs(wrapper)[0].trigger('click');
+      await settle();
+      expect(sliding()).toBe(true);
+      await wrapper.get('.tab-track').trigger('transitionend');
+      expect(sliding()).toBe(false);
+    });
+
     it('keeps the panels expanded while a tapped tab slides in', async () => {
       const { wrapper, collapsed } = await mountSwipe();
       await tabs(wrapper)[1].trigger('click');
