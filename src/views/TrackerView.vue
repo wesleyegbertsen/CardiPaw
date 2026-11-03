@@ -171,8 +171,9 @@ async function saveReading() {
       source: isManual ? 'manual' : undefined,
       durationSeconds: isManual ? undefined : runSeconds.value,
     });
-    // The user confirmed leaving while this saved: stay wherever they went.
-    if (unmounted) return;
+    // The user confirmed leaving while this saved: stay wherever they went, also when
+    // that page is still opening and this view is not gone yet.
+    if (unmounted || leaving) return;
     // Saved while the leave dialog asks: nothing is lost any more, so let them go.
     if (answerLeave.value) {
       answerLeave.value(true);
@@ -227,6 +228,7 @@ function confirmLeave(): boolean | Promise<boolean> {
   // A second back while asking waits for the same answer instead of a second dialog.
   pendingLeave ??= new Promise<boolean>((resolve) => {
     answerLeave.value = (leave) => {
+      if (leave) leaving = true;
       answerLeave.value = null;
       pendingLeave = null;
       resolve(leave);

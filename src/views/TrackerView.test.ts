@@ -958,6 +958,25 @@ describe('TrackerView', () => {
         await flushPromises();
         expect(router.currentRoute.value.name).toBe('settings');
       });
+
+      // E.g. the Settings page is still loading when the save lands: the tracker is still up.
+      it('stays where the user went when the save finishes after Discard, before the page has gone', async () => {
+        const { wrapper, addReading } = await mountTracker({ from: petPage });
+        const settingsLoaded = deferred<void>();
+        router.beforeEach(async (to) => {
+          if (to.name === 'settings') await settingsLoaded.promise;
+        });
+        const save = await startSave(wrapper, addReading);
+        discardInDialog();
+        await flushPromises();
+        expect(router.currentRoute.value.name).toBe('tracker');
+
+        save.resolve(makeReading());
+        await flushPromises();
+        settingsLoaded.resolve();
+        await flushPromises();
+        expect(router.currentRoute.value.name).toBe('settings');
+      });
     });
   });
 
