@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { effectScope } from 'vue';
 import { flushPromises } from '@vue/test-utils';
-import { useAudioBeep } from './useAudioBeep';
 
 // Records what would be played; Web Audio does not exist in node.
 class FakeOscillator {
@@ -18,12 +18,17 @@ class FakeGain {
 
 class FakeAudioContext {
   static instances: FakeAudioContext[] = [];
-  state: AudioContextState = 'running';
+  state: AudioContextState = 'suspended';
   currentTime = 10;
   destination = {};
   oscillators: FakeOscillator[] = [];
   gains: FakeGain[] = [];
-  resume = vi.fn(() => Promise.resolve());
+  resume = vi.fn(async () => {
+    this.state = 'running';
+  });
+  suspend = vi.fn(async () => {
+    this.state = 'suspended';
+  });
   constructor() {
     FakeAudioContext.instances.push(this);
   }
@@ -39,21 +44,36 @@ class FakeAudioContext {
   }
 }
 
+// The context lives in the module, shared by every caller: each test loads a fresh copy.
+let useAudioBeep: typeof import('./useAudioBeep').useAudioBeep;
+
+// Opens the tracker: calls the composable in an effect scope, as a component's setup would.
+// close() is the component unmounting.
+function open() {
+  const scope = effectScope();
+  const audio = scope.run(() => useAudioBeep())!;
+  return { audio, close: () => scope.stop() };
+}
+
 describe('useAudioBeep', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     FakeAudioContext.instances = [];
     vi.stubGlobal('AudioContext', FakeAudioContext);
+    // Only the suspend delay's timer; the rest stay real.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    vi.resetModules();
+    ({ useAudioBeep } = await import('./useAudioBeep'));
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => vi.useRealTimers());
 
   it('resumes the audio context on init', () => {
-    useAudioBeep().init();
+    open().audio.init();
     expect(FakeAudioContext.instances).toHaveLength(1);
     expect(FakeAudioContext.instances[0].resume).toHaveBeenCalledOnce();
   });
 
   it('reuses the context, and replaces it once closed', async () => {
-    const audio = useAudioBeep();
+    const { audio } = open();
     audio.init();
     audio.playBeep();
     expect(FakeAudioContext.instances).toHaveLength(1);
@@ -65,7 +85,7 @@ describe('useAudioBeep', () => {
   });
 
   it('beeps at 880 Hz for half a second', async () => {
-    useAudioBeep().playBeep();
+    open().audio.playBeep();
     await flushPromises();
     const [ctx] = FakeAudioContext.instances;
     const [osc] = ctx.oscillators;
@@ -81,7 +101,7 @@ describe('useAudioBeep', () => {
   });
 
   it('plays a rising three-note chord when done', async () => {
-    useAudioBeep().playDoneSound();
+    open().audio.playDoneSound();
     await flushPromises();
     const [ctx] = FakeAudioContext.instances;
     expect(ctx.oscillators.map((o) => o.frequency.value)).toEqual([523, 659, 784]);
@@ -95,7 +115,90 @@ describe('useAudioBeep', () => {
   });
 
   it('plays nothing until the context has resumed', () => {
-    useAudioBeep().playDoneSound();
+    open().audio.playDoneSound();
     expect(FakeAudioContext.instances[0].oscillators).toHaveLength(0);
+  });
+
+  describe('between visits', () => {
+    it('keeps one context across tracker visits', async () => {
+      for (let i = 0; i < 5; i++) {
+        const tracker = open();
+        tracker.audio.init();
+        await flushPromises();
+        tracker.close();
+        vi.advanceTimersByTime(1000);
+      }
+      const [ctx] = FakeAudioContext.instances;
+      expect(FakeAudioContext.instances).toHaveLength(1);
+      expect(ctx.resume).toHaveBeenCalledTimes(5);
+      expect(ctx.suspend).toHaveBeenCalledTimes(5);
+    });
+
+    it('suspends the context a moment after the tracker closes, once the chime is over', async () => {
+      const tracker = open();
+      tracker.audio.init();
+      await flushPromises();
+      tracker.audio.playDoneSound();
+      await flushPromises();
+      tracker.close();
+      const [ctx] = FakeAudioContext.instances;
+      vi.advanceTimersByTime(900); // the chime lasts 0.71 s
+      expect(ctx.suspend).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(100);
+      expect(ctx.suspend).toHaveBeenCalledOnce();
+      expect(ctx.state).toBe('suspended');
+    });
+
+    it('keeps the context running when the tracker opens again within that moment', async () => {
+      const first = open();
+      first.audio.init();
+      await flushPromises();
+      first.close();
+      vi.advanceTimersByTime(500);
+      const second = open();
+      vi.advanceTimersByTime(2000);
+      const [ctx] = FakeAudioContext.instances;
+      expect(ctx.suspend).not.toHaveBeenCalled();
+      second.close();
+      vi.advanceTimersByTime(1000);
+      expect(ctx.suspend).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the context running while another caller remains', async () => {
+      const a = open();
+      const b = open();
+      a.audio.init();
+      await flushPromises();
+      a.close();
+      vi.advanceTimersByTime(2000);
+      const [ctx] = FakeAudioContext.instances;
+      expect(ctx.suspend).not.toHaveBeenCalled();
+      b.close();
+      vi.advanceTimersByTime(1000);
+      expect(ctx.suspend).toHaveBeenCalledOnce();
+    });
+
+    it('leaves a context alone that is not running', async () => {
+      const tracker = open();
+      tracker.audio.init();
+      await flushPromises();
+      FakeAudioContext.instances[0].state = 'suspended'; // e.g. the browser did, with the app in the background
+      tracker.close();
+      vi.advanceTimersByTime(1000);
+      expect(FakeAudioContext.instances[0].suspend).not.toHaveBeenCalled();
+    });
+
+    it('logs a suspend that fails', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const tracker = open();
+      tracker.audio.init();
+      await flushPromises();
+      const error = new DOMException('Context is gone', 'InvalidStateError');
+      FakeAudioContext.instances[0].suspend.mockRejectedValueOnce(error);
+      tracker.close();
+      vi.advanceTimersByTime(1000);
+      await flushPromises();
+      expect(warn).toHaveBeenCalledExactlyOnceWith('Suspending audio failed', error);
+    });
   });
 });
