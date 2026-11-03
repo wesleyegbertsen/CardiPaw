@@ -21,9 +21,20 @@ function getContext(): AudioContext {
   return ctx;
 }
 
+// A sound is a nicety: a context the browser refuses to create or resume must not stop the
+// count, so the failure is logged and the count goes on.
 function play(schedule: (audioCtx: AudioContext) => void): void {
-  const audioCtx = getContext();
-  audioCtx.resume().then(() => schedule(audioCtx));
+  let audioCtx: AudioContext;
+  try {
+    audioCtx = getContext();
+  } catch (e) {
+    console.warn('Playing a sound failed', e);
+    return;
+  }
+  audioCtx
+    .resume()
+    .then(() => schedule(audioCtx))
+    .catch((e: unknown) => console.warn('Playing a sound failed', e));
 }
 
 // Resumes the context as the tracker opens, so the first beep plays as promptly as the rest.

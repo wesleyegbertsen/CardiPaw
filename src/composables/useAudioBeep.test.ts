@@ -201,4 +201,47 @@ describe('useAudioBeep', () => {
       expect(warn).toHaveBeenCalledExactlyOnceWith('Suspending audio failed', error);
     });
   });
+
+  describe('when sound fails', () => {
+    it('keeps going when the browser refuses to create a context', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const error = new DOMException('Too many contexts', 'NotSupportedError');
+      vi.stubGlobal(
+        'AudioContext',
+        class {
+          constructor() {
+            throw error;
+          }
+        },
+      );
+      const tracker = open();
+      expect(() => {
+        tracker.audio.init();
+        tracker.audio.playBeep();
+      }).not.toThrow();
+      expect(warn).toHaveBeenCalledTimes(2);
+      expect(warn).toHaveBeenCalledWith('Playing a sound failed', error);
+      tracker.close();
+      expect(() => vi.advanceTimersByTime(1000)).not.toThrow(); // no context to suspend
+
+      // A later visit tries again.
+      vi.stubGlobal('AudioContext', FakeAudioContext);
+      open().audio.init();
+      expect(FakeAudioContext.instances).toHaveLength(1);
+    });
+
+    it('logs a resume that fails, and plays nothing', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { audio } = open();
+      audio.init();
+      await flushPromises();
+      const [ctx] = FakeAudioContext.instances;
+      const error = new DOMException('Context is gone', 'InvalidStateError');
+      ctx.resume.mockRejectedValueOnce(error);
+      audio.playBeep();
+      await flushPromises();
+      expect(warn).toHaveBeenCalledExactlyOnceWith('Playing a sound failed', error);
+      expect(ctx.oscillators).toHaveLength(0);
+    });
+  });
 });
