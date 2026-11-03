@@ -112,6 +112,7 @@
     "saveReading": "Enregistrer la mesure",
     "saveResult": "Enregistrer le résultat",
     "saveError": "La mesure n'a pas pu être enregistrée. Veuillez réessayer.",
+    "leaveConfirm": "Quitter la page et abandonner cette mesure ? Elle n'a pas encore été enregistrée.",
     "tryAgain": "Réessayer"
   },
   "addEditPet": {

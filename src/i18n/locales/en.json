@@ -112,6 +112,7 @@
     "saveReading": "Save reading",
     "saveResult": "Save result",
     "saveError": "The reading could not be saved. Please try again.",
+    "leaveConfirm": "Leave and discard this measurement? It has not been saved yet.",
     "tryAgain": "Try again"
   },
   "addEditPet": {

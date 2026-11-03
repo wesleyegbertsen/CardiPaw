@@ -2,8 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createI18n } from 'vue-i18n';
-import type { Plugin } from 'vue';
-import { createMemoryHistory, createRouter, type Router } from 'vue-router';
+import { defineComponent, h, type Plugin } from 'vue';
+import {
+  createMemoryHistory,
+  createRouter,
+  RouterView,
+  useRoute,
+  type RouteLocationRaw,
+  type Router,
+} from 'vue-router';
 import TrackerView from './TrackerView.vue';
 import { routes } from '../router';
 import { usePetsStore } from '../stores/pets';
@@ -13,6 +20,7 @@ import { createTestI18n } from '../test/i18n';
 import en from '../i18n/locales/en.json';
 import de from '../i18n/locales/de.json';
 import ja from '../i18n/locales/ja.json';
+import { closeTopModal } from '../composables/useModal';
 import { Blank } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
 import * as db from '../services/db';
@@ -41,12 +49,14 @@ let router: Router;
 /**
  * `stored` set: the pets store starts empty, as on a reload straight into the tracker, and
  * loading pets resolves with `stored` (or rejects, for an Error; or settles with a Promise).
- * `i18n` replaces the default English instance.
+ * `i18n` replaces the default English instance. `from` is opened first, so there is a
+ * screen to go back to.
  */
 async function mountTracker({
   stored,
   i18n = createTestI18n(),
-}: { stored?: Pet[] | Error | Promise<Pet[]>; i18n?: Plugin } = {}) {
+  from,
+}: { stored?: Pet[] | Error | Promise<Pet[]>; i18n?: Plugin; from?: RouteLocationRaw } = {}) {
   const pinia = createPinia();
   setActivePinia(pinia);
   const getAllPets = vi.spyOn(db, 'getAllPets');
@@ -59,17 +69,26 @@ async function mountTracker({
     .mockImplementation(async (data) => makeReading(data));
 
   // The app's real routes (as mountView uses), so a renamed route fails here too.
+  // The real view renders on its own route, so its route guards run (they need a RouterView).
   router = createRouter({
     history: createMemoryHistory(),
-    routes: routes.map((r) => ({ ...r, component: Blank })),
+    routes: routes.map((r) => ({ ...r, component: r.name === 'tracker' ? TrackerView : Blank })),
   });
+  if (from) await router.push(from);
   await router.push({ name: 'tracker', params: { id: pet.id } });
   await router.isReady();
 
   const push = vi.spyOn(router, 'push');
   const replace = vi.spyOn(router, 'replace');
 
-  const wrapper = mount(TrackerView, {
+  // Keyed like App.vue, so another pet's tracker remounts the view as in the app.
+  const Host = defineComponent({
+    setup() {
+      const route = useRoute();
+      return () => h(RouterView, { key: route.path });
+    },
+  });
+  const wrapper = mount(Host, {
     attachTo: document.body,
     global: { plugins: [pinia, router, i18n] },
   });
@@ -86,6 +105,13 @@ const pressedLengths = (wrapper: VueWrapper) =>
   wrapper.findAll('.length-pill').map((p) => p.attributes('aria-pressed'));
 const i18nFor = (locale: 'de' | 'ja') =>
   createI18n({ legacy: false, locale, fallbackLocale: 'en', messages: { en, de, ja } });
+
+// Opened before the tracker, so a back gesture has somewhere to go.
+const petPage = { name: 'pet', params: { id: pet.id } } as const;
+// The leave dialog is teleported to <body>, outside the wrapper.
+const dialog = () => document.body.querySelector<HTMLElement>('[role="alertdialog"]');
+const clickInDialog = (button: '.btn-cancel' | '.btn-confirm') =>
+  dialog()!.querySelector<HTMLElement>(button)!.click();
 
 describe('TrackerView', () => {
   beforeEach(() => {
@@ -403,6 +429,16 @@ describe('TrackerView', () => {
       expect(wrapper.find('[role="alert"]').exists()).toBe(true);
     }
 
+    it('still asks before leaving', async () => {
+      const { wrapper, addReading } = await mountTracker({ from: petPage });
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(30_000);
+      await failSave(wrapper, addReading);
+      router.back();
+      await flushPromises();
+      expect(dialog()).not.toBeNull();
+    });
+
     it('drops the error on Try again, also for the next result', async () => {
       const { wrapper, addReading } = await mountTracker();
       await wrapper.get('.heart-btn').trigger('click');
@@ -618,6 +654,24 @@ describe('TrackerView', () => {
       expect(sentinels[0].release).toHaveBeenCalledOnce();
     });
 
+    it('keeps the screen on while asking to leave, then lets it sleep on Discard', async () => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      await wrapper.get('.heart-btn').trigger('click');
+      await flushPromises();
+      router.back();
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(dialog()).not.toBeNull();
+      expect(sentinels[0].release).not.toHaveBeenCalled();
+
+      clickInDialog('.btn-confirm');
+      await flushPromises();
+      expect(router.currentRoute.value.name).toBe('pet');
+      expect(sentinels[0].release).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(audio.playDoneSound).not.toHaveBeenCalled();
+      expect(haptics.vibrateDone).not.toHaveBeenCalled();
+    });
+
     it('keeps the screen on again for a count started with Try again', async () => {
       const { wrapper } = await mountTracker();
       await wrapper.get('.heart-btn').trigger('click');
@@ -629,6 +683,257 @@ describe('TrackerView', () => {
       await flushPromises();
       expect(request).toHaveBeenCalledTimes(2);
       expect(sentinels[1].release).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('leaving', () => {
+    it('asks before going back during a count, and Cancel keeps counting', async () => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      await wrapper.get('.heart-btn').trigger('click');
+      router.back();
+      await flushPromises();
+      expect(dialog()?.querySelector('.message')?.textContent).toBe(en.tracker.leaveConfirm);
+      expect(dialog()?.querySelector('.btn-confirm')?.textContent).toBe('Discard');
+
+      clickInDialog('.btn-cancel');
+      await flushPromises();
+      expect(dialog()).toBeNull();
+      expect(router.currentRoute.value.name).toBe('tracker');
+      // The back already moved history; Cancel moves it forward again.
+      expect(router.options.history.location).toBe(`/pets/${pet.id}/track`);
+      await wrapper.get('.heart-btn').trigger('click');
+      expect(wrapper.get('.count-number').text()).toBe('2');
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(wrapper.get('.result-number').text()).toBe('4');
+    });
+
+    it('asks before leaving a finished result that is not saved', async () => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(30_000);
+      router.back();
+      await flushPromises();
+      expect(dialog()).not.toBeNull();
+
+      clickInDialog('.btn-cancel');
+      await flushPromises();
+      expect(wrapper.get('.result-number').text()).toBe('2');
+      // Focus goes back to the result, where the end of the count put it.
+      expect(document.activeElement).toBe(wrapper.get('.result').element);
+    });
+
+    it.each<[string, (wrapper: VueWrapper) => Promise<unknown>]>([
+      ['a rate', (w) => w.get('.manual-rate-input').setValue('42')],
+      ['notes', (w) => w.get('.notes-stub').setValue('<p>calm</p>')],
+      ['a rest state', (w) => w.findAll('.rest-btn')[0].trigger('click')],
+    ])('asks before leaving a manual entry with %s', async (_, fill) => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      await wrapper.findAll('.mode-pill')[1].trigger('click');
+      await fill(wrapper);
+      router.back();
+      await flushPromises();
+      expect(dialog()).not.toBeNull();
+    });
+
+    it.each<[string, (wrapper: VueWrapper) => Promise<unknown>]>([
+      ['nothing was counted', async () => {}],
+      ['the manual entry is empty', (w) => w.findAll('.mode-pill')[1].trigger('click')],
+      [
+        'the manual rate was typed and cleared',
+        async (w) => {
+          await w.findAll('.mode-pill')[1].trigger('click');
+          await w.get('.manual-rate-input').setValue('42');
+          await w.get('.manual-rate-input').setValue('');
+        },
+      ],
+    ])('leaves without asking when %s', async (_, prepare) => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      await prepare(wrapper);
+      router.back();
+      await flushPromises();
+      expect(dialog()).toBeNull();
+      expect(router.currentRoute.value.name).toBe('pet');
+    });
+
+    it.each(['guided', 'manual'])('leaves without asking on Discard (%s)', async (mode) => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      if (mode === 'manual') {
+        await wrapper.findAll('.mode-pill')[1].trigger('click');
+        await wrapper.get('.manual-rate-input').setValue('42');
+      } else {
+        await wrapper.get('.heart-btn').trigger('click');
+        await vi.advanceTimersByTimeAsync(30_000);
+      }
+      await wrapper.get('.btn-discard').trigger('click');
+      await flushPromises();
+      expect(dialog()).toBeNull();
+      expect(router.currentRoute.value.name).toBe('pet');
+    });
+
+    it('asks before the header back arrow leaves a count', async () => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      await wrapper.get('.heart-btn').trigger('click');
+      await wrapper.get('.back-btn').trigger('click');
+      await flushPromises();
+      expect(dialog()).not.toBeNull();
+      expect(router.currentRoute.value.name).toBe('tracker');
+    });
+
+    it('asks before the bottom nav leaves a count', async () => {
+      const { wrapper } = await mountTracker();
+      await wrapper.get('.heart-btn').trigger('click');
+      void router.push({ name: 'home' });
+      await flushPromises();
+      expect(dialog()).not.toBeNull();
+
+      clickInDialog('.btn-confirm');
+      await flushPromises();
+      expect(router.currentRoute.value.name).toBe('home');
+      expect(wrapper.find('.tracker').exists()).toBe(false);
+    });
+
+    // A reminder tap opens that pet's tracker: the same route with another id.
+    it('asks before a reminder opens another pet’s tracker', async () => {
+      const { wrapper } = await mountTracker();
+      usePetsStore().pets.push(makePet({ id: 'pet-2', name: 'Bo' }));
+      await wrapper.get('.heart-btn').trigger('click');
+      const other = { name: 'tracker', params: { id: 'pet-2' } } as const;
+
+      const stay = router.push(other);
+      await flushPromises();
+      expect(dialog()).not.toBeNull();
+      clickInDialog('.btn-cancel');
+      await stay;
+      expect(router.currentRoute.value.params.id).toBe(pet.id);
+      expect(wrapper.get('.count-number').text()).toBe('1');
+
+      void router.push(other);
+      await flushPromises();
+      clickInDialog('.btn-confirm');
+      await flushPromises();
+      expect(router.currentRoute.value.params.id).toBe('pet-2');
+      expect(wrapper.get('.pet-name-label').text()).toBe('Bo');
+    });
+
+    it('keeps the count when a reminder opens this pet’s tracker', async () => {
+      const { wrapper } = await mountTracker();
+      await wrapper.get('.heart-btn').trigger('click');
+      await router.push({ name: 'tracker', params: { id: pet.id } });
+      expect(dialog()).toBeNull();
+      expect(wrapper.get('.count-number').text()).toBe('1');
+    });
+
+    // E.g. two quick browser backs: one dialog, and its answer settles both navigations.
+    it('answers a second navigation while asking with the same dialog', async () => {
+      const { wrapper } = await mountTracker();
+      await wrapper.get('.heart-btn').trigger('click');
+      let settled = 0;
+      void router.push({ name: 'home' }).then(() => settled++);
+      void router.push({ name: 'settings' }).then(() => settled++);
+      await flushPromises();
+      expect(document.body.querySelectorAll('[role="alertdialog"]')).toHaveLength(1);
+
+      clickInDialog('.btn-confirm');
+      await flushPromises();
+      expect(settled).toBe(2);
+      expect(router.currentRoute.value.name).toBe('settings');
+    });
+
+    it('stays when the Android back button closes the dialog', async () => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      await wrapper.get('.heart-btn').trigger('click');
+      router.back();
+      await flushPromises();
+
+      expect(closeTopModal()).toBe(true);
+      await flushPromises();
+      expect(dialog()).toBeNull();
+      expect(router.currentRoute.value.name).toBe('tracker');
+      expect(router.options.history.location).toBe(`/pets/${pet.id}/track`);
+    });
+
+    it('closes the help when asking to leave, so it does not cover the dialog', async () => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      await wrapper.get('.heart-btn').trigger('click');
+      await wrapper.get('.help-btn').trigger('click');
+      const help = () => document.body.querySelector('[role="dialog"]');
+      expect(help()).not.toBeNull();
+      router.back();
+      await flushPromises();
+      expect(help()).toBeNull();
+      expect(document.activeElement).toBe(dialog()?.querySelector('.btn-cancel'));
+
+      clickInDialog('.btn-cancel');
+      await flushPromises();
+      expect(router.currentRoute.value.name).toBe('tracker');
+      expect(wrapper.get('.count-number').text()).toBe('1');
+    });
+
+    it('keeps focus in the dialog when the count ends behind it, then moves it to the result', async () => {
+      const { wrapper } = await mountTracker({ from: petPage });
+      const heart = wrapper.get<HTMLButtonElement>('.heart-btn');
+      heart.element.focus();
+      await heart.trigger('click');
+      router.back();
+      await flushPromises();
+      const cancel = dialog()?.querySelector('.btn-cancel');
+      expect(document.activeElement).toBe(cancel);
+
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(document.activeElement).toBe(cancel);
+      clickInDialog('.btn-cancel');
+      await flushPromises();
+      expect(router.currentRoute.value.name).toBe('tracker');
+      expect(document.activeElement).toBe(wrapper.get('.result').element);
+    });
+
+    describe('while saving', () => {
+      async function startSave(wrapper: VueWrapper, addReading: MockInstance) {
+        const save = deferred<Reading>();
+        addReading.mockImplementationOnce(() => save.promise);
+        await wrapper.get('.heart-btn').trigger('click');
+        await vi.advanceTimersByTimeAsync(30_000);
+        await wrapper.get('.btn-save').trigger('click');
+        void router.push({ name: 'settings' });
+        await flushPromises();
+        expect(dialog()).not.toBeNull();
+        return save;
+      }
+
+      it('lets the user go once the save finishes', async () => {
+        const { wrapper, addReading } = await mountTracker({ from: petPage });
+        const save = await startSave(wrapper, addReading);
+        save.resolve(makeReading());
+        await flushPromises();
+        expect(dialog()).toBeNull();
+        expect(router.currentRoute.value.name).toBe('settings');
+      });
+
+      it('keeps asking when the save fails', async () => {
+        const { wrapper, addReading } = await mountTracker({ from: petPage });
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const save = await startSave(wrapper, addReading);
+        save.reject(new Error('quota exceeded'));
+        await flushPromises();
+        expect(dialog()).not.toBeNull();
+
+        clickInDialog('.btn-cancel');
+        await flushPromises();
+        expect(router.currentRoute.value.name).toBe('tracker');
+        expect(wrapper.get('[role="alert"]').text()).toBe(en.tracker.saveError);
+      });
+
+      it('stays where the user went when they discard before it finishes', async () => {
+        const { wrapper, addReading } = await mountTracker({ from: petPage });
+        const save = await startSave(wrapper, addReading);
+        clickInDialog('.btn-confirm');
+        await flushPromises();
+        expect(router.currentRoute.value.name).toBe('settings');
+
+        save.resolve(makeReading());
+        await flushPromises();
+        expect(router.currentRoute.value.name).toBe('settings');
+      });
     });
   });
 
