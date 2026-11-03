@@ -4,6 +4,7 @@ import pluginVue from 'eslint-plugin-vue';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
+import { builtinModules } from 'node:module';
 
 export default defineConfig(
   globalIgnores(['dist/', 'dist-native/', 'dev-dist/', 'coverage/', 'public/', 'android/']),
@@ -26,9 +27,9 @@ export default defineConfig(
     },
   },
 
-  // Node scripts (repo and skill helpers) and tool config.
+  // Node scripts (repo and skill helpers), tool config, and the research prototypes.
   {
-    files: ['scripts/**/*.mjs', '.claude/**/*.mjs', '*.config.{js,ts}'],
+    files: ['scripts/**/*.mjs', '.claude/**/*.mjs', '*.config.{js,ts}', 'research/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
 
@@ -60,6 +61,25 @@ export default defineConfig(
             {
               group: ['**/readings', '**/readings.[jt]s', '**/notes', '**/notes.[jt]s'],
               message: 'Clear per-pet caches through ./petData.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // The research signal code must stay WebView-safe: no Node built-ins in the pure modules.
+  // builtinModules lists every bare built-in (fs, fs/promises, path, …); node:* is the prefixed form.
+  {
+    files: ['research/camera-breath/{signal,estimate,motion,synth,score}.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['node:*', ...builtinModules],
+              message: 'Pure module: keep Node I/O in ingest.ts or run.ts.',
             },
           ],
         },
