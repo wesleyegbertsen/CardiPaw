@@ -131,6 +131,20 @@ describe('useAudioBeep', () => {
     expect(FakeAudioContext.instances[0].oscillators).toHaveLength(0);
   });
 
+  it('refuses to be used outside a component, which could never let the context suspend', async () => {
+    expect(() => useAudioBeep()).toThrow(
+      'useAudioBeep() must be called during component setup or inside an effect scope',
+    );
+
+    // The refused call is not left counted as a tracker that never closes.
+    const tracker = open();
+    tracker.audio.init();
+    await flushPromises();
+    tracker.close();
+    vi.advanceTimersByTime(1000);
+    expect(FakeAudioContext.instances[0].suspend).toHaveBeenCalledOnce();
+  });
+
   describe('between visits', () => {
     it('keeps one context across tracker visits', async () => {
       for (let i = 0; i < 5; i++) {

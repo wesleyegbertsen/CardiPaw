@@ -1,4 +1,4 @@
-import { onScopeDispose } from 'vue';
+import { getCurrentScope, onScopeDispose } from 'vue';
 
 // Longer than the done chime (its last note ends 0.71 s after it starts), so leaving the
 // tracker right as the count ends doesn't cut the chime off.
@@ -107,6 +107,13 @@ function scheduleSuspend(): void {
  * between visits, and the next sound resumes it.
  */
 export function useAudioBeep() {
+  // Outside a scope nothing would ever count this caller out, so the context could never be
+  // suspended again; Vue would only warn, and only in development.
+  if (!getCurrentScope()) {
+    throw new Error(
+      'useAudioBeep() must be called during component setup or inside an effect scope',
+    );
+  }
   users++;
   // Back within the delay (the next visit): keep the context running.
   clearTimeout(suspendTimer);
