@@ -271,6 +271,7 @@ Whichever you use, check the signing certificate of a new APK (see **Checking an
 - A reminder that came due while the phone was off is skipped; the later ones still come.
 - Battery savers on some phones (Xiaomi, Samsung and others) can delay reminders or drop them.
 - On a secured lock screen, Android shows that CardiPaw has a notification but hides its text.
+- Reminders use the phone's default notification sound and vibrate (as far as its sound mode allows). Earlier versions used a "Measuring reminders" category that never vibrated; the update replaces it with a new one of the same name, so changes you made to the old one in Android's notification settings (turning it off, a custom sound, vibration turned on by hand) are reset once. Reminders from the old version that are still showing, or already due, when CardiPaw is first opened after the update are cleared once.
 - Besides CardiPaw's "Measuring reminders", Android's notification settings for the app also list a "Default" channel; it comes with the notifications plugin.
 
 ## Releases & Versioning
@@ -284,7 +285,7 @@ Releases are automated by the [Release workflow](.github/workflows/release.yml),
 3. [GitVersion](https://gitversion.net/) determines the next version from the commit messages since that release (see [PR titles](#pr-titles) below and [`GitVersion.yml`](GitVersion.yml)).
 4. [`scripts/set-version.mjs`](scripts/set-version.mjs) stamps that version into `package.json` and `package-lock.json`, from which the app reads it at build time. You can run it locally with `npm run set-version -- 1.2.3`.
 5. The website is deployed, the Docker image is pushed with the new version tags, and the Android APK is built and signed (see [Release signing](#release-signing)).
-6. The commit is tagged `vX.Y.Z` and a GitHub release is created with the APK attached and a changelog that lists every commit merged since the previous release.
+6. The commit is tagged `vX.Y.Z` and a GitHub release is created with the APK attached and a changelog that lists every commit merged since the previous release. When a PR's description has a `## Release notes` section (see the [PR template](.github/pull_request_template.md)), that text is quoted under the PR's line; a section that only says NONE or N/A adds nothing. If a PR's description can't be read, was edited after the PR was merged, or its notes contain raw HTML, footnotes or link reference definitions (which can break out of the quote), its line is listed without notes and the run shows a warning.
 
 If the deploy, the Docker image or the APK fails, nothing is tagged, and the next run retries with the same version.
 

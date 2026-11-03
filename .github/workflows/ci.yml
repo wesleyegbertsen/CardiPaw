@@ -98,13 +98,19 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
 
-      # The release's sign job has only scripts/ and no node_modules. Running a copy outside
-      # the repo fails here too if the script ever imports an npm package or a file elsewhere.
+      # The release's sign job (android-apk.mjs) and release job (release-notes.mjs) run scripts/
+      # without node_modules. Running a copy outside the repo fails here too if a script ever
+      # imports an npm package or a file elsewhere.
       - name: Copy scripts/ out of the repo
         run: cp -r scripts "$RUNNER_TEMP/apk-scripts"
 
       - name: Check release version
         run: node "$RUNNER_TEMP/apk-scripts/android-apk.mjs" check-version android/app/build/outputs/apk/release/output-metadata.json 1.2.3
+
+      # HEAD..HEAD lists no commits, so no gh call is made: this checks that the script loads and
+      # runs git from outside the repo.
+      - name: Check release-notes script
+        run: node "$RUNNER_TEMP/apk-scripts/release-notes.mjs" HEAD..HEAD
 
       - name: Sign with a throwaway key and verify
         shell: bash

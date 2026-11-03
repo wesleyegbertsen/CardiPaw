@@ -153,8 +153,13 @@ commit. List what remains.
 
 1. Push to your branch. If a PR is already open for it, update its title and
    description rather than opening a new one.
-2. Follow the repo's PR template if there is one. Otherwise use these sections:
+2. Follow the repo's PR template if there is one; `gh pr create --body`
+   doesn't apply it, so read it. Fill in the template's sections (delete its
+   comments and an unused `Closes #` line), then add any of the sections below
+   that it lacks. Without a template, use these sections:
    - Summary, including the process used
+   - Release notes: only what users need to know that the title can't say,
+     like a setting that gets reset. Write NONE when the title says enough.
    - Changes / bug fixes, each noting that its test failed before the fix
    - Infrastructure
    - Verification: commands, numbers, manual checks
