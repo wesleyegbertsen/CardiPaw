@@ -37,6 +37,7 @@ vi.mock('@capacitor/local-notifications', () => ({
     cancel: vi.fn(async () => {}),
     removeDeliveredNotificationsById: vi.fn(async () => {}),
     createChannel: vi.fn(async () => {}),
+    deleteChannel: vi.fn(async () => {}),
     schedule: vi.fn(async () => ({ notifications: [] })),
     addListener: vi.fn(async () => ({ remove: async () => {} })),
   },
@@ -53,6 +54,11 @@ const LN = vi.mocked(LocalNotifications);
 
 /** A reminder the plugin still has: scheduled, or shown and not yet tapped or dismissed. */
 function pending(id: number, petId: string, at?: string): PendingLocalNotificationSchema {
+  return { id, title: '', body: '', extra: { petId, at, channel: 'reminders-v2' } };
+}
+
+/** One scheduled before the update for #120: on the old 'reminders' channel, with no marker. */
+function legacy(id: number, petId: string, at: string): PendingLocalNotificationSchema {
   return { id, title: '', body: '', extra: { petId, at } };
 }
 
@@ -94,7 +100,7 @@ describe('reminders', () => {
     expect(App.addListener).not.toHaveBeenCalled();
   });
 
-  it('schedules inexact, wake-up reminders on the reminders channel on install', async () => {
+  it('schedules inexact, wake-up reminders on the vibrating reminders-v2 channel on install', async () => {
     mockNative();
     install();
     await syncReminders();
@@ -105,20 +111,21 @@ describe('reminders', () => {
       title: "Time to measure Mochi's breathing rate",
       body: 'Count the breaths while your pet is resting or asleep.',
       schedule: { allowWhileIdle: true },
-      channelId: 'reminders',
+      channelId: 'reminders-v2',
       isExactNotification: false,
-      extra: { petId: 'pet-1', at: '2026-06-10T22:00:00.000Z' },
+      extra: { petId: 'pet-1', at: '2026-06-10T22:00:00.000Z', channel: 'reminders-v2' },
     });
     expect(notifications[0].schedule!.at!.toISOString()).toBe('2026-06-10T22:00:00.000Z');
     for (const n of notifications) {
       expect(n).toMatchObject({ isExactNotification: false, schedule: { allowWhileIdle: true } });
     }
     expect(LN.createChannel).toHaveBeenCalledWith({
-      id: 'reminders',
+      id: 'reminders-v2',
       name: 'Measuring reminders',
       description: "Reminders to measure your pets' resting breathing rate",
       importance: 3,
       visibility: 0,
+      vibration: true,
     });
     expect(LN.requestPermissions).not.toHaveBeenCalled();
   });
@@ -133,6 +140,7 @@ describe('reminders', () => {
     await syncReminders();
     expect(LN.schedule).not.toHaveBeenCalled();
     expect(LN.cancel).toHaveBeenCalledWith({ notifications: [{ id: stale.id }] });
+    expect(LN.deleteChannel).toHaveBeenCalledWith({ id: 'reminders' });
   });
 
   it('tops up the reminders when the app starts', async () => {
@@ -200,12 +208,87 @@ describe('reminders', () => {
 
   it('still schedules on Android 7, which has no channels', async () => {
     mockNative();
-    LN.createChannel.mockRejectedValue(
-      Object.assign(new Error('not available'), { code: 'UNAVAILABLE' }),
-    );
+    const error = vi.spyOn(console, 'error');
+    const unavailable = Object.assign(new Error('not available'), { code: 'UNAVAILABLE' });
+    LN.createChannel.mockRejectedValue(unavailable);
+    LN.deleteChannel.mockRejectedValue(unavailable);
     install();
     await syncReminders();
     expect(LN.schedule).toHaveBeenCalled();
+    expect(LN.deleteChannel).toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it('moves a reminder scheduled before the update to the vibrating channel', async () => {
+    mockNative();
+    const id = reminderId(1, '2026-06-10');
+    // At the very time the setting plans: only the missing marker gives it away.
+    LN.getPending.mockResolvedValue({
+      notifications: [legacy(id, 'pet-1', '2026-06-10T22:00:00.000Z')],
+    });
+    install();
+    await syncReminders();
+    expect(LN.cancel).toHaveBeenCalledWith({ notifications: [{ id }] });
+    expect(LN.removeDeliveredNotificationsById).not.toHaveBeenCalled();
+    const moved = LN.schedule.mock.calls[0][0].notifications.find((n) => n.id === id);
+    expect(moved).toMatchObject({ channelId: 'reminders-v2', extra: { channel: 'reminders-v2' } });
+  });
+
+  it('keeps what it scheduled itself on the next sync', async () => {
+    mockNative();
+    install();
+    await syncReminders();
+    const scheduled = LN.schedule.mock.calls[0][0].notifications;
+    LN.getPending.mockResolvedValue({
+      notifications: scheduled.map(({ id, title, body, extra }) => ({ id, title, body, extra })),
+    });
+    await syncReminders();
+    expect(LN.cancel).not.toHaveBeenCalled();
+  });
+
+  it('deletes the old channel once the reminders are on the new one', async () => {
+    mockNative();
+    install();
+    await syncReminders();
+    expect(LN.deleteChannel).toHaveBeenCalledWith({ id: 'reminders' });
+    expect(LN.deleteChannel.mock.invocationCallOrder[0]).toBeGreaterThan(
+      LN.schedule.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('deletes the old channel also when reminders are off', async () => {
+    mockNative();
+    saveReminderSetting('pet-1', { enabled: false, time: '22:00', days: [0, 1, 2, 3, 4, 5, 6] });
+    install();
+    await syncReminders();
+    expect(LN.schedule).not.toHaveBeenCalled();
+    expect(LN.deleteChannel).toHaveBeenCalledWith({ id: 'reminders' });
+  });
+
+  it("keeps the old channel in a sync for one pet: another pet's reminders may still be on it", async () => {
+    mockNative();
+    install();
+    await syncReminders();
+    LN.deleteChannel.mockClear();
+    await db.savePet(makePet({ id: 'pet-2', name: 'Bo' }));
+    saveReminderSetting('pet-2', { enabled: true, time: '22:00', days: [0, 1, 2, 3, 4, 5, 6] });
+    LN.getPending.mockResolvedValue({
+      notifications: [legacy(reminderId(2, '2026-06-10'), 'pet-2', '2026-06-10T22:00:00.000Z')],
+    });
+    await syncReminders('pet-1');
+    await applyReminders('pet-1');
+    expect(LN.deleteChannel).not.toHaveBeenCalled();
+  });
+
+  it('logs and resolves when the old channel cannot be deleted', async () => {
+    mockNative();
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    install();
+    const failure = Object.assign(new Error('boom'), { code: 'EXCEPTION' });
+    LN.deleteChannel.mockRejectedValue(failure);
+    await expect(syncReminders()).resolves.toBeUndefined();
+    expect(LN.schedule).toHaveBeenCalled();
+    expect(error).toHaveBeenCalledWith('Could not update reminders', failure);
   });
 
   it("cancels and dismisses today's reminder once today has a reading", async () => {
@@ -229,12 +312,7 @@ describe('reminders', () => {
     install();
     vi.setSystemTime(new Date('2026-06-10T22:03:00Z'));
     const id = reminderId(1, '2026-06-10');
-    const due = {
-      id,
-      title: '',
-      body: '',
-      extra: { petId: 'pet-1', at: '2026-06-10T22:00:00.000Z' },
-    };
+    const due = pending(id, 'pet-1', '2026-06-10T22:00:00.000Z');
     LN.getPending.mockResolvedValue({ notifications: [due] });
     await syncReminders('pet-1');
     expect(LN.cancel).not.toHaveBeenCalled();
@@ -303,6 +381,8 @@ describe('reminders', () => {
     LN.schedule.mockRejectedValue(disabled);
     await expect(syncReminders()).resolves.toBeUndefined();
     expect(error).toHaveBeenCalledWith('Could not update reminders', disabled);
+    // The old channel stays until a sync has moved the reminders.
+    expect(LN.deleteChannel).not.toHaveBeenCalled();
   });
 
   it('logs and schedules nothing when the channel fails for another reason', async () => {
@@ -338,7 +418,7 @@ describe('reminders', () => {
         'Tijd om de ademhaling van Mochi te meten',
       );
       expect(LN.createChannel).toHaveBeenLastCalledWith(
-        expect.objectContaining({ id: 'reminders', name: 'Meetherinneringen' }),
+        expect.objectContaining({ id: 'reminders-v2', name: 'Meetherinneringen' }),
       );
     } finally {
       // Later tests expect English; let the syncs this starts finish here.
