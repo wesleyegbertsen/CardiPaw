@@ -1,0 +1,269 @@
+// Pure parts of scripts/release-notes.mjs. No I/O, so scripts/release-notes-lib.test.mjs
+// can test them without git or gh.
+
+// Squash-merge subjects end in "(#123)". Anchored at the end: `Revert "x (#15)" (#16)` is PR 16.
+const PR_REF = /\(#(\d+)\)$/;
+const COMMIT_HASH = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
+const HEADING = /^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*$/;
+const NOTES_TITLE = /^release notes[ \t]*:?$/i;
+const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/;
+const FENCE_CLOSE = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
+const MAX_NOTES = 2000;
+
+/** For `git log --format=…`: full hash, short hash and subject, NUL-separated. */
+export const GIT_LOG_FORMAT = '%H%x00%h%x00%s';
+
+/** `git log --format=${GIT_LOG_FORMAT}` output → [{ hash, shortHash, subject }]. */
+export function parseGitLog(output) {
+  return output
+    .split('\n')
+    .filter((record) => record !== '')
+    .map((record) => {
+      const fields = record.split('\0');
+      if (fields.length !== 3 || !COMMIT_HASH.test(fields[0])) {
+        throw new Error(`Unexpected git log record: ${JSON.stringify(record)}`);
+      }
+      const [hash, shortHash, subject] = fields;
+      return { hash, shortHash, subject };
+    });
+}
+
+/** The PR number a squash-merge subject ends with, or null. */
+export function prNumber(subject) {
+  const match = PR_REF.exec(subject);
+  return match ? Number(match[1]) : null;
+}
+
+function parseHeading(line) {
+  const match = HEADING.exec(line);
+  if (!match) return null;
+  // Drop an optional closing sequence: "## Release notes ##".
+  const text = (match[2] ?? '').replace(/(?:^|[ \t]+)#+$/, '');
+  return { level: match[1].length, text };
+}
+
+function openFence(line) {
+  const match = FENCE_OPEN.exec(line);
+  // "```js`" doesn't open a fence: a backtick fence's info string can't contain a backtick.
+  if (!match || (match[1][0] === '`' && match[2].includes('`'))) return null;
+  return match[1];
+}
+
+function closesFence(line, fence) {
+  const match = FENCE_CLOSE.exec(line);
+  return !!match && match[1][0] === fence[0] && match[1].length >= fence.length;
+}
+
+// A section that only says this is an explicit "no release notes", as in Kubernetes' PRs.
+const NO_NOTES = /^(?:none|n\/a|-)\.?$/i;
+
+/**
+ * The text under the first "Release notes" heading (any level, outside code fences), up to the
+ * next heading of the same or a higher level; null when there is none, it's empty, or it only
+ * says NONE, N/A or -. HTML comments are removed first: GitHub doesn't show them, and the PR
+ * template's placeholder is one.
+ */
+export function extractReleaseNotes(body) {
+  const lines = body
+    .replace(/\r\n?/g, '\n')
+    // An unclosed "<!--" hides the rest of the body.
+    .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
+    .split('\n');
+  let fence = null;
+  let start = -1;
+  let level = 0;
+  let end = lines.length;
+  for (let i = 0; i < lines.length; i++) {
+    if (fence) {
+      if (closesFence(lines[i], fence)) fence = null;
+      continue;
+    }
+    fence = openFence(lines[i]);
+    if (fence) continue;
+    const heading = parseHeading(lines[i]);
+    if (!heading) continue;
+    if (start < 0) {
+      if (NOTES_TITLE.test(heading.text)) {
+        start = i + 1;
+        level = heading.level;
+      }
+    } else if (heading.level <= level) {
+      end = i;
+      break;
+    }
+  }
+  if (start < 0) return null;
+  const section = lines.slice(start, end).map((line) => (line.trim() === '' ? '' : line));
+  while (section.length && section[0] === '') section.shift();
+  while (section.length && section.at(-1) === '') section.pop();
+  if (!section.length || (section.length === 1 && NO_NOTES.test(section[0].trim()))) return null;
+  return section.join('\n');
+}
+
+/** Notes as a quote inside the commit's list item: the list stays tight, other items render as before. */
+export function formatNotes(notes) {
+  return notes.split('\n').map((line) => (line === '' ? '  >' : `  > ${line}`));
+}
+
+// Markup that reaches outside the quote: raw HTML can close the release's list (GitHub keeps
+// </blockquote></li></ul>), a footnote renders at the end of the release, and a link reference
+// definition applies to the whole release, even when it's nested in a list item.
+const HTML_TAG = /<\/?[A-Za-z][A-Za-z0-9-]*(?=[\s/>]|$)/;
+const FOOTNOTE = /\[\^[^\]\n]+\]/;
+const LINK_DEFINITION = /\[[^\]]*\]:/;
+const ESCAPED = /^\\[!-/:-@[-`{-~]/;
+const AUTOLINK =
+  /^<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\s<>]*|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*)>/;
+
+/**
+ * `line` without its code spans, backslash escapes and autolinks, scanned left to right as
+ * GitHub does: an escaped backtick or one inside an autolink doesn't open a code span. Only
+ * spans within the line count; a span across lines stays text, which can only drop notes.
+ */
+function outsideCodeSpans(line) {
+  let text = '';
+  let i = 0;
+  while (i < line.length) {
+    const rest = line.slice(i);
+    const skip = ESCAPED.exec(rest) ?? (rest[0] === '<' ? AUTOLINK.exec(rest) : null);
+    if (skip) {
+      text += ' ';
+      i += skip[0].length;
+      continue;
+    }
+    if (rest[0] !== '`') {
+      text += rest[0];
+      i++;
+      continue;
+    }
+    const run = /^`+/.exec(rest)[0];
+    const closing = new RegExp(`(?<!\`)\`{${run.length}}(?!\`)`, 'g');
+    closing.lastIndex = run.length;
+    const close = closing.exec(rest);
+    if (close) {
+      text += ' ';
+      i += close.index + run.length;
+    } else {
+      text += run;
+      i += run.length;
+    }
+  }
+  return text;
+}
+
+/**
+ * What in `notes` could break out of their quote: 'raw HTML', 'a footnote',
+ * 'a link reference definition', or null. Code fences and code spans are skipped, but only fences
+ * that start at the left margin: one indented in a list item ends with the item, while this
+ * would still see it as open.
+ */
+export function unsafeMarkup(notes) {
+  const text = [];
+  let fence = null;
+  for (const line of notes.split('\n')) {
+    if (fence) {
+      if (closesFence(line, fence)) fence = null;
+      continue;
+    }
+    fence = line.startsWith(' ') ? null : openFence(line);
+    if (!fence) text.push(outsideCodeSpans(line));
+  }
+  const visible = text.join('\n');
+  if (HTML_TAG.test(visible)) return 'raw HTML';
+  if (FOOTNOTE.test(visible)) return 'a footnote';
+  if (LINK_DEFINITION.test(visible)) return 'a link reference definition';
+  return null;
+}
+
+/** For `gh api graphql -f query=… -f owner=… -f name=… -F number=…`: what readPr reads. */
+export const PR_QUERY =
+  'query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) ' +
+  '{ pullRequest(number: $number) { body state mergedAt lastEditedAt mergeCommit { oid } } } }';
+
+/**
+ * fetchPr's result → { notes } (a string, or null for none), or { reason } why there are none.
+ * Notes are only used from a merged PR whose merge commit is `hash`, and whose description
+ * wasn't edited after it was merged: whoever merged it reviewed the notes as they were then.
+ */
+function readPr(hash, result) {
+  // gh's message ends in "."; the warning goes on after it.
+  if ('error' in result) return { reason: result.error.replace(/\.$/, '') };
+  let response;
+  try {
+    response = JSON.parse(result.json);
+  } catch {
+    return { reason: 'gh printed something other than JSON' };
+  }
+  const pr = response?.data?.repository?.pullRequest;
+  if (pr == null) return { reason: 'the pull request was not found' };
+  if (pr.state !== 'MERGED') {
+    return { reason: `the pull request is ${pr.state ?? 'in an unknown state'}, not merged` };
+  }
+  const oid = pr.mergeCommit?.oid;
+  if (oid == null) return { reason: 'the pull request has no merge commit' };
+  if (oid !== hash) {
+    return {
+      reason: `the pull request was merged as ${String(oid).slice(0, 7)}, not as this commit`,
+    };
+  }
+  // Timestamps are whole seconds: an edit in the second of the merge, or with no merge time, counts.
+  if (pr.lastEditedAt != null && !(Date.parse(pr.lastEditedAt) < Date.parse(pr.mergedAt))) {
+    return {
+      reason:
+        `its description was edited after it was merged (${pr.lastEditedAt}), ` +
+        'so its release notes may not have been reviewed',
+    };
+  }
+  if (pr.body != null && typeof pr.body !== 'string') {
+    return { reason: 'its description is not text' };
+  }
+  const notes = extractReleaseNotes(pr.body ?? '');
+  // Left out rather than cut short, which could leave a code fence open. GitHub refuses a release
+  // over 125,000 characters, so a PR can't make every retry of the release fail.
+  if (notes !== null && notes.length > MAX_NOTES) {
+    return {
+      reason: `its release notes are ${notes.length} characters long, over the limit of ${MAX_NOTES}`,
+    };
+  }
+  const unsafe = notes === null ? null : unsafeMarkup(notes);
+  if (unsafe) {
+    return { reason: `its release notes contain ${unsafe}, which can break out of the quote` };
+  }
+  return { notes };
+}
+
+/**
+ * One "- subject (abc1234)" line per commit, each ending in "\n", with its PR's release notes
+ * quoted under it. fetchPr(number) returns { json } (gh's stdout) or { error }; it is only
+ * called for subjects that end in "(#N)". Each warning names the PR and the commit, why it has
+ * no notes, and what to do about it.
+ */
+export function buildChangelog(commits, fetchPr) {
+  const lines = [];
+  const warnings = [];
+  for (const { hash, shortHash, subject } of commits) {
+    lines.push(`- ${subject} (${shortHash})`);
+    const number = prNumber(subject);
+    if (number === null) continue;
+    const pr = readPr(hash, fetchPr(number));
+    if ('reason' in pr) {
+      warnings.push(
+        `PR #${number} (${shortHash} "${subject}"): ${pr.reason}; ` +
+          'listed without release notes — add any to the release by hand',
+      );
+    } else if (pr.notes !== null) lines.push(...formatNotes(pr.notes));
+  }
+  return { markdown: lines.map((line) => `${line}\n`).join(''), warnings };
+}
+
+/** A GitHub Actions warning command; % CR LF escaped so the message stays one annotation. */
+export function warningCommand(message) {
+  const data = message.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
+  return `::warning title=Release notes::${data}`;
+}
+
+/** Markdown for $GITHUB_STEP_SUMMARY; '' when there are no warnings. */
+export function warningsSummary(warnings) {
+  if (!warnings.length) return '';
+  return `### Release notes warnings\n\n${warnings.map((w) => `- ${w}\n`).join('')}\n`;
+}
