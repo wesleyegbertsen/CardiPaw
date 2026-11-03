@@ -7,6 +7,7 @@ import { useReadingsStore } from '../stores/readings';
 import { useAudioBeep } from '../composables/useAudioBeep';
 import { useHaptics } from '../composables/useHaptics';
 import { useTrackerPrefs } from '../composables/useTrackerPrefs';
+import { useWakeLock } from '../composables/useWakeLock';
 import { useOnboarding } from '../composables/useOnboarding';
 import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
 import OnboardingModal from '../components/OnboardingModal.vue';
@@ -21,6 +22,8 @@ const petsStore = usePetsStore();
 const readingsStore = useReadingsStore();
 const { init: initAudio, playBeep, playDoneSound } = useAudioBeep();
 const { isSupported: hapticsSupported, vibrateTap, vibrateDone } = useHaptics();
+// Keeps the screen on while counting; released at the end and when leaving the tracker.
+const wakeLock = useWakeLock();
 
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
@@ -94,6 +97,7 @@ function startTracking() {
   endsAt = Date.now() + runSeconds.value * 1000;
   timeLeft.value = runSeconds.value;
   phase.value = 'running';
+  wakeLock.acquire();
   clickCount.value = 1; // first click counts as the first breath
   if (soundEnabled.value) playBeep(880, 0.15, 0.3);
   if (vibrationEnabled.value) vibrateTap();
@@ -134,6 +138,7 @@ function stopTracking() {
     intervalId.value = null;
   }
   phase.value = 'done';
+  wakeLock.release();
   if (soundEnabled.value) playDoneSound();
   if (vibrationEnabled.value) vibrateDone();
   // The heart button is gone; park focus on the result (not on Save) so it is

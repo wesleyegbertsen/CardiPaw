@@ -556,6 +556,82 @@ describe('TrackerView', () => {
     expect(haptics.vibrateDone).not.toHaveBeenCalled();
   });
 
+  describe('screen wake lock', () => {
+    let request: ReturnType<typeof vi.fn>;
+    let sentinels: { release: MockInstance<() => Promise<void>>; released: boolean }[];
+
+    beforeEach(() => {
+      sentinels = [];
+      request = vi.fn(async () => {
+        const sentinel = Object.assign(new EventTarget(), {
+          released: false,
+          type: 'screen' as const,
+          onrelease: null,
+          release: vi.fn(async () => {
+            sentinel.released = true;
+          }),
+        });
+        sentinels.push(sentinel);
+        return sentinel;
+      });
+      // happy-dom has no Screen Wake Lock API, so the rest of this file runs without one.
+      // Set on the real navigator: a stand-in object breaks happy-dom's own getters
+      // (userAgent), which Vue reads when the first component in this file mounts.
+      Object.defineProperty(navigator, 'wakeLock', { value: { request }, configurable: true });
+    });
+
+    afterEach(() => {
+      Reflect.deleteProperty(navigator, 'wakeLock');
+    });
+
+    it.each([15, 30, 60] as const)(
+      'keeps the screen on for a %i-second count and lets it sleep when the count ends',
+      async (seconds) => {
+        const { wrapper } = await mountTracker();
+        await lengthPill(wrapper, seconds).trigger('click');
+        expect(request).not.toHaveBeenCalled();
+        await wrapper.get('.heart-btn').trigger('click');
+        expect(request).toHaveBeenCalledExactlyOnceWith('screen');
+
+        await vi.advanceTimersByTimeAsync((seconds - 1) * 1000);
+        expect(sentinels[0].release).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(1_000);
+        expect(wrapper.find('.result-number').exists()).toBe(true);
+        expect(sentinels[0].release).toHaveBeenCalledOnce();
+      },
+    );
+
+    it('lets the screen sleep when the count ends on a late tap', async () => {
+      const { wrapper } = await mountTracker();
+      await wrapper.get('.heart-btn').trigger('click');
+      await flushPromises();
+      vi.setSystemTime(Date.now() + 30_500);
+      await wrapper.get('.heart-btn').trigger('click');
+      expect(sentinels[0].release).toHaveBeenCalledOnce();
+    });
+
+    it('lets the screen sleep when leaving mid-count', async () => {
+      const { wrapper } = await mountTracker();
+      await wrapper.get('.heart-btn').trigger('click');
+      await flushPromises();
+      wrapper.unmount();
+      expect(sentinels[0].release).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the screen on again for a count started with Try again', async () => {
+      const { wrapper } = await mountTracker();
+      await wrapper.get('.heart-btn').trigger('click');
+      await vi.advanceTimersByTimeAsync(30_000);
+      await wrapper.get('.btn-retry').trigger('click');
+      expect(request).toHaveBeenCalledOnce();
+
+      await wrapper.get('.heart-btn').trigger('click');
+      await flushPromises();
+      expect(request).toHaveBeenCalledTimes(2);
+      expect(sentinels[1].release).not.toHaveBeenCalled();
+    });
+  });
+
   describe('opened directly (pets not loaded yet)', () => {
     it('loads the pet itself and saves for it', async () => {
       const { wrapper, addReading } = await mountTracker({ stored: [pet] });
