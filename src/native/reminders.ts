@@ -120,8 +120,10 @@ async function sync(onlyPetId?: string): Promise<void> {
     // Only when granted (checked above): schedule() itself would show the Android 13+ prompt.
     await LocalNotifications.schedule({ notifications: toSchedule });
   }
-  // Last, and only in a full sync: by now nothing is scheduled on the old channel. A sync for
-  // one pet leaves the others' reminders on it, and they would no longer show.
+  // Last, and only in a full sync: every reminder from before #120 has been cancelled, and the
+  // future ones scheduled again on the new channel. Due ones from before can't be (a past `at`
+  // would fire at once) and deleting the channel also clears any still shown: accepted, once.
+  // A sync for one pet leaves the others' reminders on it, and they would no longer show.
   if (!onlyPetId) {
     try {
       await LocalNotifications.deleteChannel({ id: OLD_CHANNEL_ID });

@@ -229,9 +229,29 @@ describe('reminders', () => {
     install();
     await syncReminders();
     expect(LN.cancel).toHaveBeenCalledWith({ notifications: [{ id }] });
+    // The other way round would cancel the moved reminder too.
+    expect(LN.cancel.mock.invocationCallOrder[0]).toBeLessThan(
+      LN.schedule.mock.invocationCallOrder[0],
+    );
     expect(LN.removeDeliveredNotificationsById).not.toHaveBeenCalled();
     const moved = LN.schedule.mock.calls[0][0].notifications.find((n) => n.id === id);
     expect(moved).toMatchObject({ channelId: 'reminders-v2', extra: { channel: 'reminders-v2' } });
+  });
+
+  it("drops a due reminder from before the update: it can't move to the new channel", async () => {
+    mockNative();
+    vi.setSystemTime(new Date('2026-06-10T22:03:00Z'));
+    const id = reminderId(1, '2026-06-10');
+    // Due but not shown yet (an inexact alarm on its way), or already in the shade.
+    LN.getPending.mockResolvedValue({
+      notifications: [legacy(id, 'pet-1', '2026-06-10T22:00:00.000Z')],
+    });
+    install();
+    await syncReminders();
+    expect(LN.cancel).toHaveBeenCalledWith({ notifications: [{ id }] });
+    // A past `at` would fire at once.
+    expect(LN.schedule.mock.calls[0][0].notifications.map((n) => n.id)).not.toContain(id);
+    expect(LN.deleteChannel).toHaveBeenCalledWith({ id: 'reminders' });
   });
 
   it('keeps what it scheduled itself on the next sync', async () => {
@@ -272,12 +292,15 @@ describe('reminders', () => {
     LN.deleteChannel.mockClear();
     await db.savePet(makePet({ id: 'pet-2', name: 'Bo' }));
     saveReminderSetting('pet-2', { enabled: true, time: '22:00', days: [0, 1, 2, 3, 4, 5, 6] });
-    LN.getPending.mockResolvedValue({
-      notifications: [legacy(reminderId(2, '2026-06-10'), 'pet-2', '2026-06-10T22:00:00.000Z')],
-    });
+    const other = legacy(reminderId(2, '2026-06-10'), 'pet-2', '2026-06-10T22:00:00.000Z');
+    LN.getPending.mockResolvedValue({ notifications: [other] });
     await syncReminders('pet-1');
     await applyReminders('pet-1');
     expect(LN.deleteChannel).not.toHaveBeenCalled();
+    const cancelled = LN.cancel.mock.calls.flatMap(([{ notifications }]) =>
+      notifications.map((n) => n.id),
+    );
+    expect(cancelled).not.toContain(other.id);
   });
 
   it('logs and resolves when the old channel cannot be deleted', async () => {

@@ -271,7 +271,7 @@ Whichever you use, check the signing certificate of a new APK (see **Checking an
 - A reminder that came due while the phone was off is skipped; the later ones still come.
 - Battery savers on some phones (Xiaomi, Samsung and others) can delay reminders or drop them.
 - On a secured lock screen, Android shows that CardiPaw has a notification but hides its text.
-- Reminders make the phone's default notification sound and vibrate. Earlier versions used a "Measuring reminders" category that never vibrated; the update replaces it with a new one of the same name, so changes you made to the old one in Android's notification settings (turning it off, a custom sound, vibration turned on by hand) are reset once.
+- Reminders use the phone's default notification sound and vibrate (as far as its sound mode allows). Earlier versions used a "Measuring reminders" category that never vibrated; the update replaces it with a new one of the same name, so changes you made to the old one in Android's notification settings (turning it off, a custom sound, vibration turned on by hand) are reset once. Reminders from the old version that are still showing, or already due, when CardiPaw is first opened after the update are cleared once.
 - Besides CardiPaw's "Measuring reminders", Android's notification settings for the app also list a "Default" channel; it comes with the notifications plugin.
 
 ## Releases & Versioning
