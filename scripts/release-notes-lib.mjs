@@ -173,51 +173,53 @@ export const PR_QUERY =
   '{ pullRequest(number: $number) { body state mergedAt lastEditedAt mergeCommit { oid } } } }';
 
 /**
- * fetchPr's result for PR `number` → { notes } (a string, or null for none) or { warning }.
+ * fetchPr's result → { notes } (a string, or null for none), or { reason } why there are none.
  * Notes are only used from a merged PR whose merge commit is `hash`, and whose description
  * wasn't edited after it was merged: whoever merged it reviewed the notes as they were then.
  */
-function readPr(number, hash, result) {
-  if ('error' in result) return { warning: `PR #${number}: ${result.error}` };
+function readPr(hash, result) {
+  // gh's message ends in "."; the warning goes on after it.
+  if ('error' in result) return { reason: result.error.replace(/\.$/, '') };
   let response;
   try {
     response = JSON.parse(result.json);
   } catch {
-    return { warning: `PR #${number}: gh printed something other than JSON` };
+    return { reason: 'gh printed something other than JSON' };
   }
   const pr = response?.data?.repository?.pullRequest;
-  if (pr == null) return { warning: `PR #${number} was not found` };
+  if (pr == null) return { reason: 'the pull request was not found' };
   if (pr.state !== 'MERGED') {
-    return { warning: `PR #${number} is ${pr.state ?? 'in an unknown state'}, not merged` };
+    return { reason: `the pull request is ${pr.state ?? 'in an unknown state'}, not merged` };
   }
   const oid = pr.mergeCommit?.oid;
+  if (oid == null) return { reason: 'the pull request has no merge commit' };
   if (oid !== hash) {
-    return { warning: `PR #${number} was merged as ${oid ?? 'no commit'}, not as ${hash}` };
+    return {
+      reason: `the pull request was merged as ${String(oid).slice(0, 7)}, not as this commit`,
+    };
   }
   // Timestamps are whole seconds: an edit in the second of the merge, or with no merge time, counts.
   if (pr.lastEditedAt != null && !(Date.parse(pr.lastEditedAt) < Date.parse(pr.mergedAt))) {
     return {
-      warning:
-        `PR #${number}: its description was edited after it was merged (${pr.lastEditedAt}), ` +
+      reason:
+        `its description was edited after it was merged (${pr.lastEditedAt}), ` +
         'so its release notes may not have been reviewed',
     };
   }
   if (pr.body != null && typeof pr.body !== 'string') {
-    return { warning: `PR #${number}: its description is not text` };
+    return { reason: 'its description is not text' };
   }
   const notes = extractReleaseNotes(pr.body ?? '');
   // Left out rather than cut short, which could leave a code fence open. GitHub refuses a release
   // over 125,000 characters, so a PR can't make every retry of the release fail.
   if (notes !== null && notes.length > MAX_NOTES) {
     return {
-      warning: `PR #${number}: its release notes are ${notes.length} characters long, over the limit of ${MAX_NOTES}`,
+      reason: `its release notes are ${notes.length} characters long, over the limit of ${MAX_NOTES}`,
     };
   }
   const unsafe = notes === null ? null : unsafeMarkup(notes);
   if (unsafe) {
-    return {
-      warning: `PR #${number}: its release notes contain ${unsafe}, which can break out of the quote`,
-    };
+    return { reason: `its release notes contain ${unsafe}, which can break out of the quote` };
   }
   return { notes };
 }
@@ -225,7 +227,8 @@ function readPr(number, hash, result) {
 /**
  * One "- subject (abc1234)" line per commit, each ending in "\n", with its PR's release notes
  * quoted under it. fetchPr(number) returns { json } (gh's stdout) or { error }; it is only
- * called for subjects that end in "(#N)".
+ * called for subjects that end in "(#N)". Each warning names the PR and the commit, why it has
+ * no notes, and what to do about it.
  */
 export function buildChangelog(commits, fetchPr) {
   const lines = [];
@@ -234,9 +237,13 @@ export function buildChangelog(commits, fetchPr) {
     lines.push(`- ${subject} (${shortHash})`);
     const number = prNumber(subject);
     if (number === null) continue;
-    const pr = readPr(number, hash, fetchPr(number));
-    if ('warning' in pr) warnings.push(`${pr.warning}; listed without release notes`);
-    else if (pr.notes !== null) lines.push(...formatNotes(pr.notes));
+    const pr = readPr(hash, fetchPr(number));
+    if ('reason' in pr) {
+      warnings.push(
+        `PR #${number} (${shortHash} "${subject}"): ${pr.reason}; ` +
+          'listed without release notes — add any to the release by hand',
+      );
+    } else if (pr.notes !== null) lines.push(...formatNotes(pr.notes));
   }
   return { markdown: lines.map((line) => `${line}\n`).join(''), warnings };
 }

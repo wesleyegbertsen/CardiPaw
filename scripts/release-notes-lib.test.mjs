@@ -19,6 +19,9 @@ const MERGED_AT = '2026-11-02T01:44:20Z';
 const graphql = (pullRequest) => ({
   json: JSON.stringify({ data: { repository: { pullRequest } } }),
 });
+// The warning for commit ad6b58e "feat: x (#7)".
+const warning7 = (reason) =>
+  `PR #7 (ad6b58e "feat: x (#7)"): ${reason}; listed without release notes — add any to the release by hand`;
 const merged = (hash, body, lastEditedAt = null) =>
   graphql({ body, state: 'MERGED', mergedAt: MERGED_AT, lastEditedAt, mergeCommit: { oid: hash } });
 
@@ -251,9 +254,7 @@ describe('buildChangelog', () => {
     const body = `## Release notes\n${notes}\n## Changes\nC`;
     expect(buildChangelog(commits, () => merged(HASH_A, body))).toEqual({
       markdown: '- feat: x (#7) (ad6b58e)\n',
-      warnings: [
-        `PR #7: its release notes contain ${kind}, which can break out of the quote; listed without release notes`,
-      ],
+      warnings: [warning7(`its release notes contain ${kind}, which can break out of the quote`)],
     });
   });
 
@@ -267,9 +268,7 @@ describe('buildChangelog', () => {
     });
     expect(buildChangelog(commits, () => merged(HASH_A, `## Release notes\n${notes}b`))).toEqual({
       markdown: '- feat: x (#7) (ad6b58e)\n',
-      warnings: [
-        'PR #7: its release notes are 2001 characters long, over the limit of 2000; listed without release notes',
-      ],
+      warnings: [warning7('its release notes are 2001 characters long, over the limit of 2000')],
     });
   });
 
@@ -310,20 +309,40 @@ describe('buildChangelog', () => {
       expect(buildChangelog(commits, () => ({ json }))).toEqual({
         markdown: '- feat(android): x (#119) (ad6b58e)\n',
         warnings: [
-          'PR #119: its description was edited after it was merged (2026-11-03T09:00:00Z), so its release notes may not have been reviewed; listed without release notes',
+          'PR #119 (ad6b58e "feat(android): x (#119)"): its description was edited after it was ' +
+            'merged (2026-11-03T09:00:00Z), so its release notes may not have been reviewed; ' +
+            'listed without release notes — add any to the release by hand',
         ],
       });
     });
   });
 
   const withNotes = '## Release notes\nShould not appear';
+  const edited = (at) =>
+    `its description was edited after it was merged (${at}), so its release notes may not have been reviewed`;
   it.each([
-    ['gh failed', { error: 'gh pr view failed (exit 1): GraphQL: Could not resolve' }],
-    ['not JSON', { json: 'not json' }],
-    ['JSON null', { json: 'null' }],
-    ['no data', { json: '{}' }],
-    ['no repository', { json: JSON.stringify({ data: { repository: null } }) }],
-    ['no pull request', graphql(null)],
+    [
+      'gh failed',
+      {
+        error:
+          'gh api graphql failed (exit 1): gh: Could not resolve to a PullRequest with the number of 7.',
+      },
+      'gh api graphql failed (exit 1): gh: Could not resolve to a PullRequest with the number of 7',
+    ],
+    [
+      'gh could not run',
+      { error: 'gh could not run: spawnSync gh ENOENT' },
+      'gh could not run: spawnSync gh ENOENT',
+    ],
+    ['not JSON', { json: 'not json' }, 'gh printed something other than JSON'],
+    ['JSON null', { json: 'null' }, 'the pull request was not found'],
+    ['no data', { json: '{}' }, 'the pull request was not found'],
+    [
+      'no repository',
+      { json: JSON.stringify({ data: { repository: null } }) },
+      'the pull request was not found',
+    ],
+    ['no pull request', graphql(null), 'the pull request was not found'],
     [
       'open',
       graphql({
@@ -333,6 +352,7 @@ describe('buildChangelog', () => {
         lastEditedAt: null,
         mergeCommit: null,
       }),
+      'the pull request is OPEN, not merged',
     ],
     [
       'closed',
@@ -343,6 +363,12 @@ describe('buildChangelog', () => {
         lastEditedAt: null,
         mergeCommit: null,
       }),
+      'the pull request is CLOSED, not merged',
+    ],
+    [
+      'no state',
+      graphql({ body: withNotes }),
+      'the pull request is in an unknown state, not merged',
     ],
     [
       'merged, no commit',
@@ -353,10 +379,19 @@ describe('buildChangelog', () => {
         lastEditedAt: null,
         mergeCommit: null,
       }),
+      'the pull request has no merge commit',
     ],
-    ['merged as another commit', merged(HASH_B, withNotes)],
-    ['edited after merging', merged(HASH_A, withNotes, '2026-11-02T01:44:21Z')],
-    ['edited in the second it was merged', merged(HASH_A, withNotes, MERGED_AT)],
+    [
+      'merged as another commit',
+      merged(HASH_B, withNotes),
+      'the pull request was merged as af2c125, not as this commit',
+    ],
+    [
+      'edited after merging',
+      merged(HASH_A, withNotes, '2026-11-02T01:44:21Z'),
+      edited('2026-11-02T01:44:21Z'),
+    ],
+    ['edited in the second it was merged', merged(HASH_A, withNotes, MERGED_AT), edited(MERGED_AT)],
     [
       'edited, merge time unknown',
       graphql({
@@ -366,14 +401,15 @@ describe('buildChangelog', () => {
         lastEditedAt: MERGED_AT,
         mergeCommit: { oid: HASH_A },
       }),
+      edited(MERGED_AT),
     ],
-    ['body not text', merged(HASH_A, 5)],
-  ])('keeps the line and warns once: %s', (_, result) => {
+    ['body not text', merged(HASH_A, 5), 'its description is not text'],
+  ])('keeps the line and warns once: %s', (_, result, reason) => {
     const commits = [{ hash: HASH_A, shortHash: 'ad6b58e', subject: 'feat: x (#7)' }];
-    const { markdown, warnings } = buildChangelog(commits, () => result);
-    expect(markdown).toBe('- feat: x (#7) (ad6b58e)\n');
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toMatch(/^PR #7\b.*; listed without release notes$/);
+    expect(buildChangelog(commits, () => result)).toEqual({
+      markdown: '- feat: x (#7) (ad6b58e)\n',
+      warnings: [warning7(reason)],
+    });
   });
 });
 
