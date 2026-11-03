@@ -45,7 +45,9 @@ function play(schedule: (audioCtx: AudioContext) => void): void {
     .catch((e: unknown) => console.warn('Playing a sound failed', e));
 }
 
-// Resumes the context as the tracker opens, so the first beep plays as promptly as the rest.
+// Asks to resume the context as the tracker opens, so the first beep plays as promptly as the
+// rest. The Android app resumes it at once; on the web, autoplay rules can hold the resume
+// until the user taps (always when the tracker was opened without one, as by a reload).
 function init(): void {
   play(() => {});
 }

@@ -112,6 +112,20 @@ describe('useAudioBeep', () => {
     expect(osc.stop).toHaveBeenCalledWith(10.5);
   });
 
+  it('beeps at the pitch, length and volume asked for', async () => {
+    // The tracker asks for a shorter beep than the default.
+    open().audio.playBeep(440, 0.15, 0.2);
+    await flushPromises();
+    const [ctx] = FakeAudioContext.instances;
+    const [osc] = ctx.oscillators;
+    const [gain] = ctx.gains;
+    expect(osc.frequency.value).toBe(440);
+    expect(gain.gain.setValueAtTime).toHaveBeenCalledWith(0.2, 10);
+    expect(gain.gain.exponentialRampToValueAtTime).toHaveBeenCalledWith(0.001, 10.15);
+    expect(osc.start).toHaveBeenCalledWith(10);
+    expect(osc.stop).toHaveBeenCalledWith(10.15);
+  });
+
   it('plays a rising three-note chord when done', async () => {
     open().audio.playDoneSound();
     await flushPromises();
