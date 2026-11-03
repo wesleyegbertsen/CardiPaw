@@ -166,24 +166,40 @@ export function unsafeMarkup(notes) {
   return null;
 }
 
+/** For `gh api graphql -f query=… -f owner=… -f name=… -F number=…`: what readPr reads. */
+export const PR_QUERY =
+  'query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) ' +
+  '{ pullRequest(number: $number) { body state mergedAt lastEditedAt mergeCommit { oid } } } }';
+
 /**
  * fetchPr's result for PR `number` → { notes } (a string, or null for none) or { warning }.
- * Notes are only used from a merged PR whose merge commit is `hash`.
+ * Notes are only used from a merged PR whose merge commit is `hash`, and whose description
+ * wasn't edited after it was merged: whoever merged it reviewed the notes as they were then.
  */
 function readPr(number, hash, result) {
   if ('error' in result) return { warning: `PR #${number}: ${result.error}` };
-  let pr;
+  let response;
   try {
-    pr = JSON.parse(result.json);
+    response = JSON.parse(result.json);
   } catch {
     return { warning: `PR #${number}: gh printed something other than JSON` };
   }
-  if (pr?.state !== 'MERGED') {
-    return { warning: `PR #${number} is ${pr?.state ?? 'in an unknown state'}, not merged` };
+  const pr = response?.data?.repository?.pullRequest;
+  if (pr == null) return { warning: `PR #${number} was not found` };
+  if (pr.state !== 'MERGED') {
+    return { warning: `PR #${number} is ${pr.state ?? 'in an unknown state'}, not merged` };
   }
   const oid = pr.mergeCommit?.oid;
   if (oid !== hash) {
     return { warning: `PR #${number} was merged as ${oid ?? 'no commit'}, not as ${hash}` };
+  }
+  // Timestamps are whole seconds: an edit in the second of the merge, or with no merge time, counts.
+  if (pr.lastEditedAt != null && !(Date.parse(pr.lastEditedAt) < Date.parse(pr.mergedAt))) {
+    return {
+      warning:
+        `PR #${number}: its description was edited after it was merged (${pr.lastEditedAt}), ` +
+        'so its release notes may not have been reviewed',
+    };
   }
   if (pr.body != null && typeof pr.body !== 'string') {
     return { warning: `PR #${number}: its description is not text` };

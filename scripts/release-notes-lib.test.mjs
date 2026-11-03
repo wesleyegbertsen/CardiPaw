@@ -14,9 +14,13 @@ import {
 const HASH_A = 'ad6b58e8db9ed35428d94edf930b9a6661b60993';
 const HASH_B = 'af2c1254f0e2b4a1c9d8e7f6a5b4c3d2e1f0a9b8';
 const HASH_C = '68ac4f3aa1b2c3d4e5f60718293a4b5c6d7e8f90';
-const merged = (hash, body) => ({
-  json: JSON.stringify({ body, state: 'MERGED', mergeCommit: { oid: hash } }),
+const MERGED_AT = '2026-11-02T01:44:20Z';
+// gh api graphql's stdout for PR_QUERY.
+const graphql = (pullRequest) => ({
+  json: JSON.stringify({ data: { repository: { pullRequest } } }),
 });
+const merged = (hash, body, lastEditedAt = null) =>
+  graphql({ body, state: 'MERGED', mergedAt: MERGED_AT, lastEditedAt, mergeCommit: { oid: hash } });
 
 describe('parseGitLog', () => {
   it('splits git log --format=%H%x00%h%x00%s records and keeps subjects verbatim', () => {
@@ -253,18 +257,100 @@ describe('buildChangelog', () => {
     });
   });
 
+  describe('with gh api graphql’s real output', () => {
+    // PR #119 as gh printed it, body shortened.
+    const GH_119 = String.raw`{"data":{"repository":{"pullRequest":{"body":"Closes #106.\n\n## Summary\n\nWith **Check automatically** on, Settings › Updates now has a third card:","state":"MERGED","mergedAt":"2026-11-02T01:44:20Z","lastEditedAt":null,"mergeCommit":{"oid":"ad6b58e8db9ed35428d94edf930b9a6661b60993"}}}}}`;
+    const commits = [{ hash: HASH_A, shortHash: 'ad6b58e', subject: 'feat(android): x (#119)' }];
+
+    it('lists a PR without notes as before', () => {
+      expect(buildChangelog(commits, () => ({ json: GH_119 }))).toEqual({
+        markdown: '- feat(android): x (#119) (ad6b58e)\n',
+        warnings: [],
+      });
+    });
+
+    it('quotes the notes of a PR whose description was never edited, or edited before merging', () => {
+      const withSection = GH_119.replace(
+        'third card:',
+        String.raw`third card:\n## Release notes\nNew card.`,
+      );
+      const editedBefore = withSection.replace(
+        '"lastEditedAt":null',
+        '"lastEditedAt":"2026-11-02T01:44:19Z"',
+      );
+      for (const json of [withSection, editedBefore]) {
+        expect(buildChangelog(commits, () => ({ json }))).toEqual({
+          markdown: '- feat(android): x (#119) (ad6b58e)\n  > New card.\n',
+          warnings: [],
+        });
+      }
+    });
+
+    it('leaves out the notes of a PR whose description was edited after merging', () => {
+      const json = GH_119.replace(
+        'third card:',
+        String.raw`third card:\n## Release notes\nNew card.`,
+      ).replace('"lastEditedAt":null', '"lastEditedAt":"2026-11-03T09:00:00Z"');
+      expect(buildChangelog(commits, () => ({ json }))).toEqual({
+        markdown: '- feat(android): x (#119) (ad6b58e)\n',
+        warnings: [
+          'PR #119: its description was edited after it was merged (2026-11-03T09:00:00Z), so its release notes may not have been reviewed; listed without release notes',
+        ],
+      });
+    });
+  });
+
   const withNotes = '## Release notes\nShould not appear';
   it.each([
     ['gh failed', { error: 'gh pr view failed (exit 1): GraphQL: Could not resolve' }],
     ['not JSON', { json: 'not json' }],
     ['JSON null', { json: 'null' }],
-    ['open', { json: JSON.stringify({ body: withNotes, state: 'OPEN', mergeCommit: null }) }],
-    ['closed', { json: JSON.stringify({ body: withNotes, state: 'CLOSED', mergeCommit: null }) }],
+    ['no data', { json: '{}' }],
+    ['no repository', { json: JSON.stringify({ data: { repository: null } }) }],
+    ['no pull request', graphql(null)],
+    [
+      'open',
+      graphql({
+        body: withNotes,
+        state: 'OPEN',
+        mergedAt: null,
+        lastEditedAt: null,
+        mergeCommit: null,
+      }),
+    ],
+    [
+      'closed',
+      graphql({
+        body: withNotes,
+        state: 'CLOSED',
+        mergedAt: null,
+        lastEditedAt: null,
+        mergeCommit: null,
+      }),
+    ],
     [
       'merged, no commit',
-      { json: JSON.stringify({ body: withNotes, state: 'MERGED', mergeCommit: null }) },
+      graphql({
+        body: withNotes,
+        state: 'MERGED',
+        mergedAt: MERGED_AT,
+        lastEditedAt: null,
+        mergeCommit: null,
+      }),
     ],
     ['merged as another commit', merged(HASH_B, withNotes)],
+    ['edited after merging', merged(HASH_A, withNotes, '2026-11-02T01:44:21Z')],
+    ['edited in the second it was merged', merged(HASH_A, withNotes, MERGED_AT)],
+    [
+      'edited, merge time unknown',
+      graphql({
+        body: withNotes,
+        state: 'MERGED',
+        mergedAt: null,
+        lastEditedAt: MERGED_AT,
+        mergeCommit: { oid: HASH_A },
+      }),
+    ],
     ['body not text', merged(HASH_A, 5)],
   ])('keeps the line and warns once: %s', (_, result) => {
     const commits = [{ hash: HASH_A, shortHash: 'ad6b58e', subject: 'feat: x (#7)' }];
