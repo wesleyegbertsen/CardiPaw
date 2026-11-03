@@ -2,7 +2,8 @@
 import { ref, useId } from 'vue';
 import { useModal } from '../composables/useModal';
 
-defineProps<{ message: string }>();
+// confirmLabel names what confirming does (e.g. Discard); without it the button says Confirm.
+defineProps<{ message: string; confirmLabel?: string }>();
 const emit = defineEmits<{ confirm: []; cancel: [] }>();
 
 const id = useId();
@@ -29,7 +30,7 @@ useModal(dialogRef, { onClose: () => emit('cancel'), initialFocus: cancelRef });
         <p :id="`${id}-message`" class="message">{{ message }}</p>
         <div class="actions">
           <button ref="cancelRef" class="btn-cancel" @click="$emit('cancel')">{{ $t('common.cancel') }}</button>
-          <button class="btn-confirm" @click="$emit('confirm')">{{ $t('common.confirm') }}</button>
+          <button class="btn-confirm" @click="$emit('confirm')">{{ confirmLabel ?? $t('common.confirm') }}</button>
         </div>
       </div>
     </div>

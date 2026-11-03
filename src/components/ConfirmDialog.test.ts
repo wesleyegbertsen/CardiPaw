@@ -3,10 +3,10 @@ import { mount } from '@vue/test-utils';
 import ConfirmDialog from './ConfirmDialog.vue';
 import { createTestI18n } from '../test/i18n';
 
-function mountDialog() {
+function mountDialog(props: { confirmLabel?: string } = {}) {
   return mount(ConfirmDialog, {
     attachTo: document.body,
-    props: { message: 'Delete this reading?' },
+    props: { message: 'Delete this reading?', ...props },
     global: {
       plugins: [createTestI18n()],
       stubs: { teleport: true },
@@ -23,6 +23,12 @@ describe('ConfirmDialog', () => {
     const wrapper = mountDialog();
     expect(wrapper.get('.btn-cancel').text()).toBe('Cancel');
     expect(wrapper.get('.btn-confirm').text()).toBe('Confirm');
+  });
+
+  it('names the confirm button with confirmLabel when given', () => {
+    const wrapper = mountDialog({ confirmLabel: 'Discard' });
+    expect(wrapper.get('.btn-confirm').text()).toBe('Discard');
+    expect(wrapper.get('.btn-cancel').text()).toBe('Cancel');
   });
 
   it('emits confirm from the confirm button', async () => {
