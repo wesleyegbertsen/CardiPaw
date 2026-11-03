@@ -133,3 +133,218 @@ export function bandpass(x: Float64Array, fs: number, lo = 0.15, hi = 1.5): Floa
   const high = filtfilt(biquad('highpass', lo, fs), linearDetrend(x), pad);
   return filtfilt(biquad('lowpass', hi, fs), high, pad);
 }
+
+/** In-place iterative radix-2 FFT. Throws unless both arrays have the same power-of-two length. */
+export function fft(re: Float64Array, im: Float64Array): void {
+  const n = re.length;
+  if (n === 0 || (n & (n - 1)) !== 0 || im.length !== n) {
+    throw new Error(`fft needs a power-of-two length, got ${n} (im ${im.length})`);
+  }
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      [re[i], re[j]] = [re[j], re[i]];
+      [im[i], im[j]] = [im[j], im[i]];
+    }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const angle = (-2 * Math.PI) / len;
+    const wr = Math.cos(angle);
+    const wi = Math.sin(angle);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1;
+      let ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k;
+        const b = a + len / 2;
+        const tr = re[b] * cr - im[b] * ci;
+        const ti = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - tr;
+        im[b] = im[a] - ti;
+        re[a] += tr;
+        im[a] += ti;
+        const nr = cr * wr - ci * wi;
+        ci = cr * wi + ci * wr;
+        cr = nr;
+      }
+    }
+  }
+}
+
+/** Sub-sample offset of the vertex of the parabola through three equally spaced samples. */
+export function parabolicOffset(ym1: number, y0: number, yp1: number): number {
+  const d = ym1 - 2 * y0 + yp1;
+  return d === 0 ? 0 : (0.5 * (ym1 - yp1)) / d;
+}
+
+export interface Spectrum {
+  fs: number;
+  n: number;
+  m: number; // FFT length: first power of two ≥ 8n
+  mag: Float64Array; // |X[k]| for k < m/2
+  padBinsPerRaw: number; // m/n: zero-padded bins per raw-resolution bin
+}
+
+/**
+ * Hann-windowed magnitude spectrum, zero-padded eightfold so a parabolic fit around the peak
+ * resolves fractions of a bpm even on a 15 s window.
+ */
+export function spectrum(x: Float64Array, fs: number): Spectrum {
+  const n = x.length;
+  let m = 1;
+  while (m < 8 * n) m <<= 1;
+  const re = new Float64Array(m);
+  const im = new Float64Array(m);
+  for (let i = 0; i < n; i++) re[i] = x[i] * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (n - 1)));
+  fft(re, im);
+  const mag = new Float64Array(m / 2);
+  for (let k = 0; k < m / 2; k++) mag[k] = Math.hypot(re[k], im[k]);
+  return { fs, n, m, mag, padBinsPerRaw: m / n };
+}
+
+/** The strongest bin inside [lo, hi] Hz, refined by a parabolic fit, as bpm. */
+export function fftPeak(sp: Spectrum, lo = 0.15, hi = 1.5): { bpm: number; bin: number } {
+  const { mag, m, fs } = sp;
+  const k0 = Math.ceil((lo * m) / fs);
+  const k1 = Math.floor((hi * m) / fs);
+  let kb = k0;
+  for (let k = k0; k <= k1; k++) if (mag[k] > mag[kb]) kb = k;
+  const offset = parabolicOffset(mag[kb - 1], mag[kb], mag[kb + 1]);
+  return { bpm: (((kb + offset) * fs) / m) * 60, bin: kb };
+}
+
+/**
+ * How dominant the chosen peak is. `peakShare` is its power share within 0.1–3 Hz (the
+ * no-signal gate); `aboveBandPeakRatio` compares the strongest component above 1.5 Hz with the
+ * peak itself (the fast-motion gate: a purr or tremor aliased into view). `aboveBandRatio` is
+ * the total-power variant, reported for calibration only because it fires on broadband noise.
+ */
+export function spectralFeatures(
+  sp: Spectrum,
+  bin: number,
+): { peakShare: number; aboveBandRatio: number; aboveBandPeakRatio: number } {
+  const { mag, m, fs, padBinsPerRaw } = sp;
+  let total = 0;
+  let inPeak = 0;
+  let above = 0;
+  let aboveMax = 0;
+  let peakPower = 0;
+  for (let k = 1; k < m / 2; k++) {
+    const f = (k * fs) / m;
+    const p = mag[k] ** 2;
+    const nearPeak = Math.abs(k - bin) <= padBinsPerRaw;
+    if (f >= 0.1 && f <= 3) {
+      total += p;
+      if (nearPeak) inPeak += p;
+    }
+    if (nearPeak) peakPower += p;
+    if (f > 1.5) {
+      above += p;
+      if (p > aboveMax) aboveMax = p;
+    }
+  }
+  return {
+    peakShare: inPeak / total,
+    aboveBandRatio: above / peakPower,
+    aboveBandPeakRatio: aboveMax / mag[bin] ** 2,
+  };
+}
+
+/**
+ * Biased autocorrelation r[k] = Σ x[t]·x[t+k] / n, normalised so r[0] = 1. Biased on purpose:
+ * the (n − k)/n taper makes r fall off with lag, so the first breathing period wins over its
+ * multiples. An all-zero input returns zeros rather than NaN.
+ */
+export function autocorrelation(x: Float64Array, maxLag: number): Float64Array {
+  const n = x.length;
+  const r = new Float64Array(maxLag + 1);
+  for (let k = 0; k <= maxLag; k++) {
+    let sum = 0;
+    for (let t = 0; t + k < n; t++) sum += x[t] * x[t + k];
+    r[k] = sum / n;
+  }
+  const r0 = r[0];
+  if (r0 <= 0) return r;
+  for (let k = 0; k <= maxLag; k++) r[k] /= r0;
+  return r;
+}
+
+/**
+ * Breathing rate from the first autocorrelation peak at a lag inside [1/hi, 1/lo] seconds.
+ * A peak below `minPeak` is still reported, flagged `weak`, so the feature exists for
+ * calibration; null when the signal is zero or has no local maximum in range.
+ */
+export function acfBpm(
+  x: Float64Array,
+  fs: number,
+  lo = 0.15,
+  hi = 1.5,
+  minPeak = 0.5,
+): { bpm: number; peak: number; weak: boolean } | null {
+  const n = x.length;
+  const kmin = Math.max(1, Math.round(fs / hi));
+  const kmax = Math.min(n - 2, Math.round(fs / lo));
+  if (kmax < kmin || rms(x) === 0) return null;
+  const r = autocorrelation(x, kmax + 1);
+  const at = (k: number) => (60 * fs) / (k + parabolicOffset(r[k - 1], r[k], r[k + 1]));
+  let best: { bpm: number; peak: number; weak: boolean } | null = null;
+  for (let k = kmin; k <= kmax; k++) {
+    if (!(r[k] > r[k - 1] && r[k] >= r[k + 1])) continue;
+    if (r[k] >= minPeak) return { bpm: at(k), peak: r[k], weak: false };
+    if (best === null || r[k] > best.peak) best = { bpm: at(k), peak: r[k], weak: true };
+  }
+  return best;
+}
+
+/**
+ * Indices of local maxima whose prominence is at least `prominenceSigma` standard deviations;
+ * two peaks closer than `minDistanceS` keep only the higher one.
+ */
+export function findPeaks(
+  x: Float64Array,
+  fs: number,
+  minDistanceS = 0.5,
+  prominenceSigma = 0.3,
+): number[] {
+  const n = x.length;
+  const minProminence = prominenceSigma * std(x);
+  const minDistance = Math.round(minDistanceS * fs);
+  const peaks: number[] = [];
+  for (let i = 1; i < n - 1; i++) {
+    if (!(x[i] > x[i - 1] && x[i] >= x[i + 1])) continue;
+    let leftMin = x[i];
+    let rightMin = x[i];
+    for (let j = i - 1; j >= 0 && x[j] <= x[i]; j--) leftMin = Math.min(leftMin, x[j]);
+    for (let j = i + 1; j < n && x[j] <= x[i]; j++) rightMin = Math.min(rightMin, x[j]);
+    if (x[i] - Math.max(leftMin, rightMin) < minProminence) continue;
+    const last = peaks.length - 1;
+    if (last >= 0 && i - peaks[last] < minDistance) {
+      if (x[i] > x[peaks[last]]) peaks[last] = i;
+    } else {
+      peaks.push(i);
+    }
+  }
+  return peaks;
+}
+
+/**
+ * Rate from counted peaks (what an owner tapping along would get) and from the median
+ * inter-breath interval, with the interval spread as a regularity feature.
+ */
+export function peakBpm(
+  peaks: number[],
+  fs: number,
+  seconds: number,
+): { count: number; countBpm: number; ibiBpm: number | null; ibiCv: number | null } {
+  const count = peaks.length;
+  const ibis = peaks.slice(1).map((p, i) => p - peaks[i]);
+  const ibiMedian = median(ibis);
+  return {
+    count,
+    countBpm: Math.round((count * 60) / seconds),
+    ibiBpm: ibiMedian === null ? null : (60 * fs) / ibiMedian,
+    ibiCv: count < 3 ? null : std(ibis) / mean(ibis),
+  };
+}
