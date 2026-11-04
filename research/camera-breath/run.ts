@@ -898,19 +898,24 @@ async function main(argv: string[]): Promise<number> {
 const isEntryPoint =
   process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isEntryPoint) {
+  // exitCode, not exit(): on Windows a piped stdout is asynchronous and exit() would cut the
+  // --json output short. Nothing keeps the loop alive once main() has settled.
   main(process.argv.slice(2)).then(
-    (code) => process.exit(code),
+    (code) => {
+      process.exitCode = code;
+    },
     (err: unknown) => {
       const usage =
         err instanceof UsageError ||
         (err instanceof Error && 'code' in err && String(err.code).startsWith('ERR_PARSE_ARGS'));
       if (usage) {
         console.error(`${err instanceof Error ? err.message : String(err)}\n${USAGE}`);
-        process.exit(2);
+        process.exitCode = 2;
+        return;
       }
       const hint = ffmpegMissingHint(err);
       console.error(hint ?? (err instanceof Error ? (err.stack ?? err.message) : String(err)));
-      process.exit(1);
+      process.exitCode = 1;
     },
   );
 }

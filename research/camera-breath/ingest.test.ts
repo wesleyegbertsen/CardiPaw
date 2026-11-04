@@ -83,6 +83,19 @@ describe('parseProbe', () => {
     );
   });
 
+  it('reads the rotation from a later side-data entry (HDR metadata lists first)', () => {
+    const list = [{}, { rotation: 90 }];
+    expect(parseProbe(probeJson({ ...STREAM, side_data_list: list })).rotation).toBe(90);
+    expect(parseProbe(probeJson({ ...STREAM, side_data_list: [{}, {}] })).rotation).toBe(0);
+  });
+
+  it('tolerates a stream without duration (MKV/WebM): seconds is null', () => {
+    const { duration: _duration, ...noDuration } = STREAM;
+    const p = parseProbe(probeJson(noDuration));
+    expect(p.seconds).toBeNull();
+    expect(p).toMatchObject({ width: 1920, height: 1080, fps: 30 });
+  });
+
   it('throws naming a missing width, a bad frame rate and an absent stream', () => {
     const { width: _width, ...noWidth } = STREAM;
     expect(() => parseProbe(probeJson(noWidth))).toThrow('streams[0].width');
@@ -118,6 +131,14 @@ describe('workingSize', () => {
     });
   });
 
+  it('rounds each side to the nearest even number, not down', () => {
+    // 319 × 1080/1920 = 179.4: floor would give 318 × 178.
+    expect(workingSize({ width: 1920, height: 1080, rotation: 0 }, 319)).toEqual({
+      width: 320,
+      height: 180,
+    });
+  });
+
   it('displayedSize swaps only for ±90°', () => {
     expect(displayedSize({ width: 4, height: 3, rotation: 270 })).toEqual({ width: 3, height: 4 });
     expect(displayedSize({ width: 4, height: 3, rotation: 180 })).toEqual({ width: 4, height: 3 });
@@ -133,10 +154,27 @@ describe('writePgm and hints', () => {
     expect(Array.from(out.subarray(header.length))).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
-  it('ffmpegMissingHint names ffmpeg for ENOENT only', () => {
+  it('ffmpegMissingHint names ffmpeg for a spawn ENOENT only', () => {
+    // What Node attaches when the executable is not on PATH.
+    const spawnErr = (tool: string) =>
+      Object.assign(new Error(`spawn ${tool} ENOENT`), {
+        code: 'ENOENT',
+        syscall: `spawn ${tool}`,
+        path: tool,
+      });
+    expect(ffmpegMissingHint(spawnErr('ffmpeg'))).toContain('ffmpeg');
+    expect(ffmpegMissingHint(spawnErr('ffprobe'))).toContain('ffmpeg');
+    // A missing sidecar or dump directory is also ENOENT, but not ffmpeg's fault.
     expect(
-      ffmpegMissingHint(Object.assign(new Error('spawn ffmpeg ENOENT'), { code: 'ENOENT' })),
-    ).toContain('ffmpeg');
+      ffmpegMissingHint(
+        Object.assign(new Error("ENOENT: no such file or directory, open 'clips/x.csv'"), {
+          code: 'ENOENT',
+          syscall: 'open',
+          path: 'clips/x.csv',
+        }),
+      ),
+    ).toBeNull();
+    expect(ffmpegMissingHint(Object.assign(new Error('bare'), { code: 'ENOENT' }))).toBeNull();
     expect(ffmpegMissingHint(new Error('other'))).toBeNull();
     expect(ffmpegMissingHint(null)).toBeNull();
   });

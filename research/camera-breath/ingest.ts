@@ -12,7 +12,7 @@ export interface ProbeInfo {
   height: number;
   rotation: number; // display rotation in degrees from the container, 0 when absent
   fps: number;
-  seconds: number;
+  seconds: number | null; // stream duration; MKV/WebM and some streamed MP4s carry none
 }
 
 function field(obj: unknown, name: string, where: string): unknown {
@@ -43,20 +43,22 @@ export function parseProbe(json: string): ProbeInfo {
   if (m === null || Number(m[2]) === 0) {
     throw new Error(`ffprobe streams[0].r_frame_rate is not a/b: ${String(rate)}`);
   }
+  // ffprobe prints every side-data entry, filtered to the asked-for field, so entries without
+  // a rotation (HDR mastering metadata on recent phones) come out as {} and may list first.
   let rotation = 0;
   if (typeof s === 'object' && s !== null && 'side_data_list' in s) {
     const list = (s as { side_data_list: unknown }).side_data_list;
-    const first: unknown = Array.isArray(list) ? list[0] : undefined;
-    if (typeof first === 'object' && first !== null && 'rotation' in first) {
-      rotation = numberField(first, 'rotation', 'side_data_list[0]');
-    }
+    const entries: unknown[] = Array.isArray(list) ? list : [];
+    const i = entries.findIndex((e) => typeof e === 'object' && e !== null && 'rotation' in e);
+    if (i >= 0) rotation = numberField(entries[i], 'rotation', `side_data_list[${i}]`);
   }
+  const hasDuration = typeof s === 'object' && s !== null && 'duration' in s;
   return {
     width: numberField(s, 'width', 'streams[0]'),
     height: numberField(s, 'height', 'streams[0]'),
     rotation,
     fps: Number(m[1]) / Number(m[2]),
-    seconds: numberField(s, 'duration', 'streams[0]'),
+    seconds: hasDuration ? numberField(s, 'duration', 'streams[0]') : null,
   };
 }
 
@@ -223,10 +225,20 @@ export async function writeClip(
   await run('ffmpeg', encodeArgs(out, o), bytes());
 }
 
-/** The message to print when ffmpeg or ffprobe could not be started; null for other errors. */
+/**
+ * The message to print when ffmpeg or ffprobe could not be started; null for other errors.
+ * Node reports a missing executable as ENOENT with `syscall: 'spawn ffprobe'` and
+ * `path: 'ffprobe'`; a missing sidecar or dump directory is ENOENT too, with `syscall: 'open'`,
+ * and keeps its own message, which names the file.
+ */
 export function ffmpegMissingHint(err: unknown): string | null {
-  const code = typeof err === 'object' && err !== null ? (err as { code?: unknown }).code : null;
-  return code === 'ENOENT'
+  if (typeof err !== 'object' || err === null) return null;
+  const { code, syscall, path } = err as { code?: unknown; syscall?: unknown; path?: unknown };
+  const spawned =
+    typeof syscall === 'string' &&
+    syscall.startsWith('spawn ') &&
+    (path === 'ffmpeg' || path === 'ffprobe');
+  return code === 'ENOENT' && spawned
     ? 'ffmpeg (or ffprobe) is not on PATH; install ffmpeg 8 and retry'
     : null;
 }
