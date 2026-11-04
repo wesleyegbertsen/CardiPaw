@@ -75,6 +75,13 @@ describe('EditReadingView', () => {
     expect(wrapper.get('.source-chip').text()).toBe('Guided (30 s)');
   });
 
+  it('labels a camera reading with its length', async () => {
+    const { wrapper } = await mountEdit(makeReading({ source: 'camera', durationSeconds: 60 }));
+    const chip = wrapper.get('.source-chip');
+    expect(chip.text()).toBe('Camera (60 s)');
+    expect(chip.classes()).toContain('camera');
+  });
+
   it('labels the rate, rest state and notes fields', async () => {
     const { wrapper, rate } = await mountEdit(makeReading({ restState: 'sleeping' }));
     expect(rate.attributes('id')).toBeTruthy();

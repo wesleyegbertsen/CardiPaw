@@ -38,7 +38,9 @@
     "manual": "手動",
     "guided": "ガイド",
     "manualEntry": "手動入力",
-    "guidedSeconds": "ガイド（{n}秒）"
+    "guidedSeconds": "ガイド（{n}秒）",
+    "camera": "カメラ",
+    "cameraSeconds": "カメラ（{n}秒）"
   },
   "age": {
     "weeks": "{n}週",
@@ -173,7 +175,8 @@
   "readingList": {
     "empty": "測定値がありません。「記録を開始」をタップして最初の測定値を記録してください。",
     "hasNotes": "メモあり",
-    "manuallyEntered": "手動入力"
+    "manuallyEntered": "手動入力",
+    "cameraMeasured": "カメラで測定"
   },
   "noteList": {
     "empty": "メモがありません。「＋」をタップして最初のメモを書いてください。",

@@ -38,7 +38,9 @@
     "manual": "Manual",
     "guided": "Guided",
     "manualEntry": "Manual entry",
-    "guidedSeconds": "Guided ({n} s)"
+    "guidedSeconds": "Guided ({n} s)",
+    "camera": "Camera",
+    "cameraSeconds": "Camera ({n} s)"
   },
   "age": {
     "weeks": "1 week | {n} weeks",
@@ -173,7 +175,8 @@
   "readingList": {
     "empty": "No readings yet. Tap \"Start tracking\" to record your first measurement.",
     "hasNotes": "Has notes",
-    "manuallyEntered": "Manually entered"
+    "manuallyEntered": "Manually entered",
+    "cameraMeasured": "Measured with the camera"
   },
   "noteList": {
     "empty": "No notes yet. Tap '+' to write your first one.",

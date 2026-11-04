@@ -77,6 +77,12 @@ describe('ReadingList', () => {
     wrapper.unmount();
     expect(io.instances.every((o) => o.disconnected)).toBe(true);
   });
+
+  it('tags a camera reading', () => {
+    const wrapper = mountList([makeReading({ source: 'camera', durationSeconds: 30 })]);
+    expect(wrapper.get('.meta-tag.camera').attributes('aria-label')).toBe('Measured with the camera');
+    expect(wrapper.find('.meta-tag.manual').exists()).toBe(false);
+  });
 });
 
 describe('NoteList', () => {

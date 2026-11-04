@@ -14,6 +14,13 @@ export function breathsPerMinute(taps: number, seconds: MeasurementSeconds): num
   return Math.round((taps * 60) / seconds);
 }
 
+export type ReadingSource = 'guided' | 'manual' | 'camera';
+
+/** Where a reading came from; an absent source means a guided (tapped) measurement. */
+export function readingSource(reading: Pick<Reading, 'source'>): ReadingSource {
+  return reading.source ?? 'guided';
+}
+
 /**
  * How long a reading was measured for: null for a manual entry. Guided readings saved
  * before the length was selectable have no length and ran for 30 seconds.
@@ -21,6 +28,6 @@ export function breathsPerMinute(taps: number, seconds: MeasurementSeconds): num
 export function readingSeconds(
   reading: Pick<Reading, 'source' | 'durationSeconds'>,
 ): MeasurementSeconds | null {
-  if (reading.source === 'manual') return null;
+  if (readingSource(reading) === 'manual') return null;
   return reading.durationSeconds ?? DEFAULT_MEASUREMENT_SECONDS;
 }

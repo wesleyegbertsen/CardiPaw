@@ -45,7 +45,8 @@ describe('ReadingView', () => {
   it.each([
     ['its measurement length', makeReading({ durationSeconds: 60 }), 'Guided (60 s)'],
     ['30 seconds for one saved before lengths were selectable', makeReading(), 'Guided (30 s)'],
-  ])('labels a guided reading with %s', async (_label, reading, chip) => {
+    ['a camera reading', makeReading({ source: 'camera', durationSeconds: 60 }), 'Camera (60 s)'],
+  ])('labels a reading with %s', async (_label, reading, chip) => {
     const { wrapper } = await mountView(ReadingView, location, {
       pets: [makePet()],
       readings: [reading],

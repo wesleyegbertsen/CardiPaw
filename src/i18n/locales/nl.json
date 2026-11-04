@@ -38,7 +38,9 @@
     "manual": "Handmatig",
     "guided": "Begeleid",
     "manualEntry": "Handmatige invoer",
-    "guidedSeconds": "Begeleid ({n} s)"
+    "guidedSeconds": "Begeleid ({n} s)",
+    "camera": "Camera",
+    "cameraSeconds": "Camera ({n} s)"
   },
   "age": {
     "weeks": "1 week | {n} weken",
@@ -173,7 +175,8 @@
   "readingList": {
     "empty": "Nog geen metingen. Tik op \"Meting starten\" om je eerste meting vast te leggen.",
     "hasNotes": "Heeft notities",
-    "manuallyEntered": "Handmatig ingevoerd"
+    "manuallyEntered": "Handmatig ingevoerd",
+    "cameraMeasured": "Gemeten met de camera"
   },
   "noteList": {
     "empty": "Nog geen notities. Tik op '+' om je eerste te schrijven.",

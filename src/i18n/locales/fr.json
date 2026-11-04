@@ -38,7 +38,9 @@
     "manual": "Manuel",
     "guided": "Guidé",
     "manualEntry": "Saisie manuelle",
-    "guidedSeconds": "Guidé ({n} s)"
+    "guidedSeconds": "Guidé ({n} s)",
+    "camera": "Caméra",
+    "cameraSeconds": "Caméra ({n} s)"
   },
   "age": {
     "weeks": "1 semaine | {n} semaines",
@@ -173,7 +175,8 @@
   "readingList": {
     "empty": "Aucune mesure. Appuyez sur « Commencer le suivi » pour enregistrer votre première mesure.",
     "hasNotes": "Contient des notes",
-    "manuallyEntered": "Saisie manuelle"
+    "manuallyEntered": "Saisie manuelle",
+    "cameraMeasured": "Mesuré avec la caméra"
   },
   "noteList": {
     "empty": "Aucune note. Appuyez sur « + » pour écrire votre première note.",

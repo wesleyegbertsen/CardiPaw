@@ -5,7 +5,7 @@ import { useReadingsStore } from '../stores/readings';
 import { usePetsStore } from '../stores/pets';
 import type { Reading } from '../types';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
-import { readingSeconds } from '../utils/measurement';
+import { readingSeconds, readingSource } from '../utils/measurement';
 import { LazyRichTextEditor as RichTextEditor } from '../components/LazyRichTextEditor';
 import RestStateToggle from '../components/RestStateToggle.vue';
 import { useI18n } from 'vue-i18n';
@@ -124,8 +124,8 @@ function formatDate(iso: string) {
     <form v-if="reading && !loadError" class="form" novalidate @submit.prevent="saveEdit">
       <div class="reading-meta-row">
         <p class="reading-date">{{ formatDate(reading.date) }}</p>
-        <span class="source-chip" :class="reading.source === 'manual' ? 'manual' : 'guided'">
-          {{ reading.source === 'manual' ? $t('source.manualEntry') : $t('source.guidedSeconds', { n: readingSeconds(reading) }) }}
+        <span class="source-chip" :class="readingSource(reading)">
+          {{ readingSource(reading) === 'manual' ? $t('source.manualEntry') : readingSource(reading) === 'camera' ? $t('source.cameraSeconds', { n: readingSeconds(reading) }) : $t('source.guidedSeconds', { n: readingSeconds(reading) }) }}
         </span>
       </div>
 
@@ -274,6 +274,11 @@ function formatDate(iso: string) {
 .source-chip.guided {
   background: var(--color-primary-light);
   color: var(--color-primary);
+}
+
+.source-chip.camera {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .field {

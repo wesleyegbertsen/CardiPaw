@@ -38,7 +38,9 @@
     "manual": "Manuell",
     "guided": "Geführt",
     "manualEntry": "Manuelle Eingabe",
-    "guidedSeconds": "Geführt ({n} s)"
+    "guidedSeconds": "Geführt ({n} s)",
+    "camera": "Kamera",
+    "cameraSeconds": "Kamera ({n} s)"
   },
   "age": {
     "weeks": "1 Woche | {n} Wochen",
@@ -173,7 +175,8 @@
   "readingList": {
     "empty": "Noch keine Messungen. Tippe auf „Messung starten“, um deine erste Messung zu erfassen.",
     "hasNotes": "Hat Notizen",
-    "manuallyEntered": "Manuell eingegeben"
+    "manuallyEntered": "Manuell eingegeben",
+    "cameraMeasured": "Mit der Kamera gemessen"
   },
   "noteList": {
     "empty": "Noch keine Notizen. Tippe auf „+“, um deine erste zu schreiben.",
