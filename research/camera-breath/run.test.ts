@@ -166,5 +166,7 @@ describe('cli exit codes', () => {
     expect(await cli(['score', 'cat.mp4', '--truth', truth, '--roi', '0,0,8,8'])).toBe(1);
     expect(String(err.mock.calls[0][0])).toContain('missing.csv');
     expect(String(err.mock.calls[0][0])).not.toContain('not on PATH');
+    // The message only: a file-system or tool error has already said what went wrong.
+    expect(String(err.mock.calls[0][0])).not.toMatch(/\n\s+at /);
   });
 });

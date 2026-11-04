@@ -68,19 +68,23 @@ is that reading ± half a quantum (±2 at 15 s, ±1 at 30 and 60 s).
 ## 3. Running it
 
 Node 24 runs the TypeScript directly; ffmpeg 8 (`ffmpeg` and `ffprobe`) must be on PATH.
-`clips/` (recordings and sidecars) and `out/` (sweep output) are git-ignored and excluded from
-the Docker build context.
+`research/camera-breath/clips/` (recordings and sidecars) and `research/camera-breath/out/`
+(sweep output, dumps, reports) are git-ignored and excluded from the Docker build context;
+paths on the command line are relative to the shell, so write them out in full.
 
 ```bash
 node research/camera-breath/run.ts synth --subset smoke            # 14 cells, ~30 s, exit 1 on a failed criterion
 node research/camera-breath/run.ts synth --encode                  # core sweep (520 cells) through libx264, ~25 min
-node research/camera-breath/run.ts analyse clips/cat1.mp4 --roi 80,60,120,100 --dump-frame first.pgm
-node research/camera-breath/run.ts score clips/cat1.mp4 --truth clips/cat1.csv --roi 80,60,120,100 --window 30
+node research/camera-breath/run.ts analyse research/camera-breath/clips/cat1.mp4 --roi 80,60,120,100 \
+    --dump-frame research/camera-breath/out/cat1-first.pgm
+node research/camera-breath/run.ts score research/camera-breath/clips/cat1.mp4 \
+    --truth research/camera-breath/clips/cat1.csv --roi 80,60,120,100 --window 30 \
+    --md research/camera-breath/out/cat1.md
 ```
 
 `analyse` prints the working size (the displayed frame scaled to a longest side of 320 px,
 rotation metadata honoured, never upscaled) and expects `--roi x,y,w,h` in those pixels: run it
-once with `--dump-frame first.pgm`, open the PGM, read the chest/flank edge off it. The
+once with `--dump-frame`, open the PGM, read the chest/flank edge off it. The
 background strip (default: the top 40 rows, `--background` to move it) must show static scene
 only; `analyse` warns when it has no texture, and below 28 fps (see §6). `--json` prints the
 machine-readable result, `--dump` the raw and filtered waveforms.

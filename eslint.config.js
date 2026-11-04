@@ -70,6 +70,8 @@ export default defineConfig(
 
   // The research signal code must stay WebView-safe: no Node built-ins in the pure modules.
   // builtinModules lists every bare built-in (fs, fs/promises, path, …); node:* is the prefixed form.
+  // The Node globals are fenced too: they lint and type-check there (the research tsconfig has
+  // `types: ["node"]`) but do not exist in the WebView.
   {
     files: ['research/camera-breath/{signal,estimate,motion,synth,score}.ts'],
     rules: {
@@ -83,6 +85,13 @@ export default defineConfig(
             },
           ],
         },
+      ],
+      'no-restricted-globals': [
+        'error',
+        ...['Buffer', 'process', 'require', '__dirname', '__filename'].map((name) => ({
+          name,
+          message: 'Pure module: no Node globals; keep them in ingest.ts or run.ts.',
+        })),
       ],
     },
   },

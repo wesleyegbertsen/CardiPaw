@@ -22,7 +22,7 @@ export interface WindowResult {
 }
 
 /**
- * Pre-registered thresholds (01-report.md §2, 2026-11-03, before any real data). A 15 s window
+ * Pre-registered thresholds (README §4, written 2026-11-03, before any real data). A 15 s window
  * is quantised to 4 bpm by breathsPerMinute, exactly as a tapped 15 s reading is, so a reading
  * can sit 2 bpm (plus a hair) from the truth with a perfect estimate; MAE is therefore judged
  * on 30 s and 60 s windows pooled (quantum 2 and 1 bpm) and on 15 s windows separately, and
@@ -124,6 +124,7 @@ export function summarise(rows: WindowResult[], ceilings = DEFAULT_CEILINGS): Su
     if (truthLabel === readLabel && r.seconds >= 30) agree++;
     if (truthLabel === 'High' && readLabel === 'Normal') highToNormal++;
   }
+  // Half-open buckets; the last edge sits just above 1 so a quality of exactly 1 lands in it.
   const edges = [0, 0.2, 0.4, 0.6, 0.8, 1.0000001];
   const abstainByQuality: QualityBucket[] = [];
   for (let b = 0; b + 1 < edges.length; b++) {

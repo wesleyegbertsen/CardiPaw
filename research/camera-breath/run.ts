@@ -10,18 +10,21 @@
 //     through libx264 (CRF 28) first. Never run by vitest or CI: core takes ~15 minutes per seed.
 //   node research/camera-breath/run.ts analyse <clip> --roi x,y,w,h [--background x,y,w,h]
 //       [--fps 30] [--size WxH | --longest 320] [--window 30] [--method lk|profile|both]
-//       [--dump waveform.csv] [--dump-frame first.pgm] [--json]
+//       [--dump <waveform.csv>] [--dump-frame <first.pgm>] [--json]
 //     Probes the clip, prints the working size, decodes it and estimates every window. ROI
 //     coordinates are working-size pixels: run once with --dump-frame and read them off the
 //     PGM. The background strip (default: the top 40 rows) must show static scene only.
-//   node research/camera-breath/run.ts score <clip> --truth clips/<clip>.csv --roi x,y,w,h
+//   node research/camera-breath/run.ts score <clip> --truth <sidecar.csv> --roi x,y,w,h
 //       [--background x,y,w,h] [--window 15|30|60] [--ceilings 30,35] [--method lk|profile|both]
-//       [--degraded] [--json out.json] [--md out.md]
+//       [--degraded] [--json <out.json>] [--md <out.md>]
 //     analyse, then compares each window with the counters' sidecar (README: sidecar CSV)
 //     against the real-recording thresholds. --degraded marks a clip that should abstain.
+//   Paths are relative to the shell, not to this folder: keep clips and sidecars under
+//   research/camera-breath/clips/ and write dumps and reports to research/camera-breath/out/,
+//   the two git-ignored directories.
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -61,12 +64,14 @@ const USAGE = `Usage:
       [--method lk|profile|both] [--out <dir>]
   node research/camera-breath/run.ts analyse <clip> --roi x,y,w,h [--background x,y,w,h]
       [--fps 30] [--size WxH | --longest 320] [--window 30] [--method lk|profile|both]
-      [--dump waveform.csv] [--dump-frame first.pgm] [--json]
-  node research/camera-breath/run.ts score <clip> --truth clips/<clip>.csv --roi x,y,w,h
+      [--dump <waveform.csv>] [--dump-frame <first.pgm>] [--json]
+  node research/camera-breath/run.ts score <clip> --truth <sidecar.csv> --roi x,y,w,h
       [--background x,y,w,h] [--window 15|30|60] [--ceilings 30,35] [--method lk|profile|both]
-      [--degraded] [--json out.json] [--md out.md]
+      [--degraded] [--json <out.json>] [--md <out.md>]
 ROI and background are in working-size pixels (analyse prints the size; --dump-frame writes the
 first frame as PGM). The background strip (default: top 40 rows) must show static scene only.
+Paths are relative to the shell: keep clips and sidecars in research/camera-breath/clips/ and
+write dumps and reports to research/camera-breath/out/ (both git-ignored).
 Needs ffmpeg 8 on PATH. See research/camera-breath/README.md.`;
 
 const DEFAULT_OUT = fileURLToPath(new URL('./out', import.meta.url));
@@ -114,7 +119,7 @@ function cell(
     fps: params.fps,
   };
   const name = Object.entries(factors)
-    .filter(([k, v]) => k !== 'group' && v !== factors.group && !(k === 'ramp' && v === 0))
+    .filter(([k, v]) => k !== 'group' && !(k === 'ramp' && v === 0))
     .map(([k, v]) => `${k}=${v}`)
     .join(' ');
   return {
@@ -314,8 +319,12 @@ async function runCell(c: Cell, methods: Method[], encode: boolean, outDir: stri
   let frames: Frame[];
   if (encode) {
     const file = join(outDir, c.keepAs ?? 'encode-tmp.mp4');
-    await writeClip(scene.frames(), file, { fps, ...SWEEP_SIZE });
-    frames = await readFrames(file, { fps, ...SWEEP_SIZE });
+    try {
+      await writeClip(scene.frames(), file, { fps, ...SWEEP_SIZE });
+      frames = await readFrames(file, { fps, ...SWEEP_SIZE });
+    } finally {
+      if (c.keepAs === undefined) rmSync(file, { force: true });
+    }
   } else {
     frames = [...scene.frames()];
   }
@@ -925,7 +934,16 @@ export async function cli(argv: string[]): Promise<number> {
       return 2;
     }
     const hint = ffmpegMissingHint(err);
-    console.error(hint ?? (err instanceof Error ? (err.stack ?? err.message) : String(err)));
+    // An error with a code has already said what went wrong: a tool's non-zero exit follows
+    // its own stderr (passed through), a file-system error names the file. Only an error
+    // nothing anticipated gets its stack.
+    const expected = err instanceof Error && 'code' in err;
+    const text = !(err instanceof Error)
+      ? String(err)
+      : expected
+        ? err.message
+        : (err.stack ?? err.message);
+    console.error(hint ?? text);
     return 1;
   }
 }

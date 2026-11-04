@@ -1,6 +1,6 @@
 // Seeded synthetic chest-motion scenes with ground truth, for the sweep and the unit tests.
-// Pure module: ES2020 only, no Node built-ins. The renderer is the one the thresholds were
-// calibrated on (pass 2 and 3 of the plan), so its arithmetic is kept as is.
+// Pure module: ES2020 only, no Node built-ins. The renderer is the one the gate thresholds were
+// calibrated on (README §2), so its arithmetic is kept as is.
 
 import type { Frame, Roi } from './motion.ts';
 import { topStrip } from './motion.ts';

@@ -364,6 +364,8 @@ function trackBlurred(
   const gain = curMean > 0 ? frameMean(refB) / curMean : 1;
   const refS = o.levels > 1 ? downsample2(refB) : null;
   const curS = o.levels > 1 ? downsample2(curB) : null;
+  // A match that moved more than a third of the window side keeps too little of the reference
+  // patch under it to be trusted; the coarse level doubles the reach (5 px → 10 at half = 7).
   const maxShift = ((2 * o.half + 1) / 3) * (o.levels > 1 ? 2 : 1);
   return points.map(([px, py]) => {
     let dx = 0;
