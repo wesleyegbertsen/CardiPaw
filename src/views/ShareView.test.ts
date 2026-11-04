@@ -78,6 +78,15 @@ describe('ShareView', () => {
     expect(rows[2].get('.rest-tag').classes()).toContain('resting');
   });
 
+  it('tags a camera reading', async () => {
+    const cam = makeReading({ id: 'cam', date: '2024-03-16T08:00:00.000Z', rate: 20, source: 'camera' });
+    const d = codec.encodeShare(codec.buildSharePayload(pet, [...readings, cam], ['2024-03']));
+    const { wrapper } = await mountShare({ d: await d });
+    const tag = wrapper.findAll('.reading-row')[0].get('.source-tag');
+    expect(tag.classes()).toContain('camera');
+    expect(tag.text()).toBe('Camera');
+  });
+
   it('gives each row its own key when two readings share a minute', async () => {
     // Share dates have minute precision (and links can be hand-made), so dates repeat.
     const d = await codec.encodeShare({

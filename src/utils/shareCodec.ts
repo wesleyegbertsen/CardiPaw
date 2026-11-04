@@ -214,7 +214,8 @@ function isSharePayload(value: unknown): value is SharePayload {
       reading.restState === 'sleeping'
     ) && (
       reading.source === undefined ||
-      reading.source === 'manual'
+      reading.source === 'manual' ||
+      reading.source === 'camera'
     );
   });
   return readingsValid && countMonths(v.readings as { date: string }[]) <= MAX_SHARED_MONTHS;

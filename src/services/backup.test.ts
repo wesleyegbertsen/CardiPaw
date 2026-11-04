@@ -141,6 +141,11 @@ describe('validateBackup', () => {
     expect(validateBackup(backup({ readings: [reading] })).data.readings).toEqual([reading]);
   });
 
+  it('keeps a camera reading and its length', () => {
+    const reading = makeReading({ source: 'camera', durationSeconds: 60 });
+    expect(validateBackup(backup({ readings: [reading] })).data.readings).toEqual([reading]);
+  });
+
   it.each([
     ['an unknown length', { durationSeconds: 45 }],
     ['a length as text', { durationSeconds: '30' }],

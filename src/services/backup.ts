@@ -110,9 +110,9 @@ function toReading(value: unknown): Reading | null {
   };
   if (restState === 'resting' || restState === 'sleeping') reading.restState = restState;
   if (typeof notes === 'string') reading.notes = notes;
-  if (source === 'manual') reading.source = source;
-  // Only guided readings have a length; an unknown one is dropped, the reading kept.
-  else if (isMeasurementSeconds(durationSeconds)) reading.durationSeconds = durationSeconds;
+  if (source === 'manual' || source === 'camera') reading.source = source;
+  // Guided and camera readings have a length; an unknown one is dropped, the reading kept.
+  if (source !== 'manual' && isMeasurementSeconds(durationSeconds)) reading.durationSeconds = durationSeconds;
   return reading;
 }
 
