@@ -48,8 +48,10 @@ export interface EstimateResult {
   bpm: number | null; // median of the available estimators; null when abstaining
   rawBpm: number | null; // the same median even when abstaining (for calibration tables)
   breaths: number | null; // round(bpm · seconds / 60)
-  quantisedBpm: number | null; // breathsPerMinute(breaths, seconds) for 15/30/60 s, else round(bpm)
-  interval: [number, number] | null; // quantisedBpm ± half a quantum, rounded outward; null off-grid
+  // On the 15/30/60 s grid: breathsPerMinute(breaths, seconds) and that reading ± half a quantum
+  // (rounded outward). Off-grid (449 samples at 30 fps, a 20 s window): round(bpm) and null.
+  quantisedBpm: number | null;
+  interval: [number, number] | null;
   estimators: { fft: number | null; acf: number | null; ibi: number | null; count: number };
   quality: number; // 0–1
   reasons: AbstainReason[]; // empty when accepted; every abstain carries at least one

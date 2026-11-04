@@ -74,7 +74,7 @@ paths on the command line are relative to the shell, so write them out in full.
 
 ```bash
 node research/camera-breath/run.ts synth --subset smoke            # 14 cells, ~30 s, exit 1 on a failed criterion
-node research/camera-breath/run.ts synth --encode                  # core sweep (520 cells) through libx264, ~25 min
+node research/camera-breath/run.ts synth --seeds 3 --encode        # core sweep (1,134 cells) through libx264, ~42 min
 node research/camera-breath/run.ts analyse research/camera-breath/clips/cat1.mp4 --roi 80,60,120,100 \
     --dump-frame research/camera-breath/out/cat1-first.pgm
 node research/camera-breath/run.ts score research/camera-breath/clips/cat1.mp4 \
@@ -118,199 +118,234 @@ per window length; ±4, the under-count and High→Normal use every window.
 
 ## 5. Synthetic results
 
-Core sweep, run on 2026-11-04 at commit `a6f8a1e` with Node v24.22.1 and ffmpeg 8.0.1 (gyan.dev
-essentials build), every cell round-tripped through libx264 at CRF 28 (`--encode`), 1235 s wall:
-520 cells (340 core: 17 rates × 5 amplitudes × 4 shake levels; 150 nuisance; 30 refusal), 60 s each
-at 192×144, three extractions per cell (lk-edge, lk-interior, profile-edge), 15/30/60 s windows,
-10,920 windows in all. The verdict is on the primary method (Lucas-Kanade, both ROI placements,
-7,280 windows); the profile method appears in the breakdowns only. The sweep exited 1: **eight
-criteria pass, label agreement fails** (98.0 % against the pre-registered 100 %).
+### What was run
 
-What the failing 2 % is: all 42 label flips are 30 s windows at exactly 31 bpm read as 30
-(Elevated → Normal, 15.5 breaths rounds either way) and exactly 35 bpm read as 36 (Elevated →
-High, 17.5 breaths). The largest error among them is 1.04 bpm, no flip is High → Normal, and no
-60 s window flips (its quantum is 1 bpm). A tapped 30 s measurement of the same animal lands on
-the same grid and flips the same way, so this is the quantum of the 30 s window meeting a
-ceiling, not a bias of the method; the 100 % threshold did not anticipate rates sitting exactly
-one bpm above a ceiling. It still fails as registered. The honest reading is: on 30 s windows the
-label is reliable except within ±1 bpm of a ceiling, where only a 60 s window decides.
+`run.ts synth --subset core --seeds 3 --encode`, on 2026-11-04 with Node v24.22.1 and ffmpeg
+8.0.1 (gyan.dev essentials build), every cell round-tripped through libx264 at CRF 28, 2,513 s
+wall. The code was the tree at `3c9ddd4` (the sweep records `77fb3fd`, the branch head when it
+finished; the commits in between touch the CLI, the tests and this note, not the signal chain,
+the gates or the renderer). The JSON and the generated tables are in `out/` (git-ignored).
 
-Other findings:
+The population, stated exactly:
 
-- **False abstains (5.8 %, 267 of 4,602 good primary windows)** are concentrated at the low
-  rates the grid includes on purpose: 8 bpm (72, four cycles in 30 s), 12 bpm (49) and 18 bpm
-  (72, mostly 15 s windows with 4.5 cycles), with `weak-periodicity`, `irregular` and
-  `estimators-disagree` as the reasons. Above 24 bpm the false-abstain rate is below 2 %.
-  Edge and interior ROI placements abstain alike (135 and 132).
-- **Refusal is complete**: 0 of 1,610 primary windows that should abstain (no breathing, 3 px
-  shake) were accepted.
-- **Detection floors**: at 0.3 px amplitude 78 % of windows abstain and at 0.5 px 57 %, at
-  1 px 34 %; the accepted ones are accurate (MAE ≤ 0.7 bpm). Lucas-Kanade therefore reads
-  down to about 0.5 px at 192×144 with the abstain rate as the signal that it is marginal; the
-  profile method abstains on 77 % of all windows and is a cross-check only.
-- **15 s windows**: MAE 0.95 bpm, i.e. the 4 bpm quantum; nothing beyond ±4.
-- **Nuisances** (A = 1, 0.5 px shake, 18/30/36 bpm, five seeds): 10 Hz and 100 Hz flicker,
-  a 0.3 px purr, two twitches, a +6 bpm ramp, 24 and 60 fps all stay at 19–25 % abstain and
-  MAE ≤ 0.76 bpm. In-band 0.5 Hz / 2 % flicker on A = 1 (neither good nor must-abstain by the
-  pre-registration) was accepted on 51 % of windows with a largest error of 2.08 bpm, i.e. the
-  15 s quantum: the whole-frame gain cancellation removes it. Contrast 10 raises the abstain
-  rate to 79 %; `twitchFraction` never fired for Lucas-Kanade (twitches show as validity dips
-  and the windows are read anyway).
-- The smoke subset (14 cells, in-process and encoded) passes all nine criteria; the encoded
-  smoke run's only false abstain is an 18 bpm, 0.5 px, 15 s window (`weak-periodicity`).
+- **1,020 core cells**: 17 rates (8–80 bpm) × 5 amplitudes (0.3–4 px) × 4 shake levels
+  (0–3 px rms) × seeds 1, 2, 3 — **30 fps only**, contrast 40.
+- **90 nuisance cells**: 10 variants (contrast 10 and 40, three flickers, a 0.3 px purr, two
+  twitches, 24 fps, 60 fps, a +6 bpm ramp) × 18/30/36 bpm × 3 seeds, all at A = 1 px and 0.5 px
+  shake. **24 and 60 fps occur only here**, 9 cells each; nothing else in the sweep tests the
+  frame rate.
+- **24 refusal cells**: no breathing (A = 0) at contrast 10/20/40 × shake 0/1, and in-band
+  0.5 Hz / 2 % flicker at A = 0.3 and 0.5 px, × 3 seeds.
 
-### Verdict (primary (lk-*), 7280 windows)
+Every cell is 60 s at 192×144 and gets three extractions (lk-edge, lk-interior, profile-edge)
+and seven non-overlapping windows (4 × 15 s, 2 × 30 s, 1 × 60 s): 23,814 windows, 15,876 on
+the primary method. The verdict and every number below are **primary-method (Lucas-Kanade,
+both ROI placements) unless a table says otherwise**; the profile method appears in the method
+table only.
+
+What is independent here: a seed fixes the texture, the pixel-noise stream and the shake/drift
+path, so the seven windows of a cell and the two LK ROIs on the same frames are correlated, and
+the three seeds are the number of independent scenes per grid point, not 14. The window counts
+are large because the grid is dense, not because the evidence is; per-seed figures are given
+where they matter.
+
+### The verdict
+
+The sweep exited 1: **eight criteria pass, label agreement fails** (97.3 % against the
+pre-registered 100 %).
+
+All 117 label flips are 30 s windows at exactly 31 bpm read as 30 (81, Elevated → Normal;
+15.5 breaths round either way) and exactly 35 bpm read as 36 (36, Elevated → High; 17.5
+breaths): 81 of the 166 accepted 30 s windows at 31 bpm flip, 36 of 166 at 35 bpm, and
+nothing else flips. The largest error among them is 1.00 bpm, i.e. the 30 s quantum; none is
+High → Normal; per seed the agreement is 97.1 / 97.9 / 96.9 %. No 60 s window flips, but that
+holds only because the grid holds integer rates: a real animal at 30.4 bpm flips at 60 s too.
+Any whole-breath count, tapped or camera, flips within half a quantum of a ceiling, so this is
+the quantum of the window meeting a ceiling, not a bias of the method (bias −0.18 bpm over all
+accepted windows, 30/60 s MAE 0.19). The 100 % threshold did not anticipate rates sitting
+exactly one bpm above a ceiling. It still fails as registered. The honest reading: on 30 s
+windows the label is reliable except within ±1 bpm of a ceiling, where only a longer window or
+a second reading decides.
+
+### Other findings (primary method)
+
+- **Good windows and false abstains.** A _good_ window is one from a cell with A ≥ 0.5 px,
+  shake ≤ 1 px rms and no in-band flicker, except the 15 s windows at ≤ 12 bpm, which hold fewer
+  than three cycles and are too-short by design (576 windows, left out). False abstains: 4.8 %
+  (437 of 9,126; per seed 4.5 / 4.6 / 5.2 %). By rate: 8 bpm 216 of 216 — 8 bpm is 0.133 Hz,
+  below the 0.15 Hz band edge, a design floor rather than an estimator weakness (0 of 216
+  windows accepted at A ≥ 1 over 30/60 s; see §11 on large dogs); 12 bpm 59 of 216 (27 %,
+  `irregular` and `estimators-disagree`; at A ≥ 1 it reads on 102 of 144 30 s windows and 51 of
+  72 60 s windows); 18 bpm 72 of 882 (8 %). Above 24 bpm the rate is 1.2 % (88 of 7,308), of
+  which the contrast-10 nuisance cells supply 41 (they abstain on 65 % of their 126 windows);
+  without them 0.7 %. Edge and interior placements abstain alike (243 and 194 of 4,563 each).
+- **Refusal.** 3,845 of the 3,906 windows that should abstain did (98.4 %). No breathing: 0 of
+  252 accepted. 3 px shake: 0 of 3,570 accepted. The third registered condition, in-band
+  0.5 Hz / 2 % flicker over a 0.3 or 0.5 px signal, is where all 61 accepted windows sit — and
+  they are correct readings (MAE 1.1 bpm, largest error 2.0 = the 15 s quantum; 41 of 42
+  accepted at 0.5 px, 20 of 42 at 0.3 px). The whole-frame gain cancellation removes the
+  flicker before the estimators see it, exactly as at A = 1 (126 of 126 accepted, MAE 0.76).
+  The registration predicted that in-band flicker would corrupt a tiny signal; it does not. The
+  criterion passes as registered (≥ 90 %), but the right statement is that this refusal
+  condition was mis-specified, not that the method refused it; on the two conditions that
+  really have nothing to read, refusal is 100 %.
+- **Detection floors** (core cells, shake ≤ 1 px): 0.3 px abstains on 54.7 % of windows,
+  0.5 px on 15.0 %, 1/2/4 px on 7.8/7.5/7.8 % (that residual is the 8/12/18 bpm rows); the
+  accepted windows are accurate at every amplitude (MAE 0.49–0.50). Lucas-Kanade therefore
+  reads down to about 0.5 px at 192×144, with the abstain rate as the signal that it is
+  marginal. Shake 0 / 0.5 / 1 px at A ≥ 1 abstain on 7.4 / 8.0 / 7.8 %; 3 px on 100 %.
+- **Window length** (good windows): 15 s MAE 0.80 bpm, largest error 2.00 (the quantum);
+  30 s MAE 0.29, largest 1.00; 60 s MAE 0.00 to two decimals, largest 1.00. Before
+  quantisation the raw estimate is off by 0.09 / 0.04 / 0.02 bpm on average and at most
+  1.07 / 0.98 / 0.62: the reported error is the grid, not the estimator.
+- **Nuisances** (A = 1, 0.5 px shake, 18/30/36 bpm, three seeds): 10 and 100 Hz flicker, the
+  in-band 0.5 Hz flicker, a 0.3 px purr, two twitches, a +6 bpm ramp, 24 and 60 fps all stay
+  at 0–1.6 % abstain and MAE ≤ 0.76 bpm on the primary method (the table below). Pooled over
+  all three methods the nuisance cells abstain on 24.8 %, which is the profile method. Contrast
+  10 is the one nuisance that costs: 65 % abstain, the accepted windows accurate (MAE 0.41).
+- **Gates.** `twitch` fired on 39 windows, 38 of them in 3 px shake cells, never as the only
+  reason and never on a good window; on the two-twitch nuisance cells `twitchFraction` is
+  0.000, because Lucas-Kanade turns a 15 px jump into a validity dip (the jumped points fail to
+  track and hold) that the 1-D gate never sees. `low-quality` fired on 11 windows, 10 of them
+  at 0.3 px (quality 0.68–0.70); every abstain carries at least one reason.
+- **Seeds agree**: label agreement 97.1 / 97.9 / 96.9 %, false abstain 4.5 / 4.6 / 5.2 %,
+  30/60 s MAE 0.196 / 0.191 / 0.194 bpm for seeds 1 / 2 / 3.
+- The smoke subset (14 cells, seed 1, encoded) passes all nine criteria; its only false abstain
+  is an 18 bpm, 0.5 px, 15 s window (`weak-periodicity`).
+
+### Verdict (primary (lk-*), 15876 windows)
 
 | Criterion | Value | Threshold | Result |
 |---|---|---|---|
-| MAE, 30/60 s windows | 0.16 bpm | ≤ 1.00 bpm | PASS |
-| MAE, 15 s windows | 0.95 bpm | ≤ 2.00 bpm | PASS |
+| MAE, 30/60 s windows | 0.19 bpm | ≤ 1.00 bpm | PASS |
+| MAE, 15 s windows | 0.79 bpm | ≤ 2.00 bpm | PASS |
 | Within ±2 bpm | 100.0 % | ≥ 98.0 % | PASS |
 | Within ±4 bpm | 100.0 % | ≥ 100.0 % | PASS |
 | Under-count beyond −4 bpm | 0 | ≤ 0 | PASS |
-| Label agreement (getRateStatus) | 98.0 % | ≥ 100.0 % | FAIL |
+| Label agreement (getRateStatus) | 97.3 % | ≥ 100.0 % | FAIL |
 | High → Normal | 0 | ≤ 0 | PASS |
-| Correct abstain | 100.0 % | ≥ 90.0 % | PASS |
-| False abstain on good windows (primary) | 5.8 % | ≤ 25.0 % | PASS |
+| Correct abstain | 98.4 % | ≥ 90.0 % | PASS |
+| False abstain on good windows (primary) | 4.8 % | ≤ 25.0 % | PASS |
 
-### Summary
+### Summary (primary)
 
-- Windows: 7280, accepted 4881, abstained 2399 (33.0 %)
-- MAE: 15 s 0.95, 30 s 0.23, 60 s 0.02 bpm
-- Bias -0.15 bpm, SD 0.99, limits of agreement -2.08 to 1.78 bpm
+- Windows: 15876, accepted 9957, abstained 5919 (37.3 %; the refusal and 3 px shake cells
+  and the 0.3 px floor make up most of it)
+- MAE: 15 s 0.79, 30 s 0.29, 60 s 0.00 bpm
+- Bias −0.18 bpm, SD 0.88, limits of agreement −1.90 to 1.54 bpm (pooled over window lengths,
+  so dominated by the 15 s quantum)
 - Within ±2: 100.0 %; within ±4: 100.0 %; under-count beyond −4: 0
-- Label agreement 98.0 %; High → Normal 0
-- Correct abstain 100.0 %; false abstain (primary) 5.8 %
+- Label agreement 97.3 %; High → Normal 0
+- Correct abstain 98.4 %; false abstain (primary) 4.8 %
 
 | Quality bucket | Windows | Abstained |
 |---|---|---|
-| [0.0, 0.2) | 1 | 1 |
-| [0.2, 0.4) | 296 | 296 |
-| [0.4, 0.6) | 831 | 831 |
-| [0.6, 0.8) | 791 | 730 |
-| [0.8, 1.0] | 5361 | 541 |
+| [0.2, 0.4) | 266 | 266 |
+| [0.4, 0.6) | 2068 | 2068 |
+| [0.6, 0.8) | 2170 | 2018 |
+| [0.8, 1.0] | 11372 | 1567 |
 
-### Breakdowns (all methods)
+### Breakdowns
 
-#### By Method
+Primary method only unless the heading says otherwise; abstain rates and MAE over the windows
+named in the heading.
+
+#### By method (all three extractions)
 
 | Method | Windows | Accepted | Abstain rate | MAE (accepted) |
 |---|---|---|---|---|
-| lk-edge | 3640 | 2381 | 34.6 % | 0.61 bpm |
-| lk-interior | 3640 | 2500 | 31.3 % | 0.60 bpm |
-| profile-edge | 3640 | 855 | 76.5 % | 0.54 bpm |
+| lk-edge | 7938 | 4794 | 39.6 % | 0.53 bpm |
+| lk-interior | 7938 | 5163 | 35.0 % | 0.53 bpm |
+| profile-edge | 7938 | 2558 | 67.8 % | 0.51 bpm |
 
-#### By ROI placement
-
-| ROI placement | Windows | Accepted | Abstain rate | MAE (accepted) |
-|---|---|---|---|---|
-| edge | 7280 | 3236 | 55.5 % | 0.59 bpm |
-| interior | 3640 | 2500 | 31.3 % | 0.60 bpm |
-
-#### By Window (s)
+#### By window length
 
 | Window (s) | Windows | Accepted | Abstain rate | MAE (accepted) |
 |---|---|---|---|---|
-| 15 | 6240 | 3206 | 48.6 % | 0.94 bpm |
-| 30 | 3120 | 1688 | 45.9 % | 0.23 bpm |
-| 60 | 1560 | 842 | 46.0 % | 0.02 bpm |
+| 15 | 9072 | 5598 | 38.3 % | 0.79 bpm |
+| 30 | 4536 | 2904 | 36.0 % | 0.29 bpm |
+| 60 | 2268 | 1455 | 35.8 % | 0.00 bpm |
 
-#### By Group
+#### By group
 
 | Group | Windows | Accepted | Abstain rate | MAE (accepted) |
 |---|---|---|---|---|
-| core | 7140 | 3374 | 52.7 % | 0.50 bpm |
-| nuisance | 3150 | 2362 | 25.0 % | 0.73 bpm |
-| refusal | 630 | 0 | 100.0 % | n/a |
+| core | 14280 | 8721 | 38.9 % | 0.50 bpm |
+| nuisance | 1260 | 1175 | 6.7 % | 0.74 bpm |
+| refusal | 336 | 61 | 81.8 % | 1.11 bpm |
 
-#### By Amplitude (px)
+#### By amplitude, core cells with shake ≤ 1 px
 
 | Amplitude (px) | Windows | Accepted | Abstain rate | MAE (accepted) |
 |---|---|---|---|---|
-| 0 | 630 | 0 | 100.0 % | n/a |
-| 0.3 | 1428 | 314 | 78.0 % | 0.51 bpm |
-| 0.5 | 1428 | 616 | 56.9 % | 0.52 bpm |
-| 1 | 4578 | 3044 | 33.5 % | 0.68 bpm |
-| 2 | 1428 | 931 | 34.8 % | 0.49 bpm |
-| 4 | 1428 | 831 | 41.8 % | 0.50 bpm |
+| 0.3 | 2142 | 971 | 54.7 % | 0.50 bpm |
+| 0.5 | 2142 | 1821 | 15.0 % | 0.50 bpm |
+| 1 | 2142 | 1974 | 7.8 % | 0.49 bpm |
+| 2 | 2142 | 1981 | 7.5 % | 0.49 bpm |
+| 4 | 2142 | 1974 | 7.8 % | 0.49 bpm |
 
-#### By Shake (px rms)
+#### By shake, core cells with A ≥ 1 px
 
 | Shake (px rms) | Windows | Accepted | Abstain rate | MAE (accepted) |
 |---|---|---|---|---|
-| 0 | 2100 | 1050 | 50.0 % | 0.51 bpm |
-| 0.5 | 4935 | 3500 | 29.1 % | 0.65 bpm |
-| 1 | 2100 | 1186 | 43.5 % | 0.50 bpm |
-| 3 | 1785 | 0 | 100.0 % | n/a |
+| 0 | 2142 | 1984 | 7.4 % | 0.49 bpm |
+| 0.5 | 2142 | 1970 | 8.0 % | 0.49 bpm |
+| 1 | 2142 | 1975 | 7.8 % | 0.49 bpm |
+| 3 | 2142 | 0 | 100.0 % | n/a |
 
-#### By Rate (bpm)
+#### By rate, good windows of the core cells
+
+The MAE alternates between 0 and ~0.9–1.1 bpm with the rate because an odd number of breaths
+in 30 s and a non-multiple of 4 in 15 s sit between grid points; it is the quantum, not the
+estimator (see the raw-estimate figures above).
 
 | Rate (bpm) | Windows | Accepted | Abstain rate | MAE (accepted) |
 |---|---|---|---|---|
-| 8 | 420 | 0 | 100.0 % | n/a |
-| 12 | 420 | 96 | 77.1 % | 0.01 bpm |
-| 18 | 1470 | 860 | 41.5 % | 1.10 bpm |
-| 24 | 420 | 216 | 48.6 % | 0.01 bpm |
-| 28 | 420 | 221 | 47.4 % | 0.02 bpm |
-| 29 | 420 | 215 | 48.8 % | 0.85 bpm |
-| 30 | 2100 | 1066 | 49.2 % | 1.08 bpm |
-| 31 | 420 | 224 | 46.7 % | 0.87 bpm |
-| 32 | 420 | 222 | 47.1 % | 0.02 bpm |
-| 33 | 420 | 224 | 46.7 % | 0.84 bpm |
-| 34 | 420 | 223 | 46.9 % | 1.14 bpm |
-| 35 | 420 | 224 | 46.7 % | 0.86 bpm |
-| 36 | 1470 | 1067 | 27.4 % | 0.08 bpm |
-| 37 | 420 | 229 | 45.5 % | 0.84 bpm |
-| 48 | 420 | 222 | 47.1 % | 0.03 bpm |
-| 60 | 420 | 223 | 46.9 % | 0.03 bpm |
-| 80 | 420 | 204 | 51.4 % | 0.05 bpm |
+| 8 | 216 | 0 | 100.0 % | n/a |
+| 12 | 216 | 157 | 27.3 % | 0.00 bpm |
+| 18 | 504 | 476 | 5.6 % | 1.13 bpm |
+| 24 | 504 | 502 | 0.4 % | 0.00 bpm |
+| 28 | 504 | 499 | 1.0 % | 0.00 bpm |
+| 29 | 504 | 501 | 0.6 % | 0.86 bpm |
+| 30 | 504 | 502 | 0.4 % | 1.14 bpm |
+| 31 | 504 | 499 | 1.0 % | 0.86 bpm |
+| 32 | 504 | 501 | 0.6 % | 0.00 bpm |
+| 33 | 504 | 501 | 0.6 % | 0.86 bpm |
+| 34 | 504 | 500 | 0.8 % | 1.14 bpm |
+| 35 | 504 | 502 | 0.4 % | 0.86 bpm |
+| 36 | 504 | 503 | 0.2 % | 0.00 bpm |
+| 37 | 504 | 502 | 0.4 % | 0.86 bpm |
+| 48 | 504 | 502 | 0.4 % | 0.00 bpm |
+| 60 | 504 | 501 | 0.6 % | 0.00 bpm |
+| 80 | 504 | 492 | 2.4 % | 0.00 bpm |
 
-#### By Contrast
+#### Nuisance cells (A = 1 px, 0.5 px shake, 18/30/36 bpm, three seeds)
 
-| Contrast | Windows | Accepted | Abstain rate | MAE (accepted) |
+| Variant | Windows | Accepted | Abstain rate | MAE (accepted) |
 |---|---|---|---|---|
-| 10 | 525 | 108 | 79.4 % | 0.50 bpm |
-| 20 | 210 | 0 | 100.0 % | n/a |
-| 40 | 10185 | 5628 | 44.7 % | 0.60 bpm |
+| none (contrast 40) | 126 | 126 | 0.0 % | 0.76 bpm |
+| contrast 10 | 126 | 44 | 65.1 % | 0.41 bpm |
+| flicker 0.5 Hz / 2 % (in band) | 126 | 126 | 0.0 % | 0.76 bpm |
+| flicker 10 Hz / 3 % | 126 | 126 | 0.0 % | 0.76 bpm |
+| flicker 100 Hz / 5 % | 126 | 126 | 0.0 % | 0.76 bpm |
+| purr 25 Hz / 0.3 px | 126 | 124 | 1.6 % | 0.74 bpm |
+| 2 twitches | 126 | 126 | 0.0 % | 0.76 bpm |
+| 24 fps | 126 | 126 | 0.0 % | 0.76 bpm |
+| 60 fps | 126 | 125 | 0.8 % | 0.75 bpm |
+| rate ramp +6 bpm | 126 | 126 | 0.0 % | 0.71 bpm |
 
-#### By Flicker
+#### Refusal cells (30 bpm, 30 fps, three seeds)
 
-| Flicker | Windows | Accepted | Abstain rate | MAE (accepted) |
+| Cell | Windows | Accepted | Abstain rate | MAE (accepted) |
 |---|---|---|---|---|
-| 0.5 Hz / 2 % | 315 | 252 | 20.0 % | 0.76 bpm |
-| 10 Hz / 3 % | 315 | 251 | 20.3 % | 0.76 bpm |
-| 100 Hz / 5 % | 315 | 247 | 21.6 % | 0.74 bpm |
-| none | 9975 | 4986 | 50.0 % | 0.57 bpm |
-
-#### By Purr
-
-| Purr | Windows | Accepted | Abstain rate | MAE (accepted) |
-|---|---|---|---|---|
-| 25 Hz / 0.3 px | 315 | 264 | 16.2 % | 0.73 bpm |
-| none | 10605 | 5472 | 48.4 % | 0.59 bpm |
-
-#### By Twitches
-
-| Twitches | Windows | Accepted | Abstain rate | MAE (accepted) |
-|---|---|---|---|---|
-| 0 | 10605 | 5501 | 48.1 % | 0.59 bpm |
-| 2 | 315 | 235 | 25.4 % | 0.75 bpm |
-
-#### By Rate ramp (bpm)
-
-| Rate ramp (bpm) | Windows | Accepted | Abstain rate | MAE (accepted) |
-|---|---|---|---|---|
-| 0 | 10605 | 5485 | 48.3 % | 0.59 bpm |
-| 6 | 315 | 251 | 20.3 % | 0.73 bpm |
-
-#### By Frame rate
-
-| Frame rate | Windows | Accepted | Abstain rate | MAE (accepted) |
-|---|---|---|---|---|
-| 24 | 315 | 255 | 19.0 % | 0.74 bpm |
-| 30 | 10290 | 5231 | 49.2 % | 0.58 bpm |
-| 60 | 315 | 250 | 20.6 % | 0.70 bpm |
-
+| no breathing, contrast 10, shake 0 | 42 | 0 | 100.0 % | n/a |
+| no breathing, contrast 10, shake 1 | 42 | 0 | 100.0 % | n/a |
+| no breathing, contrast 20, shake 0 | 42 | 0 | 100.0 % | n/a |
+| no breathing, contrast 20, shake 1 | 42 | 0 | 100.0 % | n/a |
+| no breathing, contrast 40, shake 0 | 42 | 0 | 100.0 % | n/a |
+| no breathing, contrast 40, shake 1 | 42 | 0 | 100.0 % | n/a |
+| in-band flicker 0.5 Hz / 2 %, A = 0.3 | 42 | 20 | 52.4 % | 1.10 bpm |
+| in-band flicker 0.5 Hz / 2 %, A = 0.5 | 42 | 41 | 2.4 % | 1.12 bpm |
 
 ## 6. Aliasing
 
@@ -344,6 +379,22 @@ frame; conditions daylight / LED / dim; ≥ 2 cats including a dark or uniform c
 possible; sleeping and resting; note coat, lighting and distance; ROI on the chest/flank edge
 chosen from `--dump-frame`; the background strip must show static scene only.
 
+Counting: the two counters work blind — each marks the timestamps before seeing the other's
+sheet and before anyone runs `analyse` or `score` on the clip, so neither the detector's output
+nor the other count can steer a decision about a doubtful breath.
+
+Degraded clips: besides the good clips, record at least one clip per degraded condition —
+hand-held, dim light, 24 fps — and score each with `--degraded`; those are the only real data
+behind the "correct abstain" criterion, which the good clips cannot test.
+
+What the clips can and cannot decide: a resting cat or dog rarely exceeds 35 bpm, so the
+label-agreement and High → Normal criteria are vacuous unless an animal with an elevated rate
+is recorded (a cat after play, a dog on a warm day, or a patient whose vet has asked for
+counts); the write-up reports those criteria on whatever range the clips cover and says so.
+Sample size: ≥ 40 agreed windows from ≥ 3 animals is the comfortable bar; ≥ 20 from ≥ 2 (one
+dark coat) is the minimum, and windows from one clip are correlated, so 18 of 20 is a wide
+confidence interval, not 90 %.
+
 ## 8. Real-recording results
 
 None yet. `score` fills one row per clip; the verdict is decided over all clips together.
@@ -354,15 +405,20 @@ None yet. `score` fills one row per clip; the verdict is decided over all clips 
 
 ## 9. Go/no-go (conditional)
 
-**Synthetic: eight of nine criteria PASS; label agreement FAILS at 98.0 % against 100 %**, and
-§5 shows the whole 2 % to be the 30 s quantum straddling a ceiling at exactly 31 and 35 bpm
-(largest error 1.04 bpm, no High → Normal, no flip at 60 s). As registered, that is not a clean
+**Synthetic: eight of nine criteria PASS; label agreement FAILS at 97.3 % against 100 %**, and
+§5 shows every one of the 117 flips to be the 30 s quantum straddling a ceiling at exactly 31
+and 35 bpm (largest error 1.00 bpm, no High → Normal; no flip at 60 s, which an integer-rate
+grid guarantees and a real 30.4 bpm animal would not). As registered, that is not a clean
 pass; whether it is a go to the recording step is a judgement call for the repo owner, with
 the author's recommendation being yes, on the condition that the product shape uses 60 s
-windows whenever the reading sits within 1 bpm of a ceiling. A synthetic go is a go to the
-recording step only. **Real: decided when ≥ 20 accepted windows from ≥ 2 animals (one dark
-coat) exist.** Any accepted High→Normal is a no-go regardless of averages; a false-abstain rate
-above 25 % on propped-phone clips is a no-go for the product shape below.
+windows whenever the reading sits within 1 bpm of a ceiling. Two caveats travel with that
+recommendation: the sweep validates the signal chain and the abstain logic on a rigid rendered
+scene, not tracking on fur (§11), and one registered refusal condition turned out to be
+mis-specified (§5). A synthetic go is a go to the recording step only. **Real: decided when ≥ 20 agreed windows from ≥ 2 animals (one dark coat)
+exist; ≥ 40 from ≥ 3 animals is the comfortable bar (§7).** Any accepted High→Normal is a no-go
+regardless of averages; a false-abstain rate above 25 % on propped-phone clips is a no-go for
+the product shape below. The High range and the label criteria are only decided if an animal
+with an elevated rate is recorded; otherwise they are reported as untested, not as passed.
 
 Product shape if go: a suggestion that the owner confirms, never auto-saved, never the default,
 labelled experimental, ≥ 30 s, optional simultaneous taps. Prerequisites before any app code:
@@ -392,6 +448,21 @@ Play data-safety form.
 
 ## 11. Deferred and known limits
 
+- What the synthetic sweep does and does not show. The scene is a rigid body under a wall of
+  the same texture statistics, moved by pure translation; the shake is global translation
+  with periods of 4–32 frames (0.94–7.5 Hz at 30 fps, at or above the band), which the
+  background median cancels exactly; there are no shadows, no repositioning, no local
+  deformation, no silhouette-only coat, and the pixel noise is fixed at σ = 4. The sweep
+  therefore validates the signal chain (band-pass, estimators, gates, quantisation) and the
+  abstain logic, not vision on fur; in-band shake with parallax and a shadow crossing the ROI
+  are untested until real clips exist.
+- The band starts at 0.15 Hz = 9 bpm. 8 bpm is below it by design (0 of 216 30/60 s windows accepted
+  at A ≥ 1 in the core sweep) and 12 bpm reads on most but not all 30/60 s windows. Resting large dogs sit
+  at 10–15 bpm, so a product for dogs would need a lower edge (0.1 Hz) — which invalidates the
+  gate calibration in §2 and is deferred until there is a dog clip to calibrate on.
+- `estimate()` quantises only on the 15/30/60 s grid: a window of 449 or 451 samples at 30 fps
+  is off-grid and returns `interval: null` with `quantisedBpm = round(bpm)`. The CLI always
+  slices exact multiples; a caller with its own windows must too.
 - Variable-frame-rate recordings are resampled by ffmpeg's `fps` filter; not validated.
 - Panting (> 90 bpm) is above the band and reads as `fast-motion`; by design, not a reading.
 - Auto-exposure is cancelled as a whole-frame gain only; a shadow moving across the ROI is not.
