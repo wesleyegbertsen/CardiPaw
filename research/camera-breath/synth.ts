@@ -202,14 +202,15 @@ export function makeScene(p: SceneParams): {
     sy[i] += wy;
   }
 
-  const phase = new Float64Array(n);
+  // cumulative[k] is the phase (in cycles) at the instant k / fps, k = 0 … n; frame i is
+  // rendered with the phase at the end of its interval, cumulative[i + 1].
+  const cumulative = new Float64Array(n + 1);
   const inhaleOnsetsS: number[] = [];
-  let ph = 0;
   for (let i = 0; i < n; i++) {
-    const prev = ph;
-    ph += (bpm + (rateRampBpm * i) / n) / 60 / fps;
+    const prev = cumulative[i];
+    const ph = prev + (bpm + (rateRampBpm * i) / n) / 60 / fps;
     if (Math.floor(ph) > Math.floor(prev)) inhaleOnsetsS.push(i / fps);
-    phase[i] = ph;
+    cumulative[i + 1] = ph;
   }
   const twitchAtS: number[] = [];
   for (let k = 0; k < twitches; k++) twitchAtS.push(1 + next() * (seconds - 2));
@@ -217,7 +218,7 @@ export function makeScene(p: SceneParams): {
   const displacementPx = new Float64Array(n);
   for (let i = 0; i < n; i++) {
     const t = i / fps;
-    let d = A * breathWaveform(phase[i] % 1);
+    let d = A * breathWaveform(cumulative[i + 1] % 1);
     if (purr) d += purr.amplitudePx * Math.sin(2 * Math.PI * purr.hz * t);
     for (const tw of twitchAtS) if (t >= tw && t < tw + 0.3) d += 15;
     displacementPx[i] = d;
@@ -246,10 +247,11 @@ export function makeScene(p: SceneParams): {
     return { width: W, height: H, data };
   }
 
+  /** Phase at the exact instant: linear between frame instants, the end rate beyond the last. */
   function phaseAt(timeS: number): number {
-    let value = 0;
-    for (let i = 0; i < n; i++) if (i / fps <= timeS) value = phase[i];
-    return value;
+    const f = timeS * fps;
+    const k = Math.min(n - 1, Math.max(0, Math.floor(f)));
+    return cumulative[k] + (f - k) * (cumulative[k + 1] - cumulative[k]);
   }
   const truth: SceneTruth = {
     inhaleOnsetsS,

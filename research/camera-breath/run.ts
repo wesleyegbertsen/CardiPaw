@@ -5,8 +5,9 @@
 //   node research/camera-breath/run.ts synth [--subset smoke|core|full] [--seeds N] [--encode]
 //       [--method lk|profile|both] [--out research/camera-breath/out]
 //     Renders the synthetic sweep, scores it against the pre-registered thresholds, writes
-//     out/synthetic.{json,md} and exits 1 when any criterion fails. --encode round-trips every
-//     cell through libx264 (CRF 28) first. Never run by vitest or CI: core takes ~20 minutes.
+//     out/synthetic.{json,md} and exits 1 when any criterion fails. --seeds N (default 1) gives
+//     every seeded grid of the core subset the seeds 1 … N. --encode round-trips every cell
+//     through libx264 (CRF 28) first. Never run by vitest or CI: core takes ~15 minutes per seed.
 //   node research/camera-breath/run.ts analyse <clip> --roi x,y,w,h [--background x,y,w,h]
 //       [--fps 30] [--size WxH | --longest 320] [--window 30] [--method lk|profile|both]
 //       [--dump waveform.csv] [--dump-frame first.pgm] [--json]
@@ -22,7 +23,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { getRateStatus } from '../../src/utils/rateStatus.ts';
 import { estimate } from './estimate.ts';
@@ -183,6 +184,12 @@ function refusalCells(seeds: number[]): Cell[] {
         out.push(cell('refusal', { seed, fps: 30, bpm: 30, amplitudePx: 0, contrast, shakeRmsPx }));
       }
     }
+    // The third registered refusal condition: in-band flicker over a tiny amplitude.
+    for (const amplitudePx of [0.3, 0.5]) {
+      out.push(
+        cell('refusal', { seed, fps: 30, bpm: 30, amplitudePx, flicker: { hz: 0.5, depth: 0.02 } }),
+      );
+    }
   }
   return out;
 }
@@ -214,13 +221,14 @@ function smokeCells(): Cell[] {
   return out;
 }
 
-function sweepCells(subset: string, seeds: number): Cell[] {
+/** The cells of a subset; `seeds` is how many seeds (1 … N) every seeded grid gets. */
+export function sweepCells(subset: string, seeds: number): Cell[] {
   const seeded = Array.from({ length: seeds }, (_, i) => i + 1);
   switch (subset) {
     case 'smoke':
       return smokeCells();
     case 'core':
-      return [...coreCells([1], [30]), ...nuisanceCells(seeded), ...refusalCells(seeded)];
+      return [...coreCells(seeded, [30]), ...nuisanceCells(seeded), ...refusalCells(seeded)];
     case 'full':
       return [
         ...coreCells([1, 2, 3], [24, 30, 60]),
@@ -265,7 +273,7 @@ function extract(
 }
 
 /** Non-overlapping 15/30/60 s windows from t = 0, estimated against the clip-wide quality. */
-function windowRows(
+export function windowRows(
   cellName: string,
   method: Method,
   motion: MotionSignal,
@@ -290,7 +298,8 @@ function windowRows(
         truthBpm: t,
         shouldAbstain: truth.shouldAbstain,
         // 15 s holds fewer than three cycles below 12 bpm: too-short by design, not a false abstain.
-        good: truth.good && !(seconds === 15 && t <= 12),
+        // The truth is a summed phase, so 12 bpm can arrive as 12.000000000000032.
+        good: truth.good && !(seconds === 15 && t <= 12 + 1e-9),
         result: estimate(slice, fps, motion.quality),
       });
     }
@@ -837,7 +846,7 @@ async function main(argv: string[]): Promise<number> {
         strict: true,
         options: {
           subset: { type: 'string', default: 'core' },
-          seeds: { type: 'string', default: '5' },
+          seeds: { type: 'string', default: '1' },
           encode: { type: 'boolean', default: false },
           method: { type: 'string', default: 'both' },
           out: { type: 'string', default: DEFAULT_OUT },
@@ -885,18 +894,23 @@ async function main(argv: string[]): Promise<number> {
   }
 }
 
-main(process.argv.slice(2)).then(
-  (code) => process.exit(code),
-  (err: unknown) => {
-    const usage =
-      err instanceof UsageError ||
-      (err instanceof Error && 'code' in err && String(err.code).startsWith('ERR_PARSE_ARGS'));
-    if (usage) {
-      console.error(`${err instanceof Error ? err.message : String(err)}\n${USAGE}`);
-      process.exit(2);
-    }
-    const hint = ffmpegMissingHint(err);
-    console.error(hint ?? (err instanceof Error ? (err.stack ?? err.message) : String(err)));
-    process.exit(1);
-  },
-);
+// Only the command line runs main(): the tests import this file for its helpers.
+const isEntryPoint =
+  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isEntryPoint) {
+  main(process.argv.slice(2)).then(
+    (code) => process.exit(code),
+    (err: unknown) => {
+      const usage =
+        err instanceof UsageError ||
+        (err instanceof Error && 'code' in err && String(err.code).startsWith('ERR_PARSE_ARGS'));
+      if (usage) {
+        console.error(`${err instanceof Error ? err.message : String(err)}\n${USAGE}`);
+        process.exit(2);
+      }
+      const hint = ffmpegMissingHint(err);
+      console.error(hint ?? (err instanceof Error ? (err.stack ?? err.message) : String(err)));
+      process.exit(1);
+    },
+  );
+}

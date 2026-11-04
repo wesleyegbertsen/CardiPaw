@@ -141,6 +141,16 @@ describe('makeScene motion', () => {
     expect(Math.abs(truth.windowBpm(0, 60) - 30)).toBeLessThan(0.5);
   });
 
+  it('windowBpm is exact for windows ending at the clip end', () => {
+    // The truth is the phase difference between the window's two instants, not between the
+    // last frames before them: a 60 s clip has 1,800 frames but 1,801 frame instants.
+    const { truth } = makeScene({ ...BASE, seconds: 60, fps: 30 });
+    expect(truth.windowBpm(45, 15)).toBeCloseTo(30, 6);
+    expect(truth.windowBpm(30, 30)).toBeCloseTo(30, 6);
+    expect(truth.windowBpm(0, 60)).toBeCloseTo(30, 6);
+    expect(truth.windowBpm(0, 15)).toBeCloseTo(30, 6);
+  });
+
   it('roiInterior stays inside the body at A = 4 with twitches', () => {
     const scene = makeScene({
       ...BASE,
