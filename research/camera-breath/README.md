@@ -57,13 +57,13 @@ set them (Lucas-Kanade, rendered 192×144 scenes, 30 s windows, 2026-11-03):
 | autocorrelation peak | `weak-periodicity` | acfPeak < 0.5 (or weak) | 0.73 | 0.30 |
 | estimator spread | `estimators-disagree` | > 3 bpm | 0.11 | 36 |
 | interval regularity | `irregular` | ibiCv > 0.3 | 0.01 | 0.68 |
-| outliers | `twitch` | twitchFraction > 0.2 | — | — |
-| overall | (quality) | quality < 0.7 | 0.94 | 0.65 |
+| outliers | `twitch` | twitchFraction > 0.2 (on the detrended raw signal) | — | — |
+| overall | `low-quality` | quality < 0.7 with no other reason | 0.94 | 0.65 |
 
-A reading is accepted only with no reason and quality ≥ 0.7. `bpm` is the median of the three
-estimators; `quantisedBpm` is `breathsPerMinute(round(bpm·s/60), s)` for 15/30/60 s windows,
-so a camera reading lands on the same grid as a tapped one, and `interval` is that reading ±
-half a quantum (±2 at 15 s, ±1 at 30 and 60 s).
+A reading is accepted only with no reason, so every abstain names at least one. `bpm` is the
+median of the three estimators; `quantisedBpm` is `breathsPerMinute(round(bpm·s/60), s)` for
+15/30/60 s windows, so a camera reading lands on the same grid as a tapped one, and `interval`
+is that reading ± half a quantum (±2 at 15 s, ±1 at 30 and 60 s).
 
 ## 3. Running it
 
@@ -392,7 +392,9 @@ Play data-safety form.
 - Panting (> 90 bpm) is above the band and reads as `fast-motion`; by design, not a reading.
 - Auto-exposure is cancelled as a whole-frame gain only; a shadow moving across the ROI is not.
 - `maxResidual = 10` (occlusion guard) never fires on synthetic scenes and is uncalibrated on
-  real fur; `twitchFraction` is inert for Lucas-Kanade (twitches show up as validity dips).
+  real fur. The `twitch` gate is tested on 1-D input only; a Lucas-Kanade twitch shows up as a
+  validity dip (the jumped points fail to track and hold their last value) rather than as an
+  outlier in the combined signal, so the gate is not what refuses those windows.
 - The profile method reads vertical motion only (it abstains on a rotated clip whose breathing
   is horizontal) and accepts roughly half of the good windows: a cross-check, never a fallback.
 - No Python, no learned models; everything here would run in the WebView.

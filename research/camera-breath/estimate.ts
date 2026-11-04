@@ -27,7 +27,8 @@ export type AbstainReason =
   | 'weak-periodicity'
   | 'estimators-disagree'
   | 'irregular'
-  | 'twitch';
+  | 'twitch'
+  | 'low-quality'; // the mean gate score fell below GATES.quality with no single gate tripped
 
 export interface QualityFeatures {
   seconds: number;
@@ -51,7 +52,7 @@ export interface EstimateResult {
   interval: [number, number] | null; // quantisedBpm ± half a quantum, rounded outward; null off-grid
   estimators: { fft: number | null; acf: number | null; ibi: number | null; count: number };
   quality: number; // 0–1
-  reasons: AbstainReason[]; // empty when accepted
+  reasons: AbstainReason[]; // empty when accepted; every abstain carries at least one
   features: QualityFeatures;
 }
 
@@ -149,9 +150,11 @@ export function estimate(
   const y = bandpass(x, fps);
   const acf = acfBpm(y, fps);
   const pk = peakBpm(findPeaks(y, fps), fps, seconds);
-  const sigma = 1.4826 * (mad(y) ?? 0);
+  // Outliers are counted on the detrended raw signal: the band-pass smears a 0.3 s jump into
+  // the breathing band and inflates the MAD with it, so on `y` the twitch gate never fires.
+  const sigma = 1.4826 * (mad(x) ?? 0); // MAD → σ for a normal distribution
   let twitches = 0;
-  for (const v of y) if (Math.abs(v) > 5 * sigma) twitches++;
+  for (const v of x) if (Math.abs(v) > 5 * sigma) twitches++;
   const twitchFraction = twitches / n;
 
   const estimators = {
@@ -204,7 +207,8 @@ export function estimate(
     clamp01(1 - sf.aboveBandPeakRatio),
   ];
   const quality = scores.reduce((a, b) => a + b, 0) / scores.length;
-  const accepted = reasons.length === 0 && quality >= gates.quality;
+  if (reasons.length === 0 && quality < gates.quality) reasons.push('low-quality');
+  const accepted = reasons.length === 0;
   if (!accepted) {
     return { ...abstain(reasons, features), rawBpm: bpm, estimators, quality };
   }

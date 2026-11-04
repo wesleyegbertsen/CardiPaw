@@ -258,6 +258,12 @@ describe('findPeaks', () => {
     expect(Math.abs(count - 30)).toBeLessThanOrEqual(2);
   });
 
+  it('merges peaks closer than 0.5 s: a 3 Hz ripple on 30 bpm', () => {
+    const x = sineAt(30, 30, 30).map((v, i) => v + 0.3 * Math.sin((2 * Math.PI * 3 * i) / 30));
+    expect(findPeaks(x, 30).length).toBeLessThanOrEqual(30);
+    expect(findPeaks(x, 30, 0).length).toBeGreaterThan(40);
+  });
+
   it('peakBpm reports null intervals below two peaks and null spread below three', () => {
     expect(peakBpm([10], 30, 10)).toEqual({ count: 1, countBpm: 6, ibiBpm: null, ibiCv: null });
     expect(peakBpm([10, 70], 30, 10)).toEqual({ count: 2, countBpm: 12, ibiBpm: 30, ibiCv: null });

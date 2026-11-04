@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getRateStatus } from '../../src/utils/rateStatus.ts';
-import { estimate } from './estimate.ts';
+import { GATES, estimate } from './estimate.ts';
 
 function lcg(seed: number): () => number {
   let s = seed >>> 0;
@@ -159,6 +159,39 @@ describe('estimate abstains', () => {
     expect(r.estimators.count).toBe(2);
     expect(r.features.ibiCv).toBe(1);
     expect(r.reasons).toContain('irregular');
+  });
+});
+
+describe('twitch and quality gates', () => {
+  it('twitch: +15 px jumps of 0.3 s covering a quarter of a 30 bpm window', () => {
+    // Counted on the detrended raw signal: the band-pass smears a 0.3 s jump below 5σ.
+    const x = sine(30, 30, 30);
+    for (let i = 0; i < x.length; i++) {
+      const t = i / 30;
+      if (t >= 1 && (t - 1) % 1.2 < 0.3) x[i] += 15;
+    }
+    const r = estimate(x, 30);
+    expect(r.features.twitchFraction).toBeGreaterThan(0.2);
+    expect(r.reasons).toContain('twitch');
+    expect(r.bpm).toBeNull();
+  });
+
+  it('low-quality names an abstain that no other gate explains', () => {
+    const r = estimate(sine(30, 30, 30), 30, {}, { ...GATES, quality: 1.01 });
+    expect(r.bpm).toBeNull();
+    expect(r.reasons).toEqual(['low-quality']);
+    expect(r.rawBpm).not.toBeNull();
+  });
+
+  it('quantises to the tap grid: 29 bpm over 15 s reads 28, 31 bpm over 30 s reads 32', () => {
+    expect(estimate(sine(29, 30, 15), 30).quantisedBpm).toBe(28); // 7 breaths · 4
+    expect(estimate(sine(31, 30, 30), 30).quantisedBpm).toBe(32); // 16 breaths · 2
+    expect(estimate(sine(31, 30, 60), 30).quantisedBpm).toBe(31);
+  });
+
+  it('the interval is ±1 at 60 s and at 30 s', () => {
+    expect(estimate(sine(30, 30, 60), 30).interval).toEqual([29, 31]);
+    expect(estimate(sine(30, 30, 30), 30).interval).toEqual([29, 31]);
   });
 });
 
