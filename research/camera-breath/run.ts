@@ -29,6 +29,7 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { getRateStatus } from '../../src/utils/rateStatus.ts';
+import { MIN_DELIVERED_FPS } from '../../src/camera/capture.ts';
 import { estimate } from '../../src/camera/estimate.ts';
 import type { EstimateResult } from '../../src/camera/estimate.ts';
 import {
@@ -584,9 +585,9 @@ async function analyseClip(
     ['source', source.fps],
     ['analysis', fps],
   ] as const) {
-    if (value < 28) {
+    if (value < MIN_DELIVERED_FPS) {
       console.error(
-        `warning: ${what} frame rate ${+value.toFixed(3)} fps is below 28: a 25 Hz purr aliases ` +
+        `warning: ${what} frame rate ${+value.toFixed(3)} fps is below ${MIN_DELIVERED_FPS}: a 25 Hz purr aliases ` +
           'into the breathing band (24 fps → 60 bpm); record and analyse at 30 fps',
       );
     }
