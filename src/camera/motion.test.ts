@@ -380,7 +380,17 @@ describe('lkMotion', () => {
 });
 
 describe('createLkTracker', () => {
-  const PARAMS = { seed: 1, fps: 30, seconds: 12, bpm: 24, amplitudePx: 2, contrast: 20 } as const;
+  // 96×72 like motion.scene.test.ts: a full-size scene pushed twice runs over 5 s under coverage.
+  const PARAMS = {
+    seed: 1,
+    width: 96,
+    height: 72,
+    fps: 30,
+    seconds: 12,
+    bpm: 24,
+    amplitudePx: 2,
+    contrast: 20,
+  } as const;
   const ROI = makeScene(PARAMS).roiEdge;
 
   it('push then result() equals lkMotion byte for byte', () => {

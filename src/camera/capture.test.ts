@@ -135,7 +135,7 @@ describe('the app path', () => {
     expect(est.interval).not.toBeNull();
     expect(est.quantisedBpm).toBe(24);
     expect(Math.abs(est.bpm! - exactEst.bpm!)).toBeLessThan(1);
-  });
+  }, 15_000); // a 31 s window pushed twice: near the default 5 s under coverage
 });
 
 describe('nearCeiling', () => {
