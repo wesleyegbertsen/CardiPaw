@@ -206,14 +206,24 @@ describe('Android resources', () => {
     expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
   });
 
-  it('declares INTERNET (the opt-in update check) and never REQUEST_INSTALL_PACKAGES', () => {
+  it('declares INTERNET (the update check) and CAMERA (camera counting), never REQUEST_INSTALL_PACKAGES', () => {
     // A tools:node="remove" entry takes a plugin's permission out; it declares nothing.
     const permissions = [
       ...xmlWithoutComments(MANIFEST).matchAll(/<uses-permission\s+android:name="([^"]+)"([^>]*)>/g),
     ]
       .filter(([, , rest]) => !rest.includes('tools:node="remove"'))
       .map(([, name]) => name);
-    expect(permissions).toEqual(['android.permission.INTERNET']);
+    expect(permissions).toEqual(['android.permission.INTERNET', 'android.permission.CAMERA']);
+  });
+
+  it('declares the camera features the CAMERA permission implies as optional', () => {
+    const features = [
+      ...xmlWithoutComments(MANIFEST).matchAll(/<uses-feature\s+android:name="([^"]+)"([^>]*)\/>/g),
+    ].map(([, name, rest]) => [name, /android:required="false"/.test(rest)]);
+    expect(features).toEqual([
+      ['android.hardware.camera', true],
+      ['android.hardware.camera.autofocus', true],
+    ]);
   });
 
   it("keeps WebView's Safe Browsing and diagnostics from contacting Google", () => {

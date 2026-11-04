@@ -60,4 +60,14 @@
          (WebViewLocalServer), so it works offline. Never add REQUEST_INSTALL_PACKAGES: the user
          installs updates. -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- CAMERA is only for the opt-in camera breath counting (Settings, Experimental, off by
+         default). Android asks the user at runtime, not at install: Capacitor's
+         BridgeWebChromeClient turns the page's getUserMedia request into a CAMERA permission
+         request. The image is analysed on the phone by src/camera/ and never stored or sent.
+         CAMERA implies both features below, so they are declared optional: phones without a
+         camera (or autofocus) can still install the app. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 </manifest>
