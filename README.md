@@ -82,7 +82,7 @@ CardiPaw keeps an eye on the trend for you. When a pet's resting breathing rate 
 - on **at least 2 of the last 3 days**, the rate was **20% and 4 breaths/min or more** above the pet's usual rate, or
 - on **at least 2 of the last 3 days**, the rate was above the pet's Normal ceiling (see [Status Thresholds](#status-thresholds), or the pet's own ceiling when one is set).
 
-Each day counts once, using the median (middle value) of that day's readings, so measuring again on the same day doesn't count twice. The usual rate is the median of the day values over the 28 days before the last 3, and it needs readings on at least 7 of those 28 days; the Normal-ceiling rule works without it.
+Each day counts once, using the median (middle value) of that day's readings, so measuring again on the same day doesn't count twice. The usual rate is the median of the day values over the 28 days before the last 3, and it needs readings on at least 7 of those 28 days; the Normal-ceiling rule works without it. Readings counted with the camera (experimental, see Camera counting) are left out of both windows.
 
 The alert goes away on its own once readings settle. With too few readings nothing is shown, so no alert doesn't always mean all is well. Mixing sleeping and resting readings can also make the rate look higher, because the rate is usually lower during sleep. The badge's details in the app explain all of this too.
 

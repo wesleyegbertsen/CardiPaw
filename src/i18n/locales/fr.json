@@ -368,7 +368,8 @@
       "p1": "CardiPaw compare les {days} derniers jours aux {baselineDays} jours précédents. Chaque jour compte une fois, avec la valeur médiane de ses mesures : mesurer à nouveau le même jour ne compte donc pas double.",
       "p2": "Une alerte s'affiche lorsque, sur au moins {minRaised} des {days} derniers jours, la fréquence a dépassé la valeur habituelle d'au moins {percent} % et d'au moins {breaths} resp./min. Pour établir cette valeur habituelle, il faut des mesures sur au moins {minDays} des jours précédents. Une alerte s'affiche aussi lorsqu'au moins {minAbove} des {days} derniers jours ont dépassé le plafond normal de {name} ({ceiling} resp./min).",
       "p3": "L'alerte disparaît d'elle-même lorsque les mesures se stabilisent. Avec trop peu de mesures, rien ne s'affiche : l'absence d'alerte ne signifie donc pas toujours que tout va bien.",
-      "p4": "Des mesures prises pendant que votre animal est éveillé, excité ou a chaud peuvent faire paraître la fréquence plus élevée. C'est aussi le cas si vous mélangez des mesures prises pendant le sommeil et au repos, car la fréquence est généralement plus basse pendant le sommeil. Ceci n'est pas un diagnostic. En cas d'inquiétude, contactez votre vétérinaire, et sans attendre si votre animal a du mal à respirer."
+      "p4": "Des mesures prises pendant que votre animal est éveillé, excité ou a chaud peuvent faire paraître la fréquence plus élevée. C'est aussi le cas si vous mélangez des mesures prises pendant le sommeil et au repos, car la fréquence est généralement plus basse pendant le sommeil. Ceci n'est pas un diagnostic. En cas d'inquiétude, contactez votre vétérinaire, et sans attendre si votre animal a du mal à respirer.",
+      "p5": "Les mesures comptées avec la caméra n'entrent pas dans les alertes de tendance tant que cette fonction est expérimentale ; les mesures que vous avez comptées en appuyant ou saisies, si."
     }
   },
   "updateNotice": {

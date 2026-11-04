@@ -793,6 +793,9 @@ describe('PetDetailView', () => {
       expect(dialog()!.textContent).toContain(
         "when at least 2 of the last 3 days were above Ace's Normal ceiling of 30 breaths/min",
       );
+      expect(dialog()!.textContent).toContain(
+        "Readings counted with the camera don't count toward trend alerts",
+      );
       (dialog()!.querySelector('.btn-ok') as HTMLElement).click();
       await nextTick();
       expect(dialog()).toBeNull();

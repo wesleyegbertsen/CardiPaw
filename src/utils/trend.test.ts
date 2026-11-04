@@ -25,6 +25,14 @@ const trend = (readings: ReturnType<typeof day>[], pet?: { normalCeiling?: numbe
   computeTrend(readings, pet, asOf());
 
 describe('computeTrend', () => {
+  it('ignores camera readings in both windows', () => {
+    const cam = (offset: number, rate: number) => ({ ...day(offset, rate), source: 'camera' as const });
+    // 30 over a 20 baseline is rising; a camera under-count on the same days must not cancel it.
+    expect(trend([...baselineAt(20), ...recentOf(30, 30), cam(-1, 12), cam(0, 12)]).kind).toBe('rising');
+    const cameraOnly = [...baselineAt(20), ...recentOf(30, 30)].map((r) => ({ ...r, source: 'camera' as const }));
+    expect(trend(cameraOnly)).toMatchObject({ kind: 'insufficient', recentDays: 0, baselineDays: 0 });
+  });
+
   it('needs two recent days and seven baseline days', () => {
     expect(trend([])).toMatchObject({ kind: 'insufficient', recent: null, baseline: null });
     expect(trend([...baselineAt(20), ...recentOf(28)])).toMatchObject({
