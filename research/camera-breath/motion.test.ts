@@ -339,6 +339,26 @@ describe('lkMotion', () => {
     expect(Math.abs(r.bpm! - 30)).toBeLessThan(1);
   });
 
+  it('a lost point holds its last displacement instead of dropping to 0', () => {
+    // Four frames of a 0.5 px/frame ramp, then three flat frames: every window fails the
+    // residual guard, and the per-point rows must stay at the last tracked value.
+    const body = texture(33, W, H);
+    const flat: Frame = { width: W, height: H, data: new Uint8Array(W * H).fill(128) };
+    function* frames() {
+      for (let i = 0; i < 4; i++) yield shiftFrame(body, W, H, 0, 0.5 * i);
+      for (let i = 0; i < 3; i++) yield flat;
+    }
+    const m = lkMotion(frames(), BODY, FPS, { background: null });
+    expect(m.quality.validTrackRatio).toBeCloseTo(4 / 7, 9);
+    for (const row of m.perPoint) {
+      expect(row).toHaveLength(7);
+      expect(row[3]).toBeGreaterThan(1.2);
+      expect(row[4]).toBe(row[3]);
+      expect(row[5]).toBe(row[3]);
+      expect(row[6]).toBe(row[3]);
+    }
+  });
+
   it('background flow is 0 and borderRms 0 when every background point is invalid', () => {
     // Black top strip (letterbox bars or a flat wall): no texture, no valid point.
     const body = texture(32, W, H);

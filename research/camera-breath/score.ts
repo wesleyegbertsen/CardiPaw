@@ -208,10 +208,17 @@ export function verdict(s: Summary, t: Thresholds): Criterion[] {
   return out;
 }
 
-export function verdictMarkdown(v: Criterion[]): string {
+/**
+ * One table row per criterion. With `undecided`, a criterion that had nothing to judge
+ * (value n/a) shows that mark instead of FAIL: a single clip's table is a part of the
+ * real-recording verdict, which is decided over all clips together.
+ */
+export function verdictMarkdown(v: Criterion[], undecided?: string): string {
   const lines = ['| Criterion | Value | Threshold | Result |', '|---|---|---|---|'];
   for (const c of v) {
-    lines.push(`| ${c.criterion} | ${c.value} | ${c.threshold} | ${c.pass ? 'PASS' : 'FAIL'} |`);
+    const result =
+      c.value === 'n/a' && undecided !== undefined ? undecided : c.pass ? 'PASS' : 'FAIL';
+    lines.push(`| ${c.criterion} | ${c.value} | ${c.threshold} | ${result} |`);
   }
   return lines.join('\n');
 }

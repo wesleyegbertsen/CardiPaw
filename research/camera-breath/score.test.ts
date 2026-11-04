@@ -96,6 +96,15 @@ describe('summarise', () => {
     expect(summarise([row({ truth: 29.93, read: 32, seconds: 15 })]).within2).toBeNull();
   });
 
+  it('within2 excludes abstained windows and an error of exactly 3', () => {
+    expect(summarise([row({ truth: 30, read: 33 }), row({ truth: 30, read: null })]).within2).toBe(
+      0,
+    );
+    expect(summarise([row({ truth: 30, read: 32 }), row({ truth: 30, read: null })]).within2).toBe(
+      1,
+    );
+  });
+
   it('uses the truth as the app would round it and the given ceilings', () => {
     const rows = [row({ truth: 30.4, read: 30 }), row({ truth: 30.6, read: 30 })];
     expect(summarise(rows).labelAgreement).toBe(0.5);
@@ -196,6 +205,17 @@ describe('verdict', () => {
     const lines = verdictMarkdown(v).split('\n');
     expect(lines).toHaveLength(2 + v.length);
     expect(lines[2]).toMatch(/^\| MAE, 30\/60 s windows \| 0\.00 bpm \| ≤ 1\.00 bpm \| PASS \|$/);
+  });
+
+  it('verdictMarkdown can leave a criterion with nothing to judge undecided', () => {
+    // One good clip has no window that should abstain: per clip that is undecided, not FAIL.
+    const v = verdict(summarise([row({ truth: 30, read: 30 })]), REAL_THRESHOLDS);
+    const abstain = (md: string) => md.split('\n').find((l) => l.startsWith('| Correct abstain'));
+    expect(abstain(verdictMarkdown(v))).toBe('| Correct abstain | n/a | ≥ 90.0 % | FAIL |');
+    expect(abstain(verdictMarkdown(v, '—'))).toBe('| Correct abstain | n/a | ≥ 90.0 % | — |');
+    expect(verdictMarkdown(v, '—')).toContain(
+      '| MAE, 30/60 s windows | 0.00 bpm | ≤ 2.00 bpm | PASS |',
+    );
   });
 
   it('breakdownMarkdown sorts factor values numerically with a row each', () => {

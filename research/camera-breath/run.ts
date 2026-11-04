@@ -74,7 +74,8 @@ const WINDOWS: readonly WindowSeconds[] = [15, 30, 60];
 const CLIP_SECONDS = 60;
 const SWEEP_SIZE = { width: 192, height: 144 }; // what the gates were calibrated on
 
-class UsageError extends Error {}
+/** A bad command line or sidecar: exit 2 with the usage text. */
+export class UsageError extends Error {}
 
 // ------------------------------------------------------------------ synthetic sweep
 
@@ -514,7 +515,7 @@ interface ClipAnalysis {
   windows: ClipWindow[];
 }
 
-function parseRoi(text: string | undefined, name: string): Roi | undefined {
+export function parseRoi(text: string | undefined, name: string): Roi | undefined {
   if (text === undefined) return undefined;
   const v = text.split(',').map(Number);
   if (v.length !== 4 || v.some((n) => !Number.isInteger(n) || n < 0) || v[2] < 1 || v[3] < 1) {
@@ -551,8 +552,10 @@ async function analyseClip(
   const fps = parseNumber(o.fps, 'fps', 4);
   const windowSeconds = parseNumber(o.window, 'window', 10);
   const methods = clipMethods(o.method);
-  const roiText = o.roi;
-  if (roiText === undefined) throw new UsageError('--roi x,y,w,h is required (working pixels)');
+  if (o.roi === undefined) throw new UsageError('--roi x,y,w,h is required (working pixels)');
+  // Both rectangles are parsed before the probe so a typo fails without touching the clip.
+  const roi = parseRoi(o.roi, 'roi')!;
+  const backgroundArg = parseRoi(o.background, 'background');
   const source = await probe(clip);
   let working: { width: number; height: number };
   if (o.size !== undefined) {
@@ -579,8 +582,7 @@ async function analyseClip(
       );
     }
   }
-  const roi = parseRoi(roiText, 'roi')!;
-  const background = parseRoi(o.background, 'background') ?? topStrip(working);
+  const background = backgroundArg ?? topStrip(working);
   for (const [name, r] of [
     ['roi', roi],
     ['background', background],
@@ -696,6 +698,18 @@ async function analyse(
   return 0;
 }
 
+/**
+ * windowTruth has no truth for a single counter, so one counter would score every window as
+ * discarded and print an all-FAIL verdict; say what is missing instead.
+ */
+export function requireTwoCounters(sidecar: Map<string, number[]>): void {
+  if (sidecar.size >= 2) return;
+  throw new UsageError(
+    `sidecar has only one counter (${[...sidecar.keys()].join(', ')}); ` +
+      'two independent counters are required',
+  );
+}
+
 async function score(
   clip: string | undefined,
   values: ClipOptions & {
@@ -718,6 +732,7 @@ async function score(
   const pet = { normalCeiling: ceilings.normal, elevatedCeiling: ceilings.elevated };
   const sidecar = parseSidecar(readFileSync(values.truth, 'utf8'), clip);
   if (sidecar.size === 0) throw new Error(`${values.truth} has no rows for ${clip}`);
+  requireTwoCounters(sidecar);
   const a = await analyseClip(clip, values);
   const rows: WindowResult[] = [];
   const discarded: string[][] = [];
@@ -760,6 +775,9 @@ async function score(
   const judged = primary.length > 0 ? primary : rows;
   const summary = summarise(judged, ceilings);
   const v = verdict(summary, REAL_THRESHOLDS);
+  // A good clip has no window that should abstain and a degraded one no good window: those
+  // criteria are undecided for this clip (—), and decided over all clips (README §8).
+  const clipVerdict = verdictMarkdown(v, '—');
   const windowTable = table(
     [
       'start',
@@ -786,9 +804,9 @@ async function score(
         primary.length > 0 ? 'lk' : 'profile'
       }.`,
     '',
-    '## Verdict (real-recording thresholds, this clip only)',
+    '## Verdict (real-recording thresholds, this clip only; — = nothing to judge here)',
     '',
-    verdictMarkdown(v),
+    clipVerdict,
     '',
     '## Windows',
     '',
@@ -821,7 +839,7 @@ async function score(
   if (values.md !== undefined) writeFileSync(values.md, md);
   console.log(windowTable);
   console.log(`\nDiscarded:\n${discardedTable}\n`);
-  console.log(verdictMarkdown(v));
+  console.log(clipVerdict);
   return 0;
 }
 
@@ -894,28 +912,31 @@ async function main(argv: string[]): Promise<number> {
   }
 }
 
-// Only the command line runs main(): the tests import this file for its helpers.
+/** main() with every error turned into a message on stderr and an exit code: 2 usage, 1 other. */
+export async function cli(argv: string[]): Promise<number> {
+  try {
+    return await main(argv);
+  } catch (err: unknown) {
+    const usage =
+      err instanceof UsageError ||
+      (err instanceof Error && 'code' in err && String(err.code).startsWith('ERR_PARSE_ARGS'));
+    if (usage) {
+      console.error(`${err instanceof Error ? err.message : String(err)}\n${USAGE}`);
+      return 2;
+    }
+    const hint = ffmpegMissingHint(err);
+    console.error(hint ?? (err instanceof Error ? (err.stack ?? err.message) : String(err)));
+    return 1;
+  }
+}
+
+// Only the command line runs the CLI: the tests import this file for its helpers.
 const isEntryPoint =
   process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isEntryPoint) {
   // exitCode, not exit(): on Windows a piped stdout is asynchronous and exit() would cut the
-  // --json output short. Nothing keeps the loop alive once main() has settled.
-  main(process.argv.slice(2)).then(
-    (code) => {
-      process.exitCode = code;
-    },
-    (err: unknown) => {
-      const usage =
-        err instanceof UsageError ||
-        (err instanceof Error && 'code' in err && String(err.code).startsWith('ERR_PARSE_ARGS'));
-      if (usage) {
-        console.error(`${err instanceof Error ? err.message : String(err)}\n${USAGE}`);
-        process.exitCode = 2;
-        return;
-      }
-      const hint = ffmpegMissingHint(err);
-      console.error(hint ?? (err instanceof Error ? (err.stack ?? err.message) : String(err)));
-      process.exitCode = 1;
-    },
-  );
+  // --json output short. Nothing keeps the loop alive once the command has settled.
+  cli(process.argv.slice(2)).then((code) => {
+    process.exitCode = code;
+  });
 }
