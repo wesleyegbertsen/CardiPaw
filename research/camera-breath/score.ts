@@ -4,9 +4,10 @@
 
 import { getRateStatus } from '../../src/utils/rateStatus.ts';
 import type { EstimateResult } from './estimate.ts';
-import { mean, std } from './signal.ts';
+import { mean, median, std } from './signal.ts';
 
-export type Method = 'lk-edge' | 'lk-interior' | 'profile-edge';
+// The sweep's three extractions, and the two an owner recording gets on its one ROI.
+export type Method = 'lk-edge' | 'lk-interior' | 'profile-edge' | 'lk' | 'profile';
 export type WindowSeconds = 15 | 30 | 60;
 
 export interface WindowResult {
@@ -92,7 +93,7 @@ export interface Summary {
   falseAbstain: number | null;
 }
 
-export const isPrimary = (method: Method): boolean => method.startsWith('lk-');
+export const isPrimary = (method: Method): boolean => method.startsWith('lk');
 
 const accepted = (r: WindowResult): boolean => r.result.bpm !== null;
 const ratio = (num: number, den: number): number | null => (den === 0 ? null : num / den);
@@ -246,4 +247,62 @@ export function breakdownMarkdown(
     );
   }
   return lines.join('\n');
+}
+
+// ------------------------------------------------------------------ owner recordings
+
+const SIDECAR_HEADER = 'clip,counter,breath_timestamp_s';
+
+const basename = (path: string) => path.split(/[\\/]/).pop() ?? path;
+
+/**
+ * Reads a sidecar CSV (`clip,counter,breath_timestamp_s`, one row per breath per counter,
+ * seconds from the clip start) and returns each counter's sorted timestamps for `clip`.
+ * Rows for other clips are ignored; the clip is matched on its basename. CRLF is tolerated.
+ */
+export function parseSidecar(csv: string, clip: string): Map<string, number[]> {
+  const lines = csv.split('\n').map((l) => l.replace(/\r$/, ''));
+  if ((lines[0] ?? '').trim() !== SIDECAR_HEADER) {
+    throw new Error(`sidecar line 1: expected header "${SIDECAR_HEADER}", got "${lines[0] ?? ''}"`);
+  }
+  const wanted = basename(clip);
+  const out = new Map<string, number[]>();
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line === '') continue;
+    const cols = line.split(',').map((c) => c.trim());
+    const t = Number(cols[2]);
+    if (cols.length !== 3 || cols[1] === '' || cols[2] === '' || !Number.isFinite(t) || t < 0) {
+      throw new Error(
+        `sidecar line ${i + 1}: expected "<clip>,<counter>,<seconds ≥ 0>", got "${line}"`,
+      );
+    }
+    if (basename(cols[0]) !== wanted) continue;
+    const list = out.get(cols[1]) ?? [];
+    list.push(t);
+    out.set(cols[1], list);
+  }
+  for (const list of out.values()) list.sort((a, b) => a - b);
+  return out;
+}
+
+/**
+ * The manual rate of one window: each counter's breaths in [startS, startS + seconds) as
+ * bpm. Two counters that agree within one breath per 30 s of window average; three or more
+ * take the median; otherwise the window has no truth (null) and is discarded.
+ */
+export function windowTruth(
+  sidecar: Map<string, number[]>,
+  startS: number,
+  seconds: number,
+): { bpm: number | null; counters: number; disagreement: number } {
+  const counts = [...sidecar.values()].map(
+    (ts) => ts.filter((t) => t >= startS && t < startS + seconds).length,
+  );
+  const bpms = counts.map((c) => (c * 60) / seconds);
+  const disagreement = counts.length === 0 ? 0 : Math.max(...counts) - Math.min(...counts);
+  let bpm: number | null = null;
+  if (counts.length === 2 && disagreement <= seconds / 30) bpm = mean(bpms);
+  else if (counts.length >= 3) bpm = median(bpms);
+  return { bpm, counters: counts.length, disagreement };
 }

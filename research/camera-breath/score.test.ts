@@ -4,9 +4,11 @@ import {
   REAL_THRESHOLDS,
   SYNTHETIC_THRESHOLDS,
   breakdownMarkdown,
+  parseSidecar,
   summarise,
   verdict,
   verdictMarkdown,
+  windowTruth,
 } from './score.ts';
 import type { Method, WindowResult, WindowSeconds } from './score.ts';
 
@@ -141,8 +143,10 @@ describe('summarise', () => {
       row({ truth: 30, read: 30, method: 'lk-edge' }),
       row({ truth: 30, read: null, method: 'lk-interior' }),
       row({ truth: 30, read: null, method: 'profile-edge' }),
+      row({ truth: 30, read: null, method: 'profile' }),
+      row({ truth: 30, read: 30, method: 'lk' }),
     ]);
-    expect(s.falseAbstain).toBe(0.5); // 2/3 if the profile row counted
+    expect(s.falseAbstain).toBeCloseTo(1 / 3, 9); // 3/5 if the profile rows counted
   });
 
   it('correctAbstain is judged on the rows that should abstain', () => {
@@ -204,5 +208,75 @@ describe('verdict', () => {
     expect(lines).toHaveLength(4);
     expect(lines[2]).toBe('| 2 | 2 | 1 | 50.0 % | 2.00 bpm |');
     expect(lines[3]).toBe('| 10 | 1 | 1 | 0.0 % | 0.00 bpm |');
+  });
+});
+
+describe('parseSidecar', () => {
+  const csv = [
+    'clip,counter,breath_timestamp_s',
+    'cat.mp4,A,2.0',
+    'cat.mp4,A,0.5',
+    'cat.mp4,B,0.7',
+    'dog.mp4,A,1.0',
+    'cat.mp4,B,2.2',
+    '',
+  ].join('\r\n');
+
+  it('reads the header and CRLF, sorting each counter', () => {
+    const s = parseSidecar(csv, 'clips/cat.mp4');
+    expect([...s.keys()]).toEqual(['A', 'B']);
+    expect(s.get('A')).toEqual([0.5, 2]);
+    expect(s.get('B')).toEqual([0.7, 2.2]);
+  });
+
+  it('ignores rows for another clip and matches on the basename', () => {
+    expect(parseSidecar(csv, 'C:\\clips\\dog.mp4').get('A')).toEqual([1]);
+    expect(parseSidecar(csv, 'dog.mp4').has('B')).toBe(false);
+    expect(parseSidecar(csv, 'other.mp4').size).toBe(0);
+  });
+
+  it('throws on a malformed row naming the line, and on a wrong header', () => {
+    const bad = csv.replace('cat.mp4,B,0.7', 'cat.mp4,B,soon');
+    expect(() => parseSidecar(bad, 'cat.mp4')).toThrow('sidecar line 4');
+    expect(() => parseSidecar(csv.replace('dog.mp4,A,1.0', 'dog.mp4,A'), 'cat.mp4')).toThrow(
+      'line 5',
+    );
+    expect(() => parseSidecar('clip,counter,t\n', 'cat.mp4')).toThrow('line 1');
+  });
+});
+
+describe('windowTruth', () => {
+  const every = (step: number, offset: number, seconds: number) =>
+    Array.from({ length: Math.floor(seconds / step) }, (_, i) => offset + i * step);
+
+  it('averages two agreeing counters', () => {
+    // A: 15 breaths in [0, 30); B: 14.
+    const s = new Map([
+      ['A', every(2, 0.1, 30)],
+      ['B', every(2, 0.1, 28)],
+    ]);
+    expect(windowTruth(s, 0, 30)).toEqual({ bpm: 29, counters: 2, disagreement: 1 });
+    expect(windowTruth(s, 30, 30)).toEqual({ bpm: 0, counters: 2, disagreement: 0 }); // nothing marked
+  });
+
+  it('discards a window where counters differ by 2 breaths in 30 s', () => {
+    const s = new Map([
+      ['A', every(2, 0.1, 30)],
+      ['B', every(2, 0.1, 26)],
+    ]);
+    expect(windowTruth(s, 0, 30)).toEqual({ bpm: null, counters: 2, disagreement: 2 });
+    // Over 60 s the same 2-breath difference is within one per 30 s.
+    expect(windowTruth(s, 0, 60).bpm).toBe(14);
+  });
+
+  it('uses the median of three counters, and has no truth for one', () => {
+    const s = new Map([
+      ['A', every(2, 0.1, 30)],
+      ['B', every(2, 0.1, 26)],
+      ['C', every(2, 0.1, 20)],
+    ]);
+    expect(windowTruth(s, 0, 30)).toEqual({ bpm: 26, counters: 3, disagreement: 5 });
+    expect(windowTruth(new Map([['A', every(2, 0.1, 30)]]), 0, 30).bpm).toBeNull();
+    expect(windowTruth(new Map(), 0, 30)).toEqual({ bpm: null, counters: 0, disagreement: 0 });
   });
 });

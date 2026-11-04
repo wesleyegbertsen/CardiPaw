@@ -7,32 +7,66 @@
 //     Renders the synthetic sweep, scores it against the pre-registered thresholds, writes
 //     out/synthetic.{json,md} and exits 1 when any criterion fails. --encode round-trips every
 //     cell through libx264 (CRF 28) first. Never run by vitest or CI: core takes ~20 minutes.
+//   node research/camera-breath/run.ts analyse <clip> --roi x,y,w,h [--background x,y,w,h]
+//       [--fps 30] [--size WxH | --longest 320] [--window 30] [--method lk|profile|both]
+//       [--dump waveform.csv] [--dump-frame first.pgm] [--json]
+//     Probes the clip, prints the working size, decodes it and estimates every window. ROI
+//     coordinates are working-size pixels: run once with --dump-frame and read them off the
+//     PGM. The background strip (default: the top 40 rows) must show static scene only.
+//   node research/camera-breath/run.ts score <clip> --truth clips/<clip>.csv --roi x,y,w,h
+//       [--background x,y,w,h] [--window 15|30|60] [--ceilings 30,35] [--method lk|profile|both]
+//       [--degraded] [--json out.json] [--md out.md]
+//     analyse, then compares each window with the counters' sidecar (README: sidecar CSV)
+//     against the real-recording thresholds. --degraded marks a clip that should abstain.
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { getRateStatus } from '../../src/utils/rateStatus.ts';
 import { estimate } from './estimate.ts';
-import { ffmpegMissingHint, readFrames, writeClip } from './ingest.ts';
-import { lkMotion, profileMotion } from './motion.ts';
-import type { Frame, MotionSignal } from './motion.ts';
+import type { EstimateResult } from './estimate.ts';
 import {
+  ffmpegMissingHint,
+  probe,
+  readFrames,
+  workingSize,
+  writeClip,
+  writePgm,
+} from './ingest.ts';
+import type { ProbeInfo } from './ingest.ts';
+import { lkMotion, profileMotion, topStrip } from './motion.ts';
+import type { Frame, MotionSignal, Roi } from './motion.ts';
+import {
+  DEFAULT_CEILINGS,
+  REAL_THRESHOLDS,
   SYNTHETIC_THRESHOLDS,
   breakdownMarkdown,
   isPrimary,
+  parseSidecar,
   summarise,
   verdict,
   verdictMarkdown,
+  windowTruth,
 } from './score.ts';
 import type { Method, Summary, WindowResult, WindowSeconds } from './score.ts';
+import { bandpass, linearDetrend } from './signal.ts';
 import { makeScene } from './synth.ts';
 import type { SceneParams } from './synth.ts';
 
 const USAGE = `Usage:
   node research/camera-breath/run.ts synth [--subset smoke|core|full] [--seeds N] [--encode]
       [--method lk|profile|both] [--out <dir>]
-Needs ffmpeg 8 on PATH for --encode. See research/camera-breath/README.md.`;
+  node research/camera-breath/run.ts analyse <clip> --roi x,y,w,h [--background x,y,w,h]
+      [--fps 30] [--size WxH | --longest 320] [--window 30] [--method lk|profile|both]
+      [--dump waveform.csv] [--dump-frame first.pgm] [--json]
+  node research/camera-breath/run.ts score <clip> --truth clips/<clip>.csv --roi x,y,w,h
+      [--background x,y,w,h] [--window 15|30|60] [--ceilings 30,35] [--method lk|profile|both]
+      [--degraded] [--json out.json] [--md out.md]
+ROI and background are in working-size pixels (analyse prints the size; --dump-frame writes the
+first frame as PGM). The background strip (default: top 40 rows) must show static scene only.
+Needs ffmpeg 8 on PATH. See research/camera-breath/README.md.`;
 
 const DEFAULT_OUT = fileURLToPath(new URL('./out', import.meta.url));
 const WINDOWS: readonly WindowSeconds[] = [15, 30, 60];
@@ -225,6 +259,8 @@ function extract(
       return lkMotion(frames, scene.roiInterior, fps, { background });
     case 'profile-edge':
       return profileMotion(frames, scene.roiEdge, fps, { background });
+    default:
+      throw new Error(`${method} is not a sweep method`);
   }
 }
 
@@ -438,25 +474,410 @@ async function synth(values: {
   return v.every((c) => c.pass) ? 0 : 1;
 }
 
+// ------------------------------------------------------------------ owner recordings
+
+interface ClipOptions {
+  roi?: string;
+  background?: string;
+  fps: string;
+  size?: string;
+  longest: string;
+  window: string;
+  method: string;
+}
+
+interface ClipWindow {
+  start: number;
+  seconds: number;
+  method: 'lk' | 'profile';
+  result: EstimateResult;
+}
+
+interface ClipAnalysis {
+  clip: string;
+  source: ProbeInfo;
+  working: { width: number; height: number };
+  fps: number;
+  windowSeconds: number;
+  roi: Roi;
+  background: Roi;
+  motions: Array<{ method: 'lk' | 'profile'; motion: MotionSignal }>;
+  windows: ClipWindow[];
+}
+
+function parseRoi(text: string | undefined, name: string): Roi | undefined {
+  if (text === undefined) return undefined;
+  const v = text.split(',').map(Number);
+  if (v.length !== 4 || v.some((n) => !Number.isInteger(n) || n < 0) || v[2] < 1 || v[3] < 1) {
+    throw new UsageError(`--${name} must be x,y,w,h in whole working pixels, got "${text}"`);
+  }
+  return { x: v[0], y: v[1], w: v[2], h: v[3] };
+}
+
+function parseNumber(text: string, name: string, min: number): number {
+  const v = Number(text);
+  if (!Number.isFinite(v) || v < min) throw new UsageError(`--${name} must be a number ≥ ${min}`);
+  return v;
+}
+
+function clipMethods(method: string): Array<'lk' | 'profile'> {
+  switch (method) {
+    case 'lk':
+      return ['lk'];
+    case 'profile':
+      return ['profile'];
+    case 'both':
+      return ['lk', 'profile'];
+    default:
+      throw new UsageError(`unknown method ${method}: expected lk, profile or both`);
+  }
+}
+
+/** Probes, decodes and estimates one recording; prints what it decided to stderr. */
+async function analyseClip(
+  clip: string,
+  o: ClipOptions,
+  dumpFrame?: string,
+): Promise<ClipAnalysis> {
+  const fps = parseNumber(o.fps, 'fps', 4);
+  const windowSeconds = parseNumber(o.window, 'window', 10);
+  const methods = clipMethods(o.method);
+  const roiText = o.roi;
+  if (roiText === undefined) throw new UsageError('--roi x,y,w,h is required (working pixels)');
+  const source = await probe(clip);
+  let working: { width: number; height: number };
+  if (o.size !== undefined) {
+    const m = /^(\d+)x(\d+)$/.exec(o.size);
+    if (m === null) throw new UsageError(`--size must be WxH, got "${o.size}"`);
+    working = { width: Number(m[1]), height: Number(m[2]) };
+  } else {
+    working = workingSize(source, parseNumber(o.longest, 'longest', 16));
+  }
+  console.error(
+    `working size ${working.width}x${working.height} (source ${source.width}x${source.height}, ` +
+      `rotation ${source.rotation}, fps ${+source.fps.toFixed(3)})`,
+  );
+  // Any periodic motion within ±1.5 Hz of a multiple of the frame rate lands in the breathing
+  // band: at 24 fps a 25 Hz purr reads as 60 bpm and nothing downstream can tell.
+  for (const [what, value] of [
+    ['source', source.fps],
+    ['analysis', fps],
+  ] as const) {
+    if (value < 28) {
+      console.error(
+        `warning: ${what} frame rate ${+value.toFixed(3)} fps is below 28: a 25 Hz purr aliases ` +
+          'into the breathing band (24 fps → 60 bpm); record and analyse at 30 fps',
+      );
+    }
+  }
+  const roi = parseRoi(roiText, 'roi')!;
+  const background = parseRoi(o.background, 'background') ?? topStrip(working);
+  for (const [name, r] of [
+    ['roi', roi],
+    ['background', background],
+  ] as const) {
+    if (r.x + r.w > working.width || r.y + r.h > working.height) {
+      throw new UsageError(
+        `--${name} ${r.x},${r.y},${r.w},${r.h} does not fit the ${working.width}x${working.height} working frame`,
+      );
+    }
+  }
+  const frames = await readFrames(clip, { fps, ...working });
+  if (frames.length === 0) throw new Error('ffmpeg decoded no frames');
+  if (dumpFrame !== undefined) writeFileSync(dumpFrame, writePgm(frames[0]));
+  console.error(
+    `${frames.length} frames (${(frames.length / fps).toFixed(1)} s) at ${fps} fps, ` +
+      `ROI ${roi.x},${roi.y},${roi.w},${roi.h}, background ${background.x},${background.y},${background.w},${background.h}`,
+  );
+  const motions: ClipAnalysis['motions'] = [];
+  for (const method of methods) {
+    if (method === 'lk') {
+      const motion = lkMotion(frames, roi, fps, { background });
+      if (motion.backgroundValidRatio === 0) {
+        console.error(
+          'warning: background strip has no texture; pass --background on static scene',
+        );
+      }
+      motions.push({ method, motion });
+    } else {
+      motions.push({ method, motion: profileMotion(frames, roi, fps, { background }) });
+    }
+  }
+  const windows: ClipWindow[] = [];
+  const clipSeconds = frames.length / fps;
+  for (const { method, motion } of motions) {
+    for (let start = 0; start + windowSeconds <= clipSeconds + 1e-9; start += windowSeconds) {
+      const slice = motion.signal.slice(
+        Math.round(start * fps),
+        Math.round((start + windowSeconds) * fps),
+      );
+      windows.push({
+        start,
+        seconds: windowSeconds,
+        method,
+        result: estimate(slice, fps, motion.quality),
+      });
+    }
+  }
+  return { clip, source, working, fps, windowSeconds, roi, background, motions, windows };
+}
+
+const interval = (r: EstimateResult) =>
+  r.interval === null ? '—' : `${r.interval[0]}–${r.interval[1]}`;
+const reasons = (r: EstimateResult) => (r.reasons.length === 0 ? '—' : r.reasons.join(', '));
+const num = (v: number | null, digits = 1) => (v === null ? '—' : v.toFixed(digits));
+
+function table(header: string[], rows: string[][]): string {
+  const widths = header.map((h, i) => Math.max(h.length, ...rows.map((r) => r[i].length)));
+  const line = (cells: string[]) =>
+    cells
+      .map((c, i) => c.padEnd(widths[i]))
+      .join('  ')
+      .trimEnd();
+  return [line(header), ...rows.map(line)].join('\n');
+}
+
+async function analyse(
+  clip: string | undefined,
+  values: ClipOptions & { dump?: string; 'dump-frame'?: string; json: boolean },
+): Promise<number> {
+  if (clip === undefined) throw new UsageError('analyse needs a clip');
+  const a = await analyseClip(clip, values, values['dump-frame']);
+  if (values.dump !== undefined) {
+    const lines = ['t,method,signal,filtered'];
+    for (const { method, motion } of a.motions) {
+      const filtered = bandpass(linearDetrend(motion.signal), a.fps);
+      motion.signal.forEach((v, i) => {
+        lines.push(`${(i / a.fps).toFixed(4)},${method},${v.toFixed(5)},${filtered[i].toFixed(5)}`);
+      });
+    }
+    writeFileSync(values.dump, lines.join('\n') + '\n');
+  }
+  if (values.json) {
+    const { motions: _motions, ...rest } = a;
+    console.log(JSON.stringify(rest, null, 2));
+    return 0;
+  }
+  console.log(
+    table(
+      [
+        'start',
+        's',
+        'method',
+        'bpm',
+        'quantised',
+        'interval',
+        'quality',
+        'reasons',
+        'fft/acf/ibi/count',
+      ],
+      a.windows.map(({ start, seconds, method, result: r }) => [
+        String(start),
+        String(seconds),
+        method,
+        num(r.rawBpm),
+        num(r.quantisedBpm, 0),
+        interval(r),
+        r.quality.toFixed(2),
+        reasons(r),
+        `${num(r.estimators.fft)}/${num(r.estimators.acf)}/${num(r.estimators.ibi)}/${r.estimators.count}`,
+      ]),
+    ),
+  );
+  return 0;
+}
+
+async function score(
+  clip: string | undefined,
+  values: ClipOptions & {
+    truth?: string;
+    ceilings: string;
+    degraded: boolean;
+    json?: string;
+    md?: string;
+  },
+): Promise<number> {
+  if (clip === undefined) throw new UsageError('score needs a clip');
+  if (values.truth === undefined) throw new UsageError('--truth <sidecar.csv> is required');
+  const windowSeconds = Number(values.window);
+  if (![15, 30, 60].includes(windowSeconds)) throw new UsageError('--window must be 15, 30 or 60');
+  const c = values.ceilings.split(',').map(Number);
+  if (c.length !== 2 || c.some((v) => !Number.isInteger(v) || v < 1) || c[0] >= c[1]) {
+    throw new UsageError(`--ceilings must be normal,elevated whole bpm, got "${values.ceilings}"`);
+  }
+  const ceilings = { normal: c[0], elevated: c[1] };
+  const pet = { normalCeiling: ceilings.normal, elevatedCeiling: ceilings.elevated };
+  const sidecar = parseSidecar(readFileSync(values.truth, 'utf8'), clip);
+  if (sidecar.size === 0) throw new Error(`${values.truth} has no rows for ${clip}`);
+  const a = await analyseClip(clip, values);
+  const rows: WindowResult[] = [];
+  const discarded: string[][] = [];
+  const tableRows: string[][] = [];
+  for (const w of a.windows) {
+    const truth = windowTruth(sidecar, w.start, w.seconds);
+    const r = w.result;
+    if (truth.bpm === null) {
+      discarded.push([
+        String(w.start),
+        w.method,
+        String(truth.counters),
+        String(truth.disagreement),
+      ]);
+      continue;
+    }
+    rows.push({
+      cell: clip,
+      method: w.method,
+      startS: w.start,
+      seconds: windowSeconds as WindowSeconds,
+      truthBpm: truth.bpm,
+      shouldAbstain: values.degraded,
+      good: !values.degraded,
+      result: r,
+    });
+    tableRows.push([
+      String(w.start),
+      w.method,
+      truth.bpm.toFixed(1),
+      num(r.quantisedBpm, 0),
+      r.quantisedBpm === null ? '—' : (r.quantisedBpm - truth.bpm).toFixed(1),
+      getRateStatus(Math.round(truth.bpm), pet).label,
+      r.quantisedBpm === null ? '—' : getRateStatus(r.quantisedBpm, pet).label,
+      r.quality.toFixed(2),
+      reasons(r),
+    ]);
+  }
+  const primary = rows.filter((r) => isPrimary(r.method));
+  const judged = primary.length > 0 ? primary : rows;
+  const summary = summarise(judged, ceilings);
+  const v = verdict(summary, REAL_THRESHOLDS);
+  const windowTable = table(
+    [
+      'start',
+      'method',
+      'manual',
+      'camera',
+      'error',
+      'label manual',
+      'label camera',
+      'quality',
+      'reasons',
+    ],
+    tableRows,
+  );
+  const discardedTable =
+    discarded.length === 0
+      ? 'No window discarded.'
+      : table(['start', 'method', 'counters', 'disagreement (breaths)'], discarded);
+  const md = [
+    `# ${clip}`,
+    '',
+    `Windows of ${windowSeconds} s; ceilings ${ceilings.normal}/${ceilings.elevated}; ` +
+      `${values.degraded ? 'degraded clip (should abstain)' : 'good clip'}; judged on ${
+        primary.length > 0 ? 'lk' : 'profile'
+      }.`,
+    '',
+    '## Verdict (real-recording thresholds, this clip only)',
+    '',
+    verdictMarkdown(v),
+    '',
+    '## Windows',
+    '',
+    '```',
+    windowTable,
+    '```',
+    '',
+    '## Discarded windows (no agreed manual count)',
+    '',
+    '```',
+    discardedTable,
+    '```',
+    '',
+  ].join('\n');
+  if (values.json !== undefined) {
+    writeFileSync(
+      values.json,
+      JSON.stringify({
+        clip,
+        source: a.source,
+        working: a.working,
+        ceilings,
+        degraded: values.degraded,
+        rows,
+        summary,
+        verdict: v,
+      }),
+    );
+  }
+  if (values.md !== undefined) writeFileSync(values.md, md);
+  console.log(windowTable);
+  console.log(`\nDiscarded:\n${discardedTable}\n`);
+  console.log(verdictMarkdown(v));
+  return 0;
+}
+
 // ------------------------------------------------------------------ entry point
 
+const CLIP_OPTIONS = {
+  roi: { type: 'string' },
+  background: { type: 'string' },
+  fps: { type: 'string', default: '30' },
+  size: { type: 'string' },
+  longest: { type: 'string', default: '320' },
+  window: { type: 'string', default: '30' },
+  method: { type: 'string', default: 'both' },
+} as const;
+
 async function main(argv: string[]): Promise<number> {
-  const { values, positionals } = parseArgs({
-    args: argv,
-    allowPositionals: true,
-    strict: true,
-    options: {
-      subset: { type: 'string', default: 'core' },
-      seeds: { type: 'string', default: '5' },
-      encode: { type: 'boolean', default: false },
-      method: { type: 'string', default: 'both' },
-      out: { type: 'string', default: DEFAULT_OUT },
-    },
-  });
-  const [command] = positionals;
+  const [command, ...rest] = argv;
   switch (command) {
-    case 'synth':
+    case 'synth': {
+      const { values } = parseArgs({
+        args: rest,
+        strict: true,
+        options: {
+          subset: { type: 'string', default: 'core' },
+          seeds: { type: 'string', default: '5' },
+          encode: { type: 'boolean', default: false },
+          method: { type: 'string', default: 'both' },
+          out: { type: 'string', default: DEFAULT_OUT },
+        },
+      });
       return synth(values);
+    }
+    case 'analyse': {
+      const { values, positionals } = parseArgs({
+        args: rest,
+        allowPositionals: true,
+        strict: true,
+        options: {
+          ...CLIP_OPTIONS,
+          dump: { type: 'string' },
+          'dump-frame': { type: 'string' },
+          json: { type: 'boolean', default: false },
+        },
+      });
+      return analyse(positionals[0], values);
+    }
+    case 'score': {
+      const { values, positionals } = parseArgs({
+        args: rest,
+        allowPositionals: true,
+        strict: true,
+        options: {
+          ...CLIP_OPTIONS,
+          truth: { type: 'string' },
+          ceilings: {
+            type: 'string',
+            default: `${DEFAULT_CEILINGS.normal},${DEFAULT_CEILINGS.elevated}`,
+          },
+          degraded: { type: 'boolean', default: false },
+          json: { type: 'string' },
+          md: { type: 'string' },
+        },
+      });
+      return score(positionals[0], values);
+    }
     default:
       throw new UsageError(
         command === undefined ? 'missing command' : `unknown command ${command}`,

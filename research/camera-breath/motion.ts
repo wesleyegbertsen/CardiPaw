@@ -443,7 +443,11 @@ export function lkMotion(
   roi: Roi,
   fps: number,
   opts: LkOptions = {},
-): MotionSignal & { weights: Float64Array; perPoint: Float64Array[] } {
+): MotionSignal & {
+  weights: Float64Array;
+  perPoint: Float64Array[];
+  backgroundValidRatio: number;
+} {
   const o = { ...LK_DEFAULTS, ...opts };
   const grid = gridPoints(roi, o.grid);
   const reanchorEvery = Math.round(o.reanchorS * fps);
@@ -461,6 +465,7 @@ export function lkMotion(
   let bgOffY = 0;
   let valid = 0;
   let total = 0;
+  let validBg = 0;
   let i = 0;
   for (const frame of frames) {
     const cur = blur3(frame);
@@ -471,6 +476,7 @@ export function lkMotion(
     }
     const tracks = trackBlurred(anchor, cur, [...grid, ...bgPoints], o);
     const okBg = tracks.slice(grid.length).filter((t) => t.ok);
+    validBg += okBg.length;
     // No valid background point (black bars, a flat wall): nothing to subtract, flow 0.
     const flowX = okBg.length === 0 ? 0 : median(okBg.map((t) => t.dx))!;
     const flowY = okBg.length === 0 ? 0 : median(okBg.map((t) => t.dy))!;
@@ -524,5 +530,7 @@ export function lkMotion(
     },
     weights,
     perPoint: rowsY,
+    // 0 means the strip had no texture at all (black bars, a flat wall): nothing was subtracted.
+    backgroundValidRatio: bgPoints.length === 0 ? 0 : validBg / (bgPoints.length * n),
   };
 }
