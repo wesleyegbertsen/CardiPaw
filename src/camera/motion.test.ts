@@ -4,6 +4,7 @@ import {
   LK_DEFAULTS,
   backgroundPoints,
   colProfile,
+  createLkTracker,
   gridPoints,
   lkMotion,
   lkTrack,
@@ -14,6 +15,7 @@ import {
   topStrip,
 } from './motion.ts';
 import type { Frame, Roi } from './motion.ts';
+import { makeScene } from './synth.ts';
 
 function lcg(seed: number): () => number {
   let s = seed >>> 0;
@@ -374,5 +376,52 @@ describe('lkMotion', () => {
     const r = estimate(m.signal, FPS, m.quality);
     expect(r.reasons).toEqual([]);
     expect(Math.abs(r.bpm! - 30)).toBeLessThan(1);
+  });
+});
+
+describe('createLkTracker', () => {
+  const PARAMS = { seed: 1, fps: 30, seconds: 12, bpm: 24, amplitudePx: 2, contrast: 20 } as const;
+  const ROI = makeScene(PARAMS).roiEdge;
+
+  it('push then result() equals lkMotion byte for byte', () => {
+    // A fresh scene per consumer: the pixel-noise generator runs on across iterations of frames().
+    const batch = lkMotion(makeScene(PARAMS).frames(), ROI, PARAMS.fps);
+    const tracker = createLkTracker(ROI, PARAMS.fps);
+    for (const frame of makeScene(PARAMS).frames()) tracker.push(frame);
+    expect(tracker.count).toBe(360);
+    const pushed = tracker.result();
+    expect(pushed.signal).toEqual(batch.signal);
+    expect(pushed.quality).toEqual(batch.quality);
+    expect(pushed.weights).toEqual(batch.weights);
+    expect(pushed.perPoint).toEqual(batch.perPoint);
+    expect(pushed.backgroundValidRatio).toBe(batch.backgroundValidRatio);
+  });
+
+  it('result() mid-run leaves the final result unchanged', () => {
+    const batch = lkMotion(makeScene(PARAMS).frames(), ROI, PARAMS.fps);
+    const tracker = createLkTracker(ROI, PARAMS.fps);
+    let k = 0;
+    for (const frame of makeScene(PARAMS).frames()) {
+      tracker.push(frame);
+      if (++k === 200) expect(tracker.result().signal).toHaveLength(200);
+    }
+    expect(tracker.result().signal).toEqual(batch.signal);
+  });
+
+  it('applies the resample to every row', () => {
+    const tracker = createLkTracker(ROI, PARAMS.fps);
+    for (const frame of makeScene(PARAMS).frames()) tracker.push(frame);
+    const r = tracker.result((row) => row.slice(0, 150));
+    expect(r.signal).toHaveLength(150);
+    expect(r.perPoint[0]).toHaveLength(150);
+    expect(r.weights).toHaveLength(50);
+  });
+
+  it('throws without a frame and reports the latest footing after one', () => {
+    const tracker = createLkTracker(ROI, PARAMS.fps);
+    expect(tracker.latest).toBeNull();
+    expect(() => tracker.result()).toThrow('lkMotion: no frames');
+    tracker.push(makeScene(PARAMS).frames().next().value!);
+    expect(tracker.latest).toEqual({ validRatio: 1, backgroundFlowPx: 0 });
   });
 });

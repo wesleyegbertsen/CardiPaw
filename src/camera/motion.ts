@@ -433,23 +433,40 @@ export function pcaWeights(rows: ReadonlyArray<Float64Array>): Float64Array {
   return v;
 }
 
+export type LkResult = MotionSignal & {
+  weights: Float64Array;
+  perPoint: Float64Array[];
+  backgroundValidRatio: number;
+};
+
+/** A row-by-row transform applied before detrend, band-pass and PCA; the identity by default. */
+export type RowTransform = (row: Float64Array) => Float64Array;
+
+export interface LkTracker {
+  /** Frames pushed so far. */
+  readonly count: number;
+  push(frame: Frame): void;
+  /**
+   * The combined signal and quality over every frame pushed so far. Pure: callable more than
+   * once (the app evaluates at 30 s and again at 60 s). `resample` is applied to every
+   * trajectory row (grid dy, grid dx, background dy) before detrend, band-pass and PCA, so the
+   * app can put frames with real timestamps onto the exact 30 Hz grid (capture.ts).
+   * Throws without a frame.
+   */
+  result(resample?: RowTransform): LkResult;
+  /** The last pushed frame's footing, for cheap live hints: how many grid points tracked and how far the background moved since the anchor. */
+  readonly latest: { validRatio: number; backgroundFlowPx: number } | null;
+}
+
 /**
  * ROI motion from a grid of Lucas-Kanade points tracked against a reference frame that is
  * renewed every `reanchorS` seconds (carrying each point's accumulated offset), minus the
  * median flow of the background points so that camera shake cancels. The 2·grid² trajectories
  * (dy then dx) are combined by their first principal component, weighted on the band-passed
  * rows but applied to the unfiltered ones: the signal stays unfiltered for estimate().
+ * Frames are pushed one at a time; lkMotion() wraps this for a whole clip.
  */
-export function lkMotion(
-  frames: Iterable<Frame>,
-  roi: Roi,
-  fps: number,
-  opts: LkOptions = {},
-): MotionSignal & {
-  weights: Float64Array;
-  perPoint: Float64Array[];
-  backgroundValidRatio: number;
-} {
+export function createLkTracker(roi: Roi, fps: number, opts: LkOptions = {}): LkTracker {
   const o = { ...LK_DEFAULTS, ...opts };
   const grid = gridPoints(roi, o.grid);
   const reanchorEvery = Math.round(o.reanchorS * fps);
@@ -469,7 +486,9 @@ export function lkMotion(
   let total = 0;
   let validBg = 0;
   let i = 0;
-  for (const frame of frames) {
+  let latest: LkTracker['latest'] = null;
+
+  function push(frame: Frame): void {
     const cur = blur3(frame);
     if (anchor === null) {
       anchor = cur;
@@ -483,11 +502,13 @@ export function lkMotion(
     const flowX = okBg.length === 0 ? 0 : median(okBg.map((t) => t.dx))!;
     const flowY = okBg.length === 0 ? 0 : median(okBg.map((t) => t.dy))!;
     bgDy.push(bgOffY + flowY);
+    let okGrid = 0;
     for (let k = 0; k < grid.length; k++) {
       const t = tracks[k];
       total++;
       if (t.ok) {
         valid++;
+        okGrid++;
         lastX[k] = t.dx;
         lastY[k] = t.dy;
         dx[k].push(offX[k] + t.dx - (bgOffX + flowX));
@@ -498,6 +519,7 @@ export function lkMotion(
         dy[k].push(i === 0 ? 0 : dy[k][i - 1]);
       }
     }
+    latest = { validRatio: okGrid / grid.length, backgroundFlowPx: Math.hypot(flowX, flowY) };
     i++;
     if (reanchorEvery > 0 && i % reanchorEvery === 0) {
       anchor = cur;
@@ -511,28 +533,55 @@ export function lkMotion(
       bgOffY += flowY;
     }
   }
-  const n = bgDy.length;
-  if (n === 0) throw new Error('lkMotion: no frames');
-  // Clips shorter than eight samples cannot be band-passed; nothing downstream accepts them.
-  const inBand = (v: Float64Array) => (v.length < 8 ? v : bandpass(v, fps));
-  const rowsY = dy.map((r) => Float64Array.from(r));
-  const rowsX = dx.map((r) => Float64Array.from(r));
-  const rows = [...rowsY, ...rowsX].map(linearDetrend);
-  const weights = pcaWeights(rows.map(inBand));
-  const signal = new Float64Array(n);
-  for (let a = 0; a < rows.length; a++) {
-    for (let j = 0; j < n; j++) signal[j] += weights[a] * rows[a][j];
+
+  function result(resample: RowTransform = (row) => row): LkResult {
+    if (i === 0) throw new Error('lkMotion: no frames');
+    const rowsY = dy.map((r) => resample(Float64Array.from(r)));
+    const rowsX = dx.map((r) => resample(Float64Array.from(r)));
+    const bg = resample(Float64Array.from(bgDy));
+    const n = bg.length;
+    // Clips shorter than eight samples cannot be band-passed; nothing downstream accepts them.
+    const inBand = (v: Float64Array) => (v.length < 8 ? v : bandpass(v, fps));
+    const rows = [...rowsY, ...rowsX].map(linearDetrend);
+    const weights = pcaWeights(rows.map(inBand));
+    const signal = new Float64Array(n);
+    for (let a = 0; a < rows.length; a++) {
+      for (let j = 0; j < n; j++) signal[j] += weights[a] * rows[a][j];
+    }
+    return {
+      signal,
+      quality: {
+        validTrackRatio: valid / total,
+        borderRms: background === null || n < 8 ? 0 : rms(inBand(bg)),
+        amplitudePx: median(rowsY.map((r) => rms(inBand(r)))) ?? 0,
+      },
+      weights,
+      perPoint: rowsY,
+      // 0 means the strip had no texture at all (black bars, a flat wall): nothing was subtracted.
+      backgroundValidRatio: bgPoints.length === 0 ? 0 : validBg / (bgPoints.length * i),
+    };
   }
+
   return {
-    signal,
-    quality: {
-      validTrackRatio: valid / total,
-      borderRms: background === null || n < 8 ? 0 : rms(inBand(Float64Array.from(bgDy))),
-      amplitudePx: median(rowsY.map((r) => rms(inBand(r)))) ?? 0,
+    get count() {
+      return i;
     },
-    weights,
-    perPoint: rowsY,
-    // 0 means the strip had no texture at all (black bars, a flat wall): nothing was subtracted.
-    backgroundValidRatio: bgPoints.length === 0 ? 0 : validBg / (bgPoints.length * n),
+    get latest() {
+      return latest;
+    },
+    push,
+    result,
   };
+}
+
+/** createLkTracker over a whole clip: push every frame, then result(). */
+export function lkMotion(
+  frames: Iterable<Frame>,
+  roi: Roi,
+  fps: number,
+  opts: LkOptions = {},
+): LkResult {
+  const tracker = createLkTracker(roi, fps, opts);
+  for (const frame of frames) tracker.push(frame);
+  return tracker.result();
 }
