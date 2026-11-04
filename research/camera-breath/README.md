@@ -474,5 +474,5 @@ Play data-safety form.
 - The profile method reads vertical motion only (it abstains on a rotated clip whose breathing
   is horizontal) and accepts roughly half of the good windows: a cross-check, never a fallback.
 - No Python, no learned models; everything here would run in the WebView.
-- The website variant sends `Permissions-Policy: camera=()` (`nginx.conf`), which would have to
-  change for a browser-based capture.
+- The website's `Permissions-Policy` header allows `camera=(self)` since round 2; the app's WebView
+  is not subject to it.
