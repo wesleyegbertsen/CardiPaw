@@ -2,7 +2,7 @@
 // reasons for abstaining. Pure module: ES2020 only, no Node built-ins. It is the only place that
 // turns numbers into a verdict, so the gate thresholds live here with their calibration.
 
-import { breathsPerMinute, isMeasurementSeconds } from '../../src/utils/measurement.ts';
+import { breathsPerMinute, isMeasurementSeconds } from '../utils/measurement.ts';
 import type { MotionQuality } from './motion.ts';
 import {
   acfBpm,

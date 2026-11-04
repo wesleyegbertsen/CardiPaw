@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getRateStatus } from '../../src/utils/rateStatus.ts';
+import { getRateStatus } from '../utils/rateStatus.ts';
 import { GATES, estimate } from './estimate.ts';
 
 function lcg(seed: number): () => number {

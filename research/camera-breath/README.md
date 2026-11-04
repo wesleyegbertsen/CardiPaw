@@ -1,8 +1,9 @@
 # Camera-based breath counting (research)
 
 Prototype for estimating a pet's breathing rate from a propped-phone video, exploring
-[#130](https://github.com/wesleyegbertsen/CardiPaw/issues/130). Not part of the app: nothing in
-this folder is bundled, and the app asks for no camera permission.
+[#130](https://github.com/wesleyegbertsen/CardiPaw/issues/130). The signal chain lives in `src/camera/`
+and is used by the app's experimental camera counting (opt-in, see the main README); this
+folder keeps the CLI, the sweep and the scoring.
 
 ## 1. What this is
 
@@ -42,7 +43,7 @@ grey frames → ROI → motion signal (px per frame)
   waveform, drift, shake, flicker, purr, twitches, rate ramp).
 - `score.ts` — metrics, sidecar parsing, verdict tables, the pre-registered thresholds.
 - `ingest.ts`, `run.ts` — ffmpeg/ffprobe and the CLI (the only Node-specific files; an ESLint
-  fence keeps every Node built-in out of the pure modules so they would move into the app as is).
+  fence keeps every Node built-in out of the pure modules, which moved into the app as `src/camera/`).
 
 Gates (`GATES` in `estimate.ts`), in the order they are evaluated, with the calibration that
 set them (Lucas-Kanade, rendered 192×144 scenes, 30 s windows, 2026-11-03):

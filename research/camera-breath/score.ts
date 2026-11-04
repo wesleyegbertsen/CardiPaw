@@ -3,8 +3,8 @@
 // come from the app's own getRateStatus so "label agreement" means what the app would show.
 
 import { getRateStatus } from '../../src/utils/rateStatus.ts';
-import type { EstimateResult } from './estimate.ts';
-import { mean, median, std } from './signal.ts';
+import type { EstimateResult } from '../../src/camera/estimate.ts';
+import { mean, median, std } from '../../src/camera/signal.ts';
 
 // The sweep's three extractions, and the two an owner recording gets on its one ROI.
 export type Method = 'lk-edge' | 'lk-interior' | 'profile-edge' | 'lk' | 'profile';

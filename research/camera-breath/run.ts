@@ -29,8 +29,8 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { getRateStatus } from '../../src/utils/rateStatus.ts';
-import { estimate } from './estimate.ts';
-import type { EstimateResult } from './estimate.ts';
+import { estimate } from '../../src/camera/estimate.ts';
+import type { EstimateResult } from '../../src/camera/estimate.ts';
 import {
   ffmpegMissingHint,
   probe,
@@ -40,8 +40,8 @@ import {
   writePgm,
 } from './ingest.ts';
 import type { ProbeInfo } from './ingest.ts';
-import { lkMotion, profileMotion, topStrip } from './motion.ts';
-import type { Frame, MotionSignal, Roi } from './motion.ts';
+import { lkMotion, profileMotion, topStrip } from '../../src/camera/motion.ts';
+import type { Frame, MotionSignal, Roi } from '../../src/camera/motion.ts';
 import {
   DEFAULT_CEILINGS,
   REAL_THRESHOLDS,
@@ -55,9 +55,9 @@ import {
   windowTruth,
 } from './score.ts';
 import type { Method, Summary, WindowResult, WindowSeconds } from './score.ts';
-import { bandpass, linearDetrend } from './signal.ts';
-import { makeScene } from './synth.ts';
-import type { SceneParams } from './synth.ts';
+import { bandpass, linearDetrend } from '../../src/camera/signal.ts';
+import { makeScene } from '../../src/camera/synth.ts';
+import type { SceneParams } from '../../src/camera/synth.ts';
 
 const USAGE = `Usage:
   node research/camera-breath/run.ts synth [--subset smoke|core|full] [--seeds N] [--encode]

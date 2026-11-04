@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { EstimateResult } from './estimate.ts';
+import type { EstimateResult } from '../../src/camera/estimate.ts';
 import {
   REAL_THRESHOLDS,
   SYNTHETIC_THRESHOLDS,

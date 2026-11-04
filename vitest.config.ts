@@ -14,6 +14,7 @@ process.env.TZ = 'UTC';
 const NODE_TESTS = [
   'scripts/**/*.test.mjs',
   'research/**/*.test.ts',
+  'src/camera/{signal,estimate,motion,motion.scene,synth,capture}.test.ts',
   'src/composables/{useAudioBeep,useHaptics}.test.ts',
   'src/i18n/locales.test.ts',
   'src/native/csp.test.ts',

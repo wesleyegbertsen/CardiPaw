@@ -5,7 +5,7 @@
 
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import type { Frame } from './motion.ts';
+import type { Frame } from '../../src/camera/motion.ts';
 
 export interface ProbeInfo {
   width: number; // stored (pre-rotation) size
