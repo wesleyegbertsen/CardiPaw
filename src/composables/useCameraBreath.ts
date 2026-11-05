@@ -1,0 +1,384 @@
+import { onScopeDispose, readonly, ref, type Ref } from 'vue';
+import {
+  CAMERA_CONSTRAINTS,
+  cameraErrorKind,
+  createFrameReader,
+  videoFrames,
+  type FrameSource,
+} from '../camera/browser';
+import {
+  CAPTURE_FPS,
+  PLACEMENT,
+  defaultRoi,
+  frameRateReason,
+  frameTiming,
+  gridSamples,
+  nearCeiling,
+  placementSample,
+  resampleRow,
+  type CameraSeconds,
+  type CaptureReason,
+} from '../camera/capture';
+import { estimate, type EstimateResult } from '../camera/estimate';
+import { createLkTracker, frameMean, type Frame, type LkTracker } from '../camera/motion';
+import type { Pet } from '../types';
+import { DEFAULT_ELEVATED_CEILING, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
+import { isCameraSupported } from './useCameraOptIn';
+import { useWakeLock } from './useWakeLock';
+
+export type CameraPhase = 'idle' | 'requesting' | 'placing' | 'capturing' | 'done' | 'error';
+export type CameraError =
+  'denied' | 'no-camera' | 'busy' | 'unsupported' | 'failed' | 'interrupted';
+
+export interface CameraVerdict {
+  seconds: CameraSeconds;
+  accepted: boolean;
+  rate: number | null; // estimate.quantisedBpm when accepted
+  interval: [number, number] | null;
+  reasons: CaptureReason[]; // [] when accepted; ['frame-rate'] skips estimate()
+  estimate: EstimateResult | null;
+  deliveredFps: number | null;
+}
+
+/** Injectable for tests: happy-dom has neither getUserMedia nor a canvas. */
+export interface CameraBreathDeps {
+  getUserMedia?: (c: MediaStreamConstraints) => Promise<MediaStream>;
+  frameSource?: FrameSource;
+  readFrame?: (video: HTMLVideoElement) => Frame;
+}
+
+export interface CameraBreathOptions {
+  pet: Ref<Pick<Pet, 'normalCeiling' | 'elevatedCeiling'> | undefined>;
+  video: Ref<HTMLVideoElement | null>;
+  deps?: CameraBreathDeps;
+}
+
+const HINT_EVERY_FRAMES = 30;
+// The window is measured on the frame timeline (first captured frame to last), so a late first
+// frame cannot shorten it; the wall clock only catches a camera that stopped delivering.
+const STALL_MS = 3000;
+
+/**
+ * The camera breath count: owns the stream, the preview video, the frame reader, the tracker
+ * and the timers. Frames never leave memory. Every exit from placing/capturing runs teardown(),
+ * which stops the tracks; cancel() also runs when the owning component goes away.
+ */
+export function useCameraBreath(opts: CameraBreathOptions) {
+  const deps = opts.deps ?? {};
+  const wakeLock = useWakeLock();
+  const phase = ref<CameraPhase>('idle');
+  const error = ref<CameraError | null>(null);
+  const placement = ref({ tooDark: false, moving: false, steady: false });
+  const hints = ref({ shake: false, fewTracks: false, tooDark: false });
+  const elapsedSeconds = ref(0);
+  const targetSeconds = ref<CameraSeconds>(30);
+  const extending = ref(false);
+  const verdict = ref<CameraVerdict | null>(null);
+
+  let stream: MediaStream | null = null;
+  let stopFrames: (() => void) | null = null;
+  let readFrame: ((video: HTMLVideoElement) => Frame) | null = null;
+  let tracker: LkTracker | null = null;
+  let times: number[] = [];
+  let startedAt = 0;
+  let evaluated30 = false;
+  let interval: ReturnType<typeof setInterval> | null = null;
+  let pendingEvaluate: ReturnType<typeof setTimeout> | null = null;
+  let prevFrame: Frame | null = null;
+  let anchor: Frame | null = null;
+  let placingFrames = 0;
+  let steadySince: number | null = null;
+  // Bumped by every teardown; an await that comes back to an older session stands down.
+  let session = 0;
+  // window.innerWidth when the listeners went on: a rotation changes it, a URL bar does not.
+  let widthAtStart = 0;
+
+  function ceilings(): number[] {
+    const pet = opts.pet.value;
+    return [
+      pet?.normalCeiling ?? DEFAULT_NORMAL_CEILING,
+      pet?.elevatedCeiling ?? DEFAULT_ELEVATED_CEILING,
+    ];
+  }
+
+  function onVisibility() {
+    if (document.visibilityState === 'hidden') abort('interrupted');
+  }
+  function onResize() {
+    // Chrome for Android fires resize when the URL bar collapses (height only); only a width
+    // change (a rotation) moves the box the owner framed.
+    if (window.innerWidth === widthAtStart) return;
+    if (phase.value === 'capturing') abort('interrupted');
+    else steadySince = null;
+  }
+  function onOrientation() {
+    if (phase.value === 'capturing') abort('interrupted');
+    else steadySince = null;
+  }
+  function onTrackEnded() {
+    abort('interrupted');
+  }
+  function onTrackMute() {
+    // Some devices mute briefly right after the stream starts; only a mute mid-count interrupts.
+    if (phase.value === 'capturing') abort('interrupted');
+    else steadySince = null;
+  }
+
+  function listen(on: boolean) {
+    const m = on ? 'addEventListener' : 'removeEventListener';
+    document[m]('visibilitychange', onVisibility);
+    window[m]('resize', onResize);
+    window[m]('orientationchange', onOrientation);
+    for (const track of stream?.getTracks() ?? []) {
+      track[m]('ended', onTrackEnded);
+      track[m]('mute', onTrackMute);
+    }
+  }
+
+  async function open(): Promise<void> {
+    if (phase.value !== 'idle' && phase.value !== 'error' && phase.value !== 'done') return;
+    error.value = null;
+    verdict.value = null;
+    const getUserMedia =
+      deps.getUserMedia ??
+      (isCameraSupported()
+        ? (c: MediaStreamConstraints) => navigator.mediaDevices.getUserMedia(c)
+        : null);
+    if (!getUserMedia) {
+      phase.value = 'error';
+      error.value = 'unsupported';
+      return;
+    }
+    const mine = ++session;
+    phase.value = 'requesting';
+    let granted: MediaStream;
+    try {
+      granted = await getUserMedia(CAMERA_CONSTRAINTS);
+    } catch (e) {
+      if (mine !== session) return; // cancelled while the prompt was open
+      phase.value = 'error';
+      error.value = cameraErrorKind(e);
+      return;
+    }
+    if (mine !== session) {
+      // Cancelled (or opened again) while the prompt was open: never leave a track running.
+      for (const track of granted.getTracks()) track.stop();
+      return;
+    }
+    stream = granted;
+    const video = opts.video.value;
+    try {
+      if (!video) throw new Error('No preview element');
+      readFrame = deps.readFrame ?? createFrameReader();
+      video.srcObject = stream;
+      await video.play();
+      if (mine !== session) return; // torn down while play() was pending; the tracks are stopped
+    } catch (e) {
+      console.warn('Camera preview failed', e);
+      teardown();
+      phase.value = 'error';
+      error.value = 'failed';
+      return;
+    }
+    prevFrame = null;
+    anchor = null;
+    placingFrames = 0;
+    steadySince = null;
+    placement.value = { tooDark: false, moving: false, steady: false };
+    widthAtStart = window.innerWidth;
+    listen(true);
+    stopFrames = (deps.frameSource ?? videoFrames)(video, onFrame);
+    phase.value = 'placing';
+  }
+
+  function onFrame(timeMs: number) {
+    const video = opts.video.value;
+    if (!video || !readFrame) return;
+    if (phase.value === 'placing') {
+      const frame = readFrame(video);
+      if (placingFrames++ % PLACEMENT.anchorFrames === 0) anchor = frame;
+      const s = placementSample(anchor, frame, defaultRoi(frame).background);
+      // One line per placement, to tune minLuma and the box on a device.
+      if (import.meta.env.DEV && placingFrames === 1) console.debug('camera placement', s);
+      prevFrame = frame;
+      const tooDark = s.luma < PLACEMENT.minLuma;
+      const moving = s.flowPx !== null && s.flowPx > PLACEMENT.maxFlowPx;
+      let steady = false;
+      if (tooDark || moving) steadySince = null;
+      else {
+        steadySince ??= Date.now();
+        steady = Date.now() - steadySince >= PLACEMENT.steadyMs;
+      }
+      placement.value = { tooDark, moving, steady };
+    } else if (phase.value === 'capturing' && tracker) {
+      const frame = readFrame(video);
+      tracker.push(frame);
+      times.push(timeMs);
+      if (tracker.count % HINT_EVERY_FRAMES === 0) {
+        const latest = tracker.latest!;
+        hints.value = {
+          shake: latest.backgroundFlowPx > PLACEMENT.maxFlowPx,
+          fewTracks: latest.validRatio < 0.6,
+          tooDark: frameMean(frame) < PLACEMENT.minLuma,
+        };
+      }
+    }
+  }
+
+  function begin(): void {
+    if (phase.value !== 'placing' || !placement.value.steady || !prevFrame) return;
+    const { roi, background } = defaultRoi(prevFrame);
+    tracker = createLkTracker(roi, CAPTURE_FPS, { background });
+    times = [];
+    startedAt = Date.now();
+    evaluated30 = false;
+    elapsedSeconds.value = 0;
+    targetSeconds.value = 30;
+    extending.value = false;
+    hints.value = { shake: false, fewTracks: false, tooDark: false };
+    wakeLock.acquire();
+    phase.value = 'capturing';
+    // Clock-timed like TrackerView: timers are throttled in the background.
+    interval = setInterval(tick, 250);
+  }
+
+  function tick(): void {
+    elapsedSeconds.value = Math.min(
+      targetSeconds.value,
+      Math.floor((Date.now() - startedAt) / 1000),
+    );
+    const span = times.length > 1 ? times[times.length - 1] - times[0] : 0;
+    if (!evaluated30 && span >= 30_000) {
+      evaluated30 = true;
+      schedule(30);
+    } else if (targetSeconds.value === 60 && span >= 60_000) {
+      schedule(60);
+    } else if (Date.now() - startedAt > targetSeconds.value * 1000 + STALL_MS) {
+      verdict.value = {
+        seconds: targetSeconds.value,
+        accepted: false,
+        rate: null,
+        interval: null,
+        reasons: ['frame-rate'],
+        estimate: null,
+        deliveredFps: frameTiming(times).fps,
+      };
+      finish();
+    }
+  }
+
+  // Off the tick and the frame callback: a few ms of PCA must not delay either.
+  function schedule(seconds: CameraSeconds): void {
+    if (pendingEvaluate !== null) return;
+    pendingEvaluate = setTimeout(() => {
+      pendingEvaluate = null;
+      if (phase.value !== 'capturing') return;
+      try {
+        evaluate(seconds);
+      } catch (e) {
+        // A bug in the estimator path (e.g. an off-grid window) must not leave the camera on.
+        console.error('Camera evaluation failed', e);
+        teardown();
+        verdict.value = null;
+        phase.value = 'error';
+        error.value = 'failed';
+        if (import.meta.env.DEV) throw e;
+      }
+    }, 0);
+  }
+
+  function evaluate(seconds: CameraSeconds): void {
+    const timing = frameTiming(times);
+    const frameRate = frameRateReason(timing, seconds);
+    if (frameRate) {
+      // Continuing cannot repair a gap or low light: end now.
+      verdict.value = {
+        seconds,
+        accepted: false,
+        rate: null,
+        interval: null,
+        reasons: [frameRate],
+        estimate: null,
+        deliveredFps: timing.fps,
+      };
+      finish();
+      return;
+    }
+    const res = tracker!.result((row) => resampleRow(row, times, gridSamples(seconds)));
+    const est = estimate(res.signal, CAPTURE_FPS, res.quality);
+    const accepted = est.reasons.length === 0;
+    if (seconds === 30 && (!accepted || nearCeiling(est.quantisedBpm!, ceilings()))) {
+      // An abstain may succeed with more signal; a reading near a ceiling needs the 60 s quantum.
+      extending.value = true;
+      targetSeconds.value = 60;
+      return;
+    }
+    if (accepted && est.interval === null) throw new Error('Camera window is off the grid');
+    verdict.value = {
+      seconds,
+      accepted,
+      rate: accepted ? est.quantisedBpm : null,
+      interval: est.interval,
+      reasons: est.reasons,
+      estimate: est,
+      deliveredFps: timing.fps,
+    };
+    finish();
+  }
+
+  function teardown(): void {
+    session++;
+    if (interval !== null) clearInterval(interval);
+    interval = null;
+    if (pendingEvaluate !== null) clearTimeout(pendingEvaluate);
+    pendingEvaluate = null;
+    wakeLock.release();
+    stopFrames?.();
+    stopFrames = null;
+    listen(false);
+    for (const track of stream?.getTracks() ?? []) track.stop();
+    stream = null;
+    const video = opts.video.value;
+    if (video) video.srcObject = null;
+    tracker = null;
+    prevFrame = null;
+    times = [];
+  }
+
+  function finish(): void {
+    teardown();
+    phase.value = 'done';
+  }
+
+  function abort(kind: CameraError): void {
+    if (phase.value !== 'placing' && phase.value !== 'capturing') return;
+    teardown();
+    verdict.value = null;
+    phase.value = 'error';
+    error.value = kind;
+  }
+
+  /** Stops everything and returns to idle; also runs when the component goes away. */
+  function cancel(): void {
+    teardown();
+    phase.value = 'idle';
+    error.value = null;
+    verdict.value = null;
+  }
+  onScopeDispose(cancel);
+
+  return {
+    phase: readonly(phase),
+    error: readonly(error),
+    placement: readonly(placement),
+    hints: readonly(hints),
+    elapsedSeconds: readonly(elapsedSeconds),
+    targetSeconds: readonly(targetSeconds),
+    extending: readonly(extending),
+    verdict: readonly(verdict),
+    screenLockRefused: wakeLock.refused,
+    open,
+    begin,
+    cancel,
+  };
+}
