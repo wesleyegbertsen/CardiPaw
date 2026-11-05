@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, useId } from 'vue';
+import { ref, computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, useId, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { returnTo } from '../router/returnTo';
 import { usePetsStore } from '../stores/pets';
@@ -9,11 +9,15 @@ import { useHaptics } from '../composables/useHaptics';
 import { useTrackerPrefs } from '../composables/useTrackerPrefs';
 import { useWakeLock } from '../composables/useWakeLock';
 import { useOnboarding } from '../composables/useOnboarding';
+import { isCameraSupported, useCameraOptIn } from '../composables/useCameraOptIn';
+import type { CameraResult } from '../composables/useCameraBreath';
 import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
 import OnboardingModal from '../components/OnboardingModal.vue';
 import RestStateToggle from '../components/RestStateToggle.vue';
 import SlideToggle from '../components/SlideToggle.vue';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
+// Lazy: the camera's signal code stays out of the main chunk until the Camera pill is tapped.
+const CameraCapture = defineAsyncComponent(() => import('../components/CameraCapture.vue'));
 import { MEASUREMENT_DURATIONS, breathsPerMinute, type MeasurementSeconds } from '../utils/measurement';
 
 const route = useRoute();
@@ -42,9 +46,22 @@ function closeOnboarding() {
 }
 
 type Phase = 'idle' | 'running' | 'done';
-type Mode = 'guided' | 'manual';
+type Mode = 'guided' | 'manual' | 'camera';
 const phase = ref<Phase>('idle');
 const mode = ref<Mode>('guided');
+// Experimental: the Camera pill needs the Settings opt-in and getUserMedia.
+const { enabled: cameraEnabled } = useCameraOptIn();
+const modes = computed<Mode[]>(() =>
+  cameraEnabled.value && isCameraSupported() ? ['guided', 'manual', 'camera'] : ['guided', 'manual'],
+);
+// The camera's suggestion; saved only when the owner confirms it.
+const cameraResult = ref<CameraResult | null>(null);
+// Measure again remounts the capture with the camera opening by itself.
+const cameraReopen = ref(false);
+// Placing or capturing: the mode bar would cover the preview.
+const cameraBusy = ref(false);
+const saveChoice = ref<'camera' | 'taps'>('camera');
+const saveChoiceLabelId = useId();
 // Length of the current measurement: the pet's chosen length, fixed when it starts.
 const runSeconds = ref<MeasurementSeconds>(durationSeconds.value);
 const timeLeft = ref<number>(durationSeconds.value);
@@ -75,7 +92,23 @@ function switchMode(next: Mode) {
   notes.value = '';
   manualRate.value = 0;
   saveError.value = false;
+  cameraResult.value = null;
+  cameraReopen.value = false;
+  cameraBusy.value = false;
+  saveChoice.value = 'camera';
 }
+
+function measureAgain() {
+  cameraResult.value = null;
+  cameraReopen.value = true;
+  saveError.value = false;
+  saveChoice.value = 'camera';
+}
+
+// Like the guided done state: park focus on the suggestion so it is read out.
+watch(cameraResult, (r) => {
+  if (r) nextTick(() => resultRef.value?.focus());
+});
 
 const resultRate = computed(() => breathsPerMinute(clickCount.value, runSeconds.value));
 
@@ -156,16 +189,23 @@ async function saveReading() {
   saving.value = true;
   saveError.value = false;
   try {
-    const isManual = mode.value === 'manual';
+    const source = mode.value;
+    const cam = cameraResult.value;
+    if (source === 'camera' && !cam) return;
+    // A tapped count saved from the camera screen is an ordinary guided reading over the camera's window.
+    const useTaps = source === 'camera' && cam!.taps !== null && saveChoice.value === 'taps';
     await readingsStore.addReading({
       petId,
       date: new Date().toISOString(),
-      rate: isManual ? manualRate.value : resultRate.value,
-      clickCount: isManual ? 0 : clickCount.value,
+      rate:
+        source === 'manual' ? manualRate.value
+        : source === 'camera' ? (useTaps ? breathsPerMinute(cam!.taps!, cam!.seconds) : cam!.rate)
+        : resultRate.value,
+      clickCount: source === 'manual' ? 0 : source === 'camera' ? (useTaps ? cam!.taps! : 0) : clickCount.value,
       restState: restState.value,
       notes: notes.value || undefined,
-      source: isManual ? 'manual' : undefined,
-      durationSeconds: isManual ? undefined : runSeconds.value,
+      source: source === 'manual' ? 'manual' : source === 'camera' && !useTaps ? 'camera' : undefined,
+      durationSeconds: source === 'manual' ? undefined : source === 'camera' ? cam!.seconds : runSeconds.value,
     });
     returnTo(router, { name: 'pet', params: { id: petId } });
   } catch (e) {
@@ -243,11 +283,21 @@ onUnmounted(() => {
     <!-- Needs the pet: its thresholds rate a manual entry and saving files the reading under it. -->
     <div v-else-if="pet" class="tracker-main">
     <!-- Mode toggle: absolutely positioned so it overlays the body without affecting its height -->
-    <div v-if="phase === 'idle'" class="mode-toggle-bar">
+    <div v-if="phase === 'idle' && !cameraBusy" class="mode-toggle-bar">
       <div class="mode-toggle" role="group" :aria-label="$t('tracker.modeLabel')">
-        <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }" aria-hidden="true"></div>
-        <button class="mode-pill" :class="{ active: !isManualMode }" :aria-pressed="!isManualMode" @click="switchMode('guided')">{{ $t('tracker.guided') }}</button>
-        <button class="mode-pill" :class="{ active: isManualMode }" :aria-pressed="isManualMode" @click="switchMode('manual')">{{ $t('tracker.manual') }}</button>
+        <div
+          class="mode-toggle-indicator"
+          :style="{ '--count': modes.length, '--index': modes.indexOf(mode) }"
+          aria-hidden="true"
+        ></div>
+        <button
+          v-for="m in modes"
+          :key="m"
+          class="mode-pill"
+          :class="{ active: mode === m }"
+          :aria-pressed="mode === m"
+          @click="switchMode(m)"
+        >{{ $t('tracker.' + m) }}</button>
       </div>
     </div>
 
@@ -286,6 +336,68 @@ onUnmounted(() => {
         </button>
         <button class="btn-discard" @click="discard">{{ $t('common.discard') }}</button>
       </div>
+    </div>
+
+    <!-- Camera (experimental): the capture, then its suggestion as a card the owner confirms -->
+    <div v-else-if="mode === 'camera'" class="tracker-body done-body camera-body" :class="{ 'with-bar': !cameraBusy }">
+      <CameraCapture
+        v-if="!cameraResult"
+        :pet="pet"
+        :auto-open="cameraReopen"
+        @result="cameraResult = $event"
+        @tap-instead="switchMode('guided')"
+        @busy="cameraBusy = $event"
+      />
+      <template v-else>
+        <span class="experimental-chip">{{ $t('camera.experimental') }}</span>
+        <p class="result-title">{{ $t('camera.resultTitle') }}</p>
+        <div ref="resultRef" class="result" tabindex="-1" aria-live="polite" aria-atomic="true">
+          <div class="result-number">{{ cameraResult.rate }}</div>
+          <div class="result-label">{{ $t('common.breathsPerMin') }}</div>
+        </div>
+        <span class="rate-badge" :class="getRateStatus(cameraResult.rate, pet).cssClass">
+          {{ $t('status.' + getRateStatus(cameraResult.rate, pet).cssClass) }}
+        </span>
+        <p class="result-note">
+          {{ $t('camera.resultNote', { seconds: cameraResult.seconds, lo: cameraResult.interval[0], hi: cameraResult.interval[1] }) }}
+        </p>
+        <div v-if="cameraResult.taps !== null" class="save-choice" role="radiogroup" :aria-labelledby="saveChoiceLabelId">
+          <span :id="saveChoiceLabelId" class="toggle-label">
+            {{ $t('camera.yourCount', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}
+          </span>
+          <button
+            type="button"
+            role="radio"
+            :aria-checked="saveChoice === 'camera'"
+            class="length-pill"
+            :class="{ active: saveChoice === 'camera' }"
+            @click="saveChoice = 'camera'"
+          >{{ $t('camera.saveCamera') }}</button>
+          <button
+            type="button"
+            role="radio"
+            :aria-checked="saveChoice === 'taps'"
+            class="length-pill"
+            :class="{ active: saveChoice === 'taps' }"
+            @click="saveChoice = 'taps'"
+          >{{ $t('camera.saveTaps', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}</button>
+        </div>
+
+        <RestStateToggle v-model="restState" />
+
+        <div class="notes-wrapper">
+          <RichTextEditor v-model="notes" :label="$t('reading.notesLabel')" />
+        </div>
+
+        <div class="done-actions">
+          <p v-if="saveError" class="save-error" role="alert">{{ $t('tracker.saveError') }}</p>
+          <button class="btn-save" @click="saveReading" :disabled="saving">
+            {{ saving ? $t('common.saving') : $t('camera.confirm') }}
+          </button>
+          <button class="btn-retry" @click="measureAgain">{{ $t('camera.measureAgain') }}</button>
+          <button class="btn-discard" @click="discard">{{ $t('common.discard') }}</button>
+        </div>
+      </template>
     </div>
 
     <!-- Guided: idle and running share one body so the heart button (and keyboard focus on it) persists -->
@@ -787,20 +899,18 @@ onUnmounted(() => {
   gap: 0;
 }
 
+/* Sized and placed by the pill count and the active index (set inline), for any number of pills */
 .mode-toggle-indicator {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: calc(50% - 3px);
+  width: calc((100% - 6px) / var(--count));
   height: calc(100% - 6px);
   background: var(--color-primary);
   border-radius: var(--radius-full);
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(calc(var(--index) * 100%));
   pointer-events: none;
-}
-
-.mode-toggle-indicator.is-manual {
-  transform: translateX(100%);
 }
 
 .mode-pill {
@@ -826,6 +936,29 @@ onUnmounted(() => {
 .manual-body {
   padding-top: 88px; /* bar height + breathing room — centers content in remaining space */
   overflow-y: auto;
+}
+
+/* Camera body: the bar is gone while placing/capturing, so the preview gets the top of the screen */
+.camera-body {
+  overflow-y: auto;
+}
+
+.camera-body.with-bar {
+  padding-top: 88px;
+}
+
+.result-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.save-choice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
 
 /* Manual entry form */

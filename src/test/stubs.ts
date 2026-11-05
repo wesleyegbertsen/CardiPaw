@@ -34,6 +34,43 @@ export function lazyEditorStubModule() {
   };
 }
 
+/** What the CameraCapture stub emits on `.stub-result`; a test sets it before clicking. */
+export const cameraStub = {
+  nextResult: { rate: 24, seconds: 30 as 30 | 60, interval: [23, 25] as [number, number], taps: null as number | null },
+};
+
+/**
+ * Module factory for `../components/CameraCapture.vue`, which TrackerView loads lazily: the
+ * camera is covered by the component's own tests, and here buttons stand in for its outcomes.
+ *
+ *   vi.mock('../components/CameraCapture.vue', async () =>
+ *     (await import('../test/stubs')).cameraCaptureStubModule());
+ */
+export function cameraCaptureStubModule() {
+  return {
+    // defineAsyncComponent unwraps `.default` only from an ES module; without this flag Vue
+    // would treat the mock's namespace as the component and trip Vitest's strict mock proxy.
+    __esModule: true,
+    default: defineComponent({
+      name: 'CameraCaptureStub',
+      props: {
+        pet: { type: Object, required: true },
+        autoOpen: { type: Boolean, default: false },
+      },
+      emits: ['result', 'tapInstead', 'busy'],
+      setup(props, { emit }) {
+        return () =>
+          h('div', { class: 'camera-stub', 'data-auto-open': String(props.autoOpen) }, [
+            h('button', { class: 'stub-result', onClick: () => emit('result', { ...cameraStub.nextResult }) }),
+            h('button', { class: 'stub-tap-instead', onClick: () => emit('tapInstead') }),
+            h('button', { class: 'stub-busy', onClick: () => emit('busy', true) }),
+            h('button', { class: 'stub-idle', onClick: () => emit('busy', false) }),
+          ]);
+      },
+    }),
+  };
+}
+
 /**
  * Module factory for `vue-chartjs`: a `Line` that renders a bare canvas and keeps its
  * props, so tests can read what would be drawn without Chart.js needing a canvas:

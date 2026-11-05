@@ -15,6 +15,7 @@ import de from '../i18n/locales/de.json';
 import ja from '../i18n/locales/ja.json';
 import { Blank } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
+import { cameraStub } from '../test/stubs';
 import * as db from '../services/db';
 import type { Pet, Reading } from '../types';
 import type { MeasurementSeconds } from '../utils/measurement';
@@ -33,6 +34,24 @@ vi.mock('../composables/useOnboarding', async () => {
 // TipTap needs a real layout engine; a textarea is enough to check the notes reach the save.
 vi.mock('../components/LazyRichTextEditor', async () =>
   (await import('../test/stubs')).lazyEditorStubModule(),
+);
+// The camera opt-in keeps a module-level ref; a mock keeps tests order-independent.
+const camera = vi.hoisted(() => ({
+  enabled: undefined as unknown as { value: boolean },
+  supported: true,
+  setEnabled: vi.fn(),
+}));
+vi.mock('../composables/useCameraOptIn', async () => {
+  const { ref } = await import('vue');
+  camera.enabled = ref(false);
+  return {
+    useCameraOptIn: () => ({ enabled: camera.enabled, setEnabled: camera.setEnabled }),
+    isCameraSupported: () => camera.supported,
+  };
+});
+// Loaded through defineAsyncComponent, so the module is mocked rather than the component stubbed.
+vi.mock('../components/CameraCapture.vue', async () =>
+  (await import('../test/stubs')).cameraCaptureStubModule(),
 );
 
 const pet = makePet();
@@ -92,12 +111,196 @@ describe('TrackerView', () => {
     // Hoisted spies outlive each test, so clear their calls to keep tests order-independent.
     for (const fn of [...Object.values(audio), ...Object.values(haptics)]) fn.mockClear();
     localStorage.clear();
+    camera.enabled.value = false;
+    camera.supported = true;
+    cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: null };
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2024-03-15T12:00:00.000Z'));
   });
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  describe('camera mode', () => {
+    const pills = (wrapper: VueWrapper) => wrapper.findAll('.mode-pill').map((p) => p.text());
+    async function mountCamera() {
+      camera.enabled.value = true;
+      const mounted = await mountTracker();
+      await mounted.wrapper.findAll('.mode-pill')[2].trigger('click');
+      await flushPromises(); // the async component resolves
+      return mounted;
+    }
+    const suggest = async (wrapper: VueWrapper) => {
+      await wrapper.get('.stub-result').trigger('click');
+      await flushPromises();
+    };
+
+    it('offers the Camera pill only with the opt-in on and getUserMedia present', async () => {
+      expect(pills((await mountTracker()).wrapper)).toEqual(['Guided', 'Manual']);
+      camera.enabled.value = true;
+      camera.supported = false;
+      expect(pills((await mountTracker()).wrapper)).toEqual(['Guided', 'Manual']);
+      camera.supported = true;
+      expect(pills((await mountTracker()).wrapper)).toEqual(['Guided', 'Manual', 'Camera']);
+    });
+
+    it('moves the indicator by index and mounts the capture without opening the camera', async () => {
+      const { wrapper } = await mountCamera();
+      const indicator = wrapper.get<HTMLElement>('.mode-toggle-indicator').element.style;
+      expect(indicator.getPropertyValue('--count')).toBe('3');
+      expect(indicator.getPropertyValue('--index')).toBe('2');
+      expect(wrapper.findAll('.mode-pill').map((p) => p.attributes('aria-pressed'))).toEqual([
+        'false',
+        'false',
+        'true',
+      ]);
+      expect(wrapper.get('.camera-stub').attributes('data-auto-open')).toBe('false');
+      expect(wrapper.find('.heart-btn').exists()).toBe(false);
+    });
+
+    it('shows a suggested count as a card and saves nothing until Confirm', async () => {
+      const { wrapper, addReading } = await mountCamera();
+      await suggest(wrapper);
+      expect(wrapper.find('.camera-stub').exists()).toBe(false);
+      expect(wrapper.get('.experimental-chip').text()).toBe('Experimental');
+      expect(wrapper.get('.result-title').text()).toBe('Suggested count');
+      expect(wrapper.get('.result-number').text()).toBe('24');
+      expect(wrapper.get('.rate-badge').classes()).toContain('normal');
+      expect(wrapper.get('.result-note').text()).toBe(
+        'From the camera over 30 seconds: between 23 and 25 breaths/min. Check it against your pet before saving.',
+      );
+      expect(wrapper.find('.save-choice').exists()).toBe(false);
+      expect(document.activeElement).toBe(wrapper.get('.result').element);
+      expect(addReading).not.toHaveBeenCalled();
+
+      await wrapper.findAll('.rest-btn')[1].trigger('click');
+      await wrapper.get('.notes-stub').setValue('<p>calm</p>');
+      expect(wrapper.get('.btn-save').text()).toBe('Confirm and save');
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledExactlyOnceWith({
+        petId: pet.id,
+        date: '2024-03-15T12:00:00.000Z',
+        rate: 24,
+        clickCount: 0,
+        restState: 'sleeping',
+        notes: '<p>calm</p>',
+        source: 'camera',
+        durationSeconds: 30,
+      });
+      expect(router.currentRoute.value.name).toBe('pet');
+    });
+
+    it('rates the suggestion against the pet’s own ceilings and keeps the 60 s length', async () => {
+      cameraStub.nextResult = { rate: 32, seconds: 60, interval: [31, 33], taps: null };
+      const { wrapper, addReading } = await mountCamera();
+      await suggest(wrapper);
+      expect(wrapper.get('.rate-badge').classes()).toContain('warning');
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledWith(
+        expect.objectContaining({ rate: 32, source: 'camera', durationSeconds: 60 }),
+      );
+    });
+
+    it('lets the owner save their own taps as a guided reading instead', async () => {
+      cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: 13 };
+      const { wrapper, addReading } = await mountCamera();
+      await suggest(wrapper);
+      const group = wrapper.get('.save-choice');
+      expect(group.attributes('role')).toBe('radiogroup');
+      const labelId = group.attributes('aria-labelledby');
+      expect(labelId && document.getElementById(labelId)?.textContent).toBe(
+        'Your count: 26 breaths/min',
+      );
+      const [cameraChoice, tapsChoice] = group.findAll('[role="radio"]');
+      expect(cameraChoice.text()).toBe('Save the camera count');
+      expect(tapsChoice.text()).toBe('Save my count (26)');
+      expect(cameraChoice.attributes('aria-checked')).toBe('true');
+      await tapsChoice.trigger('click');
+      expect(tapsChoice.attributes('aria-checked')).toBe('true');
+      expect(cameraChoice.attributes('aria-checked')).toBe('false');
+
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ rate: 26, clickCount: 13, source: undefined, durationSeconds: 30 }),
+      );
+      expect(addReading.mock.calls[0][0].source).toBeUndefined();
+    });
+
+    it('measures again by remounting the capture with the camera opening by itself', async () => {
+      cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: 13 };
+      const { wrapper, addReading } = await mountCamera();
+      await suggest(wrapper);
+      await wrapper.findAll('[role="radio"]')[1].trigger('click');
+      await wrapper.get('.btn-retry').trigger('click');
+      await flushPromises();
+      expect(wrapper.find('.result-number').exists()).toBe(false);
+      expect(wrapper.get('.camera-stub').attributes('data-auto-open')).toBe('true');
+
+      // A second suggestion starts from the camera choice again.
+      await suggest(wrapper);
+      expect(wrapper.findAll('[role="radio"]')[0].attributes('aria-checked')).toBe('true');
+      expect(addReading).not.toHaveBeenCalled();
+    });
+
+    it('discards a suggestion and returns to the pet', async () => {
+      const { wrapper, addReading, replace } = await mountCamera();
+      await suggest(wrapper);
+      await wrapper.get('.btn-discard').trigger('click');
+      expect(addReading).not.toHaveBeenCalled();
+      expect(replace).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
+    });
+
+    it('reports a failed save and keeps the suggestion', async () => {
+      const { wrapper, addReading } = await mountCamera();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      addReading.mockRejectedValueOnce(new Error('quota exceeded'));
+      await suggest(wrapper);
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(wrapper.get('[role="alert"]').text()).toBe(
+        'The reading could not be saved. Please try again.',
+      );
+      expect(wrapper.get('.result-number').text()).toBe('24');
+      expect(router.currentRoute.value.name).toBe('tracker');
+    });
+
+    it('switches to guided on Count by tapping instead', async () => {
+      const { wrapper } = await mountCamera();
+      await wrapper.get('.stub-tap-instead').trigger('click');
+      expect(wrapper.find('.camera-stub').exists()).toBe(false);
+      expect(wrapper.find('.heart-btn').exists()).toBe(true);
+      expect(wrapper.findAll('.mode-pill').map((p) => p.attributes('aria-pressed'))).toEqual([
+        'true',
+        'false',
+        'false',
+      ]);
+    });
+
+    it('hides the mode bar while the camera is placing or capturing', async () => {
+      const { wrapper } = await mountCamera();
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+      await wrapper.get('.stub-busy').trigger('click');
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(false);
+      await wrapper.get('.stub-idle').trigger('click');
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+    });
+
+    it('leaves the capture behind when switching back to guided, even while busy', async () => {
+      const { wrapper } = await mountCamera();
+      await wrapper.get('.stub-busy').trigger('click');
+      await wrapper.get('.stub-tap-instead').trigger('click');
+      expect(wrapper.find('.camera-stub').exists()).toBe(false);
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+      await wrapper.findAll('.mode-pill')[2].trigger('click');
+      await flushPromises();
+      expect(wrapper.find('.camera-stub').exists()).toBe(true);
+      await wrapper.findAll('.mode-pill')[0].trigger('click');
+      expect(wrapper.find('.camera-stub').exists()).toBe(false);
+    });
   });
 
   it('counts taps for 30 seconds and shows breaths per minute', async () => {
