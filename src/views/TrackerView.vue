@@ -396,12 +396,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Full screen sideways: dark like a camera app, whatever the app theme -->
-  <div
-    class="tracker"
-    :class="[`phase-${phase}`, { immersive }]"
-    :data-theme="immersive ? 'dark' : undefined"
-  >
+  <div class="tracker" :class="[`phase-${phase}`, { immersive }]">
     <header class="tracker-header">
       <button class="back-btn" @click="goBack" :aria-label="$t('common.back')">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
@@ -484,7 +479,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Camera (experimental): the capture, then its suggestion as a card the owner confirms -->
-    <div v-else-if="mode === 'camera'" class="tracker-body done-body camera-body" :class="{ 'with-bar': !cameraCapturing && !cameraResult }">
+    <div v-else-if="mode === 'camera'" class="tracker-body done-body camera-body" :class="{ 'with-bar': !cameraCapturing && !cameraResult, live: cameraBusy && !cameraResult }">
       <CameraCapture
         v-if="!cameraResult"
         :pet="pet"
@@ -1103,6 +1098,18 @@ onUnmounted(() => {
   padding-top: 88px;
 }
 
+/* The live preview (placing and capturing) is the tallest step: 12 px under the bar (64 px) or
+   the header and above the nav, and placing from the top, so it fits a 720 px tall phone */
+.camera-body.live {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.camera-body.live.with-bar {
+  padding-top: 76px;
+  justify-content: flex-start;
+}
+
 .result-title {
   font-size: 15px;
   font-weight: 600;
@@ -1225,9 +1232,6 @@ onUnmounted(() => {
   column-gap: 16px;
   padding: calc(var(--safe-top) + var(--immersive-pad)) calc(var(--safe-right) + 12px)
     calc(var(--safe-bottom) + var(--immersive-pad)) calc(var(--safe-left) + 12px);
-  background: #000;
-  /* body resolved its colour with the app theme; text here inherits this one instead */
-  color: var(--color-text);
 }
 
 .immersive .tracker-main,

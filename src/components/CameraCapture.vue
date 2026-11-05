@@ -190,7 +190,14 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
 </script>
 
 <template>
-  <div class="camera-capture" :class="{ landscape }">
+  <div
+    class="camera-capture"
+    :class="{
+      landscape,
+      placing: cam.phase.value === 'placing',
+      'counting-along': capturing && countAlong,
+    }"
+  >
     <!-- Upright both regions give way (display: contents) and the layout is one column -->
     <div class="capture-preview">
       <div v-show="busy" class="preview" :class="{ small: cam.phase.value === 'capturing' }">
@@ -716,36 +723,48 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
   min-width: 0;
 }
 
-/* Placing repeats the notes under a long instruction: as tight as the explanation, with Start
-   and Count along on one row, so Start and the switch fit a 412 px tall phone without scrolling */
+/* Placing repeats the notes under a long instruction and under the preview: tight, a size
+   smaller and Start and Count along on one row, so Start and the switch fit without scrolling,
+   a 412 px tall phone sideways and a 720 px tall one upright (the gap is the root's upright,
+   the panel's sideways) */
+.camera-capture.placing {
+  gap: 8px;
+}
+
+/* Counting along adds its hint, the heart and the tap count under the ring: as tight, so the
+   tap count stays above the nav on a 720 px tall phone */
+.camera-capture.counting-along {
+  gap: 8px;
+}
+
 .landscape .capture-panel.placing {
   gap: 6px;
 }
 
-.landscape .placing .body-text {
+.placing .body-text {
   font-size: 13px;
   line-height: 1.4;
 }
 
-.landscape .placing .privacy-note,
-.landscape .placing .light-note {
+.placing .privacy-note,
+.placing .light-note {
   font-size: 12px;
   line-height: 1.4;
 }
 
-.landscape .placing .actions {
+.placing .actions {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
 }
 
-.landscape .placing .actions > .btn-save {
+.placing .actions > .btn-save {
   flex: 1 1 0;
   min-width: 0;
 }
 
-.landscape .placing .actions > .hint {
+.placing .actions > .hint {
   flex-basis: 100%;
 }
 

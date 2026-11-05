@@ -557,11 +557,12 @@ describe('TrackerView', () => {
       const isImmersive = (wrapper: VueWrapper) => tracker(wrapper).classes().includes('immersive');
       const barCalls = () => [immersiveMode.enter.mock.calls.length, immersiveMode.exit.mock.calls.length];
 
-      it('fills the screen in camera mode on a landscape touch screen, in the dark', async () => {
+      it('fills the screen in camera mode on a landscape touch screen, in the app theme', async () => {
         fakeMatchMedia(true);
         const { wrapper } = await mountCamera();
         expect(isImmersive(wrapper)).toBe(true);
-        expect(tracker(wrapper).attributes('data-theme')).toBe('dark');
+        // No theme of its own: light or dark like every other screen
+        expect(tracker(wrapper).attributes('data-theme')).toBeUndefined();
         expect(wrapper.get('.camera-stub').attributes('data-landscape')).toBe('true');
       });
 
