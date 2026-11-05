@@ -413,6 +413,86 @@ describe('useCameraBreath', () => {
     expect(s.track.stop).toHaveBeenCalledOnce();
   });
 
+  it('keeps counting through a height-only resize after a rotation while placing', async () => {
+    const s = setup(FLAT);
+    await s.cam.open();
+    const width = window.innerWidth;
+    window.innerWidth = width + 300; // rotated to landscape to frame the pet
+    window.dispatchEvent(new Event('resize'));
+    s.feed(70);
+    expect(s.cam.placement.value.steady).toBe(true);
+    s.cam.begin();
+    expect(s.cam.phase.value).toBe('capturing');
+    window.dispatchEvent(new Event('resize')); // the URL bar collapsed: same width as at Start
+    expect(s.cam.phase.value).toBe('capturing');
+    window.innerWidth = width;
+    window.dispatchEvent(new Event('resize')); // rotated back: a real interruption
+    expect(s.cam.phase.value).toBe('error');
+    expect(s.cam.error.value).toBe('interrupted');
+  });
+
+  it('stops a stream granted while the page is hidden and reports interrupted', async () => {
+    const s = setup();
+    const prompt = deferred<MediaStream>();
+    s.getUserMedia.mockReturnValueOnce(prompt.promise);
+    const opening = s.cam.open();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    prompt.resolve(streamOf(s.track));
+    await opening;
+    expect(s.cam.phase.value).toBe('error');
+    expect(s.cam.error.value).toBe('interrupted');
+    expect(s.track.stop).toHaveBeenCalledOnce();
+    expect(s.frameSource).not.toHaveBeenCalled();
+    expect(s.video.value!.srcObject).toBeNull();
+  });
+
+  it('stops the camera when the page is hidden by the time the preview plays', async () => {
+    const s = setup();
+    const playing = deferred<void>();
+    (s.video.value!.play as ReturnType<typeof vi.fn>).mockReturnValueOnce(playing.promise);
+    const opening = s.cam.open();
+    await flushPromises();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    playing.resolve();
+    await opening;
+    expect(s.cam.phase.value).toBe('error');
+    expect(s.cam.error.value).toBe('interrupted');
+    expect(s.track.stop).toHaveBeenCalledOnce();
+    expect(s.frameSource).not.toHaveBeenCalled();
+  });
+
+  it('ignores a play() rejection that follows cancel()', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const s = setup();
+    const playing = deferred<void>();
+    (s.video.value!.play as ReturnType<typeof vi.fn>).mockReturnValueOnce(playing.promise);
+    const opening = s.cam.open();
+    await flushPromises();
+    s.cam.cancel();
+    playing.reject(new DOMException('srcObject was cleared', 'AbortError'));
+    await opening;
+    expect(s.cam.phase.value).toBe('idle');
+    expect(s.cam.error.value).toBeNull();
+    expect(warn).not.toHaveBeenCalled();
+    expect(s.track.stop).toHaveBeenCalledOnce();
+  });
+
+  it('gives up on a preview that never plays after 10 s, as busy, with the track stopped', async () => {
+    const s = setup();
+    (s.video.value!.play as ReturnType<typeof vi.fn>).mockReturnValueOnce(new Promise(() => {}));
+    void s.cam.open();
+    await flushPromises();
+    expect(s.cam.phase.value).toBe('requesting');
+    vi.advanceTimersByTime(9_999);
+    expect(s.cam.phase.value).toBe('requesting');
+    vi.advanceTimersByTime(1);
+    expect(s.cam.phase.value).toBe('error');
+    expect(s.cam.error.value).toBe('busy');
+    expect(s.track.stop).toHaveBeenCalledOnce();
+    expect(s.video.value!.srcObject).toBeNull();
+    expect(s.frameSource).not.toHaveBeenCalled();
+  });
+
   it('resets steadiness on a rotation while placing', async () => {
     const s = setup(FLAT);
     await s.cam.open();

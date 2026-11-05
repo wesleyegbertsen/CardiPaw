@@ -65,6 +65,8 @@ const HINT_EVERY_FRAMES = 30;
 // The window is measured on the frame timeline (first captured frame to last), so a late first
 // frame cannot shorten it; the wall clock only catches a camera that stopped delivering.
 const STALL_MS = 3000;
+// A camera that opens but never delivers a frame would leave the spinner up for good.
+const PLAY_TIMEOUT_MS = 10_000;
 
 /**
  * The camera breath count: owns the stream, the preview video, the frame reader, the tracker
@@ -95,6 +97,7 @@ export function useCameraBreath(opts: CameraBreathOptions) {
   let evaluatedAfterMs: number | null = null;
   let interval: ReturnType<typeof setInterval> | null = null;
   let pendingEvaluate: ReturnType<typeof setTimeout> | null = null;
+  let playTimer: ReturnType<typeof setTimeout> | null = null;
   let prevFrame: Frame | null = null;
   let anchor: Frame | null = null;
   let placingFrames = 0;
@@ -112,19 +115,28 @@ export function useCameraBreath(opts: CameraBreathOptions) {
     ];
   }
 
+  // A function, not an inline read: TypeScript would keep the first check's narrowing across the awaits.
+  const pageHidden = () => document.visibilityState === 'hidden';
+
   function onVisibility() {
-    if (document.visibilityState === 'hidden') abort('interrupted');
+    if (pageHidden()) abort('interrupted');
   }
   function onResize() {
     // Chrome for Android fires resize when the URL bar collapses (height only); only a width
     // change (a rotation) moves the box the owner framed.
     if (window.innerWidth === widthAtStart) return;
     if (phase.value === 'capturing') abort('interrupted');
-    else steadySince = null;
+    else framingChanged();
   }
   function onOrientation() {
     if (phase.value === 'capturing') abort('interrupted');
-    else steadySince = null;
+    else framingChanged();
+  }
+  // A rotation while placing: the owner frames again, and the count that follows is compared
+  // against the width it starts with, not the one the camera opened with.
+  function framingChanged() {
+    steadySince = null;
+    widthAtStart = window.innerWidth;
   }
   function onTrackEnded() {
     abort('interrupted');
@@ -176,8 +188,21 @@ export function useCameraBreath(opts: CameraBreathOptions) {
       for (const track of granted.getTracks()) track.stop();
       return;
     }
+    if (pageHidden()) {
+      // Granted after the owner left (Home while the prompt was up): never start the camera unseen.
+      for (const track of granted.getTracks()) track.stop();
+      phase.value = 'error';
+      error.value = 'interrupted';
+      return;
+    }
     stream = granted;
     const video = opts.video.value;
+    playTimer = setTimeout(() => {
+      playTimer = null;
+      teardown();
+      phase.value = 'error';
+      error.value = 'busy';
+    }, PLAY_TIMEOUT_MS);
     try {
       if (!video) throw new Error('No preview element');
       readFrame = deps.readFrame ?? createFrameReader();
@@ -185,10 +210,23 @@ export function useCameraBreath(opts: CameraBreathOptions) {
       await video.play();
       if (mine !== session) return; // torn down while play() was pending; the tracks are stopped
     } catch (e) {
+      if (mine !== session) return; // the teardown itself rejects a pending play()
       console.warn('Camera preview failed', e);
       teardown();
       phase.value = 'error';
       error.value = 'failed';
+      return;
+    } finally {
+      // A teardown meanwhile (cancel, the timer itself) has cleared it and may own a newer one.
+      if (mine === session && playTimer !== null) {
+        clearTimeout(playTimer);
+        playTimer = null;
+      }
+    }
+    if (pageHidden()) {
+      teardown();
+      phase.value = 'error';
+      error.value = 'interrupted';
       return;
     }
     prevFrame = null;
@@ -284,9 +322,9 @@ export function useCameraBreath(opts: CameraBreathOptions) {
     if (pendingEvaluate !== null) return;
     pendingEvaluate = setTimeout(() => {
       pendingEvaluate = null;
-      if (phase.value !== 'capturing') return;
+      if (phase.value !== 'capturing' || !tracker) return;
       try {
-        evaluate(seconds);
+        evaluate(seconds, tracker);
       } catch (e) {
         // A bug in the estimator path (e.g. an off-grid window) must not leave the camera on.
         console.error('Camera evaluation failed', e);
@@ -299,7 +337,7 @@ export function useCameraBreath(opts: CameraBreathOptions) {
     }, 0);
   }
 
-  function evaluate(seconds: CameraSeconds): void {
+  function evaluate(seconds: CameraSeconds, lk: LkTracker): void {
     const startedMs = performance.now();
     const lastFrameMs = times[times.length - 1];
     const timing = frameTiming(times, evaluatedAfterMs ?? undefined);
@@ -318,25 +356,28 @@ export function useCameraBreath(opts: CameraBreathOptions) {
       finish();
       return;
     }
-    const res = tracker!.result((row) => resampleRow(row, times, gridSamples(seconds)));
+    const res = lk.result((row) => resampleRow(row, times, gridSamples(seconds)));
     const est = estimate(res.signal, CAPTURE_FPS, res.quality);
     const accepted = est.reasons.length === 0;
     // How long the evaluation held the main thread, to read on a device against the 100 ms gap.
     if (import.meta.env.DEV) {
       console.debug('camera evaluation', { seconds, ms: performance.now() - startedMs });
     }
-    if (seconds === 30 && (!accepted || nearCeiling(est.quantisedBpm!, ceilings()))) {
+    if (accepted && (est.quantisedBpm === null || est.interval === null)) {
+      throw new Error('Camera window is off the grid');
+    }
+    const rate = accepted ? est.quantisedBpm : null; // null exactly when the estimator abstained
+    if (seconds === 30 && (rate === null || nearCeiling(rate, ceilings()))) {
       // An abstain may succeed with more signal; a reading near a ceiling needs the 60 s quantum.
       extending.value = true;
       targetSeconds.value = 60;
       evaluatedAfterMs = lastFrameMs;
       return;
     }
-    if (accepted && est.interval === null) throw new Error('Camera window is off the grid');
     verdict.value = {
       seconds,
       accepted,
-      rate: accepted ? est.quantisedBpm : null,
+      rate,
       interval: est.interval,
       reasons: est.reasons,
       estimate: est,
@@ -351,6 +392,8 @@ export function useCameraBreath(opts: CameraBreathOptions) {
     interval = null;
     if (pendingEvaluate !== null) clearTimeout(pendingEvaluate);
     pendingEvaluate = null;
+    if (playTimer !== null) clearTimeout(playTimer);
+    playTimer = null;
     wakeLock.release();
     stopFrames?.();
     stopFrames = null;
