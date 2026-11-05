@@ -36,11 +36,32 @@ export interface FrameTiming {
   maxGapMs: number; // largest consecutive difference; 0 below 2 frames
 }
 
-export function frameTiming(timesMs: ArrayLike<number>): FrameTiming {
+/**
+ * The delivered rate, the span and the largest gap of `timesMs`. With `exemptGapAfterMs`, the
+ * one gap that starts at the first frame with that timestamp is left out of `maxGapMs`: the
+ * 30 s evaluation blocks the main thread for up to ~100 ms on a slow WebView and
+ * requestVideoFrameCallback coalesces the frames presented meanwhile into one late callback,
+ * so the resampler interpolates across that single known hold, the honest error to accept
+ * rather than ending every extended count with 'frame-rate'. Every other gap counts, and
+ * `fps` and `spanMs` still see every frame.
+ */
+export function frameTiming(timesMs: ArrayLike<number>, exemptGapAfterMs?: number): FrameTiming {
   const count = timesMs.length;
   if (count < 2) return { count, spanMs: 0, fps: null, maxGapMs: 0 };
+  let exemptAt = -1;
+  if (exemptGapAfterMs !== undefined) {
+    for (let i = 0; i < count - 1; i++) {
+      if (timesMs[i] === exemptGapAfterMs) {
+        exemptAt = i;
+        break;
+      }
+    }
+  }
   let maxGapMs = 0;
-  for (let i = 1; i < count; i++) maxGapMs = Math.max(maxGapMs, timesMs[i] - timesMs[i - 1]);
+  for (let i = 1; i < count; i++) {
+    if (i - 1 === exemptAt) continue;
+    maxGapMs = Math.max(maxGapMs, timesMs[i] - timesMs[i - 1]);
+  }
   const spanMs = timesMs[count - 1] - timesMs[0];
   return { count, spanMs, fps: spanMs > 0 ? ((count - 1) * 1000) / spanMs : null, maxGapMs };
 }

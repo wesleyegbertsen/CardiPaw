@@ -90,6 +90,9 @@ export function useCameraBreath(opts: CameraBreathOptions) {
   let times: number[] = [];
   let startedAt = 0;
   let evaluated30 = false;
+  // The last frame before the 30 s evaluation blocked the main thread; the gap after it is
+  // the evaluation's own doing and is forgiven at 60 s (frameTiming).
+  let evaluatedAfterMs: number | null = null;
   let interval: ReturnType<typeof setInterval> | null = null;
   let pendingEvaluate: ReturnType<typeof setTimeout> | null = null;
   let prevFrame: Frame | null = null;
@@ -240,6 +243,7 @@ export function useCameraBreath(opts: CameraBreathOptions) {
     times = [];
     startedAt = Date.now();
     evaluated30 = false;
+    evaluatedAfterMs = null;
     elapsedSeconds.value = 0;
     targetSeconds.value = 30;
     extending.value = false;
@@ -296,7 +300,9 @@ export function useCameraBreath(opts: CameraBreathOptions) {
   }
 
   function evaluate(seconds: CameraSeconds): void {
-    const timing = frameTiming(times);
+    const startedMs = performance.now();
+    const lastFrameMs = times[times.length - 1];
+    const timing = frameTiming(times, evaluatedAfterMs ?? undefined);
     const frameRate = frameRateReason(timing, seconds);
     if (frameRate) {
       // Continuing cannot repair a gap or low light: end now.
@@ -315,10 +321,15 @@ export function useCameraBreath(opts: CameraBreathOptions) {
     const res = tracker!.result((row) => resampleRow(row, times, gridSamples(seconds)));
     const est = estimate(res.signal, CAPTURE_FPS, res.quality);
     const accepted = est.reasons.length === 0;
+    // How long the evaluation held the main thread, to read on a device against the 100 ms gap.
+    if (import.meta.env.DEV) {
+      console.debug('camera evaluation', { seconds, ms: performance.now() - startedMs });
+    }
     if (seconds === 30 && (!accepted || nearCeiling(est.quantisedBpm!, ceilings()))) {
       // An abstain may succeed with more signal; a reading near a ceiling needs the 60 s quantum.
       extending.value = true;
       targetSeconds.value = 60;
+      evaluatedAfterMs = lastFrameMs;
       return;
     }
     if (accepted && est.interval === null) throw new Error('Camera window is off the grid');

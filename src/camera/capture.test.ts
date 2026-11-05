@@ -68,6 +68,28 @@ describe('frameRateReason', () => {
     expect(frameRateReason(frameTiming(stamps(841, 1000 / 27.99)), 30)).toBe('frame-rate');
   });
 
+  it('forgives only the one gap that starts at the exempt frame', () => {
+    // 60 s at 29.97 fps with one 150 ms hold: the frame after `at` comes late.
+    const held = (at: number) => {
+      const s = stamps(1800, NTSC);
+      for (let i = at + 1; i < s.length; i++) s[i] += 150 - NTSC;
+      return s;
+    };
+    const afterThirty = held(900);
+    expect(frameRateReason(frameTiming(afterThirty), 60)).toBe('frame-rate');
+    expect(frameRateReason(frameTiming(afterThirty, afterThirty[900]), 60)).toBeNull();
+    const elsewhere = held(300);
+    expect(frameRateReason(frameTiming(elsewhere, elsewhere[900]), 60)).toBe('frame-rate');
+    // Only maxGapMs changes: the rate and the span still count every frame.
+    const { fps, spanMs, count } = frameTiming(afterThirty);
+    expect(frameTiming(afterThirty, afterThirty[900])).toEqual({
+      count,
+      spanMs,
+      fps,
+      maxGapMs: expect.closeTo(NTSC, 9),
+    });
+  });
+
   it('refuses a window the frames do not cover', () => {
     expect(frameRateReason(frameTiming(stamps(600, NTSC)), 30)).toBe('frame-rate');
     expect(frameRateReason(frameTiming(stamps(1800, NTSC)), 60)).toBeNull();

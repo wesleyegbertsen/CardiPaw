@@ -76,9 +76,41 @@ function setup(
       onFrame!(t);
     }
   };
+  /**
+   * Feeds frames at the NTSC period until a timer during the advance makes `done` true, then
+   * delivers the next frame `stallMs` after the previous one: the main thread was blocked and
+   * the frames presented meanwhile were coalesced into that one callback.
+   */
+  const feedThenStall = (done: () => boolean, stallMs: number) => {
+    for (let i = 0; i < 2000; i++) {
+      const next = t + NTSC;
+      vi.advanceTimersByTime(Math.floor(next) - advanced);
+      advanced = Math.floor(next);
+      if (done()) {
+        t += stallMs;
+        vi.advanceTimersByTime(Math.floor(t) - advanced);
+        advanced = Math.floor(t);
+        onFrame!(t);
+        return;
+      }
+      t = next;
+      onFrame!(t);
+    }
+    throw new Error('feedThenStall: never done');
+  };
   const trackListener = (type: string) =>
     track.addEventListener.mock.calls.find(([name]) => name === type)![1] as () => void;
-  return { cam, track, stopFrames, frameSource, getUserMedia, video, feed, trackListener };
+  return {
+    cam,
+    track,
+    stopFrames,
+    frameSource,
+    getUserMedia,
+    video,
+    feed,
+    feedThenStall,
+    trackListener,
+  };
 }
 
 async function openAndPlace(s: ReturnType<typeof setup>) {
@@ -199,6 +231,31 @@ describe('useCameraBreath', () => {
       interval: [30, 32],
     });
     expect(s.track.stop).toHaveBeenCalledOnce();
+  }, 15_000);
+
+  it('forgives the frame gap the 30 s evaluation itself causes', async () => {
+    const s = setup({ ...SCENE, bpm: 31 });
+    await openAndPlace(s);
+    s.feed(880);
+    s.feedThenStall(() => s.cam.extending.value, 150);
+    s.feed(935);
+    expect(s.cam.phase.value).toBe('done');
+    expect(s.cam.verdict.value).toMatchObject({ seconds: 60, accepted: true, rate: 31 });
+  }, 15_000);
+
+  it('still refuses a 150 ms gap that the evaluation did not cause', async () => {
+    const s = setup({ ...SCENE, bpm: 31 });
+    await openAndPlace(s);
+    s.feed(915);
+    expect(s.cam.extending.value).toBe(true);
+    s.feed(300);
+    s.feed(1, 150);
+    s.feed(615);
+    expect(s.cam.verdict.value).toMatchObject({
+      seconds: 60,
+      accepted: false,
+      reasons: ['frame-rate'],
+    });
   }, 15_000);
 
   it("extends when the 30 s reading is exactly 1 bpm from the pet's own ceiling", async () => {
