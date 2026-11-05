@@ -115,6 +115,7 @@
     "saveReading": "Messung speichern",
     "saveResult": "Ergebnis speichern",
     "saveError": "Die Messung konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    "leaveConfirm": "Diese Messung verwerfen und die Seite verlassen? Sie wurde noch nicht gespeichert.",
     "tryAgain": "Erneut versuchen"
   },
   "camera": {

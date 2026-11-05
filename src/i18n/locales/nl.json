@@ -115,6 +115,7 @@
     "saveReading": "Meting opslaan",
     "saveResult": "Resultaat opslaan",
     "saveError": "De meting kon niet worden opgeslagen. Probeer het opnieuw.",
+    "leaveConfirm": "Pagina verlaten en deze meting verwijderen? Die is nog niet opgeslagen.",
     "tryAgain": "Opnieuw proberen"
   },
   "camera": {

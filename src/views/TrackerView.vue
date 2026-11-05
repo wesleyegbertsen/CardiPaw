@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, useId, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 import { returnTo } from '../router/returnTo';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
@@ -12,6 +12,7 @@ import { useOnboarding } from '../composables/useOnboarding';
 import { isCameraSupported, useCameraOptIn } from '../composables/useCameraOptIn';
 import type { CameraResult } from '../composables/useCameraBreath';
 import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import OnboardingModal from '../components/OnboardingModal.vue';
 import RestStateToggle from '../components/RestStateToggle.vue';
 import SlideToggle from '../components/SlideToggle.vue';
@@ -194,7 +195,10 @@ function stopTracking() {
   if (vibrationEnabled.value) vibrateDone();
   // The heart button is gone; park focus on the result (not on Save) so it is
   // read out and further key presses meant as breaths can't trigger an action.
-  nextTick(() => resultRef.value?.focus());
+  // Not while the leave dialog is open: focus stays in it, and Cancel moves it here.
+  nextTick(() => {
+    if (!answerLeave.value) resultRef.value?.focus();
+  });
 }
 
 function triggerPulse() {
@@ -237,7 +241,15 @@ async function saveReading() {
       restState: restState.value,
       notes: notes.value || undefined,
     });
-    returnTo(router, { name: 'pet', params: { id: petId } });
+    // The user confirmed leaving while this saved: stay wherever they went, also when
+    // that page is still opening and this view is not gone yet.
+    if (unmounted || leaving) return;
+    // Saved while the leave dialog asks: nothing is lost any more, so let them go.
+    if (answerLeave.value) {
+      answerLeave.value(true);
+      return;
+    }
+    leaveForPet();
   } catch (e) {
     console.error('Saving reading failed', e);
     saveError.value = true;
@@ -248,7 +260,66 @@ async function saveReading() {
 
 function discard() {
   saveError.value = false;
+  leaveForPet();
+}
+
+// Header back arrow: an ordinary way out, so the leave guard asks first.
+function goBack() {
   returnTo(router, { name: 'pet', params: { id: petId } });
+}
+
+// Leaving on purpose (saved, or Discard): the leave guard lets it go.
+let leaving = false;
+function leaveForPet() {
+  leaving = true;
+  returnTo(router, { name: 'pet', params: { id: petId } });
+}
+
+// What leaving would throw away: a count running or finished but not saved, or a manual
+// entry with anything filled in (v-model.number gives '' for a cleared rate).
+const hasUnsaved = computed(() =>
+  isManualMode.value
+    ? !!manualRate.value || notes.value !== '' || restState.value !== undefined
+    : phase.value !== 'idle',
+);
+
+// The leave dialog's Discard sits over the heart on small screens: after a stray back
+// swipe mid-count, the next breath tap would land on it and throw the count away.
+const LEAVE_DISCARD_DELAY_MS = 500;
+
+// Answers the open leave dialog (true leaves, false stays); null while none is open.
+const answerLeave = ref<((leave: boolean) => void) | null>(null);
+let pendingLeave: Promise<boolean> | null = null;
+
+function confirmLeave(): boolean | Promise<boolean> {
+  if (leaving || !hasUnsaved.value) return true;
+  // The help is stacked above this dialog and would hide it (and take Escape last).
+  if (showOnboarding.value) closeOnboarding();
+  // A second back while asking waits for the same answer instead of a second dialog.
+  pendingLeave ??= new Promise<boolean>((resolve) => {
+    answerLeave.value = (leave) => {
+      if (leave) leaving = true;
+      answerLeave.value = null;
+      pendingLeave = null;
+      resolve(leave);
+    };
+  });
+  return pendingLeave;
+}
+// Back gestures, browser back, the bottom nav and reminder taps. Another pet's tracker is
+// the same route, so vue-router runs update guards for it, not leave guards, while App's
+// keyed RouterView still remounts this view and would drop the count.
+onBeforeRouteLeave(confirmLeave);
+onBeforeRouteUpdate(confirmLeave);
+
+function stayOnTracker() {
+  answerLeave.value?.(false);
+  // The dialog hands focus back to where it was; if the count ended behind it, that was
+  // the heart, which is gone. Park it on the result, as the end of a count does.
+  nextTick(() => {
+    if (phase.value !== 'done' || document.activeElement !== document.body) return;
+    resultRef.value?.focus();
+  });
 }
 
 function reset() {
@@ -297,7 +368,7 @@ onUnmounted(() => {
 <template>
   <div class="tracker" :class="`phase-${phase}`">
     <header class="tracker-header">
-      <button class="back-btn" @click="discard" :aria-label="$t('common.back')">
+      <button class="back-btn" @click="goBack" :aria-label="$t('common.back')">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
         </svg>
@@ -307,6 +378,15 @@ onUnmounted(() => {
     </header>
 
     <OnboardingModal v-if="showOnboarding" :variant="onboardingVariant" @close="closeOnboarding" />
+
+    <ConfirmDialog
+      v-if="answerLeave"
+      :message="$t('tracker.leaveConfirm')"
+      :confirm-label="$t('common.discard')"
+      :confirm-delay-ms="LEAVE_DISCARD_DELAY_MS"
+      @confirm="answerLeave?.(true)"
+      @cancel="stayOnTracker"
+    />
 
     <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
 
