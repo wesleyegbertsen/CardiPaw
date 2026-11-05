@@ -4,7 +4,7 @@
  * whole life (the composable holds a ref to it); the surrounding chrome switches with the phase.
  * An accepted verdict is emitted as a suggestion and rendered by the tracker, which alone saves.
  */
-import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SlideToggle from './SlideToggle.vue';
 import { useCameraBreath, type CameraResult } from '../composables/useCameraBreath';
@@ -16,6 +16,9 @@ const emit = defineEmits<{ result: [CameraResult]; tapInstead: []; busy: [boolea
 
 const { t } = useI18n();
 const video = ref<HTMLVideoElement | null>(null);
+// Focus targets: the alert of an error or an abstain, and the placing instruction.
+const alertRef = ref<HTMLElement | null>(null);
+const placeRef = ref<HTMLElement | null>(null);
 const cam = useCameraBreath({ pet: computed(() => props.pet), video });
 
 // The box the owner frames the chest in, derived from the same function the tracker uses.
@@ -103,6 +106,14 @@ const abstainHint = computed(() => {
 });
 
 watch(busy, (b) => emit('busy', b), { immediate: true });
+// The chrome switches with the phase and the focused button goes with it; put focus where the
+// owner is, so a screen reader reads the new state and Tab starts at its actions.
+watch(cam.phase, (p) => {
+  nextTick(() => {
+    if (p === 'placing') placeRef.value?.focus();
+    else if (p === 'error' || abstained.value) alertRef.value?.focus();
+  });
+});
 watch(cam.verdict, (v) => {
   if (v?.accepted && v.rate !== null && v.interval) {
     emit('result', {
@@ -169,7 +180,7 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
 
     <!-- Errors, including an interrupted count -->
     <template v-else-if="cam.phase.value === 'error'">
-      <p class="alert" role="alert">{{ $t(errorKey) }}</p>
+      <p ref="alertRef" class="alert" role="alert" tabindex="-1">{{ $t(errorKey) }}</p>
       <div class="actions">
         <button v-if="cam.error.value !== 'unsupported'" class="btn-retry" @click="cam.open()">
           {{ $t('camera.retry') }}
@@ -182,7 +193,7 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
 
     <!-- Placing -->
     <template v-else-if="cam.phase.value === 'placing'">
-      <p class="body-text">{{ $t('camera.placeBody') }}</p>
+      <p ref="placeRef" class="body-text" tabindex="-1">{{ $t('camera.placeBody') }}</p>
       <p v-if="placementHint" class="placement-hint" :class="{ ready: cam.placement.value.steady }">
         {{ $t(placementHint) }}
       </p>
@@ -240,7 +251,7 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
 
     <!-- Abstained; an accepted verdict is the tracker's card -->
     <template v-else-if="abstained">
-      <div class="alert" role="alert">
+      <div ref="alertRef" class="alert" role="alert" tabindex="-1">
         <p class="alert-title">{{ $t('camera.abstainTitle') }}</p>
         <p>{{ $t(abstainHint) }}</p>
         <p v-if="pet.species === 'dog'">{{ $t('camera.abstain.dog') }}</p>
@@ -359,6 +370,11 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
   to {
     transform: rotate(360deg);
   }
+}
+
+.alert:focus,
+.body-text:focus {
+  outline: none;
 }
 
 .alert {

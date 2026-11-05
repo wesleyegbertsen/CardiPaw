@@ -16,9 +16,11 @@ import OnboardingModal from '../components/OnboardingModal.vue';
 import RestStateToggle from '../components/RestStateToggle.vue';
 import SlideToggle from '../components/SlideToggle.vue';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
+import { MEASUREMENT_DURATIONS, breathsPerMinute, type MeasurementSeconds } from '../utils/measurement';
+import type { Reading } from '../types';
+
 // Lazy: the camera's signal code stays out of the main chunk until the Camera pill is tapped.
 const CameraCapture = defineAsyncComponent(() => import('../components/CameraCapture.vue'));
-import { MEASUREMENT_DURATIONS, breathsPerMinute, type MeasurementSeconds } from '../utils/measurement';
 
 const route = useRoute();
 const router = useRouter();
@@ -108,6 +110,12 @@ function switchMode(next: Mode) {
   if (next === 'camera' && !hasSeenCameraOnboarding.value) openOnboarding();
 }
 
+// Like closeOnboarding: start keyboard and screen-reader users on the heart, not on <body>.
+function tapInstead() {
+  switchMode('guided');
+  nextTick(() => heartRef.value?.focus());
+}
+
 function measureAgain() {
   cameraResult.value = null;
   cameraReopen.value = true;
@@ -194,28 +202,40 @@ function triggerPulse() {
   setTimeout(() => { isPulsing.value = false; }, 180);
 }
 
+type MeasuredFields = Pick<Reading, 'rate' | 'clickCount' | 'source' | 'durationSeconds'>;
+
+// What the reading records about how it was measured; null in camera mode without a suggestion.
+function measuredFields(): MeasuredFields | null {
+  switch (mode.value) {
+    case 'manual':
+      return { rate: manualRate.value, clickCount: 0, source: 'manual', durationSeconds: undefined };
+    case 'camera': {
+      const cam = cameraResult.value;
+      if (!cam) return null;
+      // A tapped count saved from the camera screen is an ordinary guided reading over the camera's window.
+      if (cam.taps !== null && saveChoice.value === 'taps') {
+        return { rate: breathsPerMinute(cam.taps, cam.seconds), clickCount: cam.taps, source: undefined, durationSeconds: cam.seconds };
+      }
+      return { rate: cam.rate, clickCount: 0, source: 'camera', durationSeconds: cam.seconds };
+    }
+    case 'guided':
+      return { rate: resultRate.value, clickCount: clickCount.value, source: undefined, durationSeconds: runSeconds.value };
+  }
+}
+
 async function saveReading() {
   if (saving.value || (mode.value === 'manual' && !manualValid.value)) return;
   saving.value = true;
   saveError.value = false;
   try {
-    const source = mode.value;
-    const cam = cameraResult.value;
-    if (source === 'camera' && !cam) return;
-    // A tapped count saved from the camera screen is an ordinary guided reading over the camera's window.
-    const useTaps = source === 'camera' && cam!.taps !== null && saveChoice.value === 'taps';
+    const measured = measuredFields();
+    if (!measured) return;
     await readingsStore.addReading({
       petId,
       date: new Date().toISOString(),
-      rate:
-        source === 'manual' ? manualRate.value
-        : source === 'camera' ? (useTaps ? breathsPerMinute(cam!.taps!, cam!.seconds) : cam!.rate)
-        : resultRate.value,
-      clickCount: source === 'manual' ? 0 : source === 'camera' ? (useTaps ? cam!.taps! : 0) : clickCount.value,
+      ...measured,
       restState: restState.value,
       notes: notes.value || undefined,
-      source: source === 'manual' ? 'manual' : source === 'camera' && !useTaps ? 'camera' : undefined,
-      durationSeconds: source === 'manual' ? undefined : source === 'camera' ? cam!.seconds : runSeconds.value,
     });
     returnTo(router, { name: 'pet', params: { id: petId } });
   } catch (e) {
@@ -293,7 +313,7 @@ onUnmounted(() => {
     <!-- Needs the pet: its thresholds rate a manual entry and saving files the reading under it. -->
     <div v-else-if="pet" class="tracker-main">
     <!-- Mode toggle: absolutely positioned so it overlays the body without affecting its height -->
-    <div v-if="phase === 'idle' && !cameraBusy" class="mode-toggle-bar">
+    <div v-if="phase === 'idle' && !cameraBusy && !cameraResult" class="mode-toggle-bar">
       <div class="mode-toggle" role="group" :aria-label="$t('tracker.modeLabel')">
         <div
           class="mode-toggle-indicator"
@@ -349,13 +369,13 @@ onUnmounted(() => {
     </div>
 
     <!-- Camera (experimental): the capture, then its suggestion as a card the owner confirms -->
-    <div v-else-if="mode === 'camera'" class="tracker-body done-body camera-body" :class="{ 'with-bar': !cameraBusy }">
+    <div v-else-if="mode === 'camera'" class="tracker-body done-body camera-body" :class="{ 'with-bar': !cameraBusy && !cameraResult }">
       <CameraCapture
         v-if="!cameraResult"
         :pet="pet"
         :auto-open="cameraReopen"
         @result="cameraResult = $event"
-        @tap-instead="switchMode('guided')"
+        @tap-instead="tapInstead"
         @busy="cameraBusy = $event"
       />
       <template v-else>
@@ -371,22 +391,20 @@ onUnmounted(() => {
         <p class="result-note">
           {{ $t('camera.resultNote', { seconds: cameraResult.seconds, lo: cameraResult.interval[0], hi: cameraResult.interval[1] }) }}
         </p>
-        <div v-if="cameraResult.taps !== null" class="save-choice" role="radiogroup" :aria-labelledby="saveChoiceLabelId">
+        <div v-if="cameraResult.taps !== null" class="save-choice" role="group" :aria-labelledby="saveChoiceLabelId">
           <span :id="saveChoiceLabelId" class="toggle-label">
             {{ $t('camera.yourCount', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}
           </span>
           <button
             type="button"
-            role="radio"
-            :aria-checked="saveChoice === 'camera'"
+            :aria-pressed="saveChoice === 'camera'"
             class="length-pill"
             :class="{ active: saveChoice === 'camera' }"
             @click="saveChoice = 'camera'"
           >{{ $t('camera.saveCamera') }}</button>
           <button
             type="button"
-            role="radio"
-            :aria-checked="saveChoice === 'taps'"
+            :aria-pressed="saveChoice === 'taps'"
             class="length-pill"
             :class="{ active: saveChoice === 'taps' }"
             @click="saveChoice = 'taps'"

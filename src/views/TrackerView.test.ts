@@ -222,18 +222,19 @@ describe('TrackerView', () => {
       const { wrapper, addReading } = await mountCamera();
       await suggest(wrapper);
       const group = wrapper.get('.save-choice');
-      expect(group.attributes('role')).toBe('radiogroup');
+      expect(group.attributes('role')).toBe('group');
       const labelId = group.attributes('aria-labelledby');
       expect(labelId && document.getElementById(labelId)?.textContent).toBe(
         'Your count: 26 breaths/min',
       );
-      const [cameraChoice, tapsChoice] = group.findAll('[role="radio"]');
+      const [cameraChoice, tapsChoice] = group.findAll('button');
       expect(cameraChoice.text()).toBe('Save the camera count');
       expect(tapsChoice.text()).toBe('Save my count (26)');
-      expect(cameraChoice.attributes('aria-checked')).toBe('true');
+      expect(cameraChoice.attributes('aria-pressed')).toBe('true');
+      expect(tapsChoice.attributes('aria-pressed')).toBe('false');
       await tapsChoice.trigger('click');
-      expect(tapsChoice.attributes('aria-checked')).toBe('true');
-      expect(cameraChoice.attributes('aria-checked')).toBe('false');
+      expect(tapsChoice.attributes('aria-pressed')).toBe('true');
+      expect(cameraChoice.attributes('aria-pressed')).toBe('false');
 
       await wrapper.get('.btn-save').trigger('click');
       await flushPromises();
@@ -259,7 +260,7 @@ describe('TrackerView', () => {
       cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: 13 };
       const { wrapper, addReading } = await mountCamera();
       await suggest(wrapper);
-      await wrapper.findAll('[role="radio"]')[1].trigger('click');
+      await wrapper.findAll('.save-choice button')[1].trigger('click');
       await wrapper.get('.btn-retry').trigger('click');
       await flushPromises();
       expect(wrapper.find('.result-number').exists()).toBe(false);
@@ -267,8 +268,19 @@ describe('TrackerView', () => {
 
       // A second suggestion starts from the camera choice again.
       await suggest(wrapper);
-      expect(wrapper.findAll('[role="radio"]')[0].attributes('aria-checked')).toBe('true');
+      expect(wrapper.findAll('.save-choice button')[0].attributes('aria-pressed')).toBe('true');
       expect(addReading).not.toHaveBeenCalled();
+    });
+
+    it('hides the mode bar under a suggestion, so a pill cannot discard it', async () => {
+      const { wrapper } = await mountCamera();
+      await suggest(wrapper);
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(false);
+      expect(wrapper.get('.camera-body').classes()).not.toContain('with-bar');
+      await wrapper.get('.btn-retry').trigger('click');
+      await flushPromises();
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+      expect(wrapper.get('.camera-body').classes()).toContain('with-bar');
     });
 
     it('discards a suggestion and returns to the pet', async () => {
@@ -298,6 +310,8 @@ describe('TrackerView', () => {
       await wrapper.get('.stub-tap-instead').trigger('click');
       expect(wrapper.find('.camera-stub').exists()).toBe(false);
       expect(wrapper.find('.heart-btn').exists()).toBe(true);
+      await flushPromises();
+      expect(document.activeElement).toBe(wrapper.get('.heart-btn').element);
       expect(wrapper.findAll('.mode-pill').map((p) => p.attributes('aria-pressed'))).toEqual([
         'true',
         'false',

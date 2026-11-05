@@ -145,6 +145,27 @@ describe('CameraCapture', () => {
     expect(wrapper.emitted('tapInstead')).toHaveLength(1);
   });
 
+  describe('focus', () => {
+    it('moves to the instruction when placing starts', async () => {
+      const wrapper = mountCapture();
+      await setPhase('placing');
+      expect(document.activeElement).toBe(wrapper.get('.body-text').element);
+    });
+
+    it('moves to the alert on an error', async () => {
+      const wrapper = mountCapture();
+      await setPhase('error', 'busy');
+      expect(document.activeElement).toBe(wrapper.get('[role="alert"]').element);
+    });
+
+    it('moves to the alert when the count abstains', async () => {
+      const wrapper = mountCapture();
+      await setPhase('capturing');
+      await finishWith(abstain(['shake']));
+      expect(document.activeElement).toBe(wrapper.get('[role="alert"]').element);
+    });
+  });
+
   describe('placing', () => {
     it('shows the preview with the box the tracker reads, and Start once steady', async () => {
       const wrapper = mountCapture();
