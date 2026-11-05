@@ -193,6 +193,14 @@ describe('CameraCapture', () => {
       expect(cam.begin).toHaveBeenCalledOnce();
     });
 
+    it('says it is checking the picture while no other hint applies', async () => {
+      const wrapper = mountCapture();
+      await setPhase('placing');
+      const hint = wrapper.get('.placement-hint');
+      expect(hint.text()).toBe('Checking the picture… hold still.');
+      expect(hint.classes()).toContain('checking');
+    });
+
     it.each([
       ['too dark', { tooDark: true, moving: true, steady: false }, 'Too dark: turn on a light.'],
       [
@@ -252,7 +260,38 @@ describe('CameraCapture', () => {
       );
       expect(wrapper.text()).toContain('Close to a threshold, watching 30 more seconds');
       expect(wrapper.find('.heart-btn').exists()).toBe(false);
-      expect(wrapper.find('.roi-box').exists()).toBe(false);
+    });
+
+    it('keeps the box on the preview while watching, thinner', async () => {
+      const wrapper = mountCapture();
+      await setPhase('placing');
+      expect(wrapper.get('.roi-box').classes()).not.toContain('thin');
+      await setPhase('capturing');
+      expect(wrapper.get('.roi-box').classes()).toContain('thin');
+    });
+
+    it('announces the extension and the screen-lock request once each', async () => {
+      const wrapper = mountCapture();
+      await setPhase('capturing');
+      const live = wrapper.get('[aria-live="polite"]');
+      cam.screenLockRefused.value = true;
+      await flushPromises();
+      expect(live.text()).toBe('Keep the screen on until the count ends.');
+      cam.elapsedSeconds.value = 10;
+      await flushPromises();
+      expect(live.text()).toBe('10 seconds watched');
+      cam.elapsedSeconds.value = 30;
+      await flushPromises();
+      cam.targetSeconds.value = 60;
+      cam.extending.value = true;
+      await flushPromises();
+      expect(live.text()).toContain('Close to a threshold, watching 30 more seconds');
+      cam.elapsedSeconds.value = 35;
+      await flushPromises();
+      expect(live.text()).toContain('Close to a threshold'); // nothing new to say yet
+      cam.elapsedSeconds.value = 40;
+      await flushPromises();
+      expect(live.text()).toBe('40 seconds watched');
     });
 
     it.each([

@@ -63,7 +63,8 @@ const placementHint = computed(() => {
   if (p.tooDark) return 'camera.tooDark';
   if (p.moving) return 'camera.moving';
   if (p.steady) return 'camera.steady';
-  return null;
+  // The first two seconds, and after every reset: say what Start is waiting for.
+  return 'camera.checking';
 });
 
 const liveHint = computed(() => {
@@ -77,11 +78,21 @@ const liveHint = computed(() => {
 const ringOffset = computed(() => 339.3 * (1 - cam.elapsedSeconds.value / cam.targetSeconds.value));
 
 // Changes exactly at 10, 20, 30… seconds, so the live region speaks once per ten seconds.
-const announce = computed(() =>
-  cam.phase.value === 'capturing' && cam.elapsedSeconds.value >= 10
-    ? t('camera.phaseAnnounce', { n: Math.floor(cam.elapsedSeconds.value / 10) * 10 })
-    : '',
-);
+const tens = computed(() => Math.floor(cam.elapsedSeconds.value / 10) * 10);
+// The extension and the screen-lock request are said once, until the next ten seconds.
+const notice = ref<string | null>(null);
+watch(tens, () => (notice.value = null));
+watch(cam.extending, (on) => {
+  if (on) notice.value = t('camera.extending');
+});
+watch(cam.screenLockRefused, (refused) => {
+  if (refused) notice.value = t('camera.keepScreenOn');
+});
+const announce = computed(() => {
+  if (cam.phase.value !== 'capturing') return '';
+  if (notice.value) return notice.value;
+  return tens.value >= 10 ? t('camera.phaseAnnounce', { n: tens.value }) : '';
+});
 
 // The first matching reason wins: shake explains everything after it, and so on down.
 const ABSTAIN_HINTS: [CaptureReason, string][] = [
@@ -150,9 +161,11 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
   <div class="camera-capture">
     <div v-show="busy" class="preview" :class="{ small: cam.phase.value === 'capturing' }">
       <video ref="video" playsinline muted autoplay aria-hidden="true" />
+      <!-- Thinner while watching: the owner can still see whether the chest stays inside -->
       <div
-        v-if="cam.phase.value === 'placing'"
+        v-if="busy"
         class="roi-box"
+        :class="{ thin: cam.phase.value === 'capturing' }"
         :style="roiBoxStyle"
         aria-hidden="true"
       />
@@ -194,7 +207,13 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
     <!-- Placing -->
     <template v-else-if="cam.phase.value === 'placing'">
       <p ref="placeRef" class="body-text" tabindex="-1">{{ $t('camera.placeBody') }}</p>
-      <p v-if="placementHint" class="placement-hint" :class="{ ready: cam.placement.value.steady }">
+      <p
+        class="placement-hint"
+        :class="{
+          ready: cam.placement.value.steady,
+          checking: placementHint === 'camera.checking',
+        }"
+      >
         {{ $t(placementHint) }}
       </p>
       <div class="actions">
@@ -305,6 +324,10 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
   pointer-events: none;
 }
 
+.roi-box.thin {
+  border-width: 1px;
+}
+
 .title {
   font-size: 20px;
   font-weight: 700;
@@ -341,6 +364,11 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
 
 .placement-hint.ready {
   color: var(--color-success);
+}
+
+.placement-hint.checking {
+  font-weight: 400;
+  color: var(--color-text-muted);
 }
 
 .watching {

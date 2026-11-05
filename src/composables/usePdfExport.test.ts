@@ -343,6 +343,16 @@ describe('usePdfExport', () => {
     expect(all).not.toContain('Jan 10, 2024, 12:00 PM');
   });
 
+  it('adds the camera caveat once, only when a camera reading is exported', async () => {
+    const note = "Camera: an experimental count from the phone's camera, confirmed by the owner.";
+    const camera = makeReading({ id: 'cam', date: '2024-02-09T12:00:00Z', source: 'camera', durationSeconds: 30 });
+    expect(texts((await generate(makePet(), readings, ['2024-02', '2024-03'])).events)).not.toContain(note);
+    // A camera reading in a month that is not exported does not count.
+    expect(texts((await generate(makePet(), [...readings, camera], ['2024-03'])).events)).not.toContain(note);
+    const all = texts((await generate(makePet(), [...readings, camera], ['2024-02', '2024-03'])).events);
+    expect(all.filter((s) => s === note)).toHaveLength(1);
+  });
+
   it('renders one chart per month with daily averages and the normal ceiling', async () => {
     await generate(makePet({ normalCeiling: 26 }), readings, ['2024-02', '2024-03']);
     expect(h.charts).toHaveLength(2);

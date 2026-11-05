@@ -120,11 +120,11 @@
   "camera": {
     "experimental": "Experimenteel",
     "explainTitle": "Ademhalingen tellen met de camera",
-    "explainBody": "Zet je telefoon zo neer dat de camera de borstkas of buik van je huisdier ziet; CardiPaw volgt het op- en neergaan 30 tot 60 seconden. Het stelt een telling voor die je bij je huisdier controleert; jij beslist of je ze opslaat.",
+    "explainBody": "Zet je telefoon zo neer dat de camera de borstkas of buik van je huisdier ziet; CardiPaw volgt het op- en neergaan 30 tot 60 seconden. Het stelt een telling voor die je bij je huisdier controleert; jij beslist of je die opslaat.",
     "privacyNote": "De video wordt alleen op deze telefoon geanalyseerd. Er wordt niets opgenomen, bewaard of ergens naartoe verzonden.",
     "allow": "Camera toestaan",
     "requesting": "Wachten op toegang tot de camera…",
-    "denied": "Toegang tot de camera is geweigerd. Sta de camera voor CardiPaw toe in de instellingen van je telefoon, of tel in plaats daarvan door te tikken.",
+    "denied": "Toegang tot de camera is geweigerd. Sta de camera voor CardiPaw toe in de instellingen van je telefoon of browser, of tel in plaats daarvan door te tikken.",
     "noCamera": "Er is geen camera gevonden op dit apparaat.",
     "busy": "De camera wordt gebruikt door een andere app. Sluit die en probeer het opnieuw.",
     "unsupported": "Deze browser kan de camera hier niet gebruiken.",
@@ -134,7 +134,8 @@
     "placeBody": "Zorg dat de borstkas of buik in het kader past, met stille achtergrond langs de bovenrand. Zet de telefoon neer; houd hem niet vast.",
     "tooDark": "Te donker: doe een lamp aan.",
     "moving": "De telefoon beweegt: zet hem neer en raak hem niet aan.",
-    "steady": "Stil. Start wanneer je huisdier rustig is.",
+    "steady": "Stabiel. Start wanneer je huisdier rustig is.",
+    "checking": "Beeld wordt gecontroleerd… houd stil.",
     "start": "Starten",
     "watching": "Aan het kijken…",
     "phaseAnnounce": "{n} seconden gevolgd",
@@ -307,7 +308,7 @@
       "p3": "<strong>Geen garanties.</strong> CardiPaw wordt gratis aangeboden, zoals het is, zonder enige garantie (expliciet of impliciet). De ontwikkelaar is niet aansprakelijk voor beslissingen die worden genomen op basis van gegevens die in deze app zijn vastgelegd.",
       "p4": "<strong>Gebruik op eigen risico.</strong> Door CardiPaw te gebruiken aanvaard je de volledige verantwoordelijkheid voor hoe je de gepresenteerde gegevens interpreteert en ernaar handelt.",
       "cameraTitle": "Cameratellingen zijn suggesties.",
-      "cameraBody": "Een telling van de camera is experimenteel en kan fout zijn. Controleer die bij je huisdier voordat je ze opslaat, en vertrouw bij twijfel op je eigen telling."
+      "cameraBody": "Een telling van de camera is experimenteel en kan fout zijn. Controleer die bij je huisdier voordat je die opslaat, en vertrouw bij twijfel op je eigen telling."
     }
   },
   "share": {
@@ -395,7 +396,7 @@
     "cameraStep3Title": "Blijf op afstand en wacht",
     "cameraStep3Body": "Raak je huisdier en de telefoon niet aan terwijl hij 30 tot 60 seconden kijkt. Als je wilt, kun je bij elke ademhaling op het hart tikken.",
     "cameraStep4Title": "Controleer de voorgestelde telling",
-    "cameraStep4Body": "De camera stelt een telling voor; die kan fout zijn. Vergelijk ze met wat je ziet voordat je opslaat, en als er niets wordt voorgesteld, tel dan door te tikken.",
+    "cameraStep4Body": "De camera stelt een telling voor; die kan fout zijn. Vergelijk die met wat je ziet voordat je opslaat, en als er niets wordt voorgesteld, tel dan door te tikken.",
     "stepCount": "Stap {current} van {total}",
     "back": "Terug",
     "next": "Volgende",
@@ -413,6 +414,7 @@
     "statusHeader": "Status",
     "restHeader": "Rust",
     "sourceHeader": "Bron",
+    "cameraNote": "Camera: een experimentele telling met de telefooncamera, bevestigd door de eigenaar.",
     "readingsHeader": "Metingen",
     "notesHeader": "Notities bij metingen",
     "readingsCount": "{n} meting | {n} metingen",

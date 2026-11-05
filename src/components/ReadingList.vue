@@ -201,9 +201,11 @@ function formatDate(iso: string) {
   color: var(--color-text-muted);
 }
 
+/* Neutral with the primary tint: amber is the Elevated badge's colour */
 .meta-tag.camera {
-  background: var(--color-warning-bg);
-  color: var(--color-warning-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
 }
 
 .reading-right {

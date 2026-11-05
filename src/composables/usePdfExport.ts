@@ -409,6 +409,19 @@ export function usePdfExport() {
         }
       }
 
+      // One caveat for the whole report when it lists a camera count.
+      const exported = readings.filter(r => selectedMonths.includes(localMonthKey(r.date)));
+      if (exported.some(r => readingSource(r) === 'camera')) {
+        doc.setFont(fontFamily, 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor('#6b7280');
+        if (curY + 6 > PH - MB) {
+          doc.addPage();
+          curY = MT;
+        }
+        doc.text(doc.splitTextToSize(t('pdf.cameraNote'), UW), ML, curY);
+      }
+
       // ── Page footers ──
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
