@@ -141,9 +141,16 @@ describe('validateBackup', () => {
     expect(validateBackup(backup({ readings: [reading] })).data.readings).toEqual([reading]);
   });
 
-  it('keeps a camera reading and its length', () => {
-    const reading = makeReading({ source: 'camera', durationSeconds: 60 });
+  it.each([30, 60] as const)('keeps a camera reading and its %s s length', (durationSeconds) => {
+    const reading = makeReading({ source: 'camera', durationSeconds });
     expect(validateBackup(backup({ readings: [reading] })).data.readings).toEqual([reading]);
+  });
+
+  it('drops a 15 s length on a camera reading, which the capture cannot produce, but keeps the reading', () => {
+    const reading = makeReading({ source: 'camera', clickCount: 0, durationSeconds: 15 });
+    const { data, skipped } = validateBackup(backup({ readings: [reading] }));
+    expect(skipped).toBe(0);
+    expect(data.readings).toEqual([makeReading({ source: 'camera', clickCount: 0 })]);
   });
 
   it.each([

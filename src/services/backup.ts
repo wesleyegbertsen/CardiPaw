@@ -112,7 +112,10 @@ function toReading(value: unknown): Reading | null {
   if (typeof notes === 'string') reading.notes = notes;
   if (source === 'manual' || source === 'camera') reading.source = source;
   // Guided and camera readings have a length; an unknown one is dropped, the reading kept.
-  if (source !== 'manual' && isMeasurementSeconds(durationSeconds)) reading.durationSeconds = durationSeconds;
+  // A camera count only ever runs 30 or 60 s (CameraSeconds), so 15 s is unknown there.
+  if (source !== 'manual' && isMeasurementSeconds(durationSeconds)) {
+    if (source !== 'camera' || durationSeconds !== 15) reading.durationSeconds = durationSeconds;
+  }
   return reading;
 }
 
