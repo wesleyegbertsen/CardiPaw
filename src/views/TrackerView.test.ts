@@ -27,9 +27,18 @@ vi.mock('../composables/useAudioBeep', () => ({ useAudioBeep: () => audio }));
 vi.mock('../composables/useHaptics', () => ({
   useHaptics: () => ({ isSupported: true, ...haptics }),
 }));
+// Both flags seen by default, so no onboarding opens by itself; a test flips one.
+const onboarding = vi.hoisted(() => ({
+  hasSeenOnboarding: undefined as unknown as { value: boolean },
+  hasSeenCameraOnboarding: undefined as unknown as { value: boolean },
+  markSeen: vi.fn(),
+  markCameraSeen: vi.fn(),
+}));
 vi.mock('../composables/useOnboarding', async () => {
   const { ref } = await import('vue');
-  return { useOnboarding: () => ({ hasSeenOnboarding: ref(true), markSeen: vi.fn() }) };
+  onboarding.hasSeenOnboarding = ref(true);
+  onboarding.hasSeenCameraOnboarding = ref(true);
+  return { useOnboarding: () => onboarding };
 });
 // TipTap needs a real layout engine; a textarea is enough to check the notes reach the save.
 vi.mock('../components/LazyRichTextEditor', async () =>
@@ -114,6 +123,10 @@ describe('TrackerView', () => {
     camera.enabled.value = false;
     camera.supported = true;
     cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: null };
+    onboarding.hasSeenOnboarding.value = true;
+    onboarding.hasSeenCameraOnboarding.value = true;
+    onboarding.markSeen.mockReset();
+    onboarding.markCameraSeen.mockReset();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2024-03-15T12:00:00.000Z'));
   });
@@ -287,6 +300,46 @@ describe('TrackerView', () => {
       expect(wrapper.find('.mode-toggle-bar').exists()).toBe(false);
       await wrapper.get('.stub-idle').trigger('click');
       expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+    });
+
+    const dialog = () => document.body.querySelector('[role="dialog"]');
+
+    it('opens the camera steps the first time the Camera pill is tapped, once', async () => {
+      onboarding.hasSeenCameraOnboarding.value = false;
+      const { wrapper } = await mountCamera();
+      expect(dialog()?.textContent).toContain('Prop the phone up');
+      expect(dialog()?.textContent).toContain('Step 1 of 4');
+      expect(wrapper.find('.camera-stub').exists()).toBe(true);
+
+      document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
+      await flushPromises();
+      expect(dialog()).toBeNull();
+      expect(onboarding.markCameraSeen).toHaveBeenCalledOnce();
+      expect(onboarding.markSeen).not.toHaveBeenCalled();
+
+      onboarding.hasSeenCameraOnboarding.value = true; // what markCameraSeen does
+      await wrapper.findAll('.mode-pill')[0].trigger('click');
+      await wrapper.findAll('.mode-pill')[2].trigger('click');
+      await flushPromises();
+      expect(dialog()).toBeNull();
+    });
+
+    it('explains the current mode from the ? button', async () => {
+      const { wrapper } = await mountCamera();
+      expect(dialog()).toBeNull();
+      await wrapper.get('.help-btn').trigger('click');
+      expect(dialog()?.textContent).toContain('Prop the phone up');
+      document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
+      await flushPromises();
+      expect(onboarding.markCameraSeen).toHaveBeenCalledOnce();
+
+      await wrapper.findAll('.mode-pill')[0].trigger('click');
+      await wrapper.get('.help-btn').trigger('click');
+      expect(dialog()?.textContent).toContain('Get your pet resting or sleeping');
+      document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
+      await flushPromises();
+      expect(onboarding.markSeen).toHaveBeenCalledOnce();
+      expect(onboarding.markCameraSeen).toHaveBeenCalledOnce();
     });
 
     it('leaves the capture behind when switching back to guided, even while busy', async () => {

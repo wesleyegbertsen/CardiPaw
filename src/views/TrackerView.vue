@@ -32,12 +32,20 @@ const wakeLock = useWakeLock();
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
 const { soundEnabled, vibrationEnabled, durationSeconds } = useTrackerPrefs(petId);
-const { hasSeenOnboarding, markSeen } = useOnboarding();
+const { hasSeenOnboarding, markSeen, hasSeenCameraOnboarding, markCameraSeen } = useOnboarding();
 const showOnboarding = ref(!hasSeenOnboarding.value);
+// Which steps the modal shows: the camera's in camera mode, the tap steps otherwise.
+const onboardingVariant = ref<'tap' | 'camera'>('tap');
+
+function openOnboarding() {
+  onboardingVariant.value = mode.value === 'camera' ? 'camera' : 'tap';
+  showOnboarding.value = true;
+}
 
 function closeOnboarding() {
   showOnboarding.value = false;
-  markSeen();
+  if (onboardingVariant.value === 'camera') markCameraSeen();
+  else markSeen();
   // When onboarding opened by itself on mount there is no focus to restore;
   // start keyboard users on the heart instead of <body>.
   nextTick(() => {
@@ -96,6 +104,8 @@ function switchMode(next: Mode) {
   cameraReopen.value = false;
   cameraBusy.value = false;
   saveChoice.value = 'camera';
+  // The camera steps open by themselves the first time, like the tap steps on the first visit.
+  if (next === 'camera' && !hasSeenCameraOnboarding.value) openOnboarding();
 }
 
 function measureAgain() {
@@ -273,10 +283,10 @@ onUnmounted(() => {
         </svg>
       </button>
       <span class="pet-name-label">{{ pet?.name }}</span>
-      <button class="help-btn" @click="showOnboarding = true" :aria-label="$t('onboarding.howItWorks')">?</button>
+      <button class="help-btn" @click="openOnboarding" :aria-label="$t('onboarding.howItWorks')">?</button>
     </header>
 
-    <OnboardingModal v-if="showOnboarding" @close="closeOnboarding" />
+    <OnboardingModal v-if="showOnboarding" :variant="onboardingVariant" @close="closeOnboarding" />
 
     <p v-if="loadError" class="save-error load-error" role="alert">{{ $t('common.loadError') }}</p>
 
