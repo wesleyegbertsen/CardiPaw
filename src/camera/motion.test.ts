@@ -15,6 +15,7 @@ import {
   topStrip,
 } from './motion.ts';
 import type { Frame, Roi } from './motion.ts';
+import { median } from './signal.ts';
 import { makeScene } from './synth.ts';
 
 function lcg(seed: number): () => number {
@@ -433,5 +434,27 @@ describe('createLkTracker', () => {
     expect(() => tracker.result()).toThrow('lkMotion: no frames');
     tracker.push(makeScene(PARAMS).frames().next().value!);
     expect(tracker.latest).toEqual({ validRatio: 1, backgroundFlowPx: 0 });
+  });
+
+  // The anchor is renewed every reanchorS (2 s): a slow drift stays inside the 10 px search
+  // window between renewals but leaves it over 4 s when the anchor is held.
+  const DRIFT_ROI: Roi = { x: 8, y: 8, w: 48, h: 48 };
+  const driftTracker = (pxPerFrame: number, frames: number) => {
+    const tex = texture(31, 64, 64);
+    const tracker = createLkTracker(DRIFT_ROI, 30, { background: null });
+    for (let i = 0; i < frames; i++) tracker.push(shiftFrame(tex, 64, 64, 0, pxPerFrame * i));
+    return tracker;
+  };
+
+  it('keeps tracking a 0.1 px/frame drift for 4 s because the anchor is renewed every 2 s', () => {
+    const tracker = driftTracker(0.1, 120);
+    expect(tracker.latest!.validRatio).toBeGreaterThan(0.9);
+    // The offset carried over the renewal: the trajectory is continuous, not reset to 0.
+    const last = tracker.result().perPoint.map((row) => row[119]);
+    expect(Math.abs(median(last)! - 0.1 * 119)).toBeLessThan(0.5);
+  });
+
+  it('holds the anchor between renewals: a 0.5 px/frame drift is lost, not followed frame to frame', () => {
+    expect(driftTracker(0.5, 40).latest!.validRatio).toBeLessThan(0.5);
   });
 });

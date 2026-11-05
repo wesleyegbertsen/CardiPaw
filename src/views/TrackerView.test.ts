@@ -243,6 +243,18 @@ describe('TrackerView', () => {
       expect(addReading.mock.calls[0][0].source).toBeUndefined();
     });
 
+    it('saves the camera count by default even when the owner tapped along', async () => {
+      cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: 13 };
+      const { wrapper, addReading } = await mountCamera();
+      await suggest(wrapper);
+      expect(wrapper.find('.save-choice').exists()).toBe(true);
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ rate: 24, clickCount: 0, source: 'camera', durationSeconds: 30 }),
+      );
+    });
+
     it('measures again by remounting the capture with the camera opening by itself', async () => {
       cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: 13 };
       const { wrapper, addReading } = await mountCamera();

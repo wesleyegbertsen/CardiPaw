@@ -53,12 +53,13 @@ function setup(
   const getUserMedia = vi
     .fn<NonNullable<CameraBreathDeps['getUserMedia']>>()
     .mockResolvedValue(stream);
+  const frameSource = vi.fn<NonNullable<CameraBreathDeps['frameSource']>>((_v, cb) => {
+    onFrame = cb;
+    return stopFrames;
+  });
   const deps: CameraBreathDeps = {
     getUserMedia,
-    frameSource: (_v, cb) => {
-      onFrame = cb;
-      return stopFrames;
-    },
+    frameSource,
     readFrame: () => (frames ? (frames.next().value as Frame) : (params as Frame)),
   };
   scope = effectScope();
@@ -77,7 +78,7 @@ function setup(
   };
   const trackListener = (type: string) =>
     track.addEventListener.mock.calls.find(([name]) => name === type)![1] as () => void;
-  return { cam, track, stopFrames, getUserMedia, video, feed, trackListener };
+  return { cam, track, stopFrames, frameSource, getUserMedia, video, feed, trackListener };
 }
 
 async function openAndPlace(s: ReturnType<typeof setup>) {
@@ -175,6 +176,11 @@ describe('useCameraBreath', () => {
     expect(s.stopFrames).toHaveBeenCalledOnce();
     expect(s.video.value!.srcObject).toBeNull();
     expect(s.cam.elapsedSeconds.value).toBe(30);
+    // The owner looks at the result: nothing ticks on to overwrite it.
+    const verdict = s.cam.verdict.value;
+    vi.advanceTimersByTime(10_000);
+    expect(s.cam.phase.value).toBe('done');
+    expect(s.cam.verdict.value).toBe(verdict);
   }, 15_000);
 
   it('extends to 60 s when the 30 s reading is within 1 bpm of a ceiling', async () => {
@@ -210,7 +216,10 @@ describe('useCameraBreath', () => {
   it('ends at 30 s with frame-rate on a 15 fps run', async () => {
     const s = setup(FLAT);
     await openAndPlace(s);
-    s.feed(465, 1000 / 15);
+    s.feed(30, 1000 / 15);
+    // Flat frames track nothing: the first hint batch says so.
+    expect(s.cam.hints.value).toEqual({ shake: false, fewTracks: true, tooDark: false });
+    s.feed(435, 1000 / 15);
     expect(s.cam.phase.value).toBe('done');
     expect(s.cam.verdict.value).toMatchObject({
       accepted: false,
@@ -284,6 +293,34 @@ describe('useCameraBreath', () => {
     expect(s.track.stop).toHaveBeenCalledOnce();
     expect(s.cam.phase.value).toBe('idle');
     expect(s.video.value!.srcObject).toBeNull();
+  });
+
+  it('stays idle when cancel() comes while play() is pending, with nothing running', async () => {
+    const s = setup();
+    const playing = deferred<void>();
+    (s.video.value!.play as ReturnType<typeof vi.fn>).mockReturnValueOnce(playing.promise);
+    const opening = s.cam.open();
+    await flushPromises(); // getUserMedia resolved; play() pending
+    expect(s.cam.phase.value).toBe('requesting');
+    s.cam.cancel();
+    playing.resolve();
+    await opening;
+    expect(s.cam.phase.value).toBe('idle');
+    expect(s.cam.error.value).toBeNull();
+    expect(s.frameSource).not.toHaveBeenCalled();
+    expect(s.track.stop).toHaveBeenCalledOnce();
+  });
+
+  it('stays idle when a refusal arrives after cancel()', async () => {
+    const s = setup();
+    const prompt = deferred<MediaStream>();
+    s.getUserMedia.mockReturnValueOnce(prompt.promise);
+    const opening = s.cam.open();
+    s.cam.cancel();
+    prompt.reject(new DOMException('no', 'NotAllowedError'));
+    await opening;
+    expect(s.cam.phase.value).toBe('idle');
+    expect(s.cam.error.value).toBeNull();
   });
 
   it('keeps only the second stream when opened again while the first prompt was open', async () => {
@@ -387,6 +424,15 @@ describe('useCameraBreath', () => {
     expect(s.cam.phase.value).toBe('placing');
   });
 
+  it('is steady after two seconds of still, lit frames, not before', async () => {
+    const s = setup(FLAT);
+    await s.cam.open();
+    s.feed(60); // the 60th frame lands 1969 ms after the first
+    expect(s.cam.placement.value.steady).toBe(false);
+    s.feed(1); // 2002 ms
+    expect(s.cam.placement.value.steady).toBe(true);
+  });
+
   it('reports a dark picture and a moving phone while placing', async () => {
     const dark = setup(DARK);
     await dark.cam.open();
@@ -398,6 +444,27 @@ describe('useCameraBreath', () => {
     await shaky.cam.open();
     shaky.feed(70);
     expect(shaky.cam.placement.value).toMatchObject({ moving: true, steady: false });
+  });
+
+  it('releases the screen lock and the track listeners when the count ends', async () => {
+    const lock = { released: false, release: vi.fn().mockResolvedValue(undefined) };
+    vi.stubGlobal(
+      'navigator',
+      Object.assign(Object.create(navigator), {
+        wakeLock: { request: vi.fn().mockResolvedValue(lock) },
+      }),
+    );
+    const s = setup(FLAT);
+    await openAndPlace(s);
+    await flushPromises();
+    expect(lock.release).not.toHaveBeenCalled();
+    s.feed(465, 1000 / 15); // 15 fps: done with frame-rate at 30 s
+    expect(s.cam.phase.value).toBe('done');
+    expect(lock.release).toHaveBeenCalledOnce();
+    expect(s.track.removeEventListener.mock.calls.map(([name]) => name).sort()).toEqual([
+      'ended',
+      'mute',
+    ]);
   });
 
   it('reports a refused screen lock while capturing', async () => {

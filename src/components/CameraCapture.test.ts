@@ -314,6 +314,19 @@ describe('CameraCapture', () => {
     });
   });
 
+  it('drops the taps below three', async () => {
+    const wrapper = mountCapture();
+    await setPhase('placing');
+    await wrapper.get('[role="switch"]').trigger('click');
+    await setPhase('capturing');
+    await wrapper.get('.heart-btn').trigger('click');
+    await wrapper.get('.heart-btn').trigger('click');
+    await finishWith(accepted);
+    expect(wrapper.emitted('result')).toEqual([
+      [{ rate: 24, seconds: 30, interval: [23, 25], taps: null }],
+    ]);
+  });
+
   describe('abstained', () => {
     it.each([
       [['shake'], 'The phone moved.'],

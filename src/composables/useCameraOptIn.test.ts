@@ -22,6 +22,12 @@ describe('useCameraOptIn', () => {
     expect(useCameraOptIn().enabled.value).toBe(true);
   });
 
+  it('reads a saved off as off', async () => {
+    localStorage.setItem(STORAGE_KEY, '0');
+    const { useCameraOptIn } = await load();
+    expect(useCameraOptIn().enabled.value).toBe(false);
+  });
+
   it('saves the choice and shares it between callers', async () => {
     const { useCameraOptIn } = await load();
     const first = useCameraOptIn();

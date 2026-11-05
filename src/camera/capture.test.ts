@@ -46,14 +46,21 @@ describe('frameRateReason', () => {
     expect(frameRateReason(t, 30)).toBe('frame-rate');
   });
 
-  it('refuses one 120 ms gap and allows a 99 ms one', () => {
+  it('refuses one 120 ms gap and allows one of exactly 100 ms', () => {
     const withGap = (gap: number) => {
       const s = stamps(900, NTSC);
       for (let i = 450; i < s.length; i++) s[i] += gap - NTSC;
       return frameTiming(s);
     };
     expect(frameRateReason(withGap(120), 30)).toBe('frame-rate');
+    expect(frameRateReason(withGap(100), 30)).toBeNull();
     expect(frameRateReason(withGap(99), 30)).toBeNull();
+  });
+
+  it('allows the window to end two frame periods early, not three', () => {
+    // 899 stamps span 898 periods: 29 963 ms, inside the 66.7 ms slack; 898 span 29 930 ms.
+    expect(frameRateReason(frameTiming(stamps(899, NTSC)), 30)).toBeNull();
+    expect(frameRateReason(frameTiming(stamps(898, NTSC)), 30)).toBe('frame-rate');
   });
 
   it('pins the 28 fps edge', () => {
@@ -228,6 +235,7 @@ describe('coverCrop', () => {
     ['a 4:3 frame whole', 640, 480, { sx: 0, sy: 0, sw: 640, sh: 480 }],
     ['the middle of a portrait frame', 480, 640, { sx: 0, sy: 140, sw: 480, sh: 360 }],
     ['the middle of a 16:9 frame', 1280, 720, { sx: 160, sy: 0, sw: 960, sh: 720 }],
+    ['a whole-pixel origin from an odd width', 641, 480, { sx: 0, sy: 0, sw: 640, sh: 480 }],
     ['nothing before metadata', 0, 0, { sx: 0, sy: 0, sw: 0, sh: 0 }],
   ])('takes %s', (_label, vw, vh, crop) => {
     expect(coverCrop(vw, vh, 192, 144)).toEqual(crop);
