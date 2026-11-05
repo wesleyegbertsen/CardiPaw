@@ -280,7 +280,7 @@ function formatDate(iso: string) {
 .source-chip.camera {
   background: var(--color-bg);
   border: 1px solid var(--color-border);
-  color: var(--color-primary);
+  color: var(--color-camera-text);
 }
 
 .field {

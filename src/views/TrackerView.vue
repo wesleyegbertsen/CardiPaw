@@ -395,20 +395,22 @@ onUnmounted(() => {
           <span :id="saveChoiceLabelId" class="toggle-label">
             {{ $t('camera.yourCount', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}
           </span>
-          <button
-            type="button"
-            :aria-pressed="saveChoice === 'camera'"
-            class="length-pill"
-            :class="{ active: saveChoice === 'camera' }"
-            @click="saveChoice = 'camera'"
-          >{{ $t('camera.saveCamera') }}</button>
-          <button
-            type="button"
-            :aria-pressed="saveChoice === 'taps'"
-            class="length-pill"
-            :class="{ active: saveChoice === 'taps' }"
-            @click="saveChoice = 'taps'"
-          >{{ $t('camera.saveTaps', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}</button>
+          <div class="length-toggle">
+            <button
+              type="button"
+              :aria-pressed="saveChoice === 'camera'"
+              class="length-pill"
+              :class="{ active: saveChoice === 'camera' }"
+              @click="saveChoice = 'camera'"
+            >{{ $t('camera.saveCamera') }}</button>
+            <button
+              type="button"
+              :aria-pressed="saveChoice === 'taps'"
+              class="length-pill"
+              :class="{ active: saveChoice === 'taps' }"
+              @click="saveChoice = 'taps'"
+            >{{ $t('camera.saveTaps', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}</button>
+          </div>
         </div>
 
         <RestStateToggle v-model="restState" />
@@ -984,9 +986,24 @@ onUnmounted(() => {
 
 .save-choice {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   gap: 8px;
+}
+/* The length selector's bordered track, but the labels are longer than "30 s": on a
+   narrow phone a pill may take two lines rather than push the track off the card. */
+.save-choice .length-toggle {
+  max-width: 100%;
+}
+.save-choice .length-pill {
+  flex: 0 1 auto;
+  min-width: 0;
+  height: auto;
+  min-height: 30px;
+  padding: 4px 14px;
+  white-space: normal;
+  line-height: 1.3;
+  text-align: center;
 }
 
 /* Manual entry form */

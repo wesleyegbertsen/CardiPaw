@@ -492,7 +492,7 @@ function formatDateTime(date: string): string {
 
 /* The base tag's neutral look with the primary tint: amber is the Elevated badge's colour */
 .source-tag.camera {
-  color: var(--color-primary);
+  color: var(--color-camera-text);
 }
 
 .row-right {

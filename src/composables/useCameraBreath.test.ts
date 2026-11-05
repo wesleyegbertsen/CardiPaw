@@ -233,6 +233,20 @@ describe('useCameraBreath', () => {
     expect(s.track.stop).toHaveBeenCalledOnce();
   }, 15_000);
 
+  it('extends to 60 s when the 30 s window abstains, with no rate near any ceiling', async () => {
+    // Flat frames track nothing: the estimator abstains, and more signal may still succeed.
+    const s = setup(FLAT);
+    await openAndPlace(s);
+    s.feed(915);
+    expect(s.cam.phase.value).toBe('capturing');
+    expect(s.cam.verdict.value).toBeNull();
+    expect(s.cam.extending.value).toBe(true);
+    expect(s.cam.targetSeconds.value).toBe(60);
+    s.feed(910);
+    expect(s.cam.phase.value).toBe('done');
+    expect(s.cam.verdict.value).toMatchObject({ seconds: 60, accepted: false, rate: null });
+  });
+
   it('forgives the frame gap the 30 s evaluation itself causes', async () => {
     const s = setup({ ...SCENE, bpm: 31 });
     await openAndPlace(s);

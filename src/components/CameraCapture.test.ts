@@ -258,7 +258,7 @@ describe('CameraCapture', () => {
       expect(Number(wrapper.get('.ring-progress').attributes('stroke-dashoffset'))).toBeCloseTo(
         339.3 * (1 - 20 / 60),
       );
-      expect(wrapper.text()).toContain('Close to a threshold, watching 30 more seconds');
+      expect(wrapper.get('.hint').text()).toBe('Watching 30 more seconds for a surer count.');
       expect(wrapper.find('.heart-btn').exists()).toBe(false);
     });
 
@@ -285,10 +285,10 @@ describe('CameraCapture', () => {
       cam.targetSeconds.value = 60;
       cam.extending.value = true;
       await flushPromises();
-      expect(live.text()).toContain('Close to a threshold, watching 30 more seconds');
+      expect(live.text()).toBe('Watching 30 more seconds for a surer count.');
       cam.elapsedSeconds.value = 35;
       await flushPromises();
-      expect(live.text()).toContain('Close to a threshold'); // nothing new to say yet
+      expect(live.text()).toBe('Watching 30 more seconds for a surer count.'); // nothing new to say yet
       cam.elapsedSeconds.value = 40;
       await flushPromises();
       expect(live.text()).toBe('40 seconds watched');

@@ -23,6 +23,8 @@
   --color-danger-bg: #fee2e2;
   /* Text on --color-danger-bg (and small error text on surfaces): ≥4.5:1, unlike --color-danger. */
   --color-danger-text: #b91c1c;
+  /* The camera source tag's small text on --color-bg: 4.83:1, unlike --color-primary (3.34:1). */
+  --color-camera-text: var(--color-primary-dark);
   --color-badge-cat-bg: #fce7f3;
   --color-badge-cat-text: #9d174d;
   --color-badge-dog-bg: #dbeafe;
@@ -62,6 +64,7 @@
   --color-warning-text: #fbbf24;
   --color-danger-bg: #2d0a0a;
   --color-danger-text: #fca5a5;
+  --color-camera-text: var(--color-primary); /* 5.37:1 on --color-bg */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
