@@ -319,7 +319,7 @@ describe('CameraCapture', () => {
       [
         'slow',
         { tooDark: false, moving: false, slow: true, steady: false },
-        'Too dim for the camera: add light.',
+        'The camera is too slow: more light helps.',
       ],
     ])('hints %s', async (_label, placement, text) => {
       const wrapper = mountCapture();
@@ -335,7 +335,7 @@ describe('CameraCapture', () => {
       cam.placement.value = { tooDark: false, moving: false, slow: true, steady: false };
       await flushPromises();
       const hint = wrapper.get('.placement-hint');
-      expect(hint.text()).toBe('Too dim for the camera: add light.');
+      expect(hint.text()).toBe('The camera is too slow: more light helps.');
       expect(hint.classes()).not.toContain('checking');
       expect(hint.classes()).not.toContain('ready');
       expect(wrapper.get<HTMLButtonElement>('.btn-save').element.disabled).toBe(true);

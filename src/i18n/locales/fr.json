@@ -136,7 +136,7 @@
     "placeBody": "Votre animal peut être entier dans le cadre, tant que la poitrine ou le ventre y est. Plus il paraît grand, mieux c'est. Gardez quelque chose d'immobile en haut de l'image, comme un mur. Calez le téléphone.",
     "tooDark": "Trop sombre : allumez une lumière.",
     "moving": "Le téléphone bouge : calez-le.",
-    "moreLight": "Pas assez de lumière pour la caméra.",
+    "moreLight": "La caméra est trop lente : plus de lumière aide.",
     "steady": "Stable. Commencez quand votre animal est calme.",
     "checking": "Vérification de l'image…",
     "start": "Commencer",
