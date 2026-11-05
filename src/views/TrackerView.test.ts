@@ -368,10 +368,14 @@ describe('TrackerView', () => {
       ]);
     });
 
-    it('hides the mode bar while the camera is placing or capturing', async () => {
+    // Placing loses nothing, and with a remembered grant the camera opens straight into it:
+    // the pills are the way to another mode. Only a running count hides them.
+    it('keeps the mode bar while the camera is placing and hides it while capturing', async () => {
       const { wrapper } = await mountCamera();
       expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
       await wrapper.get('.stub-busy').trigger('click');
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+      await wrapper.get('.stub-capturing').trigger('click');
       expect(wrapper.find('.mode-toggle-bar').exists()).toBe(false);
       await wrapper.get('.stub-idle').trigger('click');
       expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
@@ -592,6 +596,8 @@ describe('TrackerView', () => {
         const { wrapper } = await mountCamera();
         expect(wrapper.find('.mode-toggle').exists()).toBe(true);
         await wrapper.get('.stub-busy').trigger('click');
+        expect(wrapper.find('.mode-toggle').exists()).toBe(true);
+        await wrapper.get('.stub-capturing').trigger('click');
         expect(wrapper.find('.mode-toggle').exists()).toBe(false);
       });
 

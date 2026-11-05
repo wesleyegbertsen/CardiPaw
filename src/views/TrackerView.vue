@@ -428,7 +428,7 @@ onUnmounted(() => {
     <!-- Needs the pet: its thresholds rate a manual entry and saving files the reading under it. -->
     <div v-else-if="pet" class="tracker-main">
     <!-- Mode toggle: absolutely positioned so it overlays the body without affecting its height -->
-    <div v-if="phase === 'idle' && !cameraBusy && !cameraResult" class="mode-toggle-bar">
+    <div v-if="phase === 'idle' && !cameraCapturing && !cameraResult" class="mode-toggle-bar">
       <div class="mode-toggle" role="group" :aria-label="$t('tracker.modeLabel')">
         <div
           class="mode-toggle-indicator"
@@ -484,7 +484,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Camera (experimental): the capture, then its suggestion as a card the owner confirms -->
-    <div v-else-if="mode === 'camera'" class="tracker-body done-body camera-body" :class="{ 'with-bar': !cameraBusy && !cameraResult }">
+    <div v-else-if="mode === 'camera'" class="tracker-body done-body camera-body" :class="{ 'with-bar': !cameraCapturing && !cameraResult }">
       <CameraCapture
         v-if="!cameraResult"
         :pet="pet"
