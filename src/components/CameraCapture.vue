@@ -24,7 +24,12 @@ const props = defineProps<{
   // A dialog is over the steps (the onboarding): opening by itself waits until it closes.
   hold?: boolean;
 }>();
-const emit = defineEmits<{ result: [CameraResult]; tapInstead: []; busy: [boolean]; capturing: [boolean] }>();
+const emit = defineEmits<{
+  result: [CameraResult];
+  tapInstead: [];
+  busy: [boolean];
+  capturing: [boolean];
+}>();
 
 const { t } = useI18n();
 const video = ref<HTMLVideoElement | null>(null);
@@ -209,7 +214,10 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
       </div>
     </div>
 
-    <div class="capture-panel" :class="{ explain: explaining, placing: cam.phase.value === 'placing' }">
+    <div
+      class="capture-panel"
+      :class="{ explain: explaining, placing: cam.phase.value === 'placing' }"
+    >
       <!-- Explain -->
       <template v-if="explaining">
         <span class="experimental-chip">{{ $t('camera.experimental') }}</span>
@@ -271,7 +279,8 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
               :describedby="countAlong ? countAlongHintId : undefined"
             />
           </div>
-          <p v-if="countAlong" :id="countAlongHintId" class="hint">
+          <!-- Shown, it would push the step past the screen: read with the switch, shown by the heart -->
+          <p v-if="countAlong" :id="countAlongHintId" class="sr-only">
             {{ $t('camera.countAlongHint') }}
           </p>
         </div>
@@ -294,6 +303,7 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
         <p v-if="cam.extending.value" class="hint">{{ $t('camera.extending') }}</p>
         <p v-if="cam.screenLockRefused.value" class="hint">{{ $t('camera.keepScreenOn') }}</p>
         <template v-if="countAlong">
+          <p class="hint count-along-hint">{{ $t('camera.countAlongHint') }}</p>
           <button
             class="heart-btn"
             :class="{ pulsing: isPulsing }"
@@ -410,6 +420,16 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
   text-align: center;
   color: var(--color-warning-text);
   margin: 0;
+}
+
+/* Two lines always, centred: a hint that wraps and one that doesn't keep Start in place */
+.placement-hint {
+  --hint-line-height: 1.4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: var(--hint-line-height);
+  min-height: calc(2em * var(--hint-line-height));
 }
 
 .placement-hint.ready {

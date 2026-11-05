@@ -109,8 +109,8 @@ describe('CameraCapture', () => {
     const wrapper = mountCapture();
     expect(wrapper.text()).toContain('Count breaths with the camera');
     expect(wrapper.text()).toContain('Prop your phone up so the camera sees');
-    expect(wrapper.text()).toContain('The video is analysed on this phone only.');
-    expect(wrapper.get('.light-note').text()).toBe('Works best in a well-lit room.');
+    expect(wrapper.text()).toContain('Analysed on this phone only.');
+    expect(wrapper.get('.light-note').text()).toBe('Works best in a bright room.');
     expect(wrapper.get('.experimental-chip').text()).toBe('Experimental');
     expect(wrapper.get('video').attributes('aria-hidden')).toBe('true');
     expect(cam.open).not.toHaveBeenCalled();
@@ -287,16 +287,16 @@ describe('CameraCapture', () => {
       const wrapper = mountCapture();
       await setPhase('placing');
       expect(wrapper.get('.privacy-note').text()).toBe(
-        'The video is analysed on this phone only. Nothing is recorded, stored or sent anywhere.',
+        'Analysed on this phone only. Nothing is recorded, stored or sent.',
       );
-      expect(wrapper.get('.light-note').text()).toBe('Works best in a well-lit room.');
+      expect(wrapper.get('.light-note').text()).toBe('Works best in a bright room.');
     });
 
     it('says it is checking the picture while no other hint applies', async () => {
       const wrapper = mountCapture();
       await setPhase('placing');
       const hint = wrapper.get('.placement-hint');
-      expect(hint.text()).toBe('Checking the picture… hold still.');
+      expect(hint.text()).toBe('Checking the picture…');
       expect(hint.classes()).toContain('checking');
     });
 
@@ -309,17 +309,17 @@ describe('CameraCapture', () => {
       [
         'moving',
         { tooDark: false, moving: true, slow: true, steady: false },
-        "The phone is moving: prop it up and don't touch it.",
+        'The phone is moving: prop it up.',
       ],
       [
         'steady',
         { tooDark: false, moving: false, slow: false, steady: true },
-        'Steady. Start when your pet is settled.',
+        'Steady. Start when your pet is calm.',
       ],
       [
         'slow',
         { tooDark: false, moving: false, slow: true, steady: false },
-        'More light needed: the camera slows down in dim light.',
+        'Too dim for the camera: add light.',
       ],
     ])('hints %s', async (_label, placement, text) => {
       const wrapper = mountCapture();
@@ -335,13 +335,14 @@ describe('CameraCapture', () => {
       cam.placement.value = { tooDark: false, moving: false, slow: true, steady: false };
       await flushPromises();
       const hint = wrapper.get('.placement-hint');
-      expect(hint.text()).toBe('More light needed: the camera slows down in dim light.');
+      expect(hint.text()).toBe('Too dim for the camera: add light.');
       expect(hint.classes()).not.toContain('checking');
       expect(hint.classes()).not.toContain('ready');
       expect(wrapper.get<HTMLButtonElement>('.btn-save').element.disabled).toBe(true);
     });
 
-    it('offers a named Count along switch with its hint once on', async () => {
+    // Shown, the hint would push the step past the screen; the switch still says what it does.
+    it('offers a named Count along switch described by a hidden hint once on', async () => {
       const wrapper = mountCapture();
       await setPhase('placing');
       const toggle = wrapper.get('[role="switch"]');
@@ -351,7 +352,11 @@ describe('CameraCapture', () => {
       expect(toggle.attributes('aria-describedby')).toBeUndefined();
       await toggle.trigger('click');
       const hint = document.getElementById(toggle.attributes('aria-describedby')!);
-      expect(hint?.textContent).toContain('Tap the heart for each breath you see');
+      expect(hint?.textContent?.trim()).toBe(
+        'Tap the heart with each breath. You can save your own count instead.',
+      );
+      expect(hint?.classList.contains('sr-only')).toBe(true);
+      expect(wrapper.find('.hint').exists()).toBe(false);
     });
   });
 
@@ -380,6 +385,22 @@ describe('CameraCapture', () => {
       );
       expect(wrapper.get('.hint').text()).toBe('Watching 30 more seconds for a surer count.');
       expect(wrapper.find('.heart-btn').exists()).toBe(false);
+    });
+
+    it('shows the Count along hint by the heart while counting along only', async () => {
+      const wrapper = mountCapture();
+      await setPhase('capturing');
+      expect(wrapper.text()).not.toContain('Tap the heart with each breath');
+
+      await setPhase('placing');
+      await wrapper.get('[role="switch"]').trigger('click');
+      await setPhase('capturing');
+      const hint = wrapper.get('.count-along-hint');
+      expect(hint.text()).toBe(
+        'Tap the heart with each breath. You can save your own count instead.',
+      );
+      expect(hint.classes()).toContain('hint');
+      expect(hint.classes()).not.toContain('sr-only');
     });
 
     it('keeps the box on the preview while watching, thinner', async () => {
