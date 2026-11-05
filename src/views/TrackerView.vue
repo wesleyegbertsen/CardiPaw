@@ -1099,15 +1099,19 @@ onUnmounted(() => {
 }
 
 /* The live preview (placing and capturing) is the tallest step: 12 px under the bar (64 px) or
-   the header and above the nav, and placing from the top, so it fits a 720 px tall phone */
+   the header and above the nav, so it fits a 720 px tall phone. Centred like the other modes
+   while it fits; `safe` starts it from the top once it does not, instead of cutting the top off */
 .camera-body.live {
   padding-top: 12px;
   padding-bottom: 12px;
 }
 
+.camera-body.live {
+  justify-content: safe center;
+}
+
 .camera-body.live.with-bar {
   padding-top: 76px;
-  justify-content: flex-start;
 }
 
 .result-title {
@@ -1270,9 +1274,6 @@ onUnmounted(() => {
   border: 0;
 }
 
-.immersive .mode-pill {
-  height: 44px;
-}
 
 .immersive .camera-result-preview {
   grid-area: preview;
