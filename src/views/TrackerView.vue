@@ -10,6 +10,9 @@ import { useTrackerPrefs } from '../composables/useTrackerPrefs';
 import { useWakeLock } from '../composables/useWakeLock';
 import { useOnboarding } from '../composables/useOnboarding';
 import { isCameraSupported, useCameraOptIn } from '../composables/useCameraOptIn';
+import { useLandscapeTouch } from '../composables/useLandscapeTouch';
+import { ImmersiveMode } from '../native/immersiveMode';
+import { isNative } from '../utils/platform';
 import type { CameraResult } from '../composables/useCameraBreath';
 import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
@@ -73,6 +76,10 @@ const cameraReopen = ref(false);
 const cameraBusy = ref(false);
 // Capturing only: a running count the leave guard asks about.
 const cameraCapturing = ref(false);
+// A phone propped sideways to film the pet: the camera mode fills the screen, the preview on
+// the left and the steps on the right, over the app header and the bottom nav.
+const landscapeTouch = useLandscapeTouch();
+const immersive = computed(() => mode.value === 'camera' && landscapeTouch.value);
 const saveChoice = ref<'camera' | 'taps'>('camera');
 const saveChoiceLabelId = useId();
 // Length of the current measurement: the pet's chosen length, fixed when it starts.
@@ -346,6 +353,20 @@ function reset() {
   nextTick(() => heartRef.value?.focus());
 }
 
+// In the app the system bars go too. Not requestFullscreen on the website: it needs a tap,
+// and turning the phone is not one; covering the app's own chrome is the full screen there.
+let barsHidden = false;
+async function hideSystemBars(hide: boolean) {
+  if (!isNative() || hide === barsHidden) return;
+  barsHidden = hide;
+  try {
+    await (hide ? ImmersiveMode.enter() : ImmersiveMode.exit());
+  } catch (e) {
+    console.warn(hide ? 'Hiding the system bars failed' : 'Showing the system bars failed', e);
+  }
+}
+watch(immersive, (on) => void hideSystemBars(on), { immediate: true });
+
 let unmounted = false;
 
 onMounted(async () => {
@@ -369,12 +390,18 @@ onMounted(async () => {
 
 onUnmounted(() => {
   unmounted = true;
+  void hideSystemBars(false);
   if (intervalId.value !== null) clearInterval(intervalId.value);
 });
 </script>
 
 <template>
-  <div class="tracker" :class="`phase-${phase}`">
+  <!-- Full screen sideways: dark like a camera app, whatever the app theme -->
+  <div
+    class="tracker"
+    :class="[`phase-${phase}`, { immersive }]"
+    :data-theme="immersive ? 'dark' : undefined"
+  >
     <header class="tracker-header">
       <button class="back-btn" @click="goBack" :aria-label="$t('common.back')">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
@@ -462,59 +489,68 @@ onUnmounted(() => {
         v-if="!cameraResult"
         :pet="pet"
         :auto-open="cameraReopen"
+        :landscape="immersive"
         @result="cameraResult = $event"
         @tap-instead="tapInstead"
         @busy="cameraBusy = $event"
         @capturing="cameraCapturing = $event"
       />
       <template v-else>
-        <span class="experimental-chip">{{ $t('camera.experimental') }}</span>
-        <p class="result-title">{{ $t('camera.resultTitle') }}</p>
-        <div ref="resultRef" class="result" tabindex="-1" aria-live="polite" aria-atomic="true">
+        <!-- Sideways the number takes the camera's place; the card keeps the read-out copy -->
+        <div v-if="immersive" class="camera-result-preview" aria-hidden="true">
           <div class="result-number">{{ cameraResult.rate }}</div>
           <div class="result-label">{{ $t('common.breathsPerMin') }}</div>
         </div>
-        <span class="rate-badge" :class="getRateStatus(cameraResult.rate, pet).cssClass">
-          {{ $t('status.' + getRateStatus(cameraResult.rate, pet).cssClass) }}
-        </span>
-        <p class="result-note">
-          {{ $t('camera.resultNote', { seconds: cameraResult.seconds, lo: cameraResult.interval[0], hi: cameraResult.interval[1] }) }}
-        </p>
-        <div v-if="cameraResult.taps !== null" class="save-choice" role="group" :aria-labelledby="saveChoiceLabelId">
-          <span :id="saveChoiceLabelId" class="toggle-label">
-            {{ $t('camera.yourCount', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}
-          </span>
-          <div class="length-toggle">
-            <button
-              type="button"
-              :aria-pressed="saveChoice === 'camera'"
-              class="length-pill"
-              :class="{ active: saveChoice === 'camera' }"
-              @click="saveChoice = 'camera'"
-            >{{ $t('camera.saveCamera') }}</button>
-            <button
-              type="button"
-              :aria-pressed="saveChoice === 'taps'"
-              class="length-pill"
-              :class="{ active: saveChoice === 'taps' }"
-              @click="saveChoice = 'taps'"
-            >{{ $t('camera.saveTaps', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}</button>
+        <!-- Upright it gives way (display: contents) and the card is one column -->
+        <div class="camera-result">
+          <span class="experimental-chip">{{ $t('camera.experimental') }}</span>
+          <p class="result-title">{{ $t('camera.resultTitle') }}</p>
+          <div ref="resultRef" class="result" tabindex="-1" aria-live="polite" aria-atomic="true">
+            <div class="result-number">{{ cameraResult.rate }}</div>
+            <div class="result-label">{{ $t('common.breathsPerMin') }}</div>
           </div>
-        </div>
+          <span class="rate-badge" :class="getRateStatus(cameraResult.rate, pet).cssClass">
+            {{ $t('status.' + getRateStatus(cameraResult.rate, pet).cssClass) }}
+          </span>
+          <p class="result-note">
+            {{ $t('camera.resultNote', { seconds: cameraResult.seconds, lo: cameraResult.interval[0], hi: cameraResult.interval[1] }) }}
+          </p>
+          <div v-if="cameraResult.taps !== null" class="save-choice" role="group" :aria-labelledby="saveChoiceLabelId">
+            <span :id="saveChoiceLabelId" class="toggle-label">
+              {{ $t('camera.yourCount', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}
+            </span>
+            <div class="length-toggle">
+              <button
+                type="button"
+                :aria-pressed="saveChoice === 'camera'"
+                class="length-pill"
+                :class="{ active: saveChoice === 'camera' }"
+                @click="saveChoice = 'camera'"
+              >{{ $t('camera.saveCamera') }}</button>
+              <button
+                type="button"
+                :aria-pressed="saveChoice === 'taps'"
+                class="length-pill"
+                :class="{ active: saveChoice === 'taps' }"
+                @click="saveChoice = 'taps'"
+              >{{ $t('camera.saveTaps', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}</button>
+            </div>
+          </div>
 
-        <RestStateToggle v-model="restState" />
+          <RestStateToggle v-model="restState" />
 
-        <div class="notes-wrapper">
-          <RichTextEditor v-model="notes" :label="$t('reading.notesLabel')" />
-        </div>
+          <div class="notes-wrapper">
+            <RichTextEditor v-model="notes" :label="$t('reading.notesLabel')" />
+          </div>
 
-        <div class="done-actions">
-          <p v-if="saveError" class="save-error" role="alert">{{ $t('tracker.saveError') }}</p>
-          <button class="btn-save" @click="saveReading" :disabled="saving">
-            {{ saving ? $t('common.saving') : $t('camera.confirm') }}
-          </button>
-          <button class="btn-retry" @click="measureAgain">{{ $t('camera.measureAgain') }}</button>
-          <button class="btn-discard" @click="discard">{{ $t('common.discard') }}</button>
+          <div class="done-actions">
+            <p v-if="saveError" class="save-error" role="alert">{{ $t('tracker.saveError') }}</p>
+            <button class="btn-save" @click="saveReading" :disabled="saving">
+              {{ saving ? $t('common.saving') : $t('camera.confirm') }}
+            </button>
+            <button class="btn-retry" @click="measureAgain">{{ $t('camera.measureAgain') }}</button>
+            <button class="btn-discard" @click="discard">{{ $t('common.discard') }}</button>
+          </div>
         </div>
       </template>
     </div>
@@ -1151,5 +1187,141 @@ onUnmounted(() => {
 .rate-badge.danger {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
+}
+
+.camera-result {
+  display: contents;
+}
+
+/*
+ * Sideways in camera mode: a layer over the app header, the bottom nav (100) and the update
+ * notice (450), under the dialogs (500 and up) so the leave prompt and the help still show.
+ * Two columns: the 4:3 preview as tall as the screen allows (at most 60% of its width), and
+ * the header, the mode pills and the steps beside it. The tracker's wrappers give way so
+ * their parts land in the grid; CameraCapture puts its regions in the preview and panel areas.
+ */
+.tracker.immersive {
+  --immersive-pad: 8px;
+  --preview-width: min(
+    calc((100vh - var(--safe-top) - var(--safe-bottom) - 2 * var(--immersive-pad)) * 4 / 3),
+    60vw
+  );
+  --preview-width: min(
+    calc((100dvh - var(--safe-top) - var(--safe-bottom) - 2 * var(--immersive-pad)) * 4 / 3),
+    60vw
+  );
+  position: fixed;
+  inset: 0;
+  z-index: 480;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--preview-width) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    'preview header'
+    'preview modes'
+    'preview panel';
+  column-gap: 16px;
+  padding: calc(var(--safe-top) + var(--immersive-pad)) calc(var(--safe-right) + 12px)
+    calc(var(--safe-bottom) + var(--immersive-pad)) calc(var(--safe-left) + 12px);
+  background: #000;
+  /* body resolved its colour with the app theme; text here inherits this one instead */
+  color: var(--color-text);
+}
+
+.immersive .tracker-main,
+.immersive .camera-body {
+  display: contents;
+}
+
+.immersive .tracker-header {
+  grid-area: header;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.immersive .back-btn,
+.immersive .help-btn {
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+}
+
+.immersive .pet-name-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.immersive .mode-toggle-bar {
+  grid-area: modes;
+  position: static;
+  padding: 4px 0 8px;
+  background: none;
+  border: 0;
+}
+
+.immersive .mode-pill {
+  height: 44px;
+}
+
+.immersive .camera-result-preview {
+  grid-area: preview;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.immersive .camera-result-preview .result-number {
+  font-size: 96px;
+}
+
+.immersive .camera-result {
+  grid-area: panel;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 0 8px;
+}
+
+/* Centred while it fits, from the top once it scrolls */
+.immersive .camera-result::before,
+.immersive .camera-result::after {
+  content: '';
+  margin: auto 0;
+}
+
+/* The number is on the left; the card's copy stays for the read-out and the focus */
+.immersive .camera-result .result {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.immersive .camera-result .notes-wrapper,
+.immersive .camera-result .done-actions {
+  max-width: none;
+}
+
+.immersive .save-choice .length-pill,
+.immersive :deep(.rest-btn) {
+  min-height: 44px;
 }
 </style>

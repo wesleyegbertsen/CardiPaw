@@ -26,6 +26,7 @@ import { closeTopModal } from '../composables/useModal';
 import { Blank } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
 import { cameraStub } from '../test/stubs';
+import { fakeMatchMedia } from '../test/mediaQuery';
 import * as db from '../services/db';
 import type { Pet, Reading } from '../types';
 import type { MeasurementSeconds } from '../utils/measurement';
@@ -68,6 +69,14 @@ vi.mock('../composables/useCameraOptIn', async () => {
     isCameraSupported: () => camera.supported,
   };
 });
+// The app hides the system bars in the full-screen camera layout; the website has no plugin.
+const platform = vi.hoisted(() => ({ native: false }));
+vi.mock('../utils/platform', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../utils/platform')>()),
+  isNative: () => platform.native,
+}));
+const immersiveMode = vi.hoisted(() => ({ enter: vi.fn(), exit: vi.fn() }));
+vi.mock('../native/immersiveMode', () => ({ ImmersiveMode: immersiveMode }));
 // Loaded through defineAsyncComponent, so the module is mocked rather than the component stubbed.
 vi.mock('../components/CameraCapture.vue', async () =>
   (await import('../test/stubs')).cameraCaptureStubModule(),
@@ -162,6 +171,11 @@ describe('TrackerView', () => {
     onboarding.hasSeenCameraOnboarding.value = true;
     onboarding.markSeen.mockReset();
     onboarding.markCameraSeen.mockReset();
+    // Upright unless a test turns the phone; happy-dom would answer the query by its own size.
+    fakeMatchMedia(false);
+    platform.native = false;
+    immersiveMode.enter.mockReset().mockResolvedValue(undefined);
+    immersiveMode.exit.mockReset().mockResolvedValue(undefined);
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2024-03-15T12:00:00.000Z'));
   });
@@ -512,6 +526,157 @@ describe('TrackerView', () => {
         router.back();
         await flushPromises();
         expect(dialog()).not.toBeNull();
+      });
+    });
+
+    // A phone propped sideways to film the pet: the camera takes the whole screen.
+    describe('sideways', () => {
+      const tracker = (wrapper: VueWrapper) => wrapper.get('.tracker');
+      const isImmersive = (wrapper: VueWrapper) => tracker(wrapper).classes().includes('immersive');
+      const barCalls = () => [immersiveMode.enter.mock.calls.length, immersiveMode.exit.mock.calls.length];
+
+      it('fills the screen in camera mode on a landscape touch screen, in the dark', async () => {
+        fakeMatchMedia(true);
+        const { wrapper } = await mountCamera();
+        expect(isImmersive(wrapper)).toBe(true);
+        expect(tracker(wrapper).attributes('data-theme')).toBe('dark');
+        expect(wrapper.get('.camera-stub').attributes('data-landscape')).toBe('true');
+      });
+
+      it('keeps the normal layout upright', async () => {
+        const { wrapper } = await mountCamera();
+        expect(isImmersive(wrapper)).toBe(false);
+        expect(tracker(wrapper).attributes('data-theme')).toBeUndefined();
+        expect(wrapper.get('.camera-stub').attributes('data-landscape')).toBe('false');
+      });
+
+      it.each([0, 1])('keeps the normal layout sideways in the other modes (pill %i)', async (pill) => {
+        fakeMatchMedia(true);
+        const { wrapper } = await mountCamera();
+        await wrapper.findAll('.mode-pill')[pill].trigger('click');
+        expect(isImmersive(wrapper)).toBe(false);
+      });
+
+      it('follows the phone as it turns, keeping the capture mounted', async () => {
+        const media = fakeMatchMedia(false);
+        const { wrapper } = await mountCamera();
+        media.set(true);
+        await flushPromises();
+        expect(isImmersive(wrapper)).toBe(true);
+        media.set(false);
+        await flushPromises();
+        expect(isImmersive(wrapper)).toBe(false);
+        expect([cameraStub.mounts, cameraStub.unmounts]).toEqual([1, 0]);
+      });
+
+      it('keeps the mode pills where the upright bar would show them', async () => {
+        fakeMatchMedia(true);
+        const { wrapper } = await mountCamera();
+        expect(wrapper.find('.mode-toggle').exists()).toBe(true);
+        await wrapper.get('.stub-busy').trigger('click');
+        expect(wrapper.find('.mode-toggle').exists()).toBe(false);
+      });
+
+      it('shows the suggested number on the left, for the eye only', async () => {
+        const media = fakeMatchMedia(true);
+        const { wrapper } = await mountCamera();
+        await suggest(wrapper);
+        const left = wrapper.get('.camera-result-preview');
+        expect(left.attributes('aria-hidden')).toBe('true');
+        expect(left.text()).toContain('24');
+        // The card keeps the read-out number, the focus target, with the rest of the card.
+        expect(wrapper.get('.camera-result .result').text()).toContain('24');
+        expect(wrapper.get('.camera-result').find('.btn-save').exists()).toBe(true);
+        media.set(false);
+        await flushPromises();
+        expect(wrapper.find('.camera-result-preview').exists()).toBe(false);
+      });
+
+      it('asks before the back button leaves a running capture', async () => {
+        fakeMatchMedia(true);
+        const { wrapper } = await mountCamera({ from: petPage });
+        await wrapper.get('.stub-capturing').trigger('click');
+        await wrapper.get('.back-btn').trigger('click');
+        await flushPromises();
+        expect(dialog()?.querySelector('.message')?.textContent).toBe(en.tracker.leaveConfirm);
+        expect(router.currentRoute.value.name).toBe('tracker');
+        clickInDialog('.btn-cancel');
+        await flushPromises();
+        expect(isImmersive(wrapper)).toBe(true);
+      });
+
+      it('never touches the system bars on the website', async () => {
+        const media = fakeMatchMedia(true);
+        const { wrapper } = await mountCamera();
+        media.set(false);
+        await flushPromises();
+        wrapper.unmount();
+        await flushPromises();
+        expect(barCalls()).toEqual([0, 0]);
+      });
+
+      describe('system bars in the app', () => {
+        beforeEach(() => {
+          platform.native = true;
+        });
+
+        it('hides them on entering the full screen and shows them on turning back', async () => {
+          const media = fakeMatchMedia(false);
+          await mountCamera();
+          expect(barCalls()).toEqual([0, 0]);
+          media.set(true);
+          await flushPromises();
+          expect(barCalls()).toEqual([1, 0]);
+          media.set(false);
+          await flushPromises();
+          expect(barCalls()).toEqual([1, 1]);
+        });
+
+        it('shows them when another mode leaves the full screen', async () => {
+          fakeMatchMedia(true);
+          const { wrapper } = await mountCamera();
+          expect(barCalls()).toEqual([1, 0]);
+          await wrapper.findAll('.mode-pill')[0].trigger('click');
+          await flushPromises();
+          expect(barCalls()).toEqual([1, 1]);
+        });
+
+        it('shows them when the tracker closes in full screen', async () => {
+          fakeMatchMedia(true);
+          const { wrapper } = await mountCamera();
+          wrapper.unmount();
+          await flushPromises();
+          expect(barCalls()).toEqual([1, 1]);
+        });
+
+        it('leaves them alone when the tracker closes upright', async () => {
+          const { wrapper } = await mountCamera();
+          wrapper.unmount();
+          await flushPromises();
+          expect(barCalls()).toEqual([0, 0]);
+        });
+
+        it('warns when the bars cannot be hidden, and keeps the full screen', async () => {
+          const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+          const failure = new Error('no window');
+          immersiveMode.enter.mockRejectedValueOnce(failure);
+          fakeMatchMedia(true);
+          const { wrapper } = await mountCamera();
+          expect(warn).toHaveBeenCalledExactlyOnceWith('Hiding the system bars failed', failure);
+          expect(isImmersive(wrapper)).toBe(true);
+        });
+
+        it('warns when the bars cannot be shown again', async () => {
+          const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+          const failure = new Error('no window');
+          immersiveMode.exit.mockRejectedValueOnce(failure);
+          const media = fakeMatchMedia(true);
+          const { wrapper } = await mountCamera();
+          media.set(false);
+          await flushPromises();
+          expect(warn).toHaveBeenCalledExactlyOnceWith('Showing the system bars failed', failure);
+          expect(isImmersive(wrapper)).toBe(false);
+        });
       });
     });
   });

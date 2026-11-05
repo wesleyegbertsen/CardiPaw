@@ -40,7 +40,7 @@ vi.mock('../composables/useCameraBreath', async () => {
   return { useCameraBreath: () => cam };
 });
 
-function mountCapture(props: { pet?: Pet; autoOpen?: boolean } = {}) {
+function mountCapture(props: { pet?: Pet; autoOpen?: boolean; landscape?: boolean } = {}) {
   return mount(CameraCapture, {
     props: { pet: makePet({ species: 'cat' }), ...props },
     attachTo: document.body,
@@ -437,6 +437,71 @@ describe('CameraCapture', () => {
       expect(wrapper.get('[role="alert"]').text()).toContain(
         'Large dogs often breathe fewer than 9 times a minute',
       );
+    });
+  });
+
+  // The tracker lays the two regions out side by side when the phone is sideways.
+  describe('regions', () => {
+    const region = (wrapper: ReturnType<typeof mountCapture>, name: 'preview' | 'panel') =>
+      wrapper.get(`.camera-capture > .capture-${name}`);
+
+    it('keeps the video in the preview region and the steps in the panel region', async () => {
+      const wrapper = mountCapture();
+      expect(wrapper.classes()).not.toContain('landscape');
+      expect(region(wrapper, 'preview').find('video').exists()).toBe(true);
+      expect(region(wrapper, 'panel').text()).toContain('Count breaths with the camera');
+      expect(region(wrapper, 'panel').find('.experimental-chip').exists()).toBe(true);
+      await setPhase('placing');
+      expect(region(wrapper, 'preview').find('.roi-box').exists()).toBe(true);
+      expect(region(wrapper, 'panel').get('.btn-save').text()).toBe('Start');
+    });
+
+    it('shows no placeholder upright: the steps take the whole screen there', async () => {
+      const wrapper = mountCapture();
+      expect(wrapper.find('.preview-placeholder').exists()).toBe(false);
+      await setPhase('error', 'denied');
+      expect(wrapper.find('.preview-placeholder').exists()).toBe(false);
+    });
+
+    it.each<[string, () => Promise<unknown>]>([
+      ['the explanation', async () => {}],
+      ['the permission prompt', () => setPhase('requesting')],
+      ['an error', () => setPhase('error', 'interrupted')],
+      [
+        'an abstain',
+        async () => {
+          await setPhase('capturing');
+          await finishWith(abstain(['shake']));
+        },
+      ],
+    ])('sideways, shows a placeholder instead of the preview on %s', async (_, prepare) => {
+      const wrapper = mountCapture({ landscape: true });
+      await prepare();
+      expect(wrapper.classes()).toContain('landscape');
+      const preview = region(wrapper, 'preview');
+      expect(preview.get('.preview-placeholder').attributes('aria-hidden')).toBe('true');
+      expect(preview.get<HTMLElement>('.preview').element.style.display).toBe('none');
+    });
+
+    it.each<CameraPhase>(['placing', 'capturing'])(
+      'sideways, shows the live preview while %s, without the placeholder',
+      async (phase) => {
+        const wrapper = mountCapture({ landscape: true });
+        await setPhase(phase);
+        const preview = region(wrapper, 'preview');
+        expect(preview.get<HTMLElement>('.preview').element.style.display).toBe('');
+        expect(preview.find('.roi-box').exists()).toBe(true);
+        expect(preview.find('.preview-placeholder').exists()).toBe(false);
+      },
+    );
+
+    it('sideways, keeps the steps and their buttons in the panel', async () => {
+      const wrapper = mountCapture({ landscape: true });
+      await setPhase('placing');
+      expect(region(wrapper, 'panel').text()).toContain('Fit the chest or belly inside the box');
+      expect(region(wrapper, 'panel').find('.btn-save').exists()).toBe(true);
+      await setPhase('capturing');
+      expect(region(wrapper, 'panel').find('.timer-ring').exists()).toBe(true);
     });
   });
 });

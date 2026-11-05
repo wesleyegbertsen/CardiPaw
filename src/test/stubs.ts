@@ -61,6 +61,7 @@ export function cameraCaptureStubModule() {
       props: {
         pet: { type: Object, required: true },
         autoOpen: { type: Boolean, default: false },
+        landscape: { type: Boolean, default: false },
       },
       emits: ['result', 'tapInstead', 'busy', 'capturing'],
       setup(props, { emit }) {
@@ -77,13 +78,21 @@ export function cameraCaptureStubModule() {
           emit('capturing', false);
         };
         return () =>
-          h('div', { class: 'camera-stub', 'data-auto-open': String(props.autoOpen) }, [
+          h(
+            'div',
+            {
+              class: 'camera-stub',
+              'data-auto-open': String(props.autoOpen),
+              'data-landscape': String(props.landscape),
+            },
+            [
             h('button', { class: 'stub-result', onClick: () => emit('result', { ...cameraStub.nextResult }) }),
             h('button', { class: 'stub-tap-instead', onClick: () => emit('tapInstead') }),
             h('button', { class: 'stub-busy', onClick: busy }),
             h('button', { class: 'stub-capturing', onClick: capturing }),
             h('button', { class: 'stub-idle', onClick: idle }),
-          ]);
+            ],
+          );
       },
     }),
   };
