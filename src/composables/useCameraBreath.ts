@@ -40,6 +40,14 @@ export interface CameraVerdict {
   deliveredFps: number | null;
 }
 
+/** What CameraCapture hands the tracker: a suggestion, plus the owner's own taps (3 or more). */
+export interface CameraResult {
+  rate: number;
+  seconds: CameraSeconds;
+  interval: [number, number];
+  taps: number | null;
+}
+
 /** Injectable for tests: happy-dom has neither getUserMedia nor a canvas. */
 export interface CameraBreathDeps {
   getUserMedia?: (c: MediaStreamConstraints) => Promise<MediaStream>;

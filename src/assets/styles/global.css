@@ -111,6 +111,16 @@ img {
   height: auto;
 }
 
+/* Marks the experimental camera counting, on its capture screen and its result card */
+.experimental-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
 /* Visually hidden but still read by screen readers */
 .sr-only {
   position: absolute;
