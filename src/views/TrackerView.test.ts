@@ -399,6 +399,24 @@ describe('TrackerView', () => {
       expect(helpDialog()).toBeNull();
     });
 
+    // The capture opens the camera by itself once it was allowed (CameraCapture.test.ts); the
+    // stub cannot, so here only the hold is checked: never under the first camera onboarding.
+    it('holds the capture while the camera onboarding is open, and only then', async () => {
+      onboarding.hasSeenCameraOnboarding.value = false;
+      const { wrapper } = await mountCamera();
+      expect(helpDialog()).not.toBeNull();
+      expect(wrapper.get('.camera-stub').attributes('data-hold')).toBe('true');
+      document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
+      await flushPromises();
+      expect(wrapper.get('.camera-stub').attributes('data-hold')).toBe('false');
+    });
+
+    it('does not hold the capture once the camera onboarding was seen', async () => {
+      const { wrapper } = await mountCamera();
+      expect(helpDialog()).toBeNull();
+      expect(wrapper.get('.camera-stub').attributes('data-hold')).toBe('false');
+    });
+
     it('explains the current mode from the ? button', async () => {
       const { wrapper } = await mountCamera();
       expect(helpDialog()).toBeNull();

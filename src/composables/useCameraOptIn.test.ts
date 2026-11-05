@@ -38,6 +38,17 @@ describe('useCameraOptIn', () => {
     first.setEnabled(false);
     expect(localStorage.getItem(STORAGE_KEY)).toBe('0');
   });
+
+  it('forgets the camera grant when turned off, so turning it on again explains first', async () => {
+    localStorage.setItem('cardipaw-camera-granted', '1');
+    const { useCameraOptIn, hasCameraGrant } = await load();
+    expect(hasCameraGrant()).toBe(true);
+    useCameraOptIn().setEnabled(true);
+    expect(hasCameraGrant()).toBe(true);
+    useCameraOptIn().setEnabled(false);
+    expect(hasCameraGrant()).toBe(false);
+    expect(localStorage.getItem('cardipaw-camera-granted')).toBe('0');
+  });
 });
 
 describe('isCameraSupported', () => {

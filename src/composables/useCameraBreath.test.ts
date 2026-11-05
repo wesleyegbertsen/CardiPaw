@@ -170,6 +170,46 @@ describe('useCameraBreath', () => {
     expect(s.cam.error.value).toBe(kind);
   });
 
+  describe('the remembered grant', () => {
+    const GRANTED = 'cardipaw-camera-granted';
+    beforeEach(() => localStorage.clear());
+
+    it('remembers the grant once the camera is allowed', async () => {
+      const s = setup();
+      await s.cam.open();
+      expect(localStorage.getItem(GRANTED)).toBe('1');
+    });
+
+    it('remembers nothing for a stream that arrives after cancel()', async () => {
+      const s = setup();
+      const prompt = deferred<MediaStream>();
+      s.getUserMedia.mockReturnValueOnce(prompt.promise);
+      const opening = s.cam.open();
+      s.cam.cancel();
+      prompt.resolve(streamOf(s.track));
+      await opening;
+      expect(localStorage.getItem(GRANTED)).toBeNull();
+    });
+
+    it('forgets the grant on a refusal: the permission was revoked in the settings', async () => {
+      localStorage.setItem(GRANTED, '1');
+      const s = setup();
+      s.getUserMedia.mockRejectedValueOnce(new DOMException('no', 'NotAllowedError'));
+      await s.cam.open();
+      expect(s.cam.error.value).toBe('denied');
+      expect(localStorage.getItem(GRANTED)).toBe('0');
+    });
+
+    it('keeps the grant when the camera is busy', async () => {
+      localStorage.setItem(GRANTED, '1');
+      const s = setup();
+      s.getUserMedia.mockRejectedValueOnce(new DOMException('no', 'NotReadableError'));
+      await s.cam.open();
+      expect(s.cam.error.value).toBe('busy');
+      expect(localStorage.getItem(GRANTED)).toBe('1');
+    });
+  });
+
   it('is unsupported without getUserMedia (happy-dom has no mediaDevices)', async () => {
     scope = effectScope();
     const cam = scope.run(() =>

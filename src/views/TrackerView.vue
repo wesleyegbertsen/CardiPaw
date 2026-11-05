@@ -490,6 +490,7 @@ onUnmounted(() => {
         :pet="pet"
         :auto-open="cameraReopen"
         :landscape="immersive"
+        :hold="showOnboarding"
         @result="cameraResult = $event"
         @tap-instead="tapInstead"
         @busy="cameraBusy = $event"

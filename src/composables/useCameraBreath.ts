@@ -24,7 +24,7 @@ import { estimate, type EstimateResult } from '../camera/estimate';
 import { createLkTracker, frameMean, type Frame, type LkTracker } from '../camera/motion';
 import type { Pet } from '../types';
 import { DEFAULT_ELEVATED_CEILING, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
-import { isCameraSupported } from './useCameraOptIn';
+import { forgetCameraGrant, isCameraSupported, rememberCameraGrant } from './useCameraOptIn';
 import { useWakeLock } from './useWakeLock';
 
 export type CameraPhase = 'idle' | 'requesting' | 'placing' | 'capturing' | 'done' | 'error';
@@ -189,6 +189,8 @@ export function useCameraBreath(opts: CameraBreathOptions) {
       if (mine !== session) return; // cancelled while the prompt was open
       phase.value = 'error';
       error.value = cameraErrorKind(e);
+      // Refused, or revoked in the settings since: the next visit explains first again.
+      if (error.value === 'denied') forgetCameraGrant();
       return;
     }
     if (mine !== session) {
@@ -196,6 +198,7 @@ export function useCameraBreath(opts: CameraBreathOptions) {
       for (const track of granted.getTracks()) track.stop();
       return;
     }
+    rememberCameraGrant();
     if (pageHidden()) {
       // Granted after the owner left (Home while the prompt was up): never start the camera unseen.
       for (const track of granted.getTracks()) track.stop();

@@ -62,6 +62,7 @@ export function cameraCaptureStubModule() {
         pet: { type: Object, required: true },
         autoOpen: { type: Boolean, default: false },
         landscape: { type: Boolean, default: false },
+        hold: { type: Boolean, default: false },
       },
       emits: ['result', 'tapInstead', 'busy', 'capturing'],
       setup(props, { emit }) {
@@ -84,6 +85,7 @@ export function cameraCaptureStubModule() {
               class: 'camera-stub',
               'data-auto-open': String(props.autoOpen),
               'data-landscape': String(props.landscape),
+              'data-hold': String(props.hold),
             },
             [
             h('button', { class: 'stub-result', onClick: () => emit('result', { ...cameraStub.nextResult }) }),

@@ -40,7 +40,16 @@ vi.mock('../composables/useCameraBreath', async () => {
   return { useCameraBreath: () => cam };
 });
 
-function mountCapture(props: { pet?: Pet; autoOpen?: boolean; landscape?: boolean } = {}) {
+// happy-dom has no getUserMedia; the grant itself is the real one, in localStorage.
+const support = vi.hoisted(() => ({ camera: false }));
+vi.mock('../composables/useCameraOptIn', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../composables/useCameraOptIn')>()),
+  isCameraSupported: () => support.camera,
+}));
+
+function mountCapture(
+  props: { pet?: Pet; autoOpen?: boolean; landscape?: boolean; hold?: boolean } = {},
+) {
   return mount(CameraCapture, {
     props: { pet: makePet({ species: 'cat' }), ...props },
     attachTo: document.body,
@@ -92,6 +101,8 @@ describe('CameraCapture', () => {
     cam.open.mockReset();
     cam.begin.mockReset();
     cam.cancel.mockReset();
+    localStorage.clear();
+    support.camera = false;
   });
 
   it('explains the feature, asks for the camera on Allow and offers tapping instead', async () => {
@@ -115,6 +126,84 @@ describe('CameraCapture', () => {
     mountCapture({ autoOpen: true });
     await flushPromises();
     expect(cam.open).toHaveBeenCalledOnce();
+  });
+
+  describe('once the camera was allowed on this device', () => {
+    const GRANTED = 'cardipaw-camera-granted';
+    const supportCamera = () => (support.camera = true);
+    // Like the composable: open() leaves idle before it awaits anything.
+    const openRequests = () => cam.open.mockImplementation(() => (cam.phase.value = 'requesting'));
+
+    it('opens the camera on mount and never shows the explanation', async () => {
+      localStorage.setItem(GRANTED, '1');
+      supportCamera();
+      openRequests();
+      const wrapper = mountCapture();
+      expect(wrapper.find('.title').exists()).toBe(false);
+      await flushPromises();
+      expect(cam.open).toHaveBeenCalledOnce();
+      expect(wrapper.find('.title').exists()).toBe(false);
+      expect(wrapper.text()).not.toContain('Allow camera');
+      await setPhase('placing');
+      expect(document.activeElement).toBe(wrapper.get('.body-text').element);
+    });
+
+    it('explains first without a remembered grant', async () => {
+      supportCamera();
+      const wrapper = mountCapture();
+      await flushPromises();
+      expect(cam.open).not.toHaveBeenCalled();
+      expect(wrapper.get('.title').text()).toBe('Count breaths with the camera');
+    });
+
+    it('explains first when a revoked grant was forgotten', async () => {
+      localStorage.setItem(GRANTED, '0');
+      supportCamera();
+      const wrapper = mountCapture();
+      await flushPromises();
+      expect(cam.open).not.toHaveBeenCalled();
+      expect(wrapper.find('.title').exists()).toBe(true);
+    });
+
+    it('never opens by itself without getUserMedia', async () => {
+      localStorage.setItem(GRANTED, '1');
+      const wrapper = mountCapture();
+      await flushPromises();
+      expect(cam.open).not.toHaveBeenCalled();
+      expect(wrapper.find('.title').exists()).toBe(true);
+    });
+
+    it('shows the refusal when the opening is denied', async () => {
+      localStorage.setItem(GRANTED, '1');
+      supportCamera();
+      openRequests();
+      const wrapper = mountCapture();
+      await flushPromises();
+      await setPhase('error', 'denied');
+      expect(wrapper.get('[role="alert"]').text()).toContain('Camera access was refused.');
+      expect(wrapper.find('.btn-retry').exists()).toBe(true);
+      expect(wrapper.find('.title').exists()).toBe(false);
+    });
+
+    it('waits for the onboarding to close, then opens once', async () => {
+      localStorage.setItem(GRANTED, '1');
+      supportCamera();
+      openRequests();
+      const wrapper = mountCapture({ hold: true });
+      await flushPromises();
+      expect(cam.open).not.toHaveBeenCalled();
+      expect(wrapper.find('.title').exists()).toBe(false);
+      await wrapper.setProps({ hold: false });
+      await flushPromises();
+      expect(cam.open).toHaveBeenCalledOnce();
+
+      // The help opened and closed later (from an error screen) does not open it again.
+      await setPhase('error', 'busy');
+      await wrapper.setProps({ hold: true });
+      await wrapper.setProps({ hold: false });
+      await flushPromises();
+      expect(cam.open).toHaveBeenCalledOnce();
+    });
   });
 
   it('shows a status while the permission prompt is open', async () => {
@@ -192,6 +281,15 @@ describe('CameraCapture', () => {
       expect(start.element.disabled).toBe(false);
       await start.trigger('click');
       expect(cam.begin).toHaveBeenCalledOnce();
+    });
+
+    it('repeats the privacy and light notes under the instruction', async () => {
+      const wrapper = mountCapture();
+      await setPhase('placing');
+      expect(wrapper.get('.privacy-note').text()).toBe(
+        'The video is analysed on this phone only. Nothing is recorded, stored or sent anywhere.',
+      );
+      expect(wrapper.get('.light-note').text()).toBe('Works best in a well-lit room.');
     });
 
     it('says it is checking the picture while no other hint applies', async () => {

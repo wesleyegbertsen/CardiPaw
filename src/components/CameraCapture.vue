@@ -8,6 +8,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } fro
 import { useI18n } from 'vue-i18n';
 import SlideToggle from './SlideToggle.vue';
 import { useCameraBreath, type CameraResult } from '../composables/useCameraBreath';
+import { hasCameraGrant, isCameraSupported } from '../composables/useCameraOptIn';
 import { FRAME_HEIGHT, FRAME_WIDTH, defaultRoi, type CaptureReason } from '../camera/capture';
 import type { Pet } from '../types';
 
@@ -16,7 +17,13 @@ import type { Pet } from '../types';
  * way (display: contents) and its two regions take the parent grid's `preview` and `panel`
  * areas: the preview on the left, the steps on the right.
  */
-const props = defineProps<{ pet: Pet; autoOpen?: boolean; landscape?: boolean }>();
+const props = defineProps<{
+  pet: Pet;
+  autoOpen?: boolean;
+  landscape?: boolean;
+  // A dialog is over the steps (the onboarding): opening by itself waits until it closes.
+  hold?: boolean;
+}>();
 const emit = defineEmits<{ result: [CameraResult]; tapInstead: []; busy: [boolean]; capturing: [boolean] }>();
 
 const { t } = useI18n();
@@ -161,9 +168,19 @@ function tap() {
   }, 180);
 }
 
-onMounted(() => {
-  if (props.autoOpen) void cam.open();
-});
+// The camera opens by itself after Measure again, and once it was allowed on this device: the
+// explanation was read then, and placing repeats its privacy and light notes. Only on mount;
+// the explanation stays away meanwhile, so it never flashes up before the camera.
+const openPending = ref(props.autoOpen || (isCameraSupported() && hasCameraGrant()));
+function openIfPending() {
+  if (!openPending.value || props.hold) return;
+  openPending.value = false;
+  void cam.open();
+}
+const explaining = computed(() => cam.phase.value === 'idle' && !openPending.value);
+
+onMounted(openIfPending);
+watch(() => props.hold, openIfPending);
 onBeforeUnmount(() => clearTimeout(pulseTimer));
 </script>
 
@@ -192,9 +209,9 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
       </div>
     </div>
 
-    <div class="capture-panel" :class="{ explain: cam.phase.value === 'idle' }">
+    <div class="capture-panel" :class="{ explain: explaining }">
       <!-- Explain -->
-      <template v-if="cam.phase.value === 'idle'">
+      <template v-if="explaining">
         <span class="experimental-chip">{{ $t('camera.experimental') }}</span>
         <h2 class="title">{{ $t('camera.explainTitle') }}</h2>
         <p class="body-text">{{ $t('camera.explainBody') }}</p>
@@ -230,6 +247,9 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
       <!-- Placing -->
       <template v-else-if="cam.phase.value === 'placing'">
         <p ref="placeRef" class="body-text" tabindex="-1">{{ $t('camera.placeBody') }}</p>
+        <!-- The explanation's notes again: once the camera was allowed it opens without them -->
+        <p class="privacy-note">{{ $t('camera.privacyNote') }}</p>
+        <p class="light-note">{{ $t('camera.lightNote') }}</p>
         <p
           class="placement-hint"
           :class="{
