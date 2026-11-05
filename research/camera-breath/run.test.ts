@@ -1,8 +1,10 @@
 // The CLI's pure helpers and its exit codes. main() runs only from the command line, so
 // importing this file spawns nothing, and every command exercised here fails before ffmpeg.
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { UsageError, cli, parseRoi, requireTwoCounters, sweepCells, windowRows } from './run.ts';
 
@@ -107,6 +109,18 @@ describe('requireTwoCounters', () => {
         ]),
       ),
     ).not.toThrow();
+  });
+});
+
+describe('the CLI under plain Node', () => {
+  it('loads every module it imports and prints the usage (exit 2) without arguments', () => {
+    // Vitest resolves extensionless imports; Node's type stripping does not. This catches a
+    // relative import in research/ or src/camera/ that lost its .ts.
+    const run = fileURLToPath(new URL('./run.ts', import.meta.url));
+    const r = spawnSync(process.execPath, [run], { encoding: 'utf8' });
+    expect(r.stderr).not.toContain('ERR_MODULE_NOT_FOUND');
+    expect(r.stderr).toContain('Usage:');
+    expect(r.status).toBe(2);
   });
 });
 

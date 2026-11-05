@@ -3,6 +3,10 @@
 // dim light; estimate() quantises only on exact 900/1800-sample windows, so frames are
 // timestamped, the delivered rate is measured, and the trajectories are put onto an exact
 // 30 Hz grid or the capture abstains ('frame-rate').
+//
+// Relative imports in src/camera carry their .ts extension: the research CLI
+// (research/camera-breath/run.ts) runs these files under plain Node type stripping, which has
+// no extension search. research/camera-breath/run.test.ts spawns it to keep that true.
 
 import type { AbstainReason } from './estimate.ts';
 import {

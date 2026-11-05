@@ -29,17 +29,17 @@ grey frames → ROI → motion signal (px per frame)
   → agreement + quality gate → bpm, quantisedBpm (breathsPerMinute, as taps), interval, reasons
 ```
 
-- `motion.ts` — `Frame`, `Roi`, the two extractors. Lucas-Kanade tracks 25 points in the ROI
+- `src/camera/motion.ts` — `Frame`, `Roi`, the two extractors. Lucas-Kanade tracks 25 points in the ROI
   against a reference frame renewed every 2 s on 3×3-blurred frames with a coarse pass on the
   half-size frame, cancels the whole-frame brightness gain (flicker, auto-exposure), subtracts
   the median flow of the background strip (camera shake), and combines the 50 trajectories by
   their first principal component. The profile method correlates the ROI's row means against
   the reference; it reads only vertical motion and is kept as a cross-check.
-- `signal.ts` — detrend, RBJ biquads in `filtfilt`, radix-2 FFT with Hann window and 8× zero
+- `src/camera/signal.ts` — detrend, RBJ biquads in `filtfilt`, radix-2 FFT with Hann window and 8× zero
   padding, biased normalised autocorrelation, prominence-based peak picking.
-- `estimate.ts` — `estimate(signal, fps, motionQuality)` → `EstimateResult`. Everything that
+- `src/camera/estimate.ts` — `estimate(signal, fps, motionQuality)` → `EstimateResult`. Everything that
   turns numbers into a verdict lives here.
-- `synth.ts` — seeded synthetic flank scenes with ground truth (texture, edge, breathing
+- `src/camera/synth.ts` — seeded synthetic flank scenes with ground truth (texture, edge, breathing
   waveform, drift, shake, flicker, purr, twitches, rate ramp).
 - `score.ts` — metrics, sidecar parsing, verdict tables, the pre-registered thresholds.
 - `ingest.ts`, `run.ts` — ffmpeg/ffprobe and the CLI (the only Node-specific files; an ESLint
