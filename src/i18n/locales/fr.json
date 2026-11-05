@@ -227,6 +227,11 @@
     "checking": "Vérification…",
     "upToDate": "Vous avez la dernière version.",
     "checkFailed": "Impossible de rechercher les mises à jour. Réessayez plus tard.",
+    "experimentalSection": "Expérimental",
+    "experimentalDesc": "Des fonctions encore à l'essai. Elles peuvent changer ou disparaître.",
+    "cameraName": "Comptage des respirations par la caméra",
+    "cameraDesc": "Ajoute au suivi une option Caméra qui observe la poitrine de votre animal à travers la caméra du téléphone et vous propose un décompte à vérifier. La vidéo est analysée sur ce téléphone uniquement ; rien n'est enregistré ni envoyé. Les mesures par caméra sont marquées et n'entrent pas dans les alertes de tendance.",
+    "cameraUnavailable": "Non disponible dans ce navigateur.",
     "legalSection": "Mentions légales",
     "privacyTitle": "Politique de confidentialité",
     "privacyDesc": "Comment vos données sont stockées et utilisées",
@@ -240,13 +245,17 @@
       "p3": "<strong>Vous gardez le contrôle.</strong> Vous pouvez exporter vos données à tout moment depuis la page Paramètres, et supprimer l'application ou effacer les données du site dans votre navigateur supprimera définitivement tout.",
       "p4": "<strong>Aucun partage de données.</strong> Comme vos données ne quittent jamais votre appareil, elles ne sont jamais partagées avec ni accessibles par quiconque d'autre.",
       "p5": "<strong>Recherche de mises à jour (application Android).</strong> Si vous activez « Vérifier automatiquement » dans Paramètres, sous Mises à jour, l'application demande à api.github.com, environ une fois par jour et chaque fois que vous appuyez sur « Vérifier maintenant », si une version plus récente existe. GitHub voit alors votre adresse IP et les informations que le moteur de navigateur de l'application envoie avec chaque requête, comme son agent utilisateur (qui comprend la version d'Android et le modèle de l'appareil) et la langue. Aucune donnée sur vos animaux n'est envoyée. Cette option reste désactivée tant que vous ne l'activez pas.",
-      "p6": "<strong>Les rappels restent sur votre téléphone.</strong> Dans l'application Android, les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Leurs paramètres restent sur cet appareil et ne sont pas inclus dans les exports."
+      "p6": "<strong>Les rappels restent sur votre téléphone.</strong> Dans l'application Android, les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Leurs paramètres restent sur cet appareil et ne sont pas inclus dans les exports.",
+      "cameraTitle": "Caméra (expérimental).",
+      "cameraBody": "Si vous activez le comptage des respirations par la caméra, l'image de la caméra est analysée sur votre appareil pendant la mesure. Aucune vidéo ni photo n'est enregistrée, conservée ou envoyée où que ce soit, et la caméra est libérée dès que la mesure se termine."
     },
     "terms": {
       "p1": "<strong>Pas un avis médical.</strong> CardiPaw est un outil d'information pour vous aider à enregistrer et suivre la fréquence respiratoire au repos de votre animal. Il ne remplace pas un diagnostic, un conseil ou un traitement vétérinaire professionnel.",
       "p2": "<strong>Consultez votre vétérinaire.</strong> Suivez toujours les conseils spécifiques de votre vétérinaire concernant les valeurs à surveiller, les plages normales pour votre animal et le moment de consulter. Ne prenez pas de décisions médicales uniquement sur la base de cette application.",
       "p3": "<strong>Aucune garantie.</strong> CardiPaw est fourni gratuitement, tel quel, sans aucune garantie d'aucune sorte (expresse ou implicite). Le développeur n'est pas responsable des décisions prises sur la base des données enregistrées dans cette application.",
-      "p4": "<strong>Utilisation à vos risques et périls.</strong> En utilisant CardiPaw, vous acceptez l'entière responsabilité de la façon dont vous interprétez et agissez sur les données qu'il présente."
+      "p4": "<strong>Utilisation à vos risques et périls.</strong> En utilisant CardiPaw, vous acceptez l'entière responsabilité de la façon dont vous interprétez et agissez sur les données qu'il présente.",
+      "cameraTitle": "Les décomptes de la caméra sont des suggestions.",
+      "cameraBody": "Un décompte de la caméra est expérimental et peut être faux. Vérifiez-le sur votre animal avant de l'enregistrer, et fiez-vous à votre propre décompte en cas de doute."
     }
   },
   "share": {

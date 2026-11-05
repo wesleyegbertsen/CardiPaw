@@ -227,6 +227,11 @@
     "checking": "Controleren…",
     "upToDate": "Je hebt de nieuwste versie.",
     "checkFailed": "Controleren op updates is niet gelukt. Probeer het later opnieuw.",
+    "experimentalSection": "Experimenteel",
+    "experimentalDesc": "Functies die nog worden uitgeprobeerd. Ze kunnen veranderen of verdwijnen.",
+    "cameraName": "Ademhaling tellen met de camera",
+    "cameraDesc": "Voegt een Camera-optie toe aan de tracker die de borstkas van je huisdier via de camera van de telefoon volgt en een telling voorstelt die je zelf controleert. De video wordt alleen op deze telefoon geanalyseerd; er wordt niets opgenomen of verzonden. Camerametingen zijn gemarkeerd en tellen niet mee voor trendmeldingen.",
+    "cameraUnavailable": "Niet beschikbaar in deze browser.",
     "legalSection": "Juridisch",
     "privacyTitle": "Privacybeleid",
     "privacyDesc": "Hoe je gegevens worden opgeslagen en gebruikt",
@@ -240,13 +245,17 @@
       "p3": "<strong>Jij hebt de controle.</strong> Je kunt je gegevens op elk moment exporteren via de pagina Instellingen, en door de app te verwijderen of de sitegegevens van je browser te wissen verwijder je alles definitief.",
       "p4": "<strong>Geen gegevens delen.</strong> Omdat je gegevens je apparaat nooit verlaten, worden ze nooit met iemand anders gedeeld of voor anderen toegankelijk.",
       "p5": "<strong>Updatecontrole (Android-app).</strong> Als je in Instellingen onder Updates \"Automatisch controleren\" aanzet, vraagt de app ongeveer één keer per dag, en telkens als je op \"Nu controleren\" tikt, aan api.github.com of er een nieuwere versie is. GitHub ziet dan je IP-adres en de informatie die de browser-engine van de app met elk verzoek meestuurt, zoals de user agent (met daarin de Android-versie en het apparaatmodel) en de taal. Er worden geen huisdiergegevens verzonden. Dit staat uit, tenzij je het zelf aanzet.",
-      "p6": "<strong>Herinneringen blijven op je telefoon.</strong> In de Android-app worden herinneringen op deze telefoon ingepland; er wordt niets over verstuurd. De instellingen ervan blijven op dit apparaat en zitten niet in exports."
+      "p6": "<strong>Herinneringen blijven op je telefoon.</strong> In de Android-app worden herinneringen op deze telefoon ingepland; er wordt niets over verstuurd. De instellingen ervan blijven op dit apparaat en zitten niet in exports.",
+      "cameraTitle": "Camera (experimenteel).",
+      "cameraBody": "Als je ademhaling tellen met de camera aanzet, wordt het camerabeeld tijdens het meten op je apparaat geanalyseerd. Er wordt geen video of foto opgenomen, bewaard of ergens naartoe verzonden, en de camera wordt vrijgegeven zodra de meting eindigt."
     },
     "terms": {
       "p1": "<strong>Geen medisch advies.</strong> CardiPaw is een informatief hulpmiddel om de rustademhalingsfrequentie van je huisdier vast te leggen en te volgen. Het is geen vervanging voor professionele diergeneeskundige diagnose, advies of behandeling.",
       "p2": "<strong>Raadpleeg je dierenarts.</strong> Volg altijd het specifieke advies van je dierenarts over welke waarden je moet volgen, welke bereiken normaal zijn voor jouw huisdier en wanneer je hulp moet zoeken. Neem geen medische beslissingen uitsluitend op basis van deze app.",
       "p3": "<strong>Geen garanties.</strong> CardiPaw wordt gratis aangeboden, zoals het is, zonder enige garantie (expliciet of impliciet). De ontwikkelaar is niet aansprakelijk voor beslissingen die worden genomen op basis van gegevens die in deze app zijn vastgelegd.",
-      "p4": "<strong>Gebruik op eigen risico.</strong> Door CardiPaw te gebruiken aanvaard je de volledige verantwoordelijkheid voor hoe je de gepresenteerde gegevens interpreteert en ernaar handelt."
+      "p4": "<strong>Gebruik op eigen risico.</strong> Door CardiPaw te gebruiken aanvaard je de volledige verantwoordelijkheid voor hoe je de gepresenteerde gegevens interpreteert en ernaar handelt.",
+      "cameraTitle": "Cameratellingen zijn suggesties.",
+      "cameraBody": "Een telling van de camera is experimenteel en kan fout zijn. Controleer die bij je huisdier voordat je ze opslaat, en vertrouw bij twijfel op je eigen telling."
     }
   },
   "share": {

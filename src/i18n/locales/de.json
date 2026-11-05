@@ -227,6 +227,11 @@
     "checking": "Wird geprüft…",
     "upToDate": "Du hast die neueste Version.",
     "checkFailed": "Die Suche nach Updates ist fehlgeschlagen. Versuche es später erneut.",
+    "experimentalSection": "Experimentell",
+    "experimentalDesc": "Funktionen, die noch erprobt werden. Sie können sich ändern oder wieder verschwinden.",
+    "cameraName": "Atemzählung mit der Kamera",
+    "cameraDesc": "Fügt dem Tracker die Option „Kamera“ hinzu, die den Brustkorb deines Tieres durch die Kamera des Handys beobachtet und dir eine Zählung zum Prüfen vorschlägt. Das Video wird nur auf diesem Handy ausgewertet; nichts wird aufgezeichnet oder gesendet. Kamera-Messungen sind markiert und fließen nicht in Trend-Hinweise ein.",
+    "cameraUnavailable": "In diesem Browser nicht verfügbar.",
     "legalSection": "Rechtliches",
     "privacyTitle": "Datenschutzerklärung",
     "privacyDesc": "Wie deine Daten gespeichert und verwendet werden",
@@ -240,13 +245,17 @@
       "p3": "<strong>Du hast die Kontrolle.</strong> Du kannst deine Daten jederzeit über die Seite „Einstellungen“ exportieren. Durch das Löschen der App oder das Leeren der Websitedaten deines Browsers wird alles dauerhaft entfernt.",
       "p4": "<strong>Keine Datenweitergabe.</strong> Da deine Daten dein Gerät nie verlassen, werden sie niemals mit anderen geteilt oder für andere zugänglich gemacht.",
       "p5": "<strong>Update-Prüfung (Android-App).</strong> Wenn du in den Einstellungen unter „Updates“ die Option „Automatisch prüfen“ einschaltest, fragt die App etwa einmal am Tag und immer, wenn du auf „Jetzt prüfen“ tippst, bei api.github.com nach, ob es eine neuere Version gibt. GitHub sieht dabei deine IP-Adresse und die Informationen, die die Browser-Engine der App bei jeder Anfrage mitsendet, zum Beispiel den User-Agent (mit der Android-Version und dem Gerätemodell) und die Sprache. Es werden keine Tierdaten gesendet. Die Prüfung bleibt aus, solange du sie nicht einschaltest.",
-      "p6": "<strong>Erinnerungen bleiben auf deinem Smartphone.</strong> In der Android-App werden Erinnerungen auf diesem Smartphone geplant; nichts davon wird irgendwohin gesendet. Die Einstellungen dafür bleiben auf diesem Gerät und sind nicht in Exporten enthalten."
+      "p6": "<strong>Erinnerungen bleiben auf deinem Smartphone.</strong> In der Android-App werden Erinnerungen auf diesem Smartphone geplant; nichts davon wird irgendwohin gesendet. Die Einstellungen dafür bleiben auf diesem Gerät und sind nicht in Exporten enthalten.",
+      "cameraTitle": "Kamera (experimentell).",
+      "cameraBody": "Wenn du die Atemzählung mit der Kamera einschaltest, wird das Kamerabild während der Messung auf deinem Gerät ausgewertet. Es wird kein Video und kein Bild aufgezeichnet, gespeichert oder irgendwohin gesendet, und die Kamera wird freigegeben, sobald die Messung endet."
     },
     "terms": {
       "p1": "<strong>Keine medizinische Beratung.</strong> CardiPaw ist ein informatives Hilfsmittel, um die Ruhe-Atemfrequenz deines Tieres zu erfassen und zu verfolgen. Es ersetzt keine professionelle tierärztliche Diagnose, Beratung oder Behandlung.",
       "p2": "<strong>Konsultiere deinen Tierarzt.</strong> Befolge stets die spezifischen Hinweise deines Tierarztes, welche Werte zu überwachen sind, welche Bereiche für dein Tier normal sind und wann du Hilfe suchen solltest. Triff keine medizinischen Entscheidungen allein auf Grundlage dieser App.",
       "p3": "<strong>Keine Gewährleistung.</strong> CardiPaw wird kostenlos und „wie besehen“ ohne jegliche ausdrückliche oder stillschweigende Gewährleistung bereitgestellt. Der Entwickler haftet nicht für Entscheidungen, die auf Grundlage der in dieser App erfassten Daten getroffen werden.",
-      "p4": "<strong>Nutzung auf eigenes Risiko.</strong> Mit der Nutzung von CardiPaw übernimmst du die volle Verantwortung dafür, wie du die dargestellten Daten interpretierst und darauf reagierst."
+      "p4": "<strong>Nutzung auf eigenes Risiko.</strong> Mit der Nutzung von CardiPaw übernimmst du die volle Verantwortung dafür, wie du die dargestellten Daten interpretierst und darauf reagierst.",
+      "cameraTitle": "Kamera-Zählungen sind Vorschläge.",
+      "cameraBody": "Eine Zählung der Kamera ist experimentell und kann falsch sein. Prüfe sie an deinem Tier, bevor du sie speicherst, und verlass dich im Zweifel auf deine eigene Zählung."
     }
   },
   "share": {
