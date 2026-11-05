@@ -209,7 +209,7 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
       </div>
     </div>
 
-    <div class="capture-panel" :class="{ explain: explaining }">
+    <div class="capture-panel" :class="{ explain: explaining, placing: cam.phase.value === 'placing' }">
       <!-- Explain -->
       <template v-if="explaining">
         <span class="experimental-chip">{{ $t('camera.experimental') }}</span>
@@ -694,6 +694,39 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
 .landscape .explain .actions > button {
   flex: 1 1 0;
   min-width: 0;
+}
+
+/* Placing repeats the notes under a long instruction: as tight as the explanation, with Start
+   and Count along on one row, so Start and the switch fit a 412 px tall phone without scrolling */
+.landscape .capture-panel.placing {
+  gap: 6px;
+}
+
+.landscape .placing .body-text {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.landscape .placing .privacy-note,
+.landscape .placing .light-note {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.landscape .placing .actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.landscape .placing .actions > .btn-save {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.landscape .placing .actions > .hint {
+  flex-basis: 100%;
 }
 
 .landscape .timer-ring,
