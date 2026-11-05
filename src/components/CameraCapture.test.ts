@@ -180,7 +180,7 @@ describe('CameraCapture', () => {
         width: '60.42%',
         height: '50.00%',
       });
-      expect(wrapper.text()).toContain('Fit the chest or belly inside the box');
+      expect(wrapper.text()).toContain('Your whole pet may be in the box');
       const start = wrapper.get<HTMLButtonElement>('.btn-save');
       expect(start.text()).toBe('Start');
       expect(start.element.disabled).toBe(true);
@@ -520,7 +520,7 @@ describe('CameraCapture', () => {
     it('sideways, keeps the steps and their buttons in the panel', async () => {
       const wrapper = mountCapture({ landscape: true });
       await setPhase('placing');
-      expect(region(wrapper, 'panel').text()).toContain('Fit the chest or belly inside the box');
+      expect(region(wrapper, 'panel').text()).toContain('Your whole pet may be in the box');
       expect(region(wrapper, 'panel').find('.btn-save').exists()).toBe(true);
       await setPhase('capturing');
       expect(region(wrapper, 'panel').find('.timer-ring').exists()).toBe(true);
