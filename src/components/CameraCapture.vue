@@ -12,7 +12,7 @@ import { FRAME_HEIGHT, FRAME_WIDTH, defaultRoi, type CaptureReason } from '../ca
 import type { Pet } from '../types';
 
 const props = defineProps<{ pet: Pet; autoOpen?: boolean }>();
-const emit = defineEmits<{ result: [CameraResult]; tapInstead: []; busy: [boolean] }>();
+const emit = defineEmits<{ result: [CameraResult]; tapInstead: []; busy: [boolean]; capturing: [boolean] }>();
 
 const { t } = useI18n();
 const video = ref<HTMLVideoElement | null>(null);
@@ -40,6 +40,8 @@ const countAlongHintId = useId();
 
 // Placing and capturing: the preview shows and the tracker hides its mode bar.
 const busy = computed(() => cam.phase.value === 'placing' || cam.phase.value === 'capturing');
+// Capturing only: the tracker asks before leaving a running count, not before leaving placing.
+const capturing = computed(() => cam.phase.value === 'capturing');
 
 const errorKey = computed(() => {
   switch (cam.error.value) {
@@ -117,6 +119,7 @@ const abstainHint = computed(() => {
 });
 
 watch(busy, (b) => emit('busy', b), { immediate: true });
+watch(capturing, (c) => emit('capturing', c), { immediate: true });
 // The chrome switches with the phase and the focused button goes with it; put focus where the
 // owner is, so a screen reader reads the new state and Tab starts at its actions.
 watch(cam.phase, (p) => {

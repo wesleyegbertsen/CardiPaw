@@ -156,6 +156,8 @@ describe('TrackerView', () => {
     camera.enabled.value = false;
     camera.supported = true;
     cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: null };
+    cameraStub.mounts = 0;
+    cameraStub.unmounts = 0;
     onboarding.hasSeenOnboarding.value = true;
     onboarding.hasSeenCameraOnboarding.value = true;
     onboarding.markSeen.mockReset();
@@ -170,9 +172,9 @@ describe('TrackerView', () => {
 
   describe('camera mode', () => {
     const pills = (wrapper: VueWrapper) => wrapper.findAll('.mode-pill').map((p) => p.text());
-    async function mountCamera() {
+    async function mountCamera(options?: Parameters<typeof mountTracker>[0]) {
       camera.enabled.value = true;
-      const mounted = await mountTracker();
+      const mounted = await mountTracker(options);
       await mounted.wrapper.findAll('.mode-pill')[2].trigger('click');
       await flushPromises(); // the async component resolves
       return mounted;
@@ -361,18 +363,18 @@ describe('TrackerView', () => {
       expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
     });
 
-    const dialog = () => document.body.querySelector('[role="dialog"]');
+    const helpDialog = () => document.body.querySelector('[role="dialog"]');
 
     it('opens the camera steps the first time the Camera pill is tapped, once', async () => {
       onboarding.hasSeenCameraOnboarding.value = false;
       const { wrapper } = await mountCamera();
-      expect(dialog()?.textContent).toContain('Prop the phone up');
-      expect(dialog()?.textContent).toContain('Step 1 of 4');
+      expect(helpDialog()?.textContent).toContain('Prop the phone up');
+      expect(helpDialog()?.textContent).toContain('Step 1 of 4');
       expect(wrapper.find('.camera-stub').exists()).toBe(true);
 
       document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
       await flushPromises();
-      expect(dialog()).toBeNull();
+      expect(helpDialog()).toBeNull();
       expect(onboarding.markCameraSeen).toHaveBeenCalledOnce();
       expect(onboarding.markSeen).not.toHaveBeenCalled();
 
@@ -380,21 +382,21 @@ describe('TrackerView', () => {
       await wrapper.findAll('.mode-pill')[0].trigger('click');
       await wrapper.findAll('.mode-pill')[2].trigger('click');
       await flushPromises();
-      expect(dialog()).toBeNull();
+      expect(helpDialog()).toBeNull();
     });
 
     it('explains the current mode from the ? button', async () => {
       const { wrapper } = await mountCamera();
-      expect(dialog()).toBeNull();
+      expect(helpDialog()).toBeNull();
       await wrapper.get('.help-btn').trigger('click');
-      expect(dialog()?.textContent).toContain('Prop the phone up');
+      expect(helpDialog()?.textContent).toContain('Prop the phone up');
       document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
       await flushPromises();
       expect(onboarding.markCameraSeen).toHaveBeenCalledOnce();
 
       await wrapper.findAll('.mode-pill')[0].trigger('click');
       await wrapper.get('.help-btn').trigger('click');
-      expect(dialog()?.textContent).toContain('Get your pet resting or sleeping');
+      expect(helpDialog()?.textContent).toContain('Get your pet resting or sleeping');
       document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
       await flushPromises();
       expect(onboarding.markSeen).toHaveBeenCalledOnce();
@@ -412,6 +414,105 @@ describe('TrackerView', () => {
       expect(wrapper.find('.camera-stub').exists()).toBe(true);
       await wrapper.findAll('.mode-pill')[0].trigger('click');
       expect(wrapper.find('.camera-stub').exists()).toBe(false);
+    });
+
+    describe('leaving', () => {
+      it('asks before going back during a capture, and Cancel keeps the camera running', async () => {
+        const { wrapper } = await mountCamera({ from: petPage });
+        await wrapper.get('.stub-capturing').trigger('click');
+        router.back();
+        await flushPromises();
+        expect(dialog()?.querySelector('.message')?.textContent).toBe(en.tracker.leaveConfirm);
+
+        clickInDialog('.btn-cancel');
+        await flushPromises();
+        expect(dialog()).toBeNull();
+        expect(router.currentRoute.value.name).toBe('tracker');
+        expect(wrapper.find('.camera-stub').exists()).toBe(true);
+        expect([cameraStub.mounts, cameraStub.unmounts]).toEqual([1, 0]);
+      });
+
+      it('lets Discard leave a capture, which closes the camera', async () => {
+        const { wrapper } = await mountCamera({ from: petPage });
+        await wrapper.get('.stub-capturing').trigger('click');
+        router.back();
+        await flushPromises();
+        expect(dialog()).not.toBeNull();
+
+        discardInDialog();
+        await flushPromises();
+        expect(router.currentRoute.value.name).toBe('pet');
+        expect(wrapper.find('.tracker').exists()).toBe(false);
+        expect(cameraStub.unmounts).toBe(1);
+      });
+
+      it('asks before leaving a suggestion that is not confirmed', async () => {
+        const { wrapper } = await mountCamera({ from: petPage });
+        await suggest(wrapper);
+        await wrapper.get('.back-btn').trigger('click');
+        await flushPromises();
+        expect(dialog()).not.toBeNull();
+        expect(router.currentRoute.value.name).toBe('tracker');
+      });
+
+      // The capture can end behind the dialog: focus stays in it, and Cancel moves it to the card.
+      it('keeps focus in the dialog when the suggestion arrives behind it', async () => {
+        const { wrapper } = await mountCamera({ from: petPage });
+        await wrapper.get('.stub-capturing').trigger('click');
+        router.back();
+        await flushPromises();
+        await suggest(wrapper);
+        expect(dialog()!.contains(document.activeElement)).toBe(true);
+
+        clickInDialog('.btn-cancel');
+        await flushPromises();
+        expect(document.activeElement).toBe(wrapper.get('.result').element);
+      });
+
+      it.each<[string, (wrapper: VueWrapper) => Promise<unknown>]>([
+        ['on the explanation', async () => {}],
+        ['while placing the camera', (w) => w.get('.stub-busy').trigger('click')],
+        [
+          'after an abstain or an interrupted capture',
+          async (w) => {
+            await w.get('.stub-capturing').trigger('click');
+            await w.get('.stub-idle').trigger('click');
+          },
+        ],
+      ])('leaves without asking %s', async (_, prepare) => {
+        const { wrapper } = await mountCamera({ from: petPage });
+        await prepare(wrapper);
+        router.back();
+        await flushPromises();
+        expect(dialog()).toBeNull();
+        expect(router.currentRoute.value.name).toBe('pet');
+      });
+
+      it.each([
+        ['.btn-save', 'Confirm'],
+        ['.btn-discard', 'Discard'],
+      ])('leaves without asking on %s (%s)', async (button) => {
+        const { wrapper, addReading } = await mountCamera({ from: petPage });
+        await suggest(wrapper);
+        await wrapper.get(button).trigger('click');
+        await flushPromises();
+        expect(dialog()).toBeNull();
+        expect(router.currentRoute.value.name).toBe('pet');
+        expect(addReading).toHaveBeenCalledTimes(button === '.btn-save' ? 1 : 0);
+      });
+
+      it('still asks after a failed save', async () => {
+        const { wrapper, addReading } = await mountCamera({ from: petPage });
+        await suggest(wrapper);
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        addReading.mockRejectedValueOnce(new Error('quota exceeded'));
+        await wrapper.get('.btn-save').trigger('click');
+        await flushPromises();
+        expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+        router.back();
+        await flushPromises();
+        expect(dialog()).not.toBeNull();
+      });
     });
   });
 

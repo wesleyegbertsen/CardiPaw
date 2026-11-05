@@ -330,6 +330,18 @@ describe('CameraCapture', () => {
       await finishWith(accepted);
       expect(wrapper.emitted('busy')).toEqual([[false], [true], [false]]);
     });
+
+    // The tracker asks before leaving a running count; placing has nothing to lose yet.
+    it('reports capturing while capturing only', async () => {
+      const wrapper = mountCapture();
+      expect(wrapper.emitted('capturing')).toEqual([[false]]);
+      await setPhase('placing');
+      expect(wrapper.emitted('capturing')).toEqual([[false]]);
+      await setPhase('capturing');
+      expect(wrapper.emitted('capturing')).toEqual([[false], [true]]);
+      await setPhase('error', 'interrupted');
+      expect(wrapper.emitted('capturing')).toEqual([[false], [true], [false]]);
+    });
   });
 
   describe('result', () => {

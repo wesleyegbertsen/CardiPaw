@@ -71,6 +71,8 @@ const cameraResult = ref<CameraResult | null>(null);
 const cameraReopen = ref(false);
 // Placing or capturing: the mode bar would cover the preview.
 const cameraBusy = ref(false);
+// Capturing only: a running count the leave guard asks about.
+const cameraCapturing = ref(false);
 const saveChoice = ref<'camera' | 'taps'>('camera');
 const saveChoiceLabelId = useId();
 // Length of the current measurement: the pet's chosen length, fixed when it starts.
@@ -106,6 +108,7 @@ function switchMode(next: Mode) {
   cameraResult.value = null;
   cameraReopen.value = false;
   cameraBusy.value = false;
+  cameraCapturing.value = false;
   saveChoice.value = 'camera';
   // The camera steps open by themselves the first time, like the tap steps on the first visit.
   if (next === 'camera' && !hasSeenCameraOnboarding.value) openOnboarding();
@@ -125,8 +128,11 @@ function measureAgain() {
 }
 
 // Like the guided done state: park focus on the suggestion so it is read out.
+// Not while the leave dialog is open: focus stays in it, and Cancel moves it here.
 watch(cameraResult, (r) => {
-  if (r) nextTick(() => resultRef.value?.focus());
+  if (r) nextTick(() => {
+    if (!answerLeave.value) resultRef.value?.focus();
+  });
 });
 
 const resultRate = computed(() => breathsPerMinute(clickCount.value, runSeconds.value));
@@ -275,13 +281,14 @@ function leaveForPet() {
   returnTo(router, { name: 'pet', params: { id: petId } });
 }
 
-// What leaving would throw away: a count running or finished but not saved, or a manual
-// entry with anything filled in (v-model.number gives '' for a cleared rate).
-const hasUnsaved = computed(() =>
-  isManualMode.value
-    ? !!manualRate.value || notes.value !== '' || restState.value !== undefined
-    : phase.value !== 'idle',
-);
+// What leaving would throw away: a count running or finished but not saved, a manual
+// entry with anything filled in (v-model.number gives '' for a cleared rate), or a camera
+// capture running or its suggestion not confirmed (placing or an abstain loses nothing).
+const hasUnsaved = computed(() => {
+  if (isManualMode.value) return !!manualRate.value || notes.value !== '' || restState.value !== undefined;
+  if (mode.value === 'camera') return cameraCapturing.value || cameraResult.value !== null;
+  return phase.value !== 'idle';
+});
 
 // The leave dialog's Discard sits over the heart on small screens: after a stray back
 // swipe mid-count, the next breath tap would land on it and throw the count away.
@@ -317,7 +324,8 @@ function stayOnTracker() {
   // The dialog hands focus back to where it was; if the count ended behind it, that was
   // the heart, which is gone. Park it on the result, as the end of a count does.
   nextTick(() => {
-    if (phase.value !== 'done' || document.activeElement !== document.body) return;
+    const ended = phase.value === 'done' || cameraResult.value !== null;
+    if (!ended || document.activeElement !== document.body) return;
     resultRef.value?.focus();
   });
 }
@@ -457,6 +465,7 @@ onUnmounted(() => {
         @result="cameraResult = $event"
         @tap-instead="tapInstead"
         @busy="cameraBusy = $event"
+        @capturing="cameraCapturing = $event"
       />
       <template v-else>
         <span class="experimental-chip">{{ $t('camera.experimental') }}</span>
