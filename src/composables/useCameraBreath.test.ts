@@ -597,6 +597,105 @@ describe('useCameraBreath', () => {
     expect(shaky.cam.placement.value).toMatchObject({ moving: true, steady: false });
   });
 
+  describe('delivered frame rate while placing', () => {
+    const FPS15 = 1000 / 15;
+    const FPS30 = 1000 / 30;
+
+    it('asks for more light at 15 fps, deciding only once two seconds of frames are in', async () => {
+      const s = setup(FLAT);
+      await s.cam.open();
+      // Two frames in a row, 1800 and 1867 ms from the first: not judged yet
+      s.feed(28, FPS15);
+      expect(s.cam.placement.value).toMatchObject({ slow: false, steady: false });
+      s.feed(1, FPS15);
+      expect(s.cam.placement.value).toMatchObject({ slow: false, steady: false });
+      s.feed(3, FPS15); // 2067 ms
+      expect(s.cam.placement.value).toMatchObject({ slow: true, steady: false });
+      s.feed(60, FPS15); // 6 s still and lit: Start would be on, but the camera is too slow
+      expect(s.cam.placement.value).toMatchObject({ slow: true, steady: false });
+      s.cam.begin();
+      expect(s.cam.phase.value).toBe('placing');
+    });
+
+    it('asks for more light at 27 fps, just under the protocol rate', async () => {
+      const s = setup(FLAT);
+      await s.cam.open();
+      s.feed(70, 1000 / 27);
+      expect(s.cam.placement.value).toMatchObject({ slow: true, steady: false });
+    });
+
+    it('is steady at 30 fps after two seconds, with no light hint', async () => {
+      const s = setup(FLAT);
+      await s.cam.open();
+      s.feed(62, FPS30);
+      expect(s.cam.placement.value).toEqual({
+        tooDark: false,
+        moving: false,
+        slow: false,
+        steady: true,
+      });
+    });
+
+    it('clears only after a full two seconds at 30 fps', async () => {
+      const s = setup(FLAT);
+      await s.cam.open();
+      s.feed(40, FPS15);
+      expect(s.cam.placement.value.slow).toBe(true);
+      // A plain 2 s average reaches 28 fps after about 1.8 s at 30 fps; it must not clear yet.
+      s.feed(59, FPS30);
+      expect(s.cam.placement.value).toMatchObject({ slow: true, steady: false });
+      s.feed(2, FPS30);
+      expect(s.cam.placement.value).toMatchObject({ slow: false, steady: true });
+    });
+
+    it('counts a gap over 100 ms as slow', async () => {
+      const s = setup(FLAT);
+      await s.cam.open();
+      s.feed(70);
+      expect(s.cam.placement.value).toMatchObject({ slow: false, steady: true });
+      s.feed(1, 150);
+      expect(s.cam.placement.value).toMatchObject({ slow: true, steady: false });
+      s.feed(59);
+      expect(s.cam.placement.value.slow).toBe(true);
+      s.feed(2);
+      expect(s.cam.placement.value).toMatchObject({ slow: false, steady: true });
+    });
+
+    it.each([
+      [
+        'a rotation',
+        () => {
+          const width = window.innerWidth;
+          window.innerWidth = width + 300;
+          window.dispatchEvent(new Event('resize'));
+          window.innerWidth = width;
+        },
+      ],
+      ['a track mute', (s: ReturnType<typeof setup>) => s.trackListener('mute')()],
+    ])('measures afresh after %s', async (_label, reset) => {
+      const s = setup(FLAT);
+      await s.cam.open();
+      s.feed(25, FPS15); // 1600 ms: not judged yet
+      reset(s);
+      s.feed(10, FPS15); // 2267 ms since the first frame, but only 600 ms since the reset
+      expect(s.cam.placement.value.slow).toBe(false);
+      s.feed(25, FPS15);
+      expect(s.cam.placement.value.slow).toBe(true);
+    });
+
+    it('measures afresh when the camera is opened again', async () => {
+      const s = setup(FLAT);
+      await s.cam.open();
+      s.feed(40, FPS15);
+      expect(s.cam.placement.value.slow).toBe(true);
+      s.cam.cancel();
+      await s.cam.open();
+      expect(s.cam.placement.value.slow).toBe(false);
+      s.feed(25, FPS15);
+      expect(s.cam.placement.value.slow).toBe(false);
+    });
+  });
+
   it('releases the screen lock and the track listeners when the count ends', async () => {
     const lock = { released: false, release: vi.fn().mockResolvedValue(undefined) };
     vi.stubGlobal(

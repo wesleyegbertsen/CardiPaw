@@ -69,6 +69,8 @@ const placementHint = computed(() => {
   const p = cam.placement.value;
   if (p.tooDark) return 'camera.tooDark';
   if (p.moving) return 'camera.moving';
+  // After the picture itself: a dark or moving picture is the owner's to fix first.
+  if (p.slow) return 'camera.moreLight';
   if (p.steady) return 'camera.steady';
   // The first two seconds, and after every reset: say what Start is waiting for.
   return 'camera.checking';
@@ -190,13 +192,14 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
       </div>
     </div>
 
-    <div class="capture-panel">
+    <div class="capture-panel" :class="{ explain: cam.phase.value === 'idle' }">
       <!-- Explain -->
       <template v-if="cam.phase.value === 'idle'">
         <span class="experimental-chip">{{ $t('camera.experimental') }}</span>
         <h2 class="title">{{ $t('camera.explainTitle') }}</h2>
         <p class="body-text">{{ $t('camera.explainBody') }}</p>
         <p class="privacy-note">{{ $t('camera.privacyNote') }}</p>
+        <p class="light-note">{{ $t('camera.lightNote') }}</p>
         <div class="actions">
           <button class="btn-save" @click="cam.open()">{{ $t('camera.allow') }}</button>
           <button class="btn-discard" @click="emit('tapInstead')">
@@ -370,6 +373,7 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
 }
 
 .privacy-note,
+.light-note,
 .hint {
   font-size: 13px;
   color: var(--color-text-muted);
@@ -638,6 +642,38 @@ onBeforeUnmount(() => clearTimeout(pulseTimer));
 
 .landscape .actions {
   max-width: none;
+}
+
+/* The explanation is the longest step: tighter, a size smaller and the two buttons side by
+   side, so it fits a 412 px tall phone without scrolling */
+.landscape .capture-panel.explain {
+  gap: 6px;
+}
+
+.landscape .explain .title {
+  font-size: 17px;
+}
+
+.landscape .explain .body-text {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.landscape .explain .privacy-note,
+.landscape .explain .light-note {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.landscape .explain .actions {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.landscape .explain .actions > button {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .landscape .timer-ring,

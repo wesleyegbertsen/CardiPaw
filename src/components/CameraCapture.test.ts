@@ -12,7 +12,7 @@ const cam = vi.hoisted(() => ({
   phase: undefined as unknown as { value: CameraPhase },
   error: undefined as unknown as { value: CameraError | null },
   placement: undefined as unknown as {
-    value: { tooDark: boolean; moving: boolean; steady: boolean };
+    value: { tooDark: boolean; moving: boolean; slow: boolean; steady: boolean };
   },
   hints: undefined as unknown as {
     value: { shake: boolean; fewTracks: boolean; tooDark: boolean };
@@ -30,7 +30,7 @@ vi.mock('../composables/useCameraBreath', async () => {
   const { ref } = await import('vue');
   cam.phase = ref('idle');
   cam.error = ref(null);
-  cam.placement = ref({ tooDark: false, moving: false, steady: false });
+  cam.placement = ref({ tooDark: false, moving: false, slow: false, steady: false });
   cam.hints = ref({ shake: false, fewTracks: false, tooDark: false });
   cam.elapsedSeconds = ref(0);
   cam.targetSeconds = ref(30);
@@ -82,7 +82,7 @@ describe('CameraCapture', () => {
   beforeEach(() => {
     cam.phase.value = 'idle';
     cam.error.value = null;
-    cam.placement.value = { tooDark: false, moving: false, steady: false };
+    cam.placement.value = { tooDark: false, moving: false, slow: false, steady: false };
     cam.hints.value = { shake: false, fewTracks: false, tooDark: false };
     cam.elapsedSeconds.value = 0;
     cam.targetSeconds.value = 30;
@@ -99,6 +99,7 @@ describe('CameraCapture', () => {
     expect(wrapper.text()).toContain('Count breaths with the camera');
     expect(wrapper.text()).toContain('Prop your phone up so the camera sees');
     expect(wrapper.text()).toContain('The video is analysed on this phone only.');
+    expect(wrapper.get('.light-note').text()).toBe('Works best in a well-lit room.');
     expect(wrapper.get('.experimental-chip').text()).toBe('Experimental');
     expect(wrapper.get('video').attributes('aria-hidden')).toBe('true');
     expect(cam.open).not.toHaveBeenCalled();
@@ -186,7 +187,7 @@ describe('CameraCapture', () => {
       await start.trigger('click');
       expect(cam.begin).not.toHaveBeenCalled();
 
-      cam.placement.value = { tooDark: false, moving: false, steady: true };
+      cam.placement.value = { tooDark: false, moving: false, slow: false, steady: true };
       await flushPromises();
       expect(start.element.disabled).toBe(false);
       await start.trigger('click');
@@ -202,16 +203,25 @@ describe('CameraCapture', () => {
     });
 
     it.each([
-      ['too dark', { tooDark: true, moving: true, steady: false }, 'Too dark: turn on a light.'],
+      [
+        'too dark',
+        { tooDark: true, moving: true, slow: true, steady: false },
+        'Too dark: turn on a light.',
+      ],
       [
         'moving',
-        { tooDark: false, moving: true, steady: false },
+        { tooDark: false, moving: true, slow: true, steady: false },
         "The phone is moving: prop it up and don't touch it.",
       ],
       [
         'steady',
-        { tooDark: false, moving: false, steady: true },
+        { tooDark: false, moving: false, slow: false, steady: true },
         'Steady. Start when your pet is settled.',
+      ],
+      [
+        'slow',
+        { tooDark: false, moving: false, slow: true, steady: false },
+        'More light needed: the camera slows down in dim light.',
       ],
     ])('hints %s', async (_label, placement, text) => {
       const wrapper = mountCapture();
@@ -219,6 +229,18 @@ describe('CameraCapture', () => {
       cam.placement.value = placement;
       await flushPromises();
       expect(wrapper.get('.placement-hint').text()).toBe(text);
+    });
+
+    it('keeps Start off and warns while the camera runs slow', async () => {
+      const wrapper = mountCapture();
+      await setPhase('placing');
+      cam.placement.value = { tooDark: false, moving: false, slow: true, steady: false };
+      await flushPromises();
+      const hint = wrapper.get('.placement-hint');
+      expect(hint.text()).toBe('More light needed: the camera slows down in dim light.');
+      expect(hint.classes()).not.toContain('checking');
+      expect(hint.classes()).not.toContain('ready');
+      expect(wrapper.get<HTMLButtonElement>('.btn-save').element.disabled).toBe(true);
     });
 
     it('offers a named Count along switch with its hint once on', async () => {
@@ -372,7 +394,7 @@ describe('CameraCapture', () => {
         [{ rate: 24, seconds: 30, interval: [23, 25], taps: 3 }],
       ]);
 
-      cam.placement.value = { tooDark: false, moving: false, steady: true };
+      cam.placement.value = { tooDark: false, moving: false, slow: false, steady: true };
       await setPhase('placing');
       await wrapper.get('.btn-save').trigger('click'); // Start resets the taps
       await setPhase('capturing');

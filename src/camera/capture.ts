@@ -174,9 +174,26 @@ export function defaultRoi(size: Pick<Frame, 'width' | 'height'>): { roi: Roi; b
  * scenes the gates were calibrated on average 125). maxFlowPx is the median background flow
  * against an anchor frame renewed every anchorFrames: on synthetic scenes (seed 3, 4 s) a
  * propped phone stays below 0.34 px, 0.5 px rms hand shake has a median of 0.48 and 1 px of
- * 0.98; frame-to-frame flow cannot tell them apart (0.14 vs 0.18).
+ * 0.98; frame-to-frame flow cannot tell them apart (0.14 vs 0.18). rateWindowMs is the span of
+ * frames the delivered rate is judged on (slowDelivery).
  */
-export const PLACEMENT = { minLuma: 40, maxFlowPx: 0.5, anchorFrames: 30, steadyMs: 2000 } as const;
+export const PLACEMENT = {
+  minLuma: 40,
+  maxFlowPx: 0.5,
+  anchorFrames: 30,
+  steadyMs: 2000,
+  rateWindowMs: 2000,
+} as const;
+
+/**
+ * Whether frames come too slowly for a count: the capture-time gates (MIN_DELIVERED_FPS,
+ * MAX_GAP_MS) applied while placing, because a phone camera lowers its frame rate in dim light
+ * and the count would end with 'frame-rate'. False below 2 frames; the caller decides how long
+ * a span is enough to judge.
+ */
+export function slowDelivery(t: FrameTiming): boolean {
+  return t.fps !== null && (t.fps < MIN_DELIVERED_FPS || t.maxGapMs > MAX_GAP_MS);
+}
 
 export interface PlacementSample {
   luma: number;

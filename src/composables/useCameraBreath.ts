@@ -16,6 +16,7 @@ import {
   nearCeiling,
   placementSample,
   resampleRow,
+  slowDelivery,
   type CameraSeconds,
   type CaptureReason,
 } from '../camera/capture';
@@ -78,7 +79,7 @@ export function useCameraBreath(opts: CameraBreathOptions) {
   const wakeLock = useWakeLock();
   const phase = ref<CameraPhase>('idle');
   const error = ref<CameraError | null>(null);
-  const placement = ref({ tooDark: false, moving: false, steady: false });
+  const placement = ref({ tooDark: false, moving: false, slow: false, steady: false });
   const hints = ref({ shake: false, fewTracks: false, tooDark: false });
   const elapsedSeconds = ref(0);
   const targetSeconds = ref<CameraSeconds>(30);
@@ -102,6 +103,9 @@ export function useCameraBreath(opts: CameraBreathOptions) {
   let anchor: Frame | null = null;
   let placingFrames = 0;
   let steadySince: number | null = null;
+  // The placing frames' timestamps, the last PLACEMENT.rateWindowMs of them (plus the one that
+  // makes the span reach it), to catch a camera that slowed down in dim light before Start.
+  let rateWindow: number[] = [];
   // Bumped by every teardown; an await that comes back to an older session stands down.
   let session = 0;
   // window.innerWidth when the listeners went on: a rotation changes it, a URL bar does not.
@@ -136,6 +140,7 @@ export function useCameraBreath(opts: CameraBreathOptions) {
   // against the width it starts with, not the one the camera opened with.
   function framingChanged() {
     steadySince = null;
+    rateWindow = [];
     widthAtStart = window.innerWidth;
   }
   function onTrackEnded() {
@@ -144,7 +149,10 @@ export function useCameraBreath(opts: CameraBreathOptions) {
   function onTrackMute() {
     // Some devices mute briefly right after the stream starts; only a mute mid-count interrupts.
     if (phase.value === 'capturing') abort('interrupted');
-    else steadySince = null;
+    else {
+      steadySince = null;
+      rateWindow = [];
+    }
   }
 
   function listen(on: boolean) {
@@ -233,7 +241,8 @@ export function useCameraBreath(opts: CameraBreathOptions) {
     anchor = null;
     placingFrames = 0;
     steadySince = null;
-    placement.value = { tooDark: false, moving: false, steady: false };
+    rateWindow = [];
+    placement.value = { tooDark: false, moving: false, slow: false, steady: false };
     widthAtStart = window.innerWidth;
     listen(true);
     stopFrames = (deps.frameSource ?? videoFrames)(video, onFrame);
@@ -252,13 +261,28 @@ export function useCameraBreath(opts: CameraBreathOptions) {
       prevFrame = frame;
       const tooDark = s.luma < PLACEMENT.minLuma;
       const moving = s.flowPx !== null && s.flowPx > PLACEMENT.maxFlowPx;
+      rateWindow.push(timeMs);
+      while (rateWindow.length > 2 && timeMs - rateWindow[1] >= PLACEMENT.rateWindowMs) {
+        rateWindow.shift();
+      }
+      let timing = frameTiming(rateWindow);
+      // Once slow, the window holds only the frames since the rate last fell short, so the hint
+      // clears after a whole window at the full rate, not as soon as the average crosses 28:
+      // a rate hovering around the threshold cannot make it flicker.
+      if (placement.value.slow && slowDelivery(timing)) {
+        rateWindow = [timeMs];
+        timing = frameTiming(rateWindow);
+      }
+      // Under 2 s of frames is too few to judge; the last verdict stands meanwhile.
+      const judged = timing.spanMs >= PLACEMENT.rateWindowMs;
+      const slow = judged ? slowDelivery(timing) : placement.value.slow;
       let steady = false;
       if (tooDark || moving) steadySince = null;
       else {
         steadySince ??= Date.now();
-        steady = Date.now() - steadySince >= PLACEMENT.steadyMs;
+        steady = judged && !slow && Date.now() - steadySince >= PLACEMENT.steadyMs;
       }
-      placement.value = { tooDark, moving, steady };
+      placement.value = { tooDark, moving, slow, steady };
     } else if (phase.value === 'capturing' && tracker) {
       const frame = readFrame(video);
       tracker.push(frame);
