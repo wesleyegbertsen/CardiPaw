@@ -206,6 +206,21 @@ describe('Android resources', () => {
     expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
   });
 
+  it("registers the immersive mode plugin under its own name, not Capacitor's SystemBars", () => {
+    const java = join(ROOT, 'android/app/src/main/java/com/cardipaw/app');
+    const plugin = readFileSync(join(java, 'ImmersiveModePlugin.java'), 'utf8');
+    const ts = readFileSync(join(ROOT, 'src/native/immersiveMode.ts'), 'utf8');
+    const javaName = plugin.match(/@CapacitorPlugin\(name = "([^"]+)"\)/)?.[1];
+    // "SystemBars" is Capacitor's own plugin (the theme's bar style, the safe-area insets):
+    // a second plugin under that name would replace it in the bridge.
+    expect(javaName).toBe('ImmersiveMode');
+    expect(ts.match(/registerPlugin<\w+>\('([^']+)'\)/)?.[1]).toBe(javaName);
+    const activity = readFileSync(join(java, 'MainActivity.java'), 'utf8');
+    const register = activity.indexOf('registerPlugin(ImmersiveModePlugin.class);');
+    expect(register).toBeGreaterThan(-1);
+    expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
+  });
+
   it('declares INTERNET (the update check) and CAMERA (camera counting), never REQUEST_INSTALL_PACKAGES', () => {
     // A tools:node="remove" entry takes a plugin's permission out; it declares nothing.
     const permissions = [
