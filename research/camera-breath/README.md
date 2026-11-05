@@ -428,6 +428,9 @@ rejection of unknown sources, a trend-baseline policy for camera readings, the m
 `CAMERA` permission with `uses-feature required=false`, a README privacy paragraph, and the
 Play data-safety form.
 
+Implemented in the app as an opt-in in round 2 (PR #134); the real-recording bar still stands
+before it leaves Experimental.
+
 ## 10. Prior art
 
 - Angelucci et al., Sci Rep 2025 — 27 sleeping dogs, owners' phones, 20 px ROI, 25 tracked
