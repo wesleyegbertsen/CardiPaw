@@ -24,7 +24,7 @@ Privacy: the video is analysed on your device, frame by frame, and never recorde
 
 Every measurement is saved with a timestamp and labelled **Normal**, **Elevated** or **High** against the [status thresholds](../README.md#status-thresholds): the defaults, or the pet's own ceilings when you set them in its profile. The readings list loads incrementally so it stays fast even with hundreds of entries.
 
-When saving a reading you can optionally record your pet's **rest state** (resting or sleeping) and add a free-text **note** (for example, whether they had just eaten, were in an unusual position, or anything else worth remembering). Both fields appear alongside the reading in the list and in the exported PDF report.
+When saving a reading you can optionally record your pet's **rest state** (resting or sleeping) and add a free-text **note** (for example, whether they had just eaten, were in an unusual position, or anything else worth remembering). The rest state always appears alongside the reading in the list and in the exported PDF report. A reading with a note is marked in the list, and the note itself is in the PDF only when you turn on **Include reading notes** before exporting.
 
 ## Charts
 
@@ -59,7 +59,7 @@ Generate a PDF report for any pet directly from the detail view. Select one or m
 
 ## Share
 
-Create a shareable link for any pet directly from the detail view — for example to give your vet a quick overview. Select which months to include and CardiPaw packs the readings into the link itself — compressed and encoded in the URL fragment, which browsers never send to any server. Opening the link shows a standalone read-only report with summary statistics, a chart and a reading list per month, without exposing the rest of the app. Nothing is uploaded or stored: the link *is* the data, so anyone you send it to can see it.
+Create a shareable link for any pet directly from the detail view — for example to give your vet a quick overview. Select which months to include and CardiPaw packs the pet's name, species and date of birth (and its own Normal and Elevated ceilings, if you set them), along with the readings from those months, into the link itself — compressed and encoded in the URL fragment, which browsers never send to any server. Opening the link shows a standalone read-only report with summary statistics, a chart and a reading list per month, without exposing the rest of the app. Nothing is uploaded or stored: the link *is* the data, so anyone you send it to can see it.
 
 ## Pet Notes
 

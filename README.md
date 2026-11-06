@@ -59,7 +59,7 @@ Every feature in detail: [docs/features.md](docs/features.md).
 
 ## Privacy
 
-Your pets, readings and notes are stored locally on your device and are never sent to any server. A share link carries the readings you pick inside the link itself (in the URL fragment, which browsers never send to a server), so anyone you send it to can see them. [Camera counting](docs/features.md#camera-counting-experimental) and the Android app's [update check](docs/android.md#updating) are off until you turn them on.
+Your pets, readings and notes are stored locally on your device and are never sent to any server. A share link carries your pet's name, species and date of birth (and its own Normal and Elevated ceilings, if you set them), along with the readings from the months you pick, inside the link itself (in the URL fragment, which browsers never send to a server), so anyone you send it to can see them. [Camera counting](docs/features.md#camera-counting-experimental) and the Android app's [update check](docs/android.md#updating) are off until you turn them on.
 
 ## Android
 

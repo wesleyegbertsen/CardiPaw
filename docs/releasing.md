@@ -5,7 +5,7 @@ CardiPaw follows [Semantic Versioning](https://semver.org/). The version is show
 Releases are automated by the [Release workflow](../.github/workflows/release.yml), which runs daily and can be started manually from the Actions tab:
 
 1. If no commits have been merged into `main` since the last `vX.Y.Z` tag, the run stops.
-2. The commit must pass the same [checks as CI](../CONTRIBUTING.md#development) (lint, type-check, tests, locale check, build and `npm audit`); otherwise nothing is released.
+2. The commit must pass the same [checks as CI](../CONTRIBUTING.md#development) (lint, type-check, tests, locale check, link check, build and `npm audit`); otherwise nothing is released.
 3. [GitVersion](https://gitversion.net/) determines the next version from the commit messages since that release (see [PR titles](../CONTRIBUTING.md#pr-titles) and [`GitVersion.yml`](../GitVersion.yml)).
 4. [`scripts/set-version.mjs`](../scripts/set-version.mjs) stamps that version into `package.json` and `package-lock.json`, from which the app reads it at build time. You can run it locally with `npm run set-version -- 1.2.3`.
 5. The website is deployed, the Docker image is pushed with the new version tags, and the Android APK is built and signed (see [Release signing](#release-signing)).
