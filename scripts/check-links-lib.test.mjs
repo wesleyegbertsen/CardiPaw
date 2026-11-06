@@ -17,6 +17,7 @@ describe('slug', () => {
     ['docker-compose', 'docker-compose'],
     ['See [the docs](docs/x.md) here', 'see-the-docs-here'],
     ['Über_uns', 'über_uns'],
+    ['Foo <sup>x</sup>', 'foo-x'],
   ])('%s -> %s', (heading, want) => {
     expect(slug(heading)).toBe(want);
   });
@@ -31,6 +32,11 @@ describe('parseMarkdown', () => {
   it('skips a heading whose numbered anchor is taken, like GitHub', () => {
     const { anchors } = parseMarkdown('## Notes\n## Notes 1\n## Notes\n');
     expect([...anchors]).toEqual(['notes', 'notes-1', 'notes-2']);
+  });
+
+  it('does not end a ``` fence at ~~~', () => {
+    const md = '```\n~~~\n[x](nope.md)\n```\n[y](a.md)\n';
+    expect(parseMarkdown(md).links).toEqual([{ target: 'a.md', line: 5 }]);
   });
 
   it('does not end a fence at a marker with an info string', () => {
@@ -193,6 +199,13 @@ describe('checkLinks', () => {
     ]);
   });
 
+  it('decodes %-escapes in the path and the anchor', () => {
+    const broken = check({ 'a.md': '## Über uns\n[x](my%20file.md) [y](#%C3%BCber-uns)' }, [
+      'my file.md',
+    ]);
+    expect(broken).toEqual([]);
+  });
+
   it('reports a malformed %-escape instead of throwing', () => {
     expect(check({ 'a.md': '# A\n[x](#50%)\n[y](b%zz.md)' })).toEqual([
       'a.md:2: #50% (has a malformed %-escape: write % as %25)',
@@ -205,6 +218,12 @@ describe('checkLinks', () => {
     expect(check({ 'README.md': '## Android' }, [], required)).toEqual([]);
     expect(check({ 'README.md': '## Android app' }, [], required)).toEqual([
       'README.md: the heading for #android is gone',
+    ]);
+  });
+
+  it('reports a page with required anchors that is missing', () => {
+    expect(check({ 'a.md': '' }, [], { 'README.md': ['android'] })).toEqual([
+      'README.md: missing, but it must have the anchors android',
     ]);
   });
 });
