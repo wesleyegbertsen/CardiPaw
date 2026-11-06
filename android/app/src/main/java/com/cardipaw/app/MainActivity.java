@@ -1,5 +1,6 @@
 package com.cardipaw.app;
 
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -12,6 +13,15 @@ public class MainActivity extends BridgeActivity {
         // App-local plugins are registered before super.onCreate creates the bridge.
         registerPlugin(NotificationSettingsPlugin.class);
         registerPlugin(ImmersiveModePlugin.class);
+        registerPlugin(LauncherShortcutsPlugin.class);
+        // BridgeActivity hands the intent this activity was created with to the plugins again.
+        // A shortcut in it was already handled when Android restores the activity (after the
+        // process was stopped: from Recents or the app icon) or reopens it from Recents (after a
+        // force stop; only then is the history flag set).
+        if (savedInstanceState != null
+                || (getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) {
+            LauncherShortcutsPlugin.forgetShortcut(getIntent());
+        }
         super.onCreate(savedInstanceState);
         // AppCompat gave the window the launch theme's background in super.onCreate, before
         // BridgeActivity switched to AppTheme.NoActionBar, so the window gets it here.

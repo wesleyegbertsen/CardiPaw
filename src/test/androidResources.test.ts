@@ -221,6 +221,52 @@ describe('Android resources', () => {
     expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
   });
 
+  it('registers the launcher shortcuts plugin under the name the web code calls', () => {
+    const java = join(ROOT, 'android/app/src/main/java/com/cardipaw/app');
+    const plugin = readFileSync(join(java, 'LauncherShortcutsPlugin.java'), 'utf8');
+    const ts = readFileSync(join(ROOT, 'src/native/launcherShortcuts.ts'), 'utf8');
+    const javaName = plugin.match(/@CapacitorPlugin\(name = "([^"]+)"\)/)?.[1];
+    expect(javaName).toBe('LauncherShortcuts');
+    expect(ts.match(/registerPlugin<\w+>\('([^']+)'\)/)?.[1]).toBe(javaName);
+    const activity = readFileSync(join(java, 'MainActivity.java'), 'utf8');
+    const register = activity.indexOf('registerPlugin(LauncherShortcutsPlugin.class);');
+    expect(register).toBeGreaterThan(-1);
+    expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
+  });
+
+  it('keeps launcher shortcuts away from Google and conversation surfaces', () => {
+    // Without comments: both files name what they must not use.
+    const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const gradle = readFileSync(join(ROOT, 'android/app/build.gradle'), 'utf8');
+    const plugin = readFileSync(
+      join(ROOT, 'android/app/src/main/java/com/cardipaw/app/LauncherShortcutsPlugin.java'),
+      'utf8',
+    );
+    // core-google-shortcuts sends every shortcut to Google (Assistant, search).
+    expect(code(gradle)).not.toContain('core-google-shortcuts');
+    // These publish shortcuts to sharing and conversation surfaces, or report their use.
+    expect(code(plugin)).not.toMatch(/pushDynamicShortcut|reportShortcutUsed|setLongLived/);
+  });
+
+  it('forgets a handled shortcut when the activity is restored or reopened from Recents', () => {
+    const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const activity = code(
+      readFileSync(join(ROOT, 'android/app/src/main/java/com/cardipaw/app/MainActivity.java'), 'utf8'),
+    );
+    // BridgeActivity hands the creating intent to the plugins in super.onCreate: a shortcut
+    // already handled would open its tracker again.
+    const superOnCreate = activity.indexOf('super.onCreate(');
+    for (const part of [
+      'forgetShortcut(getIntent())',
+      'savedInstanceState != null',
+      'FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY',
+    ]) {
+      const at = activity.indexOf(part);
+      expect(at, part).toBeGreaterThan(-1);
+      expect(at, part).toBeLessThan(superOnCreate);
+    }
+  });
+
   it('declares INTERNET (the update check) and CAMERA (camera counting), never REQUEST_INSTALL_PACKAGES', () => {
     // A tools:node="remove" entry takes a plugin's permission out; it declares nothing.
     const permissions = [
