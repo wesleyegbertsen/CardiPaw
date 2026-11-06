@@ -2,6 +2,8 @@
 
 Thanks for helping! Bugs and ideas go in [issues](https://github.com/wesleyegbertsen/CardiPaw/issues). For code, open a PR against `main` and fill in the [PR template](.github/pull_request_template.md): a summary, release notes, the changes and how you verified them.
 
+When a PR changes how a feature works, update its section in [docs/features.md](docs/features.md) or [docs/android.md](docs/android.md), and its README bullet if it has one, in the same PR.
+
 ## Development
 
 ```bash
@@ -39,7 +41,7 @@ How releases are cut from these titles: [docs/releasing.md](docs/releasing.md).
 
 The same app also runs as an Android app, built with [Capacitor](https://capacitorjs.com/). The native project lives in [`android/`](android/) and its settings in [`capacitor.config.ts`](capacitor.config.ts).
 
-You need [Android Studio](https://developer.android.com/studio) with the Android SDK 36 platform, JDK 21 and Node 22 or newer.
+You need [Android Studio](https://developer.android.com/studio) with the Android SDK 36 platform, JDK 21 and Node 24 (the version CI and the Dockerfile use).
 
 ```bash
 npm run build:android # type-check, build the web files into dist-native/ and copy them into android/

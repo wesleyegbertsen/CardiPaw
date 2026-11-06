@@ -26,7 +26,7 @@ The RRR is measured by watching your pet's chest while they are resting or sleep
 | Elevated | 31-35 breaths/min |
 | High     | > 35 breaths/min  |
 
-These thresholds are based on general veterinary guidance. Always follow the specific advice of your own vet.
+These defaults are based on general veterinary guidance. In a pet's profile you can set its own Normal and Elevated ceilings, and its readings are then labelled against those. Always follow the specific advice of your own vet.
 
 ## Features
 
@@ -80,6 +80,7 @@ For development setup, tests, PR titles and the Android build, see [CONTRIBUTING
 - [Chart.js](https://www.chartjs.org/) + [vue-chartjs](https://vue-chartjs.org/) for visualisations
 - [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) (via [idb](https://github.com/jakearchibald/idb)) for local persistence
 - [Vite](https://vitejs.dev/) as the build tool
+- [Capacitor](https://capacitorjs.com/) for the Android app
 
 ## License
 

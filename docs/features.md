@@ -22,7 +22,7 @@ Privacy: the video is analysed on the phone, frame by frame, and never recorded,
 
 ## Readings
 
-Every measurement is saved with a timestamp and labelled as **Normal** (≤ 30), **Elevated** (31-35), or **High** (> 35). The readings list loads incrementally so it stays fast even with hundreds of entries.
+Every measurement is saved with a timestamp and labelled as **Normal** (≤ 30), **Elevated** (31-35), or **High** (> 35) by default, or against the pet's own ceilings when you set them in its profile (see [Status Thresholds](../README.md#status-thresholds)). The readings list loads incrementally so it stays fast even with hundreds of entries.
 
 When saving a reading you can optionally record your pet's **rest state** (resting or sleeping) and add a free-text **note** (for example, whether they had just eaten, were in an unusual position, or anything else worth remembering). Both fields appear alongside the reading in the list and in the exported PDF report.
 
