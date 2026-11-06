@@ -71,7 +71,7 @@ Reminders to measure a pet, at a time and on the weekdays you choose, are part o
 
 ## Data export & import
 
-Export all pets, readings and notes as a JSON file for backup or transfer. Import a previously exported file to restore your data.
+Export all pets, readings and notes as a JSON file for backup or transfer. Import a previously exported file to restore your data. In the Android app, [automatic backups](android.md#automatic-backups) can save the same file to a folder you pick.
 
 ## Languages
 
