@@ -8,6 +8,7 @@ import {
 import { watch } from 'vue';
 import type { Router } from 'vue-router';
 import type { i18n as appI18n } from '../i18n';
+import { openTracker } from '../router/openTracker';
 import * as db from '../services/db';
 import { localDayKey } from '../utils/date';
 import { isNative } from '../utils/platform';
@@ -191,10 +192,9 @@ export function openNotificationSettings(): Promise<void> {
 export function installReminders(router: Router, appI18nInstance: AppI18n): void {
   if (!isNative()) return;
   i18n = appI18nInstance;
-  void LocalNotifications.addListener('localNotificationActionPerformed', ({ notification: n }) => {
-    const petId: unknown = n.extra?.petId;
-    if (typeof petId === 'string') void router.push({ name: 'tracker', params: { id: petId } });
-  });
+  void LocalNotifications.addListener('localNotificationActionPerformed', ({ notification: n }) =>
+    openTracker(router, n.extra?.petId),
+  );
   void App.addListener('resume', () => void syncReminders());
   watch(appI18nInstance.global.locale, () => void syncReminders());
   void syncReminders();
