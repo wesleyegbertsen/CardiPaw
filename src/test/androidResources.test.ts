@@ -221,6 +221,23 @@ describe('Android resources', () => {
     expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
   });
 
+  it('forgets a handled widget tap before the bridge is created', () => {
+    // The bridge reads the intent in super.onCreate: cleared after it, a recreated activity
+    // (process death, Recents) opens the old tap's pet again.
+    const activity = readFileSync(
+      join(ROOT, 'android/app/src/main/java/com/cardipaw/app/MainActivity.java'),
+      'utf8',
+    );
+    const forget = activity.indexOf('forgetHandledWidgetTap(savedInstanceState);');
+    expect(forget).toBeGreaterThan(-1);
+    expect(forget).toBeLessThan(activity.indexOf('super.onCreate('));
+    // The scheme it checks is the one the web code parses.
+    const ts = readFileSync(join(ROOT, 'src/utils/widgetUrl.ts'), 'utf8');
+    const scheme = ts.match(/WIDGET_URL_SCHEME = '([^']+)'/)?.[1];
+    expect(scheme).toBe('cardipaw-widget');
+    expect(activity.match(/"([^"]+)"\.equals\(data\.getScheme\(\)\)/)?.[1]).toBe(scheme);
+  });
+
   it('declares INTERNET (the update check) and CAMERA (camera counting), never REQUEST_INSTALL_PACKAGES', () => {
     // A tools:node="remove" entry takes a plugin's permission out; it declares nothing.
     const permissions = [

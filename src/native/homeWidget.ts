@@ -6,6 +6,7 @@ import type { i18n as appI18n } from '../i18n';
 import * as db from '../services/db';
 import { isNative } from '../utils/platform';
 import { buildWidgetSnapshot, type Translate } from '../utils/widgetSnapshot';
+import { parseWidgetUrl } from '../utils/widgetUrl';
 
 interface HomeWidgetPlugin {
   /** Stores the snapshot (JSON) and redraws every CardiPaw widget. */
@@ -51,9 +52,26 @@ export function syncHomeWidget(): Promise<void> {
   return pending;
 }
 
-export function installHomeWidget(_router: Router, appI18nInstance: AppI18n): void {
+async function openFromWidget(router: Router, url: string): Promise<void> {
+  const target = parseWidgetUrl(url);
+  if (!target) return;
+  await router.isReady();
+  const pet = target.kind === 'pet' ? await db.getPet(target.petId) : undefined;
+  // A deleted pet (or one an import replaced): home, where every pet is.
+  const to = pet ? { name: 'pet', params: { id: pet.id } } : { name: 'home' };
+  if (router.currentRoute.value.fullPath === router.resolve(to).fullPath) return;
+  await router.push(to);
+}
+
+export function installHomeWidget(router: Router, appI18nInstance: AppI18n): void {
   if (!isNative()) return;
   i18n = appI18nInstance;
+  // Added now, before the page has settled: AppPlugin keeps a cold start's URL until the first
+  // appUrlOpen listener and hands it over once, so a reload doesn't open it again (never call
+  // App.getLaunchUrl: it keeps returning the launch URL for the activity's lifetime).
+  void App.addListener('appUrlOpen', ({ url }) => {
+    openFromWidget(router, url).catch((e) => console.error('Could not open the widget tap', e));
+  });
   db.onDataChanged(() => void syncHomeWidget());
   // Brings the trend days up to date; midnight and clock changes are redrawn natively.
   void App.addListener('resume', () => void syncHomeWidget());

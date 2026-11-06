@@ -44,6 +44,7 @@ const handler = (event: string) =>
   vi.mocked(App.addListener).mock.calls.find(([e]) => (e as string) === event)![1] as unknown;
 // Captured at install: restoreMocks clears the mock's calls after each test.
 let onResume: () => void;
+let openUrl: (data: { url: string }) => void;
 
 let installed = false;
 beforeEach(async () => {
@@ -62,6 +63,7 @@ beforeEach(async () => {
     // Once per file: install keeps its listeners for the module's lifetime, as in the app.
     effectScope().run(() => installHomeWidget(router, i18n));
     onResume = handler('resume') as () => void;
+    openUrl = handler('appUrlOpen') as (data: { url: string }) => void;
     installed = true;
   }
   await syncHomeWidget();
@@ -175,6 +177,64 @@ describe('syncHomeWidget', () => {
     expect(error).toHaveBeenCalledWith(
       'Could not update the home screen widget',
       expect.any(Error),
+    );
+  });
+});
+
+describe('a widget tap', () => {
+  const settle = () => new Promise((r) => setTimeout(r, 20));
+
+  it('opens the pet', async () => {
+    openUrl({ url: 'cardipaw-widget://pet/p1' });
+    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/pets/p1'));
+  });
+
+  it('goes home for a pet that no longer exists', async () => {
+    await router.push('/settings');
+    openUrl({ url: 'cardipaw-widget://pet/gone' });
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'));
+  });
+
+  it('goes home from the "+N more" row', async () => {
+    await router.push('/settings');
+    openUrl({ url: 'cardipaw-widget://home' });
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'));
+  });
+
+  it("ignores a URL that isn't a widget's", async () => {
+    await router.push('/settings');
+    openUrl({ url: 'https://evil.example/pet/p1' });
+    await settle();
+    expect(router.currentRoute.value.name).toBe('settings');
+  });
+
+  it('waits for the router to be ready', async () => {
+    // A cold start's tap arrives before the first navigation has finished.
+    const ready = deferred<void>();
+    vi.spyOn(router, 'isReady').mockReturnValueOnce(ready.promise);
+    openUrl({ url: 'cardipaw-widget://pet/p1' });
+    await settle();
+    expect(router.currentRoute.value.name).toBe('home');
+
+    ready.resolve();
+    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/pets/p1'));
+  });
+
+  it("doesn't push the route it is already on", async () => {
+    await router.push('/pets/p1');
+    const push = vi.spyOn(router, 'push');
+    openUrl({ url: 'cardipaw-widget://pet/p1' });
+    await settle();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('logs a tap it could not open', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failure = new Error('boom');
+    vi.spyOn(router, 'push').mockRejectedValueOnce(failure);
+    openUrl({ url: 'cardipaw-widget://pet/p1' });
+    await vi.waitFor(() =>
+      expect(error).toHaveBeenCalledWith('Could not open the widget tap', failure),
     );
   });
 });
