@@ -203,6 +203,49 @@ describe('export and import', () => {
     expect(again.notes).toEqual(exported.notes);
   });
 
+  it('round-trips every field of every record', async () => {
+    // Every optional field set; a manual reading has no length (validateBackup drops one).
+    const pets = [
+      makePet({
+        id: 'pet-1',
+        photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP8=',
+        birthdate: '2019-06-30',
+        normalCeiling: 28,
+        elevatedCeiling: 40,
+      }),
+      makePet({ id: 'pet-2', name: 'Bo', species: 'cat' }),
+    ];
+    const readings = [
+      makeReading({ id: 'r-guided', restState: 'resting', notes: 'After a walk', durationSeconds: 15 }),
+      makeReading({ id: 'r-manual', source: 'manual', restState: 'sleeping', notes: 'Asleep', clickCount: 0 }),
+      makeReading({ id: 'r-camera', petId: 'pet-2', source: 'camera', durationSeconds: 60 }),
+    ];
+    const notes = [
+      makeNote({
+        id: 'n-1',
+        modifiedAt: '2024-03-16T08:30:00.000Z',
+        pinnedAt: '2024-03-17T09:00:00.000Z',
+      }),
+    ];
+    for (const p of pets) await db.savePet(p);
+    for (const r of readings) await db.saveReading(r);
+    for (const n of notes) await db.saveNote(n);
+    const exported = await exportBackup();
+    expect(byId(exported.pets)).toEqual(pets);
+    expect(byId(exported.readings)).toEqual(byId(readings));
+    expect(exported.notes).toEqual(notes);
+    const text = JSON.stringify(exported);
+
+    await emptyDb();
+    expect((await exportBackup()).pets).toEqual([]);
+    await importBackup(parseBackup(text).data);
+
+    const again = await exportBackup();
+    expect(again.pets).toEqual(exported.pets);
+    expect(again.readings).toEqual(exported.readings);
+    expect(again.notes).toEqual(exported.notes);
+  });
+
   it('replaces existing data and resets every store', async () => {
     await db.savePet(makePet({ id: 'old' }));
     await db.saveReading(makeReading({ id: 'old-r', petId: 'old' }));
