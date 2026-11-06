@@ -221,6 +221,19 @@ describe('Android resources', () => {
     expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
   });
 
+  it('registers the home widget plugin under the name the web code calls', () => {
+    const java = join(ROOT, 'android/app/src/main/java/com/cardipaw/app');
+    const plugin = readFileSync(join(java, 'widget/HomeWidgetPlugin.java'), 'utf8');
+    const ts = readFileSync(join(ROOT, 'src/native/homeWidget.ts'), 'utf8');
+    const javaName = plugin.match(/@CapacitorPlugin\(name = "([^"]+)"\)/)?.[1];
+    expect(javaName).toBe('HomeWidget');
+    expect(ts.match(/registerPlugin<\w+>\('([^']+)'\)/)?.[1]).toBe(javaName);
+    const activity = readFileSync(join(java, 'MainActivity.java'), 'utf8');
+    const register = activity.indexOf('registerPlugin(HomeWidgetPlugin.class);');
+    expect(register).toBeGreaterThan(-1);
+    expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
+  });
+
   it('forgets a handled widget tap before the bridge is created', () => {
     // The bridge reads the intent in super.onCreate: cleared after it, a recreated activity
     // (process death, Recents) opens the old tap's pet again.

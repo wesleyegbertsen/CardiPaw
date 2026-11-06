@@ -5,6 +5,7 @@ import android.content.res.Configuration;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import com.cardipaw.app.widget.HomeWidgetPlugin;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -14,6 +15,7 @@ public class MainActivity extends BridgeActivity {
         // App-local plugins are registered before super.onCreate creates the bridge.
         registerPlugin(NotificationSettingsPlugin.class);
         registerPlugin(ImmersiveModePlugin.class);
+        registerPlugin(HomeWidgetPlugin.class);
         forgetHandledWidgetTap(savedInstanceState);
         super.onCreate(savedInstanceState);
         // AppCompat gave the window the launch theme's background in super.onCreate, before
