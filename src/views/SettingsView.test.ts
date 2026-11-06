@@ -8,6 +8,8 @@ import { deferred } from '../test/deferred';
 import { makeNote, makePet, makeReading } from '../test/fixtures';
 import { mockNative } from '../test/native';
 import type { CheckOutcome } from '../composables/useUpdateCheck';
+import type { BackupConfig, RunOutcome } from '../composables/useAutoBackup';
+import type { BackupFailure } from '../native/backupFolder';
 import type { Version } from '../utils/version';
 import en from '../i18n/locales/en.json';
 import de from '../i18n/locales/de.json';
@@ -47,6 +49,37 @@ vi.mock('../composables/useCameraOptIn', async () => {
     useCameraOptIn: () => ({ enabled: camera.enabled, setEnabled: camera.setEnabled }),
     isCameraSupported: () => camera.supported,
   };
+});
+
+// The engine is tested in useAutoBackup.test.ts; here only what Settings shows and calls.
+const BACKUPS_OFF: BackupConfig = { enabled: false, frequency: 'daily', keep: 7 };
+const BACKUPS_ON: BackupConfig = {
+  enabled: true,
+  folderUri: 'content://com.android.externalstorage.documents/tree/primary%3ABackups',
+  folderName: 'Backups',
+  frequency: 'daily',
+  keep: 7,
+};
+const backups = vi.hoisted(() => ({
+  config: undefined as unknown as { value: BackupConfig },
+  lastSuccess: undefined as unknown as { value: number | null },
+  failure: undefined as unknown as { value: BackupFailure | null },
+  running: undefined as unknown as { value: boolean },
+  turnOn: vi.fn<() => Promise<'on' | 'cancelled' | 'unavailable'>>(),
+  changeFolder: vi.fn<() => Promise<'changed' | 'cancelled' | 'unavailable'>>(),
+  turnOff: vi.fn<() => Promise<void>>(),
+  setFrequency: vi.fn(),
+  setKeep: vi.fn(),
+  backUpNow: vi.fn<() => Promise<RunOutcome>>(),
+  probeFolder: vi.fn<() => Promise<void>>(),
+}));
+vi.mock('../composables/useAutoBackup', async () => {
+  const { ref } = await import('vue');
+  backups.config = ref({ enabled: false, frequency: 'daily', keep: 7 });
+  backups.lastSuccess = ref(null);
+  backups.failure = ref(null);
+  backups.running = ref(false);
+  return { useAutoBackup: () => backups, probeFolder: backups.probeFolder };
 });
 
 const exportButton = (w: VueWrapper) => w.findAll('.action-btn')[0];
@@ -94,6 +127,16 @@ describe('SettingsView', () => {
     camera.enabled.value = false;
     camera.supported = true;
     camera.setEnabled.mockReset();
+    backups.config.value = BACKUPS_OFF;
+    backups.lastSuccess.value = null;
+    backups.failure.value = null;
+    backups.turnOn.mockReset().mockResolvedValue('on');
+    backups.changeFolder.mockReset().mockResolvedValue('changed');
+    backups.turnOff.mockReset().mockResolvedValue();
+    backups.setFrequency.mockReset();
+    backups.setKeep.mockReset();
+    backups.backUpNow.mockReset().mockResolvedValue('saved');
+    backups.probeFolder.mockReset().mockResolvedValue();
   });
   afterEach(() => vi.useRealTimers());
 
@@ -711,6 +754,215 @@ describe('SettingsView', () => {
         wrapper.unmount();
         expect(vi.getTimerCount()).toBe(0);
       });
+    });
+  });
+
+  describe('automatic backups', () => {
+    const backupsSection = (w: VueWrapper) =>
+      w
+        .findAll('section')
+        .find((s) => s.element.querySelector('.section-title')?.textContent === 'Automatic backups');
+    const privacyText = async (w: VueWrapper) => {
+      await privacyButton(w).trigger('click');
+      return document.body.querySelector('[role="dialog"]')!.textContent;
+    };
+    const button = (section: Pick<DOMWrapper<Element>, 'findAll'>, text: string | RegExp) =>
+      section.findAll('button').find((b) => (typeof text === 'string' ? b.text() === text : text.test(b.text())));
+
+    async function mountBackups(config: BackupConfig = BACKUPS_ON) {
+      mockNative();
+      backups.config.value = config;
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      const section = backupsSection(wrapper)!;
+      return {
+        wrapper,
+        section,
+        toggle: () => section.get('[role="switch"]'),
+        alerts: () => section.findAll('[role="alert"]').map((a) => a.text()),
+        backUpButton: () => button(section, /^(Back up now|Backing up…)$/)!,
+        result: () => section.get('.action-card [role="status"]').text(),
+      };
+    }
+
+    it('are not offered on the website', async () => {
+      backups.config.value = BACKUPS_ON;
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(backupsSection(wrapper)).toBeUndefined();
+      expect(backups.probeFolder).not.toHaveBeenCalled();
+      const privacy = await privacyText(wrapper);
+      expect(privacy).not.toContain('Automatic backups (Android app).');
+      // The new p4 is true on the website too.
+      expect(privacy).toContain('No data sharing.');
+      expect(privacy).toContain('in the Android app, a backup folder that you sync');
+    });
+
+    it('are off until turned on, and check the folder when Settings opens', async () => {
+      const { section, toggle } = await mountBackups(BACKUPS_OFF);
+      expect(section.text()).toContain('Back up automatically');
+      expect(toggle().attributes('aria-checked')).toBe('false');
+      expect(section.text()).not.toContain('Folder:');
+      expect(button(section, 'Back up now')).toBeUndefined();
+      expect(backups.probeFolder).toHaveBeenCalledOnce();
+    });
+
+    it('turning on opens the picker, with the switch disabled until it closes', async () => {
+      const picked = deferred<'on' | 'cancelled' | 'unavailable'>();
+      backups.turnOn.mockReturnValueOnce(picked.promise);
+      const { toggle } = await mountBackups(BACKUPS_OFF);
+      await toggle().trigger('click');
+      expect(backups.turnOn).toHaveBeenCalledOnce();
+      expect(toggle().attributes('disabled')).toBeDefined();
+      picked.resolve('cancelled');
+      await flushPromises();
+      expect(toggle().attributes('disabled')).toBeUndefined();
+      expect(toggle().attributes('aria-checked')).toBe('false');
+    });
+
+    it("says so when the picker can't open", async () => {
+      backups.turnOn.mockResolvedValueOnce('unavailable');
+      const { toggle, alerts } = await mountBackups(BACKUPS_OFF);
+      await toggle().trigger('click');
+      await flushPromises();
+      expect(alerts()).toEqual(["Couldn't open the folder picker."]);
+      // The next try clears it.
+      await toggle().trigger('click');
+      await flushPromises();
+      expect(alerts()).toEqual([]);
+    });
+
+    it('turning off gives up the folder', async () => {
+      const { toggle } = await mountBackups();
+      expect(toggle().attributes('aria-checked')).toBe('true');
+      await toggle().trigger('click');
+      expect(backups.turnOff).toHaveBeenCalledOnce();
+      expect(backups.turnOn).not.toHaveBeenCalled();
+    });
+
+    it('shows the folder and when the last backup was written', async () => {
+      const { section } = await mountBackups();
+      expect(section.text()).toContain('Folder: Backups');
+      expect(section.text()).toContain('No backup yet');
+      // Local noon (month 0-based), so the text holds in any process timezone.
+      backups.lastSuccess.value = new Date(2026, 4, 1, 12).getTime();
+      await flushPromises();
+      // ICU may put a narrow no-break space before PM.
+      expect(section.text()).toMatch(/Last backup: May 1, 2026, 12:00\sPM/);
+    });
+
+    it('changes the folder, and says so when the picker cannot open', async () => {
+      const { section, alerts } = await mountBackups();
+      backups.changeFolder.mockResolvedValueOnce('unavailable');
+      await button(section, 'Change folder')!.trigger('click');
+      await flushPromises();
+      expect(backups.changeFolder).toHaveBeenCalledOnce();
+      expect(alerts()).toEqual(["Couldn't open the folder picker."]);
+    });
+
+    it('offers the schedule and how many to keep as pressed buttons', async () => {
+      const { section } = await mountBackups({ ...BACKUPS_ON, frequency: 'weekly', keep: 14 });
+      const groups = section.findAll('[role="group"]');
+      const labels = groups.map(
+        (g) => section.get(`[id="${g.attributes('aria-labelledby')}"]`).text(),
+      );
+      expect(labels).toEqual(['Start a new file', 'Backups to keep']);
+      const pressed = (g: DOMWrapper<Element>) =>
+        g.findAll('button').map((b) => [b.text(), b.attributes('aria-pressed')]);
+      expect(pressed(groups[0])).toEqual([
+        ['Every day', 'false'],
+        ['Every week', 'true'],
+      ]);
+      expect(pressed(groups[1])).toEqual([
+        ['3', 'false'],
+        ['7', 'false'],
+        ['14', 'true'],
+        ['30', 'false'],
+      ]);
+      expect(groups[1].get('.active').text()).toBe('14');
+
+      await button(groups[0], 'Every day')!.trigger('click');
+      expect(backups.setFrequency).toHaveBeenCalledExactlyOnceWith('daily');
+      await button(groups[1], '30')!.trigger('click');
+      expect(backups.setKeep).toHaveBeenCalledExactlyOnceWith(30);
+    });
+
+    it('Back up now shows Backing up… until it is done, then the outcome', async () => {
+      const run = deferred<RunOutcome>();
+      backups.backUpNow.mockReturnValueOnce(run.promise);
+      const { backUpButton, result } = await mountBackups();
+      await backUpButton().trigger('click');
+      expect(backUpButton().text()).toBe('Backing up…');
+      expect(backUpButton().attributes('disabled')).toBeDefined();
+      run.resolve('saved');
+      await flushPromises();
+      expect(backUpButton().text()).toBe('Back up now');
+      expect(result()).toBe('✓ Backed up');
+
+      vi.useFakeTimers();
+      backups.backUpNow.mockResolvedValueOnce('nothing');
+      await backUpButton().trigger('click');
+      await flushPromises();
+      // Blanked for a moment so screen readers announce the change.
+      expect(result()).toBe('');
+      vi.advanceTimersByTime(100);
+      await flushPromises();
+      expect(result()).toBe('Nothing to back up yet: add a pet first.');
+    });
+
+    it('Back up now shows why it failed', async () => {
+      const { section, backUpButton, result, alerts } = await mountBackups();
+      backups.backUpNow.mockImplementationOnce(async () => {
+        backups.failure.value = 'full';
+        return 'failed';
+      });
+      await backUpButton().trigger('click');
+      await flushPromises();
+      expect(alerts()).toEqual(['The last backup failed: the storage is full.']);
+      expect(result()).toBe('');
+      expect(section.get('.backup-warning').text()).toBe(
+        'The last backup failed: the storage is full.',
+      );
+      // A run that turned out fine clears the alert.
+      backups.failure.value = null;
+      await backUpButton().trigger('click');
+      await flushPromises();
+      expect(alerts()).toEqual([]);
+    });
+
+    it.each([
+      ['revoked', 'CardiPaw can no longer write to the backup folder. Choose the folder again.', true],
+      ['missing', "The backup folder can't be found.", true],
+      ['full', 'The last backup failed: the storage is full.', false],
+      ['failed', 'The last backup failed. CardiPaw tries again', false],
+    ] as const)('shows a %s failure, with a way to fix it where there is one', async (kind, text, offersPick) => {
+      backups.failure.value = kind;
+      const { section } = await mountBackups();
+      const warning = section.get('.backup-warning');
+      expect(warning.attributes('role')).toBe('status');
+      expect(warning.text()).toContain(text);
+      const chooseAgain = button(warning, 'Choose folder again');
+      expect(chooseAgain !== undefined).toBe(offersPick);
+      if (chooseAgain) {
+        await chooseAgain.trigger('click');
+        expect(backups.changeFolder).toHaveBeenCalledOnce();
+      }
+    });
+
+    it('explains automatic backups in the privacy information in the app', async () => {
+      const { wrapper } = await mountBackups(BACKUPS_OFF);
+      expect(await privacyText(wrapper)).toContain(
+        'Automatic backups (Android app). If you turn on automatic backups',
+      );
+    });
+
+    it('leaves no timer running after leaving the page', async () => {
+      const { wrapper, backUpButton } = await mountBackups();
+      await backUpButton().trigger('click');
+      await flushPromises();
+      vi.useFakeTimers();
+      await backUpButton().trigger('click'); // a repeat starts the re-announce timer
+      await flushPromises();
+      wrapper.unmount();
+      expect(vi.getTimerCount()).toBe(0);
     });
   });
 });
