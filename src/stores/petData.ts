@@ -5,6 +5,7 @@ import { cleanUpExports } from '../services/nativeFile';
 import { isNative } from '../utils/platform';
 import { forgetReminderSetting, pruneReminderSettings } from '../utils/reminderSettings';
 import { syncReminders } from '../native/reminders';
+import { syncShortcuts } from '../native/shortcuts';
 
 // Every per-pet cache and stored per-pet preference is handled here, so deleting
 // a pet or importing a backup cannot miss one when a new one is added.
@@ -17,6 +18,8 @@ export function forgetPetData(petId: string): void {
   forgetReminderSetting(petId);
   // Cancels the pet's reminders, found by the pet id they carry. Never rejects.
   void syncReminders(petId);
+  // Disables the deleted pet's home-screen shortcut. Never rejects.
+  void syncShortcuts();
   // Exported backups and PDF reports in the app's cache hold the pet's data. They aren't
   // tagged per pet (and a backup holds every pet), so all of them go. Never rejects.
   if (isNative()) void cleanUpExports();
@@ -33,6 +36,8 @@ export function resetPetData(keepPetIds: string[]): void {
   pruneReminderSettings(keepPetIds);
   // Every pet may have changed: cancels reminders of pets that are gone. Never rejects.
   void syncReminders();
+  // Pets may be gone or back: disables or enables their home-screen shortcuts. Never rejects.
+  void syncShortcuts();
   // The imported backup replaced every pet, while exports in the app's cache still hold the
   // previous data, so all of them go. Never rejects.
   if (isNative()) void cleanUpExports();
