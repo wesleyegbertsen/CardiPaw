@@ -1,4 +1,6 @@
-# Releases & Versioning
+# Releases & versioning
+
+How CardiPaw is versioned, released and signed. For contributing in general see the [README](../README.md#contributing).
 
 CardiPaw follows [Semantic Versioning](https://semver.org/). The version is shown at the bottom of the About section on the Settings page and links to its release notes.
 

@@ -1,5 +1,7 @@
 # Android app
 
+Installing and updating the Android app, checking an APK's signing certificate, reminders and permissions. For a quick overview see the [README](../README.md#android).
+
 ## Installing
 
 Every [release](https://github.com/wesleyegbertsen/CardiPaw/releases) includes the Android app as `cardipaw-X.Y.Z.apk`. CardiPaw is not on Google Play yet.

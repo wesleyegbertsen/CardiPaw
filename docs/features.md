@@ -2,11 +2,11 @@
 
 What each part of CardiPaw does. For a quick overview see the [README](../README.md#features).
 
-## Multiple Pets
+## Multiple pets
 
 Add as many pets as you need, each with a name, species, photo, and date of birth. All data is stored locally on your device, and your pet data is never sent to any server.
 
-## Guided Tracking
+## Guided tracking
 
 The built-in tracker walks you through a 15-, 30- or 60-second measurement (30 by default, remembered per pet). Tap the button each time your pet takes a breath, and CardiPaw calculates the rate automatically. The screen stays on while you count, where your browser or phone allows it.
 
@@ -30,17 +30,17 @@ When saving a reading you can optionally record your pet's **rest state** (resti
 
 Visualise trends over time with a line chart that supports three time ranges:
 
-- **Week** - individual readings over the past 7 days
-- **Month** - daily averages for the selected month
-- **Year** - monthly averages for the selected year
+- **Week** — individual readings over the past 7 days
+- **Month** — daily averages for the selected month
+- **Year** — monthly averages for the selected year
 
 Navigate backwards and forwards through history with previous/next controls, or jump straight back to the current period. The chart automatically disables navigation when there is no data further back.
 
-## Home Screen Sparkline
+## Home screen sparkline
 
 Each pet on the home screen shows a compact 7-day sparkline so you can see at a glance whether the trend is stable, rising, or falling, without opening the detail view.
 
-## Trend Alerts
+## Trend alerts
 
 CardiPaw keeps an eye on the trend for you. When a pet's resting breathing rate has crept up, the pet's card on the home screen and the header of its detail view show a **Trending up** badge (**Above normal** for the second rule below). Tap the badge in the detail view to see the numbers behind it and what to do next. An alert shows when either of these is true:
 
@@ -53,7 +53,7 @@ The alert goes away on its own once readings settle. With too few readings nothi
 
 A trend alert is not a diagnosis. If you're worried, contact your vet, and if your pet is struggling to breathe, contact them straight away.
 
-## PDF Report
+## PDF report
 
 Generate a PDF report for any pet directly from the detail view. Select one or more months from the full history, choose whether to order them newest or oldest first, and CardiPaw produces a report where each month gets its own chart and a complete reading list with timestamps and status labels. This makes it easy to hand your vet a clear, structured overview of your pet's RRR measurements.
 
@@ -61,7 +61,7 @@ Generate a PDF report for any pet directly from the detail view. Select one or m
 
 Create a shareable link for any pet directly from the detail view — for example to give your vet a quick overview. Select which months to include and CardiPaw packs the pet's name, species and date of birth (and its own Normal and Elevated ceilings, if you set them), along with the readings from those months, into the link itself — compressed and encoded in the URL fragment, which browsers never send to any server. Opening the link shows a standalone read-only report with summary statistics, a chart and a reading list per month, without exposing the rest of the app. Nothing is uploaded or stored: the link *is* the data, so anyone you send it to can see it.
 
-## Pet Notes
+## Pet notes
 
 Each pet has a general-purpose **Notes** tab where you can write anything that does not fit neatly into a reading: medication changes, vet visit summaries, behavioural observations, or anything else you want to keep alongside the RRR data. Notes are stored locally with the rest of your pet's data and are included in the data export.
 
@@ -69,7 +69,7 @@ Each pet has a general-purpose **Notes** tab where you can write anything that d
 
 Reminders to measure a pet, at a time and on the weekdays you choose, are part of the [Android app](android.md). How they work: [Reminders](android.md#reminders).
 
-## Data Export & Import
+## Data export & import
 
 Export all pets, readings and notes as a JSON file for backup or transfer. Import a previously exported file to restore your data.
 

@@ -1,5 +1,7 @@
 # Self-hosting with Docker
 
+Running your own copy of CardiPaw. For the quick start see the [README](../README.md#docker).
+
 The app is available as a pre-built image on Docker Hub: [wesleyegbertsen/cardipaw](https://hub.docker.com/r/wesleyegbertsen/cardipaw)
 
 ## docker run

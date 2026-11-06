@@ -1,4 +1,8 @@
-# Contributing a Translation
+# Contributing a translation
+
+How to fix a label or add a language. For an overview see the [README](../README.md#contributing-a-translation).
+
+Set up the project first, as described in [Development](../CONTRIBUTING.md#development): run `npm ci` once, then `npm run dev` to see your changes in the browser.
 
 All translations live in `src/i18n/locales/`. Each file is a flat-ish JSON object keyed by feature area. English (`en.json`) is the source of truth — every other locale must have the exact same set of keys.
 
@@ -91,3 +95,7 @@ npm run check-locale
 That is all that is needed — the language picker, auto-detection, date/number formatting, and the date picker's month/weekday names all pick up the new locale automatically.
 
 > **Note on non-Latin scripts:** the PDF report renders with jsPDF's built-in Helvetica font, which only covers Latin characters. A locale written in another script (like Japanese) also needs an embedded font: place the `.ttf` files in `public/fonts/` and follow the `loadJaFont`/`registerJaFont` pattern in `src/composables/usePdfExport.ts`. Latin-script locales can skip this entirely.
+
+## Opening the PR
+
+Open a PR against `main` with your changes. Its title must follow the [PR title rules](../CONTRIBUTING.md#pr-titles), for example `feat(i18n): add Spanish` for a new language or `fix(i18n): correct a Dutch label` for a fix.
