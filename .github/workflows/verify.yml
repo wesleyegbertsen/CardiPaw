@@ -64,6 +64,10 @@ jobs:
       - name: Check locale keys
         run: npm run check-locale
 
+      # Relative links and #anchors in the Markdown files, offline (scripts/check-links.mjs).
+      - name: Check Markdown links
+        run: npm run check-links
+
       - name: Build
         run: npm run build
 

@@ -14,6 +14,7 @@ npm run test:coverage # the tests with a coverage report; fails below the thresh
 npm run lint          # ESLint
 npm run typecheck     # vue-tsc
 npm run check-locale  # key parity of every locale against en.json
+npm run check-links   # relative links and #anchors in the Markdown files
 npm run build
 ```
 
