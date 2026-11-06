@@ -522,6 +522,7 @@ function cancelImport() {
       <p v-html="$t('settings.privacy.p4')" />
       <p v-if="native" v-html="$t('settings.privacy.p5')" />
       <p v-if="native" v-html="$t('settings.privacy.p6')" />
+      <p v-if="native" v-html="$t('settings.privacy.p7')" />
       <p><strong>{{ $t('settings.privacy.cameraTitle') }}</strong> {{ $t('settings.privacy.cameraBody') }}</p>
     </InfoModal>
 
