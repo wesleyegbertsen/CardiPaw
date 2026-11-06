@@ -475,6 +475,11 @@
     "view": "View release",
     "dismiss": "Dismiss"
   },
+  "backupNotice": {
+    "failed": "Automatic backup isn't working.",
+    "open": "Open Settings",
+    "dismiss": "Dismiss"
+  },
   "reminders": {
     "channelName": "Measuring reminders",
     "channelDescription": "Reminders to measure your pets' resting breathing rate",

@@ -475,6 +475,11 @@
     "view": "リリースを表示",
     "dismiss": "閉じる"
   },
+  "backupNotice": {
+    "failed": "自動バックアップが機能していません。",
+    "open": "設定を開く",
+    "dismiss": "閉じる"
+  },
   "reminders": {
     "channelName": "測定リマインダー",
     "channelDescription": "ペットの安静時呼吸数を測定するためのリマインダー",

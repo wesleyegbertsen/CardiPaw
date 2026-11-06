@@ -475,6 +475,11 @@
     "view": "Release bekijken",
     "dismiss": "Sluiten"
   },
+  "backupNotice": {
+    "failed": "De automatische back-up werkt niet.",
+    "open": "Instellingen openen",
+    "dismiss": "Sluiten"
+  },
   "reminders": {
     "channelName": "Meetherinneringen",
     "channelDescription": "Herinneringen om de rustademhalingsfrequentie van je huisdieren te meten",

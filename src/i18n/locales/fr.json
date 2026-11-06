@@ -475,6 +475,11 @@
     "view": "Voir la version",
     "dismiss": "Fermer"
   },
+  "backupNotice": {
+    "failed": "La sauvegarde automatique ne fonctionne pas.",
+    "open": "Ouvrir les paramètres",
+    "dismiss": "Fermer"
+  },
   "reminders": {
     "channelName": "Rappels de mesure",
     "channelDescription": "Rappels pour mesurer la fréquence respiratoire au repos de vos animaux",

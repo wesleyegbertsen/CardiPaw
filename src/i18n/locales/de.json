@@ -475,6 +475,11 @@
     "view": "Version ansehen",
     "dismiss": "Schließen"
   },
+  "backupNotice": {
+    "failed": "Das automatische Backup funktioniert nicht.",
+    "open": "Einstellungen öffnen",
+    "dismiss": "Schließen"
+  },
   "reminders": {
     "channelName": "Mess-Erinnerungen",
     "channelDescription": "Erinnerungen, die Ruhe-Atemfrequenz deiner Tiere zu messen",
