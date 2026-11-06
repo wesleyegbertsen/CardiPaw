@@ -31,4 +31,20 @@
         <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">@bool/light_system_bars</item>
     </style>
+
+    <!-- A home screen widget's status and trend badges (their colours are in the layouts). -->
+    <style name="WidgetBadge">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:paddingTop">2dp</item>
+        <item name="android:paddingBottom">2dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <!-- The widget's pet picker: a dialog over the home screen, following the system dark mode. -->
+    <style name="AppTheme.WidgetConfigure" parent="Theme.AppCompat.DayNight.Dialog" />
 </resources>

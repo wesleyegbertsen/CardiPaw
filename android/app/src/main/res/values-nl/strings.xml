@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The home screen widgets' labels (values/strings.xml has the English ones). -->
+<resources>
+    <string name="widget_pet_label">Eén huisdier</string>
+    <string name="widget_pet_description">De laatste ademhalingsfrequentie van een huisdier, de status en wanneer die gemeten is</string>
+    <string name="widget_configure_title">Kies een huisdier</string>
+    <string name="widget_open_app_first">Open CardiPaw één keer om je huisdieren hier te tonen.</string>
+    <string name="widget_no_pets">Voeg eerst een huisdier toe in CardiPaw.</string>
+    <string name="widget_open_app">CardiPaw openen</string>
+    <string name="widget_preview_rate">24 ademh./min</string>
+    <string name="widget_preview_status">Normaal</string>
+    <string name="widget_preview_age">Vandaag gemeten</string>
+</resources>

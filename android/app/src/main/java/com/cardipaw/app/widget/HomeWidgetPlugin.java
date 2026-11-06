@@ -6,7 +6,7 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import org.json.JSONException;
 
-/** src/native/homeWidget.ts: stores the snapshot the page built. */
+/** src/native/homeWidget.ts: stores the snapshot the page built and redraws every widget. */
 @CapacitorPlugin(name = "HomeWidget")
 public class HomeWidgetPlugin extends Plugin {
 
@@ -24,6 +24,7 @@ public class HomeWidgetPlugin extends Plugin {
             call.reject("Could not store the widget snapshot");
             return;
         }
+        WidgetUpdater.updateAll(getContext());
         call.resolve();
     }
 }
