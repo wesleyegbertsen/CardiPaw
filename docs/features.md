@@ -59,7 +59,7 @@ Generate a PDF report for any pet directly from the detail view. Select one or m
 
 ## Share
 
-Create a shareable link for any pet directly from the detail view — for example to give your vet a quick overview. Select which months to include and CardiPaw packs the readings into the link itself — compressed and encoded in the URL fragment, which browsers never send to any server. Opening the link shows a standalone read-only report with summary statistics, a chart and a reading list per month, without exposing the rest of the app. Nothing is uploaded or stored: the link *is* the data, so only the people you send it to can see it.
+Create a shareable link for any pet directly from the detail view — for example to give your vet a quick overview. Select which months to include and CardiPaw packs the readings into the link itself — compressed and encoded in the URL fragment, which browsers never send to any server. Opening the link shows a standalone read-only report with summary statistics, a chart and a reading list per month, without exposing the rest of the app. Nothing is uploaded or stored: the link *is* the data, so anyone you send it to can see it.
 
 ## Pet Notes
 
@@ -71,7 +71,7 @@ Reminders to measure a pet, at a time and on the weekdays you choose, are part o
 
 ## Data Export & Import
 
-Export all pets and readings as a JSON file for backup or transfer. Import a previously exported file to restore your data.
+Export all pets, readings and notes as a JSON file for backup or transfer. Import a previously exported file to restore your data.
 
 ## Languages
 
