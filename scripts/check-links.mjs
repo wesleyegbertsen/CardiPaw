@@ -5,7 +5,7 @@
 // Exits 1 and lists each broken link as <file>:<line>: <target> (<what is wrong>).
 
 import { execFileSync } from 'child_process';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { checkLinks } from './check-links-lib.mjs';
@@ -26,7 +26,9 @@ const tracked = execFileSync(
   },
 )
   .split('\0')
-  .filter(Boolean);
+  // A tracked file deleted from the working tree but not yet from git counts as gone, so links
+  // to it are reported instead of the read crashing.
+  .filter((p) => p && existsSync(join(ROOT, p)));
 const pages = new Map(
   tracked
     .filter((p) => p.toLowerCase().endsWith('.md'))

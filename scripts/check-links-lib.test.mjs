@@ -28,6 +28,48 @@ describe('parseMarkdown', () => {
     expect([...anchors]).toEqual(['a', 'notes', 'notes-1', 'notes-2']);
   });
 
+  it('skips a heading whose numbered anchor is taken, like GitHub', () => {
+    const { anchors } = parseMarkdown('## Notes\n## Notes 1\n## Notes\n');
+    expect([...anchors]).toEqual(['notes', 'notes-1', 'notes-2']);
+  });
+
+  it('does not end a fence at a marker with an info string', () => {
+    const md = '```\n```js\n[x](nope.md)\n```\n[y](a.md)\n';
+    expect(parseMarkdown(md).links).toEqual([{ target: 'a.md', line: 5 }]);
+  });
+
+  it('skips links and headings in HTML comments', () => {
+    const md = [
+      '<!-- [x](nope.md) -->',
+      '<!--',
+      '[y](nope.md)',
+      '## Hidden',
+      '-->',
+      '[z](a.md) <!-- [w](nope.md) --> [v](b.md) <!-- [u](nope.md)',
+      '-->',
+    ].join('\n');
+    expect(parseMarkdown(md)).toEqual({
+      anchors: new Set(),
+      links: [
+        { target: 'a.md', line: 6 },
+        { target: 'b.md', line: 6 },
+      ],
+    });
+  });
+
+  it('counts id="…" on any HTML tag as an anchor', () => {
+    const md = '<h2 id="Intro">Intro</h2>\n<div id=\'more\'></div>\n<p data-id="no"></p>';
+    expect(parseMarkdown(md).anchors).toEqual(new Set(['intro', 'more']));
+  });
+
+  it('keeps the text of code spans in a heading, like GitHub', () => {
+    const md = '### 2. Register in `src/i18n/index.ts`\n## Use `<details>` and `[a](b)`\n';
+    expect([...parseMarkdown(md).anchors]).toEqual([
+      '2-register-in-srci18nindexts',
+      'use-details-and-ab',
+    ]);
+  });
+
   it('skips links and headings in code', () => {
     const md =
       '```md\n# Not a heading\n[x](nope.md)\n```\n~~~\n[y](nope.md)\n~~~\nUse `[z](nope.md)`.\n';
@@ -59,6 +101,23 @@ describe('parseMarkdown', () => {
     ]);
   });
 
+  it("finds links with 'single-quoted' and (parenthesised) titles and href='…'", () => {
+    const md = [
+      "[a](a.md 'A') [b](b.md (B))",
+      "[c]: c.md 'C'",
+      '[d]: d.md (D)',
+      "<a href='e.md'>e</a> <img src='f.png'>",
+    ].join('\n');
+    expect(parseMarkdown(md).links.map((l) => l.target)).toEqual([
+      'a.md',
+      'b.md',
+      'c.md',
+      'd.md',
+      'e.md',
+      'f.png',
+    ]);
+  });
+
   it('counts <a id> and <a name> as anchors', () => {
     expect(parseMarkdown('<a id="Old-Name"></a>\n<a name="x"></a>').anchors).toEqual(
       new Set(['old-name', 'x']),
@@ -77,6 +136,24 @@ describe('checkLinks', () => {
       ['src/x.ts'],
     );
     expect(broken).toEqual([]);
+  });
+
+  it('passes ../ and ./ as the repo root and the page folder', () => {
+    expect(check({ 'docs/a.md': '[x](../) [y](./)', 'README.md': '[z](./)' })).toEqual([]);
+  });
+
+  it('ignores a ?query, and allows #L anchors on a ?plain=1 page', () => {
+    const broken = check({
+      'a.md': '[x](b.md?plain=1#L3)\n[y](b.md?x=1#b)\n[z](b.md?plain=1#b)',
+      'b.md': '# B',
+    });
+    expect(broken).toEqual([
+      'a.md:3: b.md?plain=1#b (?plain=1 shows b.md as source, so only #L<line> anchors work there)',
+    ]);
+  });
+
+  it('reads a page that starts with a byte order mark', () => {
+    expect(check({ 'a.md': '\uFEFF# Title\n[x](#title)' })).toEqual([]);
   });
 
   it('ignores external links', () => {
@@ -113,6 +190,13 @@ describe('checkLinks', () => {
       'a.md:1: /README.md (starts with /: write it relative to this page)',
       'a.md:2: ../other/a.md (points outside the repository)',
       'a.md:3: x.ts#main (x.ts is not a Markdown page, so only #L<line> anchors work there)',
+    ]);
+  });
+
+  it('reports a malformed %-escape instead of throwing', () => {
+    expect(check({ 'a.md': '# A\n[x](#50%)\n[y](b%zz.md)' })).toEqual([
+      'a.md:2: #50% (has a malformed %-escape: write % as %25)',
+      'a.md:3: b%zz.md (has a malformed %-escape: write % as %25)',
     ]);
   });
 
