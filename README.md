@@ -8,10 +8,10 @@
 Track your pet's resting respiratory rate (RRR) at home: count breaths with a guided timer, follow the trend over time, and share a clear report with your vet. Free and open source, and your pet data is stored on your device, not on a server.
 
 <p>
-  <img src="docs/images/home.png" width="200" alt="Home screen: each pet with a 7-day sparkline, one with a Trending up badge">
-  <img src="docs/images/tracker.png" width="200" alt="Guided tracker: tap the heart for each breath during a 30-second count">
-  <img src="docs/images/pet-detail.png" width="200" alt="A pet's page with its week chart and the Normal ceiling">
-  <img src="docs/images/readings.png" width="200" alt="A pet's readings list, each reading with its rate and status label">
+  <img src="docs/images/home.png" width="160" alt="Home screen: each pet with a 7-day sparkline, one with a Trending up badge">
+  <img src="docs/images/tracker.png" width="160" alt="Guided tracker: tap the heart for each breath during a 30-second count">
+  <img src="docs/images/pet-detail.png" width="160" alt="A pet's page with its week chart and the Normal ceiling">
+  <img src="docs/images/readings.png" width="160" alt="A pet's readings list, each reading with its rate and status label">
 </p>
 
 ## Try It
