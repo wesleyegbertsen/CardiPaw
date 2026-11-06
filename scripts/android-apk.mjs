@@ -67,7 +67,7 @@ function sign(input, output) {
   if (missing.length) {
     throw new Error(
       `Release signing needs: ${missing.join(', ')} (secrets in the android-signing ` +
-        'environment, see README, "Release signing")',
+        'environment, see docs/releasing.md, "Release signing")',
     );
   }
   const keystore = decodeKeystoreBase64(process.env.ANDROID_KEYSTORE_BASE64);

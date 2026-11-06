@@ -20,6 +20,7 @@
     "generate-android-assets": "node scripts/generate-android-assets.mjs",
     "seed": "node scripts/seed.mjs",
     "check-locale": "node scripts/check-locale.mjs",
+    "check-links": "node scripts/check-links.mjs",
     "set-version": "node scripts/set-version.mjs"
   },
   "dependencies": {

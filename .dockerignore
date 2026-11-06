@@ -2,7 +2,9 @@ node_modules
 dist
 .git
 *.md
+docs
 dist-native
 android
 research/camera-breath/clips
 research/camera-breath/out
+public/seed-data.json

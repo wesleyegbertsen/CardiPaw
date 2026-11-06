@@ -56,7 +56,7 @@ export function checkOutputMetadata(meta, version) {
 export function normalizeFingerprint(value, name) {
   if (!value?.trim()) {
     throw new Error(
-      `${name} is empty: set the repository variable (see README, "Release signing")`,
+      `${name} is empty: set the repository variable (see docs/releasing.md, "Release signing")`,
     );
   }
   const hex = value.replace(/[\s:]/g, '').toLowerCase();

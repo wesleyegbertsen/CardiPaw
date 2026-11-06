@@ -95,7 +95,7 @@ jobs:
 
   deploy:
     name: Deploy website
-    # Nothing ships unless lint, type-check, tests, the locale check and the audit pass.
+    # Nothing ships unless lint, type-check, tests, the locale check, the link check, the build and the audit pass.
     needs: [check, version, verify]
     uses: ./.github/workflows/deploy.yml
     with:

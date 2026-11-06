@@ -108,7 +108,7 @@ async function sync(onlyPetId?: string): Promise<void> {
         // IMPORTANCE_DEFAULT: makes a sound, but doesn't pop up over what's on screen.
         importance: 3,
         // VISIBILITY_PRIVATE: a secured lock screen hides the text (the pet's name); the
-        // README's privacy section relies on this.
+        // Reminders section of docs/android.md relies on this.
         visibility: 0,
         // The plugin's default is false.
         vibration: true,
