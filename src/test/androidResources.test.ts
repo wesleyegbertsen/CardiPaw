@@ -401,7 +401,10 @@ describe('Android resources', () => {
 
   it('declares each widget provider exported for APPWIDGET_UPDATE, with its provider info', () => {
     // Not exported or without the action, the launcher never lists the widget.
-    const providers = [['.widget.PetWidgetProvider', 'widget_pet_info']];
+    const providers = [
+      ['.widget.PetWidgetProvider', 'widget_pet_info'],
+      ['.widget.AllPetsWidgetProvider', 'widget_all_pets_info'],
+    ];
     for (const [name, info] of providers) {
       const receiver = manifestComponent('receiver', name);
       expect(receiver, name).toMatch(/\bandroid:exported="true"/);
@@ -436,7 +439,7 @@ describe('Android resources', () => {
   it('puts the widgets on the home screen only (not the lock screen)', () => {
     // The pet's name and rate are visible on a widget: never on the lock screen.
     const infos = files.filter((f) => /^xml\/widget_\w+_info\.xml$/.test(f));
-    expect(infos.length).toBeGreaterThan(0);
+    expect([...infos].sort()).toEqual(['xml/widget_all_pets_info.xml', 'xml/widget_pet_info.xml']);
     const categories = infos.map(
       (f) => [f, xmlWithoutComments(join(RES, f)).match(/\bandroid:widgetCategory="([^"]+)"/)?.[1]],
     );
@@ -477,7 +480,7 @@ describe('Android resources', () => {
     // RemoteViews applies setViewVisibility to a missing id as an error: "Can't load widget".
     const ids = ['widget_root', 'initial', 'name', 'rate', 'badge_normal', 'badge_warning'];
     ids.push('badge_danger', 'trend', 'age', 'age_stale');
-    for (const layout of ['widget_pet', 'widget_pet_small']) {
+    for (const layout of ['widget_pet', 'widget_pet_small', 'widget_all_pets_row']) {
       const xml = xmlWithoutComments(join(RES, `layout/${layout}.xml`));
       const defined = [...xml.matchAll(/android:id="@\+id\/(\w+)"/g)].map(([, id]) => id);
       expect(defined.sort(), layout).toEqual([...ids].sort());

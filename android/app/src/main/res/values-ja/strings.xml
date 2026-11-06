@@ -3,6 +3,8 @@
 <resources>
     <string name="widget_pet_label">1匹のペット</string>
     <string name="widget_pet_description">ペットの最新の呼吸数、状態、測定日時</string>
+    <string name="widget_all_label">すべてのペット</string>
+    <string name="widget_all_description">各ペットの最新の呼吸数と状態</string>
     <string name="widget_configure_title">ペットを選択</string>
     <string name="widget_open_app_first">ここにペットを表示するには、CardiPawを一度開いてください。</string>
     <string name="widget_no_pets">先にCardiPawでペットを追加してください。</string>

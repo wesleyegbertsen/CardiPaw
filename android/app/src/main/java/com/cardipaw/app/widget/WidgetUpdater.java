@@ -34,6 +34,7 @@ final class WidgetUpdater {
     static void updateAll(Context ctx) {
         AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
         for (int id : mgr.getAppWidgetIds(new ComponentName(ctx, PetWidgetProvider.class))) updatePet(ctx, mgr, id);
+        for (int id : mgr.getAppWidgetIds(new ComponentName(ctx, AllPetsWidgetProvider.class))) updateAllPets(ctx, mgr, id);
         scheduleMidnight(ctx);
     }
 
@@ -133,6 +134,39 @@ final class WidgetUpdater {
         v.setContentDescription(R.id.widget_root, description);
         v.setOnClickPendingIntent(R.id.widget_root, tap);
         return v;
+    }
+
+    /** The all-pets widget: a row per pet that fits, then "+N more" (opens the app's home). */
+    static void updateAllPets(Context ctx, AppWidgetManager mgr, int widgetId) {
+        WidgetSnapshot s = WidgetStore.readSnapshot(ctx);
+        PendingIntent home = WidgetIntents.openHome(ctx, widgetId);
+        if (s == null) {
+            mgr.updateAppWidget(widgetId, message(ctx, ctx.getString(R.string.widget_open_app_first), home));
+            return;
+        }
+        if (s.pets.isEmpty()) {
+            mgr.updateAppWidget(widgetId, message(ctx, s.strings.noPets, home));
+            return;
+        }
+        // MAX_HEIGHT: the portrait height on most launchers; MIN when a launcher reports none.
+        Bundle o = mgr.getAppWidgetOptions(widgetId);
+        int heightDp = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110));
+        int petRows = WidgetRows.petRows(heightDp, s.pets.size());
+        RemoteViews views = new RemoteViews(ctx.getPackageName(), R.layout.widget_all_pets);
+        views.removeAllViews(R.id.rows);
+        for (int i = 0; i < petRows; i++) {
+            WidgetSnapshot.Pet pet = s.pets.get(i);
+            // The data URIs already keep the taps apart; the request code is unique as well.
+            PendingIntent tap = WidgetIntents.openPet(ctx, widgetId * 100 + i, pet.id);
+            views.addView(R.id.rows, pet(ctx, s, pet, R.layout.widget_all_pets_row, tap));
+        }
+        if (petRows < s.pets.size()) {
+            RemoteViews more = new RemoteViews(ctx.getPackageName(), R.layout.widget_all_pets_more);
+            more.setTextViewText(R.id.widget_message, s.strings.more.format(s.pets.size() - petRows));
+            more.setOnClickPendingIntent(R.id.widget_root, home);
+            views.addView(R.id.rows, more);
+        }
+        mgr.updateAppWidget(widgetId, views);
     }
 
     /** A non-wakeup alarm at the next local midnight: "today" becomes "yesterday" when the screen is next seen. */

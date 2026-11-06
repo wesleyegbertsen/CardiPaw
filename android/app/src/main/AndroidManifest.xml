@@ -39,6 +39,17 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_pet_info" />
         </receiver>
+        <receiver
+            android:name=".widget.AllPetsWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_all_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_all_pets_info" />
+        </receiver>
 
         <!-- Redraws at midnight (its own alarm) and after a clock, time zone or language change.
              These three are exempt from Android 8's implicit broadcast limits; DATE_CHANGED isn't. -->

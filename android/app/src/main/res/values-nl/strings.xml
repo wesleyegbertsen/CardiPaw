@@ -3,6 +3,8 @@
 <resources>
     <string name="widget_pet_label">Eén huisdier</string>
     <string name="widget_pet_description">De laatste ademhalingsfrequentie van een huisdier, de status en wanneer die gemeten is</string>
+    <string name="widget_all_label">Alle huisdieren</string>
+    <string name="widget_all_description">De laatste ademhalingsfrequentie en status van elk huisdier</string>
     <string name="widget_configure_title">Kies een huisdier</string>
     <string name="widget_open_app_first">Open CardiPaw één keer om je huisdieren hier te tonen.</string>
     <string name="widget_no_pets">Voeg eerst een huisdier toe in CardiPaw.</string>

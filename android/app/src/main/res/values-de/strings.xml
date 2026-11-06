@@ -3,6 +3,8 @@
 <resources>
     <string name="widget_pet_label">Ein Tier</string>
     <string name="widget_pet_description">Die letzte Atemfrequenz eines Tieres, ihr Status und wann sie gemessen wurde</string>
+    <string name="widget_all_label">Alle Tiere</string>
+    <string name="widget_all_description">Die letzte Atemfrequenz und der Status jedes Tieres</string>
     <string name="widget_configure_title">Tier wählen</string>
     <string name="widget_open_app_first">Öffne CardiPaw einmal, um deine Tiere hier zu sehen.</string>
     <string name="widget_no_pets">Füge zuerst in CardiPaw ein Tier hinzu.</string>

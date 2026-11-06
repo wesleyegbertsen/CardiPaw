@@ -3,6 +3,8 @@
 <resources>
     <string name="widget_pet_label">Un animal</string>
     <string name="widget_pet_description">La dernière fréquence respiratoire d\'un animal, son état et le moment de la mesure</string>
+    <string name="widget_all_label">Tous les animaux</string>
+    <string name="widget_all_description">La dernière fréquence respiratoire et l\'état de chaque animal</string>
     <string name="widget_configure_title">Choisir un animal</string>
     <string name="widget_open_app_first">Ouvrez CardiPaw une fois pour afficher vos animaux ici.</string>
     <string name="widget_no_pets">Ajoutez d\'abord un animal dans CardiPaw.</string>

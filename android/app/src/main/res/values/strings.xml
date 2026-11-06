@@ -12,6 +12,8 @@
          (src/utils/widgetSnapshot.ts) in the app's language. -->
     <string name="widget_pet_label">One pet</string>
     <string name="widget_pet_description">A pet\'s latest breathing rate, its status and when it was measured</string>
+    <string name="widget_all_label">All pets</string>
+    <string name="widget_all_description">Each pet\'s latest breathing rate and status</string>
     <string name="widget_configure_title">Choose a pet</string>
     <string name="widget_open_app_first">Open CardiPaw once to show your pets here.</string>
     <string name="widget_no_pets">Add a pet in CardiPaw first.</string>
