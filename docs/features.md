@@ -18,11 +18,11 @@ Camera readings carry a camera tag in the readings list, the reading view, share
 
 Limits: it is tuned for cats and small dogs at rest, counting 9 to 90 breaths per minute (large dogs often breathe more slowly than that); the phone must be propped up, not held; the room should be lit; and a fan, a TV or a stroking hand in the picture confuses it. It has been validated on synthetic scenes so far, which is why it is off by default and labelled experimental.
 
-Privacy: the video is analysed on the phone, frame by frame, and never recorded, stored or sent anywhere. The camera is released as soon as the count ends, is interrupted or you leave the screen. In the Android app, Android asks for the camera permission the first time you allow it.
+Privacy: the video is analysed on your device, frame by frame, and never recorded, stored or sent anywhere. The camera is released as soon as the count ends, is interrupted or you leave the screen. For the Android app's camera permission, see [Camera](android.md#camera).
 
 ## Readings
 
-Every measurement is saved with a timestamp and labelled as **Normal** (≤ 30), **Elevated** (31-35), or **High** (> 35) by default, or against the pet's own ceilings when you set them in its profile (see [Status Thresholds](../README.md#status-thresholds)). The readings list loads incrementally so it stays fast even with hundreds of entries.
+Every measurement is saved with a timestamp and labelled **Normal**, **Elevated** or **High** against the [status thresholds](../README.md#status-thresholds): the defaults, or the pet's own ceilings when you set them in its profile. The readings list loads incrementally so it stays fast even with hundreds of entries.
 
 When saving a reading you can optionally record your pet's **rest state** (resting or sleeping) and add a free-text **note** (for example, whether they had just eaten, were in an unusual position, or anything else worth remembering). Both fields appear alongside the reading in the list and in the exported PDF report.
 
@@ -67,7 +67,7 @@ Each pet has a general-purpose **Notes** tab where you can write anything that d
 
 ## Reminders
 
-In the [Android app](android.md), the bell on a pet's page sets up a reminder to measure that pet at a time and on the weekdays you choose. A day that already has a reading for the pet gets no reminder. See [Reminders](android.md#reminders) for how they behave on the phone.
+Reminders to measure a pet, at a time and on the weekdays you choose, are part of the [Android app](android.md). How they work: [Reminders](android.md#reminders).
 
 ## Data Export & Import
 

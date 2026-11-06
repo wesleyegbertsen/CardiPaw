@@ -18,7 +18,7 @@ Install the APK of a newer release over the installed app. Your pets and reading
 Whichever you use, check the signing certificate of a new APK (see [Checking an APK](#checking-an-apk) below).
 
 - Android refuses to install an older APK over a newer one. **Don't uninstall to get around that:** Android Auto Backup is disabled, so uninstalling deletes all of the app's data. If you really need to go back, [export](features.md#data-export--import) first.
-- Export regularly anyway: the export file is the only backup of the app's data.
+- Export regularly anyway: the export file is the only backup of the app's data. Keep it somewhere safe, off the phone.
 
 ## Checking an APK
 
@@ -42,4 +42,4 @@ Tap the bell on a pet's page to be reminded to measure that pet, at a time and o
 
 ## Camera
 
-The app also declares the `CAMERA` permission, used only by the opt-in [camera counting](features.md#camera-counting-experimental); Android asks you the first time you allow it, and the image is analysed on the phone and never stored or sent. The camera is declared optional, so phones without one can still install the app. If CardiPaw is ever listed on Google Play, its data-safety form would say: camera permission declared, no data collected, no data shared.
+The app also declares the `CAMERA` permission, used only by the opt-in [camera counting](features.md#camera-counting-experimental); Android asks you the first time you allow it. How the video is handled is described there. The camera is declared optional, so phones without one can still install the app. If CardiPaw is ever listed on Google Play, its data-safety form would say: camera permission declared, no data collected, no data shared.
