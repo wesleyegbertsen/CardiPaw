@@ -7,6 +7,7 @@ import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
 import SlideToggle from '../components/SlideToggle.vue';
 import { useUpdateCheck, type CheckOutcome } from '../composables/useUpdateCheck';
+import { isCameraSupported, useCameraOptIn } from '../composables/useCameraOptIn';
 import { isNative } from '../utils/platform';
 import { formatVersion, LATEST_RELEASE_URL, releaseTagUrl, releaseVersion } from '../utils/version';
 
@@ -22,6 +23,12 @@ const native = isNative();
 const { enabled: autoCheck, available, lastChecked, setEnabled, checkNow } = useUpdateCheck();
 const autoCheckLabelId = useId();
 const autoCheckDescId = useId();
+
+// Experimental: the camera counting is off until turned on here, and needs getUserMedia.
+const { enabled: cameraEnabled, setEnabled: setCameraEnabled } = useCameraOptIn();
+const cameraSupported = isCameraSupported();
+const cameraLabelId = useId();
+const cameraDescId = useId();
 
 const { t, locale } = useI18n();
 
@@ -380,6 +387,28 @@ function cancelImport() {
       </section>
 
       <section class="section">
+        <h2 class="section-title">{{ $t('settings.experimentalSection') }}</h2>
+        <p class="section-desc">{{ $t('settings.experimentalDesc') }}</p>
+        <div class="action-cards">
+          <div class="action-card">
+            <div>
+              <div :id="cameraLabelId" class="action-name">{{ $t('settings.cameraName') }}</div>
+              <div :id="cameraDescId" class="action-desc">
+                {{ cameraSupported ? $t('settings.cameraDesc') : $t('settings.cameraUnavailable') }}
+              </div>
+            </div>
+            <SlideToggle
+              :model-value="cameraEnabled"
+              :labelledby="cameraLabelId"
+              :describedby="cameraDescId"
+              :disabled="!cameraSupported"
+              @update:model-value="setCameraEnabled"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
         <h2 class="section-title">{{ $t('settings.legalSection') }}</h2>
         <div class="action-cards">
           <div class="action-card">
@@ -493,6 +522,7 @@ function cancelImport() {
       <p v-html="$t('settings.privacy.p4')" />
       <p v-if="native" v-html="$t('settings.privacy.p5')" />
       <p v-if="native" v-html="$t('settings.privacy.p6')" />
+      <p><strong>{{ $t('settings.privacy.cameraTitle') }}</strong> {{ $t('settings.privacy.cameraBody') }}</p>
     </InfoModal>
 
     <InfoModal
@@ -504,6 +534,7 @@ function cancelImport() {
       <p v-html="$t('settings.terms.p2')" />
       <p v-html="$t('settings.terms.p3')" />
       <p v-html="$t('settings.terms.p4')" />
+      <p><strong>{{ $t('settings.terms.cameraTitle') }}</strong> {{ $t('settings.terms.cameraBody') }}</p>
     </InfoModal>
 
     <ConfirmDialog

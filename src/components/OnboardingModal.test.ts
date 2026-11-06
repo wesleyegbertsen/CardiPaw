@@ -9,8 +9,9 @@ const q = <T extends Element = HTMLElement>(selector: string) =>
 const stepCount = () => q('.step-count')!.textContent;
 const nextButton = () => q<HTMLButtonElement>('.btn-next')!;
 
-function mountModal() {
+function mountModal(props: { variant?: 'tap' | 'camera' } = {}) {
   return mount(OnboardingModal, {
+    props,
     attachTo: document.body,
     global: { plugins: [createTestI18n()] },
   });
@@ -56,6 +57,21 @@ describe('OnboardingModal', () => {
     expect(nextButton().textContent).toBe('Got it, start tracking');
     expect(document.body.querySelectorAll('.dot.active')).toHaveLength(1);
 
+    await click(nextButton());
+    expect(wrapper.emitted('close')).toHaveLength(1);
+  });
+
+  it('renders the camera steps for the camera variant', async () => {
+    const wrapper = mountModal({ variant: 'camera' });
+    expect(stepCount()).toBe('Step 1 of 4');
+    expect(q('.step-title')!.textContent).toBe('Prop the phone up');
+    expect(q('.step-body')!.textContent).toContain('Holding it in your hand won\'t work.');
+    for (const n of [2, 3, 4]) {
+      await click(nextButton());
+      expect(stepCount()).toBe(`Step ${n} of 4`);
+    }
+    expect(q('.step-title')!.textContent).toBe('Check the suggested count');
+    expect(nextButton().textContent).toBe('Got it, start tracking');
     await click(nextButton());
     expect(wrapper.emitted('close')).toHaveLength(1);
   });

@@ -164,6 +164,14 @@ describe('encodeShare / decodeShare', () => {
     await expect(decodeShare(encoded)).resolves.toEqual(samplePayload);
   });
 
+  it('round-trips a camera reading', async () => {
+    const payload: SharePayload = {
+      ...samplePayload,
+      readings: [{ date: '2026-03-14T08:30Z', rate: 22, source: 'camera' }],
+    };
+    await expect(decodeShare(await encodeShare(payload))).resolves.toEqual(payload);
+  });
+
   it('produces URL-safe output without padding', async () => {
     const encoded = await encodeShare(samplePayload);
     expect(encoded).toMatch(/^[A-Za-z0-9_-]+$/);
@@ -323,7 +331,7 @@ describe('encodeShare / decodeShare', () => {
         rate,
         {
           restState: rand() < 0.5 ? 'resting' : 'sleeping',
-          ...(rand() < 0.5 && { source: 'manual' as const }),
+          ...(rand() < 0.5 && { source: rand() < 0.5 ? ('manual' as const) : ('camera' as const) }),
         },
       );
     });

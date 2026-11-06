@@ -779,6 +779,7 @@ async function deletePet() {
       <p>{{ $t('trend.info.p2', trend.infoParams) }}</p>
       <p>{{ $t('trend.info.p3') }}</p>
       <p>{{ $t('trend.info.p4') }}</p>
+      <p>{{ $t('trend.info.p5') }}</p>
     </InfoModal>
 
     <ConfirmDialog

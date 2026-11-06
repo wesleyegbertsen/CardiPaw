@@ -4,3 +4,5 @@ dist
 *.md
 dist-native
 android
+research/camera-breath/clips
+research/camera-breath/out

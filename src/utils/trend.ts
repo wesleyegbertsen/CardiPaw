@@ -47,7 +47,7 @@ function median(values: number[]): number {
 const mean = (values: number[]) => values.reduce((a, b) => a + b, 0) / values.length;
 
 export function computeTrend(
-  readings: readonly Pick<Reading, 'date' | 'rate'>[],
+  readings: readonly Pick<Reading, 'date' | 'rate' | 'source'>[],
   pet?: Pick<Pet, 'normalCeiling'>,
   asOf: Date = new Date(),
 ): TrendResult {
@@ -60,6 +60,7 @@ export function computeTrend(
   // rates that can't be real, and readings dated after today (a clock that was ahead).
   const byDay = new Map<string, number[]>();
   for (const r of readings) {
+    if (r.source === 'camera') continue; // experimental: an under-count would cancel a raised day
     if (!Number.isFinite(r.rate) || r.rate <= 0) continue;
     const date = new Date(r.date);
     if (Number.isNaN(date.getTime())) continue;

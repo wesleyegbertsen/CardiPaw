@@ -38,7 +38,9 @@
     "manual": "Handmatig",
     "guided": "Begeleid",
     "manualEntry": "Handmatige invoer",
-    "guidedSeconds": "Begeleid ({n} s)"
+    "guidedSeconds": "Begeleid ({n} s)",
+    "camera": "Camera",
+    "cameraSeconds": "Camera ({n} s)"
   },
   "age": {
     "weeks": "1 week | {n} weken",
@@ -99,6 +101,7 @@
     "tapForBreath": "Tik bij elke ademhaling",
     "guided": "Begeleid",
     "manual": "Handmatig",
+    "camera": "Camera",
     "modeLabel": "Meetmethode",
     "instruction": "Tik ergens op het scherm telkens als je de borstkas van je huisdier ziet op- en neergaan.",
     "lengthLabel": "Meetduur",
@@ -114,6 +117,60 @@
     "saveError": "De meting kon niet worden opgeslagen. Probeer het opnieuw.",
     "leaveConfirm": "Pagina verlaten en deze meting verwijderen? Die is nog niet opgeslagen.",
     "tryAgain": "Opnieuw proberen"
+  },
+  "camera": {
+    "experimental": "Experimenteel",
+    "explainTitle": "Ademhalingen tellen met de camera",
+    "explainBody": "Zet je telefoon zo neer dat de camera de borstkas of buik van je huisdier ziet; CardiPaw volgt het op- en neergaan 30 tot 60 seconden. Het stelt een telling voor die je bij je huisdier controleert; jij beslist of je die opslaat.",
+    "privacyNote": "Alleen op deze telefoon geanalyseerd. Er wordt niets opgenomen, bewaard of verzonden.",
+    "lightNote": "Werkt het best in een lichte kamer.",
+    "allow": "Camera toestaan",
+    "requesting": "Wachten op toegang tot de camera…",
+    "denied": "Toegang tot de camera is geweigerd. Sta de camera voor CardiPaw toe in de instellingen van je telefoon of browser, of tel in plaats daarvan door te tikken.",
+    "noCamera": "Er is geen camera gevonden op dit apparaat.",
+    "busy": "De camera wordt gebruikt door een andere app. Sluit die en probeer het opnieuw.",
+    "unsupported": "Deze browser kan de camera hier niet gebruiken.",
+    "failed": "Er ging iets mis met de camera. Probeer het opnieuw, of tel in plaats daarvan door te tikken.",
+    "tapInstead": "In plaats daarvan tellen door te tikken",
+    "retry": "Opnieuw proberen",
+    "placeBody": "Je hele huisdier mag in het kader, als de borstkas of buik er maar in zit. Hoe groter in beeld, hoe beter. Zorg voor iets stils bovenin het beeld, zoals een muur. Zet de telefoon neer.",
+    "tooDark": "Te donker: doe een lamp aan.",
+    "moving": "De telefoon beweegt: zet hem neer.",
+    "moreLight": "De camera is te traag: meer licht helpt.",
+    "steady": "Stabiel. Start als je huisdier rustig is.",
+    "checking": "Beeld wordt gecontroleerd…",
+    "start": "Starten",
+    "watching": "Aan het kijken…",
+    "phaseAnnounce": "{n} seconden gevolgd",
+    "hintShake": "Houd de telefoon stil.",
+    "hintFewTracks": "Weinig detail te zien: meer licht, of ga dichterbij.",
+    "hintDark": "Het wordt donker: doe een lamp aan.",
+    "extending": "Nog 30 seconden kijken voor een zekerdere telling.",
+    "keepScreenOn": "Houd het scherm aan tot de telling klaar is.",
+    "countAlong": "Meetellen",
+    "countAlongHint": "Tik op het hart bij elke ademhaling. Je kunt ook je eigen telling opslaan.",
+    "tapsCounted": "{n} ademhaling getikt | {n} ademhalingen getikt",
+    "resultTitle": "Voorgestelde telling",
+    "resultNote": "Van de camera over {seconds} seconden: tussen {lo} en {hi} ademh./min. Controleer het bij je huisdier voordat je opslaat.",
+    "yourCount": "Jouw telling: {n} ademh./min",
+    "saveCamera": "Cameratelling opslaan",
+    "saveTaps": "Mijn telling opslaan ({n})",
+    "confirm": "Bevestigen en opslaan",
+    "measureAgain": "Opnieuw meten",
+    "abstainTitle": "Deze keer geen telling",
+    "abstain": {
+      "shake": "De telefoon bewoog. Zet hem tegen iets stevigs en probeer het opnieuw.",
+      "fewTracks": "Te weinig detail om te volgen. Probeer meer licht, of zet de telefoon dichterbij.",
+      "noSignal": "Er was geen regelmatige ademhalingsbeweging te zien. Controleer of het kader de borstkas of buik bedekt.",
+      "fastMotion": "Te veel snelle beweging, zoals spinnen of hijgen. Probeer het opnieuw wanneer je huisdier rustig is.",
+      "irregular": "De ademhaling leek onregelmatig. Probeer het opnieuw zodra je huisdier rustig is, of tel door te tikken.",
+      "twitch": "Je huisdier bewoog tijdens de telling. Probeer het opnieuw zodra het stil ligt.",
+      "frameRate": "De camera liep hier te traag, vaak door weinig licht. Zorg voor meer licht of tel door te tikken.",
+      "tooShort": "De telling was te kort. Probeer het opnieuw.",
+      "lowQuality": "De beweging was niet duidelijk genoeg voor een telling. Probeer het opnieuw, of tel door te tikken.",
+      "dog": "Grote honden ademen in rust vaak minder dan 9 keer per minuut, wat de camera nog niet kan volgen; tellen door te tikken werkt wel."
+    },
+    "interrupted": "De telling is onderbroken: de app ging naar de achtergrond, de telefoon werd gedraaid of de camera stopte. Er is niets opgeslagen."
   },
   "addEditPet": {
     "titleEdit": "Huisdier bewerken",
@@ -174,7 +231,8 @@
   "readingList": {
     "empty": "Nog geen metingen. Tik op \"Meting starten\" om je eerste meting vast te leggen.",
     "hasNotes": "Heeft notities",
-    "manuallyEntered": "Handmatig ingevoerd"
+    "manuallyEntered": "Handmatig ingevoerd",
+    "cameraMeasured": "Gemeten met de camera"
   },
   "noteList": {
     "empty": "Nog geen notities. Tik op '+' om je eerste te schrijven.",
@@ -225,6 +283,11 @@
     "checking": "Controleren…",
     "upToDate": "Je hebt de nieuwste versie.",
     "checkFailed": "Controleren op updates is niet gelukt. Probeer het later opnieuw.",
+    "experimentalSection": "Experimenteel",
+    "experimentalDesc": "Functies die nog worden uitgeprobeerd. Ze kunnen veranderen of verdwijnen.",
+    "cameraName": "Ademhaling tellen met de camera",
+    "cameraDesc": "Voegt een Camera-optie toe aan de tracker die de borstkas van je huisdier via de camera van de telefoon volgt en een telling voorstelt die je zelf controleert. De video wordt alleen op deze telefoon geanalyseerd; er wordt niets opgenomen of verzonden. Camerametingen zijn gemarkeerd en tellen niet mee voor trendmeldingen.",
+    "cameraUnavailable": "Niet beschikbaar in deze browser.",
     "legalSection": "Juridisch",
     "privacyTitle": "Privacybeleid",
     "privacyDesc": "Hoe je gegevens worden opgeslagen en gebruikt",
@@ -238,13 +301,17 @@
       "p3": "<strong>Jij hebt de controle.</strong> Je kunt je gegevens op elk moment exporteren via de pagina Instellingen, en door de app te verwijderen of de sitegegevens van je browser te wissen verwijder je alles definitief.",
       "p4": "<strong>Geen gegevens delen.</strong> Omdat je gegevens je apparaat nooit verlaten, worden ze nooit met iemand anders gedeeld of voor anderen toegankelijk.",
       "p5": "<strong>Updatecontrole (Android-app).</strong> Als je in Instellingen onder Updates \"Automatisch controleren\" aanzet, vraagt de app ongeveer één keer per dag, en telkens als je op \"Nu controleren\" tikt, aan api.github.com of er een nieuwere versie is. GitHub ziet dan je IP-adres en de informatie die de browser-engine van de app met elk verzoek meestuurt, zoals de user agent (met daarin de Android-versie en het apparaatmodel) en de taal. Er worden geen huisdiergegevens verzonden. Dit staat uit, tenzij je het zelf aanzet.",
-      "p6": "<strong>Herinneringen blijven op je telefoon.</strong> In de Android-app worden herinneringen op deze telefoon ingepland; er wordt niets over verstuurd. De instellingen ervan blijven op dit apparaat en zitten niet in exports."
+      "p6": "<strong>Herinneringen blijven op je telefoon.</strong> In de Android-app worden herinneringen op deze telefoon ingepland; er wordt niets over verstuurd. De instellingen ervan blijven op dit apparaat en zitten niet in exports.",
+      "cameraTitle": "Camera (experimenteel).",
+      "cameraBody": "Als je ademhaling tellen met de camera aanzet, wordt het camerabeeld tijdens het meten op je apparaat geanalyseerd. Er wordt geen video of foto opgenomen, bewaard of ergens naartoe verzonden, en de camera wordt vrijgegeven zodra de meting eindigt."
     },
     "terms": {
       "p1": "<strong>Geen medisch advies.</strong> CardiPaw is een informatief hulpmiddel om de rustademhalingsfrequentie van je huisdier vast te leggen en te volgen. Het is geen vervanging voor professionele diergeneeskundige diagnose, advies of behandeling.",
       "p2": "<strong>Raadpleeg je dierenarts.</strong> Volg altijd het specifieke advies van je dierenarts over welke waarden je moet volgen, welke bereiken normaal zijn voor jouw huisdier en wanneer je hulp moet zoeken. Neem geen medische beslissingen uitsluitend op basis van deze app.",
       "p3": "<strong>Geen garanties.</strong> CardiPaw wordt gratis aangeboden, zoals het is, zonder enige garantie (expliciet of impliciet). De ontwikkelaar is niet aansprakelijk voor beslissingen die worden genomen op basis van gegevens die in deze app zijn vastgelegd.",
-      "p4": "<strong>Gebruik op eigen risico.</strong> Door CardiPaw te gebruiken aanvaard je de volledige verantwoordelijkheid voor hoe je de gepresenteerde gegevens interpreteert en ernaar handelt."
+      "p4": "<strong>Gebruik op eigen risico.</strong> Door CardiPaw te gebruiken aanvaard je de volledige verantwoordelijkheid voor hoe je de gepresenteerde gegevens interpreteert en ernaar handelt.",
+      "cameraTitle": "Cameratellingen zijn suggesties.",
+      "cameraBody": "Een telling van de camera is experimenteel en kan fout zijn. Controleer die bij je huisdier voordat je die opslaat, en vertrouw bij twijfel op je eigen telling."
     }
   },
   "share": {
@@ -325,6 +392,14 @@
     "step3Body": "Kies 15, 30 of 60 seconden (langer is nauwkeuriger) en tik dan op het scherm telkens als je een ademhaling ziet. CardiPaw rekent je telling om naar ademhalingen per minuut.",
     "step4Title": "Wanneer je niet moet meten",
     "step4Body": "Sla de meting over als je huisdier hijgt, net heeft gegeten, net wakker is, gestrest of angstig is, of loops is — dit kan de frequentie tijdelijk verhogen.",
+    "cameraStep1Title": "Zet de telefoon neer",
+    "cameraStep1Body": "Zet de telefoon tegen iets stevigs, ongeveer een armlengte van je huisdier, zodat de camera de flank of buik ziet. In je hand houden werkt niet.",
+    "cameraStep2Title": "Zet je huisdier in beeld",
+    "cameraStep2Body": "Je hele huisdier mag in het kader, zolang de borstkas of buik erin zit. Hoe meer van het kader de borstkas of buik vult, hoe beter. Houd het deel van het beeld boven het kader op iets dat stilstaat. Goed licht helpt; een ventilator of tv achter je huisdier brengt het in de war.",
+    "cameraStep3Title": "Blijf op afstand en wacht",
+    "cameraStep3Body": "Raak je huisdier en de telefoon niet aan terwijl hij 30 tot 60 seconden kijkt. Als je wilt, kun je bij elke ademhaling op het hart tikken.",
+    "cameraStep4Title": "Controleer de voorgestelde telling",
+    "cameraStep4Body": "De camera stelt een telling voor; die kan fout zijn. Vergelijk die met wat je ziet voordat je opslaat, en als er niets wordt voorgesteld, tel dan door te tikken.",
     "stepCount": "Stap {current} van {total}",
     "back": "Terug",
     "next": "Volgende",
@@ -342,6 +417,7 @@
     "statusHeader": "Status",
     "restHeader": "Rust",
     "sourceHeader": "Bron",
+    "cameraNote": "Camera: een experimentele telling met de telefooncamera, bevestigd door de eigenaar.",
     "readingsHeader": "Metingen",
     "notesHeader": "Notities bij metingen",
     "readingsCount": "{n} meting | {n} metingen",
@@ -366,7 +442,8 @@
       "p1": "CardiPaw vergelijkt de afgelopen {days} dagen met de {baselineDays} dagen daarvoor. Elke dag telt één keer mee, met de middelste waarde van de metingen van die dag, dus opnieuw meten op dezelfde dag telt niet dubbel.",
       "p2": "Er verschijnt een melding als de frequentie op minstens {minRaised} van de afgelopen {days} dagen {percent}% en {breaths} ademh./min of meer boven de gebruikelijke waarde lag. Voor die gebruikelijke waarde zijn metingen op minstens {minDays} van de eerdere dagen nodig. Er verschijnt ook een melding als minstens {minAbove} van de afgelopen {days} dagen boven de ingestelde ‘Bovengrens normaal’ van {name} ({ceiling} ademh./min) lagen.",
       "p3": "De melding verdwijnt vanzelf zodra de metingen weer rustiger zijn. Met te weinig metingen wordt niets getoond, dus geen melding betekent niet altijd dat alles goed is.",
-      "p4": "Metingen terwijl je huisdier wakker, opgewonden of warm is, kunnen de frequentie hoger laten lijken. Dat geldt ook als je metingen in slaap en in rust door elkaar gebruikt, omdat de frequentie tijdens de slaap meestal lager is. Dit is geen diagnose. Maak je je zorgen, neem dan contact op met je dierenarts, en meteen als je huisdier moeite heeft met ademen."
+      "p4": "Metingen terwijl je huisdier wakker, opgewonden of warm is, kunnen de frequentie hoger laten lijken. Dat geldt ook als je metingen in slaap en in rust door elkaar gebruikt, omdat de frequentie tijdens de slaap meestal lager is. Dit is geen diagnose. Maak je je zorgen, neem dan contact op met je dierenarts, en meteen als je huisdier moeite heeft met ademen.",
+      "p5": "Metingen die met de camera zijn geteld, tellen niet mee voor trendmeldingen zolang die functie experimenteel is; metingen die je hebt getikt of ingevoerd wel."
     }
   },
   "updateNotice": {

@@ -38,7 +38,9 @@
     "manual": "Manuel",
     "guided": "Guidé",
     "manualEntry": "Saisie manuelle",
-    "guidedSeconds": "Guidé ({n} s)"
+    "guidedSeconds": "Guidé ({n} s)",
+    "camera": "Caméra",
+    "cameraSeconds": "Caméra ({n} s)"
   },
   "age": {
     "weeks": "1 semaine | {n} semaines",
@@ -99,6 +101,7 @@
     "tapForBreath": "Appuyez à chaque respiration",
     "guided": "Guidé",
     "manual": "Manuel",
+    "camera": "Caméra",
     "modeLabel": "Mode de mesure",
     "instruction": "Appuyez n'importe où sur l'écran chaque fois que vous voyez la poitrine de votre animal se soulever.",
     "lengthLabel": "Durée de la mesure",
@@ -114,6 +117,60 @@
     "saveError": "La mesure n'a pas pu être enregistrée. Veuillez réessayer.",
     "leaveConfirm": "Quitter la page et abandonner cette mesure ? Elle n'a pas encore été enregistrée.",
     "tryAgain": "Réessayer"
+  },
+  "camera": {
+    "experimental": "Expérimental",
+    "explainTitle": "Compter les respirations avec la caméra",
+    "explainBody": "Calez votre téléphone pour que la caméra voie la poitrine ou le ventre de votre animal ; CardiPaw observe les mouvements pendant 30 à 60 secondes. Il vous propose un décompte à vérifier sur votre animal ; c'est vous qui décidez de l'enregistrer ou non.",
+    "privacyNote": "Analysé uniquement sur ce téléphone. Rien n'est enregistré, conservé ni envoyé.",
+    "lightNote": "Idéal dans une pièce lumineuse.",
+    "allow": "Autoriser la caméra",
+    "requesting": "En attente de l'accès à la caméra…",
+    "denied": "L'accès à la caméra a été refusé. Pour l'utiliser, autorisez la caméra pour CardiPaw dans les réglages de votre téléphone ou de votre navigateur, ou comptez en appuyant.",
+    "noCamera": "Aucune caméra n'a été trouvée sur cet appareil.",
+    "busy": "La caméra est utilisée par une autre application. Fermez-la et réessayez.",
+    "unsupported": "Ce navigateur ne peut pas utiliser la caméra ici.",
+    "failed": "Un problème est survenu avec la caméra. Réessayez, ou comptez en appuyant.",
+    "tapInstead": "Compter en appuyant à la place",
+    "retry": "Réessayer",
+    "placeBody": "Votre animal peut être entier dans le cadre, tant que la poitrine ou le ventre y est. Plus il paraît grand, mieux c'est. Gardez quelque chose d'immobile en haut de l'image, comme un mur. Calez le téléphone.",
+    "tooDark": "Trop sombre : allumez une lumière.",
+    "moving": "Le téléphone bouge : calez-le.",
+    "moreLight": "La caméra est trop lente : plus de lumière aide.",
+    "steady": "Stable. Commencez quand votre animal est calme.",
+    "checking": "Vérification de l'image…",
+    "start": "Commencer",
+    "watching": "Observation…",
+    "phaseAnnounce": "{n} secondes observées",
+    "hintShake": "Ne bougez pas le téléphone.",
+    "hintFewTracks": "Peu de détails visibles : plus de lumière, ou rapprochez-vous.",
+    "hintDark": "Il fait sombre : allumez une lumière.",
+    "extending": "30 secondes de plus pour un décompte plus sûr.",
+    "keepScreenOn": "Gardez l'écran allumé jusqu'à la fin du décompte.",
+    "countAlong": "Compter en même temps",
+    "countAlongHint": "Appuyez sur le cœur à chaque respiration. Vous pourrez enregistrer votre propre décompte à la place.",
+    "tapsCounted": "{n} respiration comptée | {n} respirations comptées",
+    "resultTitle": "Décompte suggéré",
+    "resultNote": "Par la caméra sur {seconds} secondes : entre {lo} et {hi} resp./min. Vérifiez sur votre animal avant d'enregistrer.",
+    "yourCount": "Votre décompte : {n} resp./min",
+    "saveCamera": "Enregistrer le décompte de la caméra",
+    "saveTaps": "Enregistrer mon décompte ({n})",
+    "confirm": "Confirmer et enregistrer",
+    "measureAgain": "Mesurer à nouveau",
+    "abstainTitle": "Pas de décompte cette fois",
+    "abstain": {
+      "shake": "Le téléphone a bougé. Calez-le sur un support stable et réessayez.",
+      "fewTracks": "Pas assez de détails à suivre. Essayez avec plus de lumière, ou rapprochez le téléphone.",
+      "noSignal": "Aucun mouvement respiratoire régulier n'a été vu. Vérifiez que le cadre couvre la poitrine ou le ventre.",
+      "fastMotion": "Trop de mouvements rapides, comme un ronronnement ou un halètement. Réessayez quand votre animal est posé.",
+      "irregular": "La respiration semblait irrégulière. Réessayez quand votre animal est posé, ou comptez en appuyant.",
+      "twitch": "Votre animal a bougé pendant le décompte. Réessayez quand il est immobile.",
+      "frameRate": "La caméra a tourné trop lentement, souvent par manque de lumière. Ajoutez de la lumière ou comptez en appuyant.",
+      "tooShort": "Le décompte a été interrompu trop tôt. Réessayez.",
+      "lowQuality": "Le mouvement n'était pas assez net pour un décompte. Réessayez, ou comptez en appuyant.",
+      "dog": "Les grands chiens respirent souvent moins de 9 fois par minute au repos, ce que la caméra ne sait pas encore suivre ; compter en appuyant fonctionne."
+    },
+    "interrupted": "Le décompte a été interrompu : l'application est passée en arrière-plan, le téléphone a été tourné ou la caméra s'est arrêtée. Rien n'a été enregistré."
   },
   "addEditPet": {
     "titleEdit": "Modifier l'animal",
@@ -174,7 +231,8 @@
   "readingList": {
     "empty": "Aucune mesure. Appuyez sur « Commencer le suivi » pour enregistrer votre première mesure.",
     "hasNotes": "Contient des notes",
-    "manuallyEntered": "Saisie manuelle"
+    "manuallyEntered": "Saisie manuelle",
+    "cameraMeasured": "Mesuré avec la caméra"
   },
   "noteList": {
     "empty": "Aucune note. Appuyez sur « + » pour écrire votre première note.",
@@ -225,6 +283,11 @@
     "checking": "Vérification…",
     "upToDate": "Vous avez la dernière version.",
     "checkFailed": "Impossible de rechercher les mises à jour. Réessayez plus tard.",
+    "experimentalSection": "Expérimental",
+    "experimentalDesc": "Des fonctions encore à l'essai. Elles peuvent changer ou disparaître.",
+    "cameraName": "Comptage des respirations par la caméra",
+    "cameraDesc": "Ajoute au suivi une option Caméra qui observe la poitrine de votre animal à travers la caméra du téléphone et vous propose un décompte à vérifier. La vidéo est analysée sur ce téléphone uniquement ; rien n'est enregistré ni envoyé. Les mesures par caméra sont marquées et n'entrent pas dans les alertes de tendance.",
+    "cameraUnavailable": "Non disponible dans ce navigateur.",
     "legalSection": "Mentions légales",
     "privacyTitle": "Politique de confidentialité",
     "privacyDesc": "Comment vos données sont stockées et utilisées",
@@ -238,13 +301,17 @@
       "p3": "<strong>Vous gardez le contrôle.</strong> Vous pouvez exporter vos données à tout moment depuis la page Paramètres, et supprimer l'application ou effacer les données du site dans votre navigateur supprimera définitivement tout.",
       "p4": "<strong>Aucun partage de données.</strong> Comme vos données ne quittent jamais votre appareil, elles ne sont jamais partagées avec ni accessibles par quiconque d'autre.",
       "p5": "<strong>Recherche de mises à jour (application Android).</strong> Si vous activez « Vérifier automatiquement » dans Paramètres, sous Mises à jour, l'application demande à api.github.com, environ une fois par jour et chaque fois que vous appuyez sur « Vérifier maintenant », si une version plus récente existe. GitHub voit alors votre adresse IP et les informations que le moteur de navigateur de l'application envoie avec chaque requête, comme son agent utilisateur (qui comprend la version d'Android et le modèle de l'appareil) et la langue. Aucune donnée sur vos animaux n'est envoyée. Cette option reste désactivée tant que vous ne l'activez pas.",
-      "p6": "<strong>Les rappels restent sur votre téléphone.</strong> Dans l'application Android, les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Leurs paramètres restent sur cet appareil et ne sont pas inclus dans les exports."
+      "p6": "<strong>Les rappels restent sur votre téléphone.</strong> Dans l'application Android, les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Leurs paramètres restent sur cet appareil et ne sont pas inclus dans les exports.",
+      "cameraTitle": "Caméra (expérimental).",
+      "cameraBody": "Si vous activez le comptage des respirations par la caméra, l'image de la caméra est analysée sur votre appareil pendant la mesure. Aucune vidéo ni photo n'est enregistrée, conservée ou envoyée où que ce soit, et la caméra est libérée dès que la mesure se termine."
     },
     "terms": {
       "p1": "<strong>Pas un avis médical.</strong> CardiPaw est un outil d'information pour vous aider à enregistrer et suivre la fréquence respiratoire au repos de votre animal. Il ne remplace pas un diagnostic, un conseil ou un traitement vétérinaire professionnel.",
       "p2": "<strong>Consultez votre vétérinaire.</strong> Suivez toujours les conseils spécifiques de votre vétérinaire concernant les valeurs à surveiller, les plages normales pour votre animal et le moment de consulter. Ne prenez pas de décisions médicales uniquement sur la base de cette application.",
       "p3": "<strong>Aucune garantie.</strong> CardiPaw est fourni gratuitement, tel quel, sans aucune garantie d'aucune sorte (expresse ou implicite). Le développeur n'est pas responsable des décisions prises sur la base des données enregistrées dans cette application.",
-      "p4": "<strong>Utilisation à vos risques et périls.</strong> En utilisant CardiPaw, vous acceptez l'entière responsabilité de la façon dont vous interprétez et agissez sur les données qu'il présente."
+      "p4": "<strong>Utilisation à vos risques et périls.</strong> En utilisant CardiPaw, vous acceptez l'entière responsabilité de la façon dont vous interprétez et agissez sur les données qu'il présente.",
+      "cameraTitle": "Les décomptes de la caméra sont des suggestions.",
+      "cameraBody": "Un décompte de la caméra est expérimental et peut être faux. Vérifiez-le sur votre animal avant de l'enregistrer, et fiez-vous à votre propre décompte en cas de doute."
     }
   },
   "share": {
@@ -325,6 +392,14 @@
     "step3Body": "Choisissez 15, 30 ou 60 secondes (plus la mesure est longue, plus elle est précise), puis appuyez sur l'écran chaque fois que vous voyez une respiration. CardiPaw convertit votre décompte en respirations par minute.",
     "step4Title": "Quand ne pas mesurer",
     "step4Body": "Ne prenez pas de mesure si votre animal halète, vient de manger, vient de se réveiller, est anxieux ou stressé, ou est en chaleur — cela peut augmenter temporairement la fréquence.",
+    "cameraStep1Title": "Calez le téléphone",
+    "cameraStep1Body": "Posez le téléphone contre un support stable, à environ une longueur de bras de votre animal, pour que la caméra voie son flanc ou son ventre. Le tenir en main ne fonctionnera pas.",
+    "cameraStep2Title": "Cadrez votre animal",
+    "cameraStep2Body": "Votre animal peut être entièrement dans le cadre, tant que la poitrine ou le ventre s'y trouve. Plus la poitrine ou le ventre remplit le cadre, mieux c'est. Le haut de l'image, au-dessus du cadre, doit montrer quelque chose d'immobile. Une bonne lumière aide ; un ventilateur ou une télévision derrière votre animal le perturbe.",
+    "cameraStep3Title": "Reculez et attendez",
+    "cameraStep3Body": "Ne touchez ni votre animal ni le téléphone pendant l'observation, qui dure 30 à 60 secondes. Si vous le souhaitez, appuyez sur le cœur à chaque respiration.",
+    "cameraStep4Title": "Vérifiez le décompte suggéré",
+    "cameraStep4Body": "La caméra propose un décompte ; il peut être faux. Comparez-le à ce que vous voyez avant d'enregistrer, et si rien n'est proposé, comptez en appuyant.",
     "stepCount": "Étape {current} sur {total}",
     "back": "Retour",
     "next": "Suivant",
@@ -342,6 +417,7 @@
     "statusHeader": "Statut",
     "restHeader": "Repos",
     "sourceHeader": "Source",
+    "cameraNote": "Caméra : un comptage expérimental par la caméra du téléphone, confirmé par le propriétaire.",
     "readingsHeader": "Mesures",
     "notesHeader": "Notes de mesure",
     "readingsCount": "{n} mesure | {n} mesures",
@@ -366,7 +442,8 @@
       "p1": "CardiPaw compare les {days} derniers jours aux {baselineDays} jours précédents. Chaque jour compte une fois, avec la valeur médiane de ses mesures : mesurer à nouveau le même jour ne compte donc pas double.",
       "p2": "Une alerte s'affiche lorsque, sur au moins {minRaised} des {days} derniers jours, la fréquence a dépassé la valeur habituelle d'au moins {percent} % et d'au moins {breaths} resp./min. Pour établir cette valeur habituelle, il faut des mesures sur au moins {minDays} des jours précédents. Une alerte s'affiche aussi lorsqu'au moins {minAbove} des {days} derniers jours ont dépassé le plafond normal de {name} ({ceiling} resp./min).",
       "p3": "L'alerte disparaît d'elle-même lorsque les mesures se stabilisent. Avec trop peu de mesures, rien ne s'affiche : l'absence d'alerte ne signifie donc pas toujours que tout va bien.",
-      "p4": "Des mesures prises pendant que votre animal est éveillé, excité ou a chaud peuvent faire paraître la fréquence plus élevée. C'est aussi le cas si vous mélangez des mesures prises pendant le sommeil et au repos, car la fréquence est généralement plus basse pendant le sommeil. Ceci n'est pas un diagnostic. En cas d'inquiétude, contactez votre vétérinaire, et sans attendre si votre animal a du mal à respirer."
+      "p4": "Des mesures prises pendant que votre animal est éveillé, excité ou a chaud peuvent faire paraître la fréquence plus élevée. C'est aussi le cas si vous mélangez des mesures prises pendant le sommeil et au repos, car la fréquence est généralement plus basse pendant le sommeil. Ceci n'est pas un diagnostic. En cas d'inquiétude, contactez votre vétérinaire, et sans attendre si votre animal a du mal à respirer.",
+      "p5": "Les mesures comptées avec la caméra n'entrent pas dans les alertes de tendance tant que cette fonction est expérimentale ; les mesures que vous avez comptées en appuyant ou saisies, si."
     }
   },
   "updateNotice": {

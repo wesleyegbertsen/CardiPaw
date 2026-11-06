@@ -38,7 +38,9 @@
     "manual": "Manuell",
     "guided": "Geführt",
     "manualEntry": "Manuelle Eingabe",
-    "guidedSeconds": "Geführt ({n} s)"
+    "guidedSeconds": "Geführt ({n} s)",
+    "camera": "Kamera",
+    "cameraSeconds": "Kamera ({n} s)"
   },
   "age": {
     "weeks": "1 Woche | {n} Wochen",
@@ -99,6 +101,7 @@
     "tapForBreath": "Bei jedem Atemzug tippen",
     "guided": "Geführt",
     "manual": "Manuell",
+    "camera": "Kamera",
     "modeLabel": "Messmodus",
     "instruction": "Tippe jedes Mal irgendwo auf den Bildschirm, wenn sich der Brustkorb deines Tieres hebt und senkt.",
     "lengthLabel": "Messdauer",
@@ -114,6 +117,60 @@
     "saveError": "Die Messung konnte nicht gespeichert werden. Bitte versuche es erneut.",
     "leaveConfirm": "Diese Messung verwerfen und die Seite verlassen? Sie wurde noch nicht gespeichert.",
     "tryAgain": "Erneut versuchen"
+  },
+  "camera": {
+    "experimental": "Experimentell",
+    "explainTitle": "Atemzüge mit der Kamera zählen",
+    "explainBody": "Lehne dein Handy so an, dass die Kamera den Brustkorb oder Bauch deines Tieres sieht. CardiPaw beobachtet 30 bis 60 Sekunden lang das Heben und Senken und schlägt dir eine Zählung vor, die du an deinem Tier prüfst; ob du sie speicherst, entscheidest du.",
+    "privacyNote": "Wird nur auf diesem Handy ausgewertet. Nichts wird aufgezeichnet, gespeichert oder gesendet.",
+    "lightNote": "Am besten in einem hellen Raum.",
+    "allow": "Kamera erlauben",
+    "requesting": "Warte auf Kamerazugriff…",
+    "denied": "Der Kamerazugriff wurde abgelehnt. Erlaube CardiPaw in den Einstellungen deines Handys oder Browsers die Kamera, oder zähle stattdessen durch Tippen.",
+    "noCamera": "Auf diesem Gerät wurde keine Kamera gefunden.",
+    "busy": "Die Kamera wird von einer anderen App verwendet. Schließe sie und versuche es erneut.",
+    "unsupported": "Dieser Browser kann die Kamera hier nicht verwenden.",
+    "failed": "Mit der Kamera ist etwas schiefgelaufen. Versuche es erneut oder zähle stattdessen durch Tippen.",
+    "tapInstead": "Stattdessen durch Tippen zählen",
+    "retry": "Erneut versuchen",
+    "placeBody": "Dein ganzes Tier darf im Rahmen sein, solange Brustkorb oder Bauch darin sind. Je größer im Bild, desto besser. Oben im Bild sollte etwas Ruhiges sein, etwa eine Wand. Lehne das Handy an.",
+    "tooDark": "Zu dunkel: Mach ein Licht an.",
+    "moving": "Das Handy bewegt sich: Lehne es an.",
+    "moreLight": "Die Kamera ist zu langsam: Mehr Licht hilft.",
+    "steady": "Ruhig. Starte, wenn dein Tier entspannt ist.",
+    "checking": "Bild wird geprüft …",
+    "start": "Starten",
+    "watching": "Beobachtung läuft…",
+    "phaseAnnounce": "{n} Sekunden beobachtet",
+    "hintShake": "Halte das Handy ruhig.",
+    "hintFewTracks": "Wenig Details erkennbar: mehr Licht, oder näher heran.",
+    "hintDark": "Es wird dunkel: Mach ein Licht an.",
+    "extending": "Es werden noch 30 Sekunden beobachtet, für eine sicherere Zählung.",
+    "keepScreenOn": "Lass den Bildschirm an, bis die Zählung endet.",
+    "countAlong": "Mitzählen",
+    "countAlongHint": "Tippe bei jedem Atemzug auf das Herz. Du kannst stattdessen deine eigene Zählung speichern.",
+    "tapsCounted": "{n} Atemzug getippt | {n} Atemzüge getippt",
+    "resultTitle": "Vorgeschlagene Zählung",
+    "resultNote": "Von der Kamera über {seconds} Sekunden: zwischen {lo} und {hi} Atemz./Min. Prüfe es an deinem Tier, bevor du speicherst.",
+    "yourCount": "Deine Zählung: {n} Atemz./Min",
+    "saveCamera": "Kamera-Zählung speichern",
+    "saveTaps": "Meine Zählung speichern ({n})",
+    "confirm": "Bestätigen und speichern",
+    "measureAgain": "Erneut messen",
+    "abstainTitle": "Diesmal keine Zählung",
+    "abstain": {
+      "shake": "Das Handy hat sich bewegt. Lehne es an etwas Stabiles und versuche es erneut.",
+      "fewTracks": "Zu wenig Details zum Verfolgen. Versuche es mit mehr Licht oder näher am Tier.",
+      "noSignal": "Keine gleichmäßige Atembewegung erkennbar. Prüfe, ob der Rahmen den Brustkorb oder Bauch zeigt.",
+      "fastMotion": "Zu viel schnelle Bewegung, etwa Schnurren oder Hecheln. Versuche es erneut, wenn dein Tier entspannt ist.",
+      "irregular": "Die Atmung wirkte unregelmäßig. Versuche es erneut, wenn dein Tier entspannt ist, oder zähle durch Tippen.",
+      "twitch": "Dein Tier hat sich während der Zählung bewegt. Versuche es erneut, wenn es still liegt.",
+      "frameRate": "Die Kamera lief hier zu langsam, oft wegen zu wenig Licht. Sorge für mehr Licht oder zähle durch Tippen.",
+      "tooShort": "Die Zählung wurde zu früh beendet. Versuche es erneut.",
+      "lowQuality": "Die Bewegung war für eine Zählung nicht deutlich genug. Versuche es erneut oder zähle durch Tippen.",
+      "dog": "Große Hunde atmen in Ruhe oft weniger als 9-mal pro Minute, was die Kamera noch nicht erfassen kann; Zählen durch Tippen funktioniert."
+    },
+    "interrupted": "Die Zählung wurde unterbrochen: Die App war im Hintergrund, das Handy wurde gedreht oder die Kamera hat gestoppt. Nichts wurde gespeichert."
   },
   "addEditPet": {
     "titleEdit": "Tier bearbeiten",
@@ -174,7 +231,8 @@
   "readingList": {
     "empty": "Noch keine Messungen. Tippe auf „Messung starten“, um deine erste Messung zu erfassen.",
     "hasNotes": "Hat Notizen",
-    "manuallyEntered": "Manuell eingegeben"
+    "manuallyEntered": "Manuell eingegeben",
+    "cameraMeasured": "Mit der Kamera gemessen"
   },
   "noteList": {
     "empty": "Noch keine Notizen. Tippe auf „+“, um deine erste zu schreiben.",
@@ -225,6 +283,11 @@
     "checking": "Wird geprüft…",
     "upToDate": "Du hast die neueste Version.",
     "checkFailed": "Die Suche nach Updates ist fehlgeschlagen. Versuche es später erneut.",
+    "experimentalSection": "Experimentell",
+    "experimentalDesc": "Funktionen, die noch erprobt werden. Sie können sich ändern oder wieder verschwinden.",
+    "cameraName": "Atemzählung mit der Kamera",
+    "cameraDesc": "Fügt dem Tracker die Option „Kamera“ hinzu, die den Brustkorb deines Tieres durch die Kamera des Handys beobachtet und dir eine Zählung zum Prüfen vorschlägt. Das Video wird nur auf diesem Handy ausgewertet; nichts wird aufgezeichnet oder gesendet. Kamera-Messungen sind markiert und fließen nicht in Trend-Hinweise ein.",
+    "cameraUnavailable": "In diesem Browser nicht verfügbar.",
     "legalSection": "Rechtliches",
     "privacyTitle": "Datenschutzerklärung",
     "privacyDesc": "Wie deine Daten gespeichert und verwendet werden",
@@ -238,13 +301,17 @@
       "p3": "<strong>Du hast die Kontrolle.</strong> Du kannst deine Daten jederzeit über die Seite „Einstellungen“ exportieren. Durch das Löschen der App oder das Leeren der Websitedaten deines Browsers wird alles dauerhaft entfernt.",
       "p4": "<strong>Keine Datenweitergabe.</strong> Da deine Daten dein Gerät nie verlassen, werden sie niemals mit anderen geteilt oder für andere zugänglich gemacht.",
       "p5": "<strong>Update-Prüfung (Android-App).</strong> Wenn du in den Einstellungen unter „Updates“ die Option „Automatisch prüfen“ einschaltest, fragt die App etwa einmal am Tag und immer, wenn du auf „Jetzt prüfen“ tippst, bei api.github.com nach, ob es eine neuere Version gibt. GitHub sieht dabei deine IP-Adresse und die Informationen, die die Browser-Engine der App bei jeder Anfrage mitsendet, zum Beispiel den User-Agent (mit der Android-Version und dem Gerätemodell) und die Sprache. Es werden keine Tierdaten gesendet. Die Prüfung bleibt aus, solange du sie nicht einschaltest.",
-      "p6": "<strong>Erinnerungen bleiben auf deinem Smartphone.</strong> In der Android-App werden Erinnerungen auf diesem Smartphone geplant; nichts davon wird irgendwohin gesendet. Die Einstellungen dafür bleiben auf diesem Gerät und sind nicht in Exporten enthalten."
+      "p6": "<strong>Erinnerungen bleiben auf deinem Smartphone.</strong> In der Android-App werden Erinnerungen auf diesem Smartphone geplant; nichts davon wird irgendwohin gesendet. Die Einstellungen dafür bleiben auf diesem Gerät und sind nicht in Exporten enthalten.",
+      "cameraTitle": "Kamera (experimentell).",
+      "cameraBody": "Wenn du die Atemzählung mit der Kamera einschaltest, wird das Kamerabild während der Messung auf deinem Gerät ausgewertet. Es wird kein Video und kein Bild aufgezeichnet, gespeichert oder irgendwohin gesendet, und die Kamera wird freigegeben, sobald die Messung endet."
     },
     "terms": {
       "p1": "<strong>Keine medizinische Beratung.</strong> CardiPaw ist ein informatives Hilfsmittel, um die Ruhe-Atemfrequenz deines Tieres zu erfassen und zu verfolgen. Es ersetzt keine professionelle tierärztliche Diagnose, Beratung oder Behandlung.",
       "p2": "<strong>Konsultiere deinen Tierarzt.</strong> Befolge stets die spezifischen Hinweise deines Tierarztes, welche Werte zu überwachen sind, welche Bereiche für dein Tier normal sind und wann du Hilfe suchen solltest. Triff keine medizinischen Entscheidungen allein auf Grundlage dieser App.",
       "p3": "<strong>Keine Gewährleistung.</strong> CardiPaw wird kostenlos und „wie besehen“ ohne jegliche ausdrückliche oder stillschweigende Gewährleistung bereitgestellt. Der Entwickler haftet nicht für Entscheidungen, die auf Grundlage der in dieser App erfassten Daten getroffen werden.",
-      "p4": "<strong>Nutzung auf eigenes Risiko.</strong> Mit der Nutzung von CardiPaw übernimmst du die volle Verantwortung dafür, wie du die dargestellten Daten interpretierst und darauf reagierst."
+      "p4": "<strong>Nutzung auf eigenes Risiko.</strong> Mit der Nutzung von CardiPaw übernimmst du die volle Verantwortung dafür, wie du die dargestellten Daten interpretierst und darauf reagierst.",
+      "cameraTitle": "Kamera-Zählungen sind Vorschläge.",
+      "cameraBody": "Eine Zählung der Kamera ist experimentell und kann falsch sein. Prüfe sie an deinem Tier, bevor du sie speicherst, und verlass dich im Zweifel auf deine eigene Zählung."
     }
   },
   "share": {
@@ -325,6 +392,14 @@
     "step3Body": "Wähle 15, 30 oder 60 Sekunden (länger ist genauer) und tippe dann jedes Mal auf den Bildschirm, wenn du einen Atemzug siehst. CardiPaw rechnet deine Zählung in Atemzüge pro Minute um.",
     "step4Title": "Wann du nicht messen solltest",
     "step4Body": "Überspringe die Messung, wenn dein Tier hechelt, gerade gefressen hat, gerade aufgewacht ist, ängstlich oder gestresst ist oder läufig ist — all das kann die Frequenz vorübergehend erhöhen.",
+    "cameraStep1Title": "Lehne das Handy an",
+    "cameraStep1Body": "Lehne das Handy an etwas Stabiles, etwa eine Armlänge von deinem Tier entfernt, sodass die Kamera seine Flanke oder seinen Bauch sieht. In der Hand gehalten funktioniert es nicht.",
+    "cameraStep2Title": "Bring dein Tier ins Bild",
+    "cameraStep2Body": "Dein ganzes Tier darf im Rahmen sein, solange Brustkorb oder Bauch darin sind. Je mehr vom Rahmen Brustkorb oder Bauch ausfüllen, desto besser. Der Bildteil über dem Rahmen sollte etwas Ruhiges zeigen. Gutes Licht hilft; ein Ventilator oder Fernseher hinter deinem Tier stört.",
+    "cameraStep3Title": "Bleib zurück und warte",
+    "cameraStep3Body": "Berühre weder dein Tier noch das Handy, während es 30 bis 60 Sekunden lang beobachtet. Wenn du magst, kannst du bei jedem Atemzug auf das Herz tippen.",
+    "cameraStep4Title": "Prüfe die vorgeschlagene Zählung",
+    "cameraStep4Body": "Die Kamera schlägt eine Zählung vor; sie kann falsch sein. Vergleiche sie vor dem Speichern mit dem, was du siehst, und wenn nichts vorgeschlagen wird, zähle stattdessen durch Tippen.",
     "stepCount": "Schritt {current} von {total}",
     "back": "Zurück",
     "next": "Weiter",
@@ -342,6 +417,7 @@
     "statusHeader": "Status",
     "restHeader": "Ruhe",
     "sourceHeader": "Quelle",
+    "cameraNote": "Kamera: eine experimentelle Zählung mit der Handykamera, vom Halter bestätigt.",
     "readingsHeader": "Messungen",
     "notesHeader": "Notizen zu Messungen",
     "readingsCount": "{n} Messung | {n} Messungen",
@@ -366,7 +442,8 @@
       "p1": "CardiPaw vergleicht die letzten {days} Tage mit den {baselineDays} Tagen davor. Jeder Tag zählt einmal, mit dem mittleren Wert seiner Messungen. Eine erneute Messung am selben Tag zählt also nicht doppelt.",
       "p2": "Ein Hinweis erscheint, wenn die Frequenz an mindestens {minRaised} der letzten {days} Tage um {percent} % und {breaths} Atemz./Min oder mehr über dem üblichen Wert lag. Für den üblichen Wert braucht es Messungen an mindestens {minDays} der früheren Tage. Ein Hinweis erscheint auch, wenn mindestens {minAbove} der letzten {days} Tage über dem für {name} eingestellten Wert „Obergrenze normal“ ({ceiling} Atemz./Min) lagen.",
       "p3": "Der Hinweis verschwindet von selbst, sobald sich die Werte beruhigen. Bei zu wenigen Messungen wird nichts angezeigt. Kein Hinweis heißt also nicht immer, dass alles in Ordnung ist.",
-      "p4": "Messungen, während dein Tier wach, aufgeregt oder warm ist, können die Frequenz höher wirken lassen. Das gilt auch, wenn du Messungen im Schlaf und in Ruhe mischst, denn im Schlaf ist die Frequenz meist niedriger. Dies ist keine Diagnose. Wenn du dir Sorgen machst, wende dich an deinen Tierarzt, und sofort, wenn dein Tier Mühe beim Atmen hat."
+      "p4": "Messungen, während dein Tier wach, aufgeregt oder warm ist, können die Frequenz höher wirken lassen. Das gilt auch, wenn du Messungen im Schlaf und in Ruhe mischst, denn im Schlaf ist die Frequenz meist niedriger. Dies ist keine Diagnose. Wenn du dir Sorgen machst, wende dich an deinen Tierarzt, und sofort, wenn dein Tier Mühe beim Atmen hat.",
+      "p5": "Messungen, die mit der Kamera gezählt wurden, fließen nicht in Trend-Hinweise ein, solange diese Funktion experimentell ist; getippte oder eingegebene Messungen schon."
     }
   },
   "updateNotice": {

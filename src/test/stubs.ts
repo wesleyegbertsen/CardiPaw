@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { defineComponent, h } from 'vue';
+import { defineComponent, h, onMounted, onUnmounted } from 'vue';
 
 /**
  * Module factory for `../components/LazyRichTextEditor`. TipTap is slow to boot in
@@ -29,6 +29,72 @@ export function lazyEditorStubModule() {
             onInput: (e: Event) =>
               emit('update:modelValue', (e.target as HTMLTextAreaElement).value),
           });
+      },
+    }),
+  };
+}
+
+/**
+ * What the CameraCapture stub emits on `.stub-result`; a test sets it before clicking. `mounts`
+ * and `unmounts` count the stub's lifecycle (unmounting the real one stops the camera).
+ */
+export const cameraStub = {
+  nextResult: { rate: 24, seconds: 30 as 30 | 60, interval: [23, 25] as [number, number], taps: null as number | null },
+  mounts: 0,
+  unmounts: 0,
+};
+
+/**
+ * Module factory for `../components/CameraCapture.vue`, which TrackerView loads lazily: the
+ * camera is covered by the component's own tests, and here buttons stand in for its outcomes.
+ *
+ *   vi.mock('../components/CameraCapture.vue', async () =>
+ *     (await import('../test/stubs')).cameraCaptureStubModule());
+ */
+export function cameraCaptureStubModule() {
+  return {
+    // defineAsyncComponent unwraps `.default` only from an ES module; without this flag Vue
+    // would treat the mock's namespace as the component and trip Vitest's strict mock proxy.
+    __esModule: true,
+    default: defineComponent({
+      name: 'CameraCaptureStub',
+      props: {
+        pet: { type: Object, required: true },
+        autoOpen: { type: Boolean, default: false },
+        landscape: { type: Boolean, default: false },
+        hold: { type: Boolean, default: false },
+      },
+      emits: ['result', 'tapInstead', 'busy', 'capturing'],
+      setup(props, { emit }) {
+        onMounted(() => cameraStub.mounts++);
+        onUnmounted(() => cameraStub.unmounts++);
+        // Placing, then capturing; idle stands for every other phase (explain, an error, an abstain).
+        const busy = () => emit('busy', true);
+        const capturing = () => {
+          emit('busy', true);
+          emit('capturing', true);
+        };
+        const idle = () => {
+          emit('busy', false);
+          emit('capturing', false);
+        };
+        return () =>
+          h(
+            'div',
+            {
+              class: 'camera-stub',
+              'data-auto-open': String(props.autoOpen),
+              'data-landscape': String(props.landscape),
+              'data-hold': String(props.hold),
+            },
+            [
+            h('button', { class: 'stub-result', onClick: () => emit('result', { ...cameraStub.nextResult }) }),
+            h('button', { class: 'stub-tap-instead', onClick: () => emit('tapInstead') }),
+            h('button', { class: 'stub-busy', onClick: busy }),
+            h('button', { class: 'stub-capturing', onClick: capturing }),
+            h('button', { class: 'stub-idle', onClick: idle }),
+            ],
+          );
       },
     }),
   };

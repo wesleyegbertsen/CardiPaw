@@ -211,6 +211,12 @@ function formatDateTime(date: string): string {
                   </svg>
                   {{ $t('source.manual') }}
                 </span>
+                <span v-else-if="row.source === 'camera'" class="source-tag camera">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
+                    <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM9 2 7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3.17L15 2H9zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                  </svg>
+                  {{ $t('source.camera') }}
+                </span>
               </div>
             </div>
           </div>
@@ -482,6 +488,11 @@ function formatDateTime(date: string): string {
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
+}
+
+/* The base tag's neutral look with the primary tint: amber is the Elevated badge's colour */
+.source-tag.camera {
+  color: var(--color-camera-text);
 }
 
 .row-right {

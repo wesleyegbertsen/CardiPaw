@@ -11,6 +11,7 @@ import {
   Filler,
 } from 'chart.js';
 import type { Pet, Reading } from '../types';
+import { readingSource } from '../utils/measurement';
 import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
 import { localDayKey, localMonthKey } from '../utils/date';
 import { aggregateByDay, formatPdfAge, htmlToPlainText, type Translator } from '../utils/pdfText';
@@ -349,7 +350,7 @@ export function usePdfExport() {
           doc.setFont(fontFamily, 'normal');
           doc.setFontSize(8);
           doc.setTextColor('#9ca3af');
-          doc.text(r.source === 'manual' ? t('source.manual') : t('source.guided'), ML + 160, curY + 5);
+          doc.text(t('source.' + readingSource(r)), ML + 160, curY + 5);
 
           doc.setTextColor('#1a1a1a');
           curY += 7;
@@ -406,6 +407,19 @@ export function usePdfExport() {
             curY += 6;
           }
         }
+      }
+
+      // One caveat for the whole report when it lists a camera count.
+      const exported = readings.filter(r => selectedMonths.includes(localMonthKey(r.date)));
+      if (exported.some(r => readingSource(r) === 'camera')) {
+        doc.setFont(fontFamily, 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor('#6b7280');
+        if (curY + 6 > PH - MB) {
+          doc.addPage();
+          curY = MT;
+        }
+        doc.text(doc.splitTextToSize(t('pdf.cameraNote'), UW), ML, curY);
       }
 
       // ── Page footers ──

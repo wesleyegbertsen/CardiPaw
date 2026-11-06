@@ -1,8 +1,9 @@
-import { onScopeDispose } from 'vue';
+import { onScopeDispose, readonly, ref } from 'vue';
 
 /**
  * Keeps the screen on between acquire() and release(), through the Screen Wake Lock API
  * (the Android app's WebView has it too). Released when the calling component unmounts.
+ * `refused` says the last request was turned down, for a caller that wants to tell the user.
  */
 export function useWakeLock() {
   // happy-dom and older browsers lack the API; TypeScript declares it always present.
@@ -11,6 +12,7 @@ export function useWakeLock() {
   let wanted = false;
   let sentinel: WakeLockSentinel | null = null;
   let requesting = false;
+  const refused = ref(false);
 
   function request(): void {
     // `released` turns true when the browser drops the lock (the page was hidden).
@@ -27,6 +29,7 @@ export function useWakeLock() {
       // interrupt the count, so it is logged and the count goes on.
       (e) => {
         requesting = false;
+        refused.value = true;
         console.warn('Keeping the screen on failed', e);
       },
     );
@@ -38,6 +41,7 @@ export function useWakeLock() {
   }
 
   function acquire(): void {
+    refused.value = false;
     if (!isSupported) return;
     wanted = true;
     document.addEventListener('visibilitychange', onVisibilityChange);
@@ -54,5 +58,5 @@ export function useWakeLock() {
 
   onScopeDispose(release);
 
-  return { acquire, release };
+  return { acquire, release, refused: readonly(refused) };
 }

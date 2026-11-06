@@ -38,7 +38,9 @@
     "manual": "Manual",
     "guided": "Guided",
     "manualEntry": "Manual entry",
-    "guidedSeconds": "Guided ({n} s)"
+    "guidedSeconds": "Guided ({n} s)",
+    "camera": "Camera",
+    "cameraSeconds": "Camera ({n} s)"
   },
   "age": {
     "weeks": "1 week | {n} weeks",
@@ -99,6 +101,7 @@
     "tapForBreath": "Tap for each breath",
     "guided": "Guided",
     "manual": "Manual",
+    "camera": "Camera",
     "modeLabel": "Measurement mode",
     "instruction": "Tap anywhere on the screen each time you see your pet's chest rise and fall.",
     "lengthLabel": "Measurement length",
@@ -114,6 +117,60 @@
     "saveError": "The reading could not be saved. Please try again.",
     "leaveConfirm": "Leave and discard this measurement? It has not been saved yet.",
     "tryAgain": "Try again"
+  },
+  "camera": {
+    "experimental": "Experimental",
+    "explainTitle": "Count breaths with the camera",
+    "explainBody": "Prop your phone up so the camera sees your pet's chest or belly, and CardiPaw watches the rise and fall for 30 to 60 seconds. It suggests a count for you to check against your pet; you decide whether to save it.",
+    "privacyNote": "Analysed on this phone only. Nothing is recorded, stored or sent.",
+    "lightNote": "Works best in a bright room.",
+    "allow": "Allow camera",
+    "requesting": "Waiting for camera access…",
+    "denied": "Camera access was refused. To use it, allow the camera for CardiPaw in your phone's or browser's settings, or count by tapping instead.",
+    "noCamera": "No camera was found on this device.",
+    "busy": "The camera is in use by another app. Close it and try again.",
+    "unsupported": "This browser can't use the camera here.",
+    "failed": "Something went wrong with the camera. Try again, or count by tapping instead.",
+    "tapInstead": "Count by tapping instead",
+    "retry": "Try again",
+    "placeBody": "Your whole pet may be in the box, as long as the chest or belly is. The bigger it looks, the better. Keep something still at the top of the picture, like a wall. Prop the phone up.",
+    "tooDark": "Too dark: turn on a light.",
+    "moving": "The phone is moving: prop it up.",
+    "moreLight": "The camera is too slow: more light helps.",
+    "steady": "Steady. Start when your pet is calm.",
+    "checking": "Checking the picture…",
+    "start": "Start",
+    "watching": "Watching…",
+    "phaseAnnounce": "{n} seconds watched",
+    "hintShake": "Keep the phone still.",
+    "hintFewTracks": "Hard to see detail: more light, or move closer.",
+    "hintDark": "Getting dark: turn on a light.",
+    "extending": "Watching 30 more seconds for a surer count.",
+    "keepScreenOn": "Keep the screen on until the count ends.",
+    "countAlong": "Count along",
+    "countAlongHint": "Tap the heart with each breath. You can save your own count instead.",
+    "tapsCounted": "{n} breath tapped | {n} breaths tapped",
+    "resultTitle": "Suggested count",
+    "resultNote": "From the camera over {seconds} seconds: between {lo} and {hi} breaths/min. Check it against your pet before saving.",
+    "yourCount": "Your count: {n} breaths/min",
+    "saveCamera": "Save the camera count",
+    "saveTaps": "Save my count ({n})",
+    "confirm": "Confirm and save",
+    "measureAgain": "Measure again",
+    "abstainTitle": "No count this time",
+    "abstain": {
+      "shake": "The phone moved. Prop it up on something steady and try again.",
+      "fewTracks": "Not enough detail to follow. Try more light, or move the phone closer.",
+      "noSignal": "No steady breathing movement was seen. Check that the box covers the chest or belly.",
+      "fastMotion": "Too much quick movement, such as purring or panting. Try again when your pet is settled.",
+      "irregular": "The breathing looked irregular. Try again once your pet is settled, or count by tapping.",
+      "twitch": "Your pet moved during the count. Try again once they are still.",
+      "frameRate": "The camera ran too slowly here, often because of low light. Add light or count by tapping.",
+      "tooShort": "The count was cut short. Try again.",
+      "lowQuality": "The movement wasn't clear enough for a count. Try again, or count by tapping.",
+      "dog": "Large dogs often breathe fewer than 9 times a minute at rest, which the camera can't follow yet; counting by tapping works."
+    },
+    "interrupted": "The count was interrupted: the app went to the background, the phone was rotated or the camera stopped. Nothing was saved."
   },
   "addEditPet": {
     "titleEdit": "Edit pet",
@@ -174,7 +231,8 @@
   "readingList": {
     "empty": "No readings yet. Tap \"Start tracking\" to record your first measurement.",
     "hasNotes": "Has notes",
-    "manuallyEntered": "Manually entered"
+    "manuallyEntered": "Manually entered",
+    "cameraMeasured": "Measured with the camera"
   },
   "noteList": {
     "empty": "No notes yet. Tap '+' to write your first one.",
@@ -225,6 +283,11 @@
     "checking": "Checking…",
     "upToDate": "You're up to date.",
     "checkFailed": "Couldn't check for updates. Try again later.",
+    "experimentalSection": "Experimental",
+    "experimentalDesc": "Features still being tried out. They may change or go away.",
+    "cameraName": "Camera breath counting",
+    "cameraDesc": "Adds a Camera option to the tracker that watches your pet's chest through the phone's camera and suggests a count for you to check. The video is analysed on this phone only; nothing is recorded or sent. Camera readings are marked and don't count toward trend alerts.",
+    "cameraUnavailable": "Not available in this browser.",
     "legalSection": "Legal",
     "privacyTitle": "Privacy Policy",
     "privacyDesc": "How your data is stored and used",
@@ -238,13 +301,17 @@
       "p3": "<strong>You are in control.</strong> You can export your data at any time from the Settings page, and deleting the app or clearing your browser's site data will permanently remove everything.",
       "p4": "<strong>No data sharing.</strong> Because your data never leaves your device, it is never shared with or accessible by anyone else.",
       "p5": "<strong>Update check (Android app).</strong> If you turn on \"Check automatically\" in Settings under Updates, the app asks api.github.com about once a day, and whenever you tap \"Check now\", whether a newer version exists. GitHub then sees your IP address and the information the app's browser engine sends with every request, such as its user agent (which includes the Android version and device model) and language. No pet data is sent. It stays off unless you turn it on.",
-      "p6": "<strong>Reminders stay on your phone.</strong> In the Android app, reminders are scheduled on this phone; nothing about them is sent anywhere. Their settings stay on this device and aren't included in exports."
+      "p6": "<strong>Reminders stay on your phone.</strong> In the Android app, reminders are scheduled on this phone; nothing about them is sent anywhere. Their settings stay on this device and aren't included in exports.",
+      "cameraTitle": "Camera (experimental).",
+      "cameraBody": "If you turn on camera breath counting, the camera image is analysed on your device while you measure. No video or picture is recorded, stored or sent anywhere, and the camera is released as soon as the measurement ends."
     },
     "terms": {
       "p1": "<strong>Not medical advice.</strong> CardiPaw is an informational tool to help you log and track your pet's resting respiratory rate. It is not a substitute for professional veterinary diagnosis, advice, or treatment.",
       "p2": "<strong>Consult your veterinarian.</strong> Always follow your vet's specific guidance on what values to monitor, what ranges are normal for your individual pet, and when to seek care. Do not make medical decisions based solely on this app.",
       "p3": "<strong>No warranties.</strong> CardiPaw is provided free of charge, as-is, without any warranties of any kind (express or implied). The developer is not liable for any decisions made based on data logged in this app.",
-      "p4": "<strong>Use at your own risk.</strong> By using CardiPaw you accept full responsibility for how you interpret and act on the data it presents."
+      "p4": "<strong>Use at your own risk.</strong> By using CardiPaw you accept full responsibility for how you interpret and act on the data it presents.",
+      "cameraTitle": "Camera counts are suggestions.",
+      "cameraBody": "A count from the camera is experimental and may be wrong. Check it against your pet before saving it, and rely on your own counting whenever in doubt."
     }
   },
   "share": {
@@ -325,6 +392,14 @@
     "step3Body": "Pick 15, 30 or 60 seconds (longer is more precise), then tap the screen each time you see a breath. CardiPaw turns your count into breaths per minute.",
     "step4Title": "When not to measure",
     "step4Body": "Skip the reading if your pet is panting, just ate, just woke up, is anxious or stressed, or is in heat — these can temporarily raise the rate.",
+    "cameraStep1Title": "Prop the phone up",
+    "cameraStep1Body": "Rest the phone against something steady, about an arm's length from your pet, so the camera sees their side or belly. Holding it in your hand won't work.",
+    "cameraStep2Title": "Frame your pet",
+    "cameraStep2Body": "Your whole pet may be in the box, as long as the chest or belly is in it. The more of the box the chest or belly fills, the better. Keep the top of the picture, above the box, on something still. Good light helps; a fan or TV behind your pet confuses it.",
+    "cameraStep3Title": "Stay back and wait",
+    "cameraStep3Body": "Don't touch your pet or the phone while it watches, for 30 to 60 seconds. You can tap the heart along with each breath if you like.",
+    "cameraStep4Title": "Check the suggested count",
+    "cameraStep4Body": "The camera suggests a count; it can be wrong. Compare it with what you see before saving, and if nothing is suggested, count by tapping instead.",
     "stepCount": "Step {current} of {total}",
     "back": "Back",
     "next": "Next",
@@ -342,6 +417,7 @@
     "statusHeader": "Status",
     "restHeader": "Rest",
     "sourceHeader": "Source",
+    "cameraNote": "Camera: an experimental count from the phone's camera, confirmed by the owner.",
     "readingsHeader": "Readings",
     "notesHeader": "Reading Notes",
     "readingsCount": "{n} reading | {n} readings",
@@ -366,7 +442,8 @@
       "p1": "CardiPaw compares the last {days} days with the {baselineDays} days before them. Each day counts once, using the middle value of that day's readings, so measuring again on the same day doesn't count twice.",
       "p2": "An alert shows when, on at least {minRaised} of the last {days} days, the rate was {percent}% and {breaths} breaths/min or more above the usual rate. Working out the usual rate needs readings on at least {minDays} of the earlier days. An alert also shows when at least {minAbove} of the last {days} days were above {name}'s Normal ceiling of {ceiling} breaths/min.",
       "p3": "The alert goes away on its own once readings settle. With too few readings nothing is shown, so no alert doesn't always mean all is well.",
-      "p4": "Readings taken while awake, excited or warm can make the rate look higher, and so can mixing sleeping and resting readings, because the rate is usually lower during sleep. This is not a diagnosis. If you're worried, contact your vet, and if your pet is struggling to breathe, contact them straight away."
+      "p4": "Readings taken while awake, excited or warm can make the rate look higher, and so can mixing sleeping and resting readings, because the rate is usually lower during sleep. This is not a diagnosis. If you're worried, contact your vet, and if your pet is struggling to breathe, contact them straight away.",
+      "p5": "Readings counted with the camera don't count toward trend alerts while that feature is experimental; readings you tapped or typed in do."
     }
   },
   "updateNotice": {

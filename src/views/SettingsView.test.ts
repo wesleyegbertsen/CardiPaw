@@ -34,10 +34,29 @@ vi.mock('../composables/useUpdateCheck', async () => {
   return { useUpdateCheck: () => updates };
 });
 
+// The opt-in keeps a module-level ref; a mock keeps one test's switch from leaking into the next.
+const camera = vi.hoisted(() => ({
+  enabled: undefined as unknown as { value: boolean },
+  supported: true,
+  setEnabled: vi.fn(),
+}));
+vi.mock('../composables/useCameraOptIn', async () => {
+  const { ref } = await import('vue');
+  camera.enabled = ref(false);
+  return {
+    useCameraOptIn: () => ({ enabled: camera.enabled, setEnabled: camera.setEnabled }),
+    isCameraSupported: () => camera.supported,
+  };
+});
+
 const exportButton = (w: VueWrapper) => w.findAll('.action-btn')[0];
 const importButton = (w: VueWrapper) => w.findAll('.action-btn')[1];
 const privacyButton = (w: VueWrapper) =>
   w.findAll('.action-card').find((card) => card.text().includes('Privacy Policy'))!.get('.action-btn');
+const termsButton = (w: VueWrapper) =>
+  w.findAll('.action-card').find((card) => card.text().includes('Terms of Use'))!.get('.action-btn');
+const cameraCard = (w: VueWrapper) =>
+  w.findAll('.action-card').find((card) => card.text().includes('Camera breath counting'));
 const status = (w: VueWrapper) => w.get('[role="status"]').text();
 const alerts = (w: VueWrapper) => w.findAll('[role="alert"]').map((a) => a.text());
 const dialogMessage = () => document.body.querySelector('[role="alertdialog"] .message');
@@ -72,8 +91,53 @@ describe('SettingsView', () => {
     updates.lastChecked.value = null;
     updates.setEnabled.mockReset();
     updates.checkNow.mockReset().mockResolvedValue({ status: 'up-to-date' });
+    camera.enabled.value = false;
+    camera.supported = true;
+    camera.setEnabled.mockReset();
   });
   afterEach(() => vi.useRealTimers());
+
+  describe('experimental camera counting', () => {
+    it('offers the opt-in as a switch that saves the choice and shows it', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      expect(wrapper.findAll('.section-title').map((h) => h.text())).toContain('Experimental');
+      const card = cameraCard(wrapper)!;
+      const toggle = card.get('[role="switch"]');
+      expect(toggle.attributes('aria-checked')).toBe('false');
+      expect(toggle.attributes('disabled')).toBeUndefined();
+      await toggle.trigger('click');
+      expect(camera.setEnabled).toHaveBeenCalledExactlyOnceWith(true);
+
+      camera.enabled.value = true;
+      await flushPromises();
+      expect(toggle.attributes('aria-checked')).toBe('true');
+    });
+
+    it('disables the switch where the browser has no camera API', async () => {
+      camera.supported = false;
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      const card = cameraCard(wrapper)!;
+      expect(card.get('[role="switch"]').attributes('disabled')).toBeDefined();
+      expect(card.text()).toContain('Not available in this browser.');
+      expect(card.text()).not.toContain('Adds a Camera option');
+    });
+
+    it('explains the camera in the privacy information', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      await privacyButton(wrapper).trigger('click');
+      expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain(
+        'Camera (experimental).',
+      );
+    });
+
+    it('says camera counts are suggestions in the terms', async () => {
+      const { wrapper } = await mountView(SettingsView, '/settings');
+      await termsButton(wrapper).trigger('click');
+      const dialog = document.body.querySelector('[role="dialog"]');
+      expect(dialog?.querySelector('.dialog-title')?.textContent).toBe('Terms of Use');
+      expect(dialog?.textContent).toContain('Camera counts are suggestions.');
+    });
+  });
 
   it('says the data and the export include notes', async () => {
     const { wrapper } = await mountView(SettingsView, '/settings');

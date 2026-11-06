@@ -3,6 +3,9 @@ import { ref, computed, nextTick } from 'vue';
 import { useModal } from '../composables/useModal';
 
 const emit = defineEmits<{ close: [] }>();
+// The tap steps by default; the camera steps for the experimental camera counting.
+const props = defineProps<{ variant?: 'tap' | 'camera' }>();
+const prefix = computed(() => (props.variant === 'camera' ? 'onboarding.cameraStep' : 'onboarding.step'));
 
 const steps = ['rest', 'watch', 'count', 'avoid'] as const;
 const step = ref(0);
@@ -115,8 +118,8 @@ function onTouchEnd(e: TouchEvent) {
                   <path d="M12 17h.01" />
                 </svg>
               </div>
-              <h2 class="step-title">{{ $t(`onboarding.step${step + 1}Title`) }}</h2>
-              <p class="step-body">{{ $t(`onboarding.step${step + 1}Body`) }}</p>
+              <h2 class="step-title">{{ $t(`${prefix}${step + 1}Title`) }}</h2>
+              <p class="step-body">{{ $t(`${prefix}${step + 1}Body`) }}</p>
             </div>
           </Transition>
         </div>

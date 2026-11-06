@@ -163,6 +163,19 @@ describe('useWakeLock', () => {
     expect(sentinels[0].release).toHaveBeenCalledOnce();
   });
 
+  it('reports a refused lock until the next acquire', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    request.mockRejectedValueOnce(new DOMException('no', 'NotAllowedError'));
+    const lock = use();
+    expect(lock.refused.value).toBe(false);
+    lock.acquire();
+    await flushPromises();
+    expect(lock.refused.value).toBe(true);
+    lock.release();
+    lock.acquire();
+    expect(lock.refused.value).toBe(false);
+  });
+
   it('lets go of the lock only once', async () => {
     const lock = use();
     lock.acquire();

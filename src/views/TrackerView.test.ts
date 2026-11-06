@@ -25,6 +25,8 @@ import ja from '../i18n/locales/ja.json';
 import { closeTopModal } from '../composables/useModal';
 import { Blank } from '../test/mountView';
 import { makePet, makeReading } from '../test/fixtures';
+import { cameraStub } from '../test/stubs';
+import { fakeMatchMedia } from '../test/mediaQuery';
 import * as db from '../services/db';
 import type { Pet, Reading } from '../types';
 import type { MeasurementSeconds } from '../utils/measurement';
@@ -36,13 +38,48 @@ vi.mock('../composables/useAudioBeep', () => ({ useAudioBeep: () => audio }));
 vi.mock('../composables/useHaptics', () => ({
   useHaptics: () => ({ isSupported: true, ...haptics }),
 }));
+// Both flags seen by default, so no onboarding opens by itself; a test flips one.
+const onboarding = vi.hoisted(() => ({
+  hasSeenOnboarding: undefined as unknown as { value: boolean },
+  hasSeenCameraOnboarding: undefined as unknown as { value: boolean },
+  markSeen: vi.fn(),
+  markCameraSeen: vi.fn(),
+}));
 vi.mock('../composables/useOnboarding', async () => {
   const { ref } = await import('vue');
-  return { useOnboarding: () => ({ hasSeenOnboarding: ref(true), markSeen: vi.fn() }) };
+  onboarding.hasSeenOnboarding = ref(true);
+  onboarding.hasSeenCameraOnboarding = ref(true);
+  return { useOnboarding: () => onboarding };
 });
 // TipTap needs a real layout engine; a textarea is enough to check the notes reach the save.
 vi.mock('../components/LazyRichTextEditor', async () =>
   (await import('../test/stubs')).lazyEditorStubModule(),
+);
+// The camera opt-in keeps a module-level ref; a mock keeps tests order-independent.
+const camera = vi.hoisted(() => ({
+  enabled: undefined as unknown as { value: boolean },
+  supported: true,
+  setEnabled: vi.fn(),
+}));
+vi.mock('../composables/useCameraOptIn', async () => {
+  const { ref } = await import('vue');
+  camera.enabled = ref(false);
+  return {
+    useCameraOptIn: () => ({ enabled: camera.enabled, setEnabled: camera.setEnabled }),
+    isCameraSupported: () => camera.supported,
+  };
+});
+// The app hides the system bars in the full-screen camera layout; the website has no plugin.
+const platform = vi.hoisted(() => ({ native: false }));
+vi.mock('../utils/platform', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../utils/platform')>()),
+  isNative: () => platform.native,
+}));
+const immersiveMode = vi.hoisted(() => ({ enter: vi.fn(), exit: vi.fn() }));
+vi.mock('../native/immersiveMode', () => ({ ImmersiveMode: immersiveMode }));
+// Loaded through defineAsyncComponent, so the module is mocked rather than the component stubbed.
+vi.mock('../components/CameraCapture.vue', async () =>
+  (await import('../test/stubs')).cameraCaptureStubModule(),
 );
 
 const pet = makePet();
@@ -125,12 +162,548 @@ describe('TrackerView', () => {
     // Hoisted spies outlive each test, so clear their calls to keep tests order-independent.
     for (const fn of [...Object.values(audio), ...Object.values(haptics)]) fn.mockClear();
     localStorage.clear();
+    camera.enabled.value = false;
+    camera.supported = true;
+    cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: null };
+    cameraStub.mounts = 0;
+    cameraStub.unmounts = 0;
+    onboarding.hasSeenOnboarding.value = true;
+    onboarding.hasSeenCameraOnboarding.value = true;
+    onboarding.markSeen.mockReset();
+    onboarding.markCameraSeen.mockReset();
+    // Upright unless a test turns the phone; happy-dom would answer the query by its own size.
+    fakeMatchMedia(false);
+    platform.native = false;
+    immersiveMode.enter.mockReset().mockResolvedValue(undefined);
+    immersiveMode.exit.mockReset().mockResolvedValue(undefined);
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2024-03-15T12:00:00.000Z'));
   });
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  describe('camera mode', () => {
+    const pills = (wrapper: VueWrapper) => wrapper.findAll('.mode-pill').map((p) => p.text());
+    async function mountCamera(options?: Parameters<typeof mountTracker>[0]) {
+      camera.enabled.value = true;
+      const mounted = await mountTracker(options);
+      await mounted.wrapper.findAll('.mode-pill')[2].trigger('click');
+      await flushPromises(); // the async component resolves
+      return mounted;
+    }
+    const suggest = async (wrapper: VueWrapper) => {
+      await wrapper.get('.stub-result').trigger('click');
+      await flushPromises();
+    };
+
+    it('offers the Camera pill only with the opt-in on and getUserMedia present', async () => {
+      expect(pills((await mountTracker()).wrapper)).toEqual(['Guided', 'Manual']);
+      camera.enabled.value = true;
+      camera.supported = false;
+      expect(pills((await mountTracker()).wrapper)).toEqual(['Guided', 'Manual']);
+      camera.supported = true;
+      expect(pills((await mountTracker()).wrapper)).toEqual(['Guided', 'Manual', 'Camera']);
+    });
+
+    it('moves the indicator by index and mounts the capture without opening the camera', async () => {
+      const { wrapper } = await mountCamera();
+      const indicator = wrapper.get<HTMLElement>('.mode-toggle-indicator').element.style;
+      expect(indicator.getPropertyValue('--count')).toBe('3');
+      expect(indicator.getPropertyValue('--index')).toBe('2');
+      expect(wrapper.findAll('.mode-pill').map((p) => p.attributes('aria-pressed'))).toEqual([
+        'false',
+        'false',
+        'true',
+      ]);
+      expect(wrapper.get('.camera-stub').attributes('data-auto-open')).toBe('false');
+      expect(wrapper.find('.heart-btn').exists()).toBe(false);
+    });
+
+    it('shows a suggested count as a card and saves nothing until Confirm', async () => {
+      const { wrapper, addReading } = await mountCamera();
+      await suggest(wrapper);
+      expect(wrapper.find('.camera-stub').exists()).toBe(false);
+      expect(wrapper.get('.experimental-chip').text()).toBe('Experimental');
+      expect(wrapper.get('.result-title').text()).toBe('Suggested count');
+      expect(wrapper.get('.result-number').text()).toBe('24');
+      expect(wrapper.get('.rate-badge').classes()).toContain('normal');
+      expect(wrapper.get('.result-note').text()).toBe(
+        'From the camera over 30 seconds: between 23 and 25 breaths/min. Check it against your pet before saving.',
+      );
+      expect(wrapper.find('.save-choice').exists()).toBe(false);
+      expect(document.activeElement).toBe(wrapper.get('.result').element);
+      expect(addReading).not.toHaveBeenCalled();
+
+      await wrapper.findAll('.rest-btn')[1].trigger('click');
+      await wrapper.get('.notes-stub').setValue('<p>calm</p>');
+      expect(wrapper.get('.btn-save').text()).toBe('Confirm and save');
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledExactlyOnceWith({
+        petId: pet.id,
+        date: '2024-03-15T12:00:00.000Z',
+        rate: 24,
+        clickCount: 0,
+        restState: 'sleeping',
+        notes: '<p>calm</p>',
+        source: 'camera',
+        durationSeconds: 30,
+      });
+      expect(router.currentRoute.value.name).toBe('pet');
+    });
+
+    it('rates the suggestion against the pet’s own ceilings and keeps the 60 s length', async () => {
+      cameraStub.nextResult = { rate: 32, seconds: 60, interval: [31, 33], taps: null };
+      const { wrapper, addReading } = await mountCamera();
+      await suggest(wrapper);
+      expect(wrapper.get('.rate-badge').classes()).toContain('warning');
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledWith(
+        expect.objectContaining({ rate: 32, source: 'camera', durationSeconds: 60 }),
+      );
+    });
+
+    it('lets the owner save their own taps as a guided reading instead', async () => {
+      cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: 13 };
+      const { wrapper, addReading } = await mountCamera();
+      await suggest(wrapper);
+      const group = wrapper.get('.save-choice');
+      expect(group.attributes('role')).toBe('group');
+      const labelId = group.attributes('aria-labelledby');
+      expect(labelId && document.getElementById(labelId)?.textContent).toBe(
+        'Your count: 26 breaths/min',
+      );
+      const [cameraChoice, tapsChoice] = group.findAll('button');
+      expect(cameraChoice.text()).toBe('Save the camera count');
+      expect(tapsChoice.text()).toBe('Save my count (26)');
+      expect(cameraChoice.attributes('aria-pressed')).toBe('true');
+      expect(tapsChoice.attributes('aria-pressed')).toBe('false');
+      await tapsChoice.trigger('click');
+      expect(tapsChoice.attributes('aria-pressed')).toBe('true');
+      expect(cameraChoice.attributes('aria-pressed')).toBe('false');
+
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ rate: 26, clickCount: 13, source: undefined, durationSeconds: 30 }),
+      );
+      expect(addReading.mock.calls[0][0].source).toBeUndefined();
+    });
+
+    it('saves the camera count by default even when the owner tapped along', async () => {
+      cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: 13 };
+      const { wrapper, addReading } = await mountCamera();
+      await suggest(wrapper);
+      expect(wrapper.find('.save-choice').exists()).toBe(true);
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(addReading).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ rate: 24, clickCount: 0, source: 'camera', durationSeconds: 30 }),
+      );
+    });
+
+    it('measures again by remounting the capture with the camera opening by itself', async () => {
+      cameraStub.nextResult = { rate: 24, seconds: 30, interval: [23, 25], taps: 13 };
+      const { wrapper, addReading } = await mountCamera();
+      await suggest(wrapper);
+      await wrapper.findAll('.save-choice button')[1].trigger('click');
+      await wrapper.get('.btn-retry').trigger('click');
+      await flushPromises();
+      expect(wrapper.find('.result-number').exists()).toBe(false);
+      expect(wrapper.get('.camera-stub').attributes('data-auto-open')).toBe('true');
+
+      // A second suggestion starts from the camera choice again.
+      await suggest(wrapper);
+      expect(wrapper.findAll('.save-choice button')[0].attributes('aria-pressed')).toBe('true');
+      expect(addReading).not.toHaveBeenCalled();
+    });
+
+    it('hides the mode bar under a suggestion, so a pill cannot discard it', async () => {
+      const { wrapper } = await mountCamera();
+      await suggest(wrapper);
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(false);
+      expect(wrapper.get('.camera-body').classes()).not.toContain('with-bar');
+      await wrapper.get('.btn-retry').trigger('click');
+      await flushPromises();
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+      expect(wrapper.get('.camera-body').classes()).toContain('with-bar');
+    });
+
+    it('discards a suggestion and returns to the pet', async () => {
+      const { wrapper, addReading, replace } = await mountCamera();
+      await suggest(wrapper);
+      await wrapper.get('.btn-discard').trigger('click');
+      expect(addReading).not.toHaveBeenCalled();
+      expect(replace).toHaveBeenCalledWith({ name: 'pet', params: { id: pet.id } });
+    });
+
+    it('reports a failed save and keeps the suggestion', async () => {
+      const { wrapper, addReading } = await mountCamera();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      addReading.mockRejectedValueOnce(new Error('quota exceeded'));
+      await suggest(wrapper);
+      await wrapper.get('.btn-save').trigger('click');
+      await flushPromises();
+      expect(wrapper.get('[role="alert"]').text()).toBe(
+        'The reading could not be saved. Please try again.',
+      );
+      expect(wrapper.get('.result-number').text()).toBe('24');
+      expect(router.currentRoute.value.name).toBe('tracker');
+    });
+
+    it('switches to guided on Count by tapping instead', async () => {
+      const { wrapper } = await mountCamera();
+      await wrapper.get('.stub-tap-instead').trigger('click');
+      expect(wrapper.find('.camera-stub').exists()).toBe(false);
+      expect(wrapper.find('.heart-btn').exists()).toBe(true);
+      await flushPromises();
+      expect(document.activeElement).toBe(wrapper.get('.heart-btn').element);
+      expect(wrapper.findAll('.mode-pill').map((p) => p.attributes('aria-pressed'))).toEqual([
+        'true',
+        'false',
+        'false',
+      ]);
+    });
+
+    // Placing loses nothing, and with a remembered grant the camera opens straight into it:
+    // the pills are the way to another mode. Only a running count hides them.
+    it('keeps the mode bar while the camera is placing and hides it while capturing', async () => {
+      const { wrapper } = await mountCamera();
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+      await wrapper.get('.stub-busy').trigger('click');
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+      await wrapper.get('.stub-capturing').trigger('click');
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(false);
+      await wrapper.get('.stub-idle').trigger('click');
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+    });
+
+    const helpDialog = () => document.body.querySelector('[role="dialog"]');
+
+    it('opens the camera steps the first time the Camera pill is tapped, once', async () => {
+      onboarding.hasSeenCameraOnboarding.value = false;
+      const { wrapper } = await mountCamera();
+      expect(helpDialog()?.textContent).toContain('Prop the phone up');
+      expect(helpDialog()?.textContent).toContain('Step 1 of 4');
+      expect(wrapper.find('.camera-stub').exists()).toBe(true);
+
+      document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
+      await flushPromises();
+      expect(helpDialog()).toBeNull();
+      expect(onboarding.markCameraSeen).toHaveBeenCalledOnce();
+      expect(onboarding.markSeen).not.toHaveBeenCalled();
+
+      onboarding.hasSeenCameraOnboarding.value = true; // what markCameraSeen does
+      await wrapper.findAll('.mode-pill')[0].trigger('click');
+      await wrapper.findAll('.mode-pill')[2].trigger('click');
+      await flushPromises();
+      expect(helpDialog()).toBeNull();
+    });
+
+    // The capture opens the camera by itself once it was allowed (CameraCapture.test.ts); the
+    // stub cannot, so here only the hold is checked: never under the first camera onboarding.
+    it('holds the capture while the camera onboarding is open, and only then', async () => {
+      onboarding.hasSeenCameraOnboarding.value = false;
+      const { wrapper } = await mountCamera();
+      expect(helpDialog()).not.toBeNull();
+      expect(wrapper.get('.camera-stub').attributes('data-hold')).toBe('true');
+      document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
+      await flushPromises();
+      expect(wrapper.get('.camera-stub').attributes('data-hold')).toBe('false');
+    });
+
+    it('does not hold the capture once the camera onboarding was seen', async () => {
+      const { wrapper } = await mountCamera();
+      expect(helpDialog()).toBeNull();
+      expect(wrapper.get('.camera-stub').attributes('data-hold')).toBe('false');
+    });
+
+    it('explains the current mode from the ? button', async () => {
+      const { wrapper } = await mountCamera();
+      expect(helpDialog()).toBeNull();
+      await wrapper.get('.help-btn').trigger('click');
+      expect(helpDialog()?.textContent).toContain('Prop the phone up');
+      document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
+      await flushPromises();
+      expect(onboarding.markCameraSeen).toHaveBeenCalledOnce();
+
+      await wrapper.findAll('.mode-pill')[0].trigger('click');
+      await wrapper.get('.help-btn').trigger('click');
+      expect(helpDialog()?.textContent).toContain('Get your pet resting or sleeping');
+      document.body.querySelector<HTMLButtonElement>('.btn-skip')!.click();
+      await flushPromises();
+      expect(onboarding.markSeen).toHaveBeenCalledOnce();
+      expect(onboarding.markCameraSeen).toHaveBeenCalledOnce();
+    });
+
+    it('leaves the capture behind when switching back to guided, even while busy', async () => {
+      const { wrapper } = await mountCamera();
+      await wrapper.get('.stub-busy').trigger('click');
+      await wrapper.get('.stub-tap-instead').trigger('click');
+      expect(wrapper.find('.camera-stub').exists()).toBe(false);
+      expect(wrapper.find('.mode-toggle-bar').exists()).toBe(true);
+      await wrapper.findAll('.mode-pill')[2].trigger('click');
+      await flushPromises();
+      expect(wrapper.find('.camera-stub').exists()).toBe(true);
+      await wrapper.findAll('.mode-pill')[0].trigger('click');
+      expect(wrapper.find('.camera-stub').exists()).toBe(false);
+    });
+
+    describe('leaving', () => {
+      it('asks before going back during a capture, and Cancel keeps the camera running', async () => {
+        const { wrapper } = await mountCamera({ from: petPage });
+        await wrapper.get('.stub-capturing').trigger('click');
+        router.back();
+        await flushPromises();
+        expect(dialog()?.querySelector('.message')?.textContent).toBe(en.tracker.leaveConfirm);
+
+        clickInDialog('.btn-cancel');
+        await flushPromises();
+        expect(dialog()).toBeNull();
+        expect(router.currentRoute.value.name).toBe('tracker');
+        expect(wrapper.find('.camera-stub').exists()).toBe(true);
+        expect([cameraStub.mounts, cameraStub.unmounts]).toEqual([1, 0]);
+      });
+
+      it('lets Discard leave a capture, which closes the camera', async () => {
+        const { wrapper } = await mountCamera({ from: petPage });
+        await wrapper.get('.stub-capturing').trigger('click');
+        router.back();
+        await flushPromises();
+        expect(dialog()).not.toBeNull();
+
+        discardInDialog();
+        await flushPromises();
+        expect(router.currentRoute.value.name).toBe('pet');
+        expect(wrapper.find('.tracker').exists()).toBe(false);
+        expect(cameraStub.unmounts).toBe(1);
+      });
+
+      it('asks before leaving a suggestion that is not confirmed', async () => {
+        const { wrapper } = await mountCamera({ from: petPage });
+        await suggest(wrapper);
+        await wrapper.get('.back-btn').trigger('click');
+        await flushPromises();
+        expect(dialog()).not.toBeNull();
+        expect(router.currentRoute.value.name).toBe('tracker');
+      });
+
+      // The capture can end behind the dialog: focus stays in it, and Cancel moves it to the card.
+      it('keeps focus in the dialog when the suggestion arrives behind it', async () => {
+        const { wrapper } = await mountCamera({ from: petPage });
+        await wrapper.get('.stub-capturing').trigger('click');
+        router.back();
+        await flushPromises();
+        await suggest(wrapper);
+        expect(dialog()!.contains(document.activeElement)).toBe(true);
+
+        clickInDialog('.btn-cancel');
+        await flushPromises();
+        expect(document.activeElement).toBe(wrapper.get('.result').element);
+      });
+
+      it.each<[string, (wrapper: VueWrapper) => Promise<unknown>]>([
+        ['on the explanation', async () => {}],
+        ['while placing the camera', (w) => w.get('.stub-busy').trigger('click')],
+        [
+          'after an abstain or an interrupted capture',
+          async (w) => {
+            await w.get('.stub-capturing').trigger('click');
+            await w.get('.stub-idle').trigger('click');
+          },
+        ],
+      ])('leaves without asking %s', async (_, prepare) => {
+        const { wrapper } = await mountCamera({ from: petPage });
+        await prepare(wrapper);
+        router.back();
+        await flushPromises();
+        expect(dialog()).toBeNull();
+        expect(router.currentRoute.value.name).toBe('pet');
+      });
+
+      it.each([
+        ['.btn-save', 'Confirm'],
+        ['.btn-discard', 'Discard'],
+      ])('leaves without asking on %s (%s)', async (button) => {
+        const { wrapper, addReading } = await mountCamera({ from: petPage });
+        await suggest(wrapper);
+        await wrapper.get(button).trigger('click');
+        await flushPromises();
+        expect(dialog()).toBeNull();
+        expect(router.currentRoute.value.name).toBe('pet');
+        expect(addReading).toHaveBeenCalledTimes(button === '.btn-save' ? 1 : 0);
+      });
+
+      it('still asks after a failed save', async () => {
+        const { wrapper, addReading } = await mountCamera({ from: petPage });
+        await suggest(wrapper);
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        addReading.mockRejectedValueOnce(new Error('quota exceeded'));
+        await wrapper.get('.btn-save').trigger('click');
+        await flushPromises();
+        expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+        router.back();
+        await flushPromises();
+        expect(dialog()).not.toBeNull();
+      });
+    });
+
+    // A phone propped sideways to film the pet: the camera takes the whole screen.
+    describe('sideways', () => {
+      const tracker = (wrapper: VueWrapper) => wrapper.get('.tracker');
+      const isImmersive = (wrapper: VueWrapper) => tracker(wrapper).classes().includes('immersive');
+      const barCalls = () => [immersiveMode.enter.mock.calls.length, immersiveMode.exit.mock.calls.length];
+
+      it('fills the screen in camera mode on a landscape touch screen, in the app theme', async () => {
+        fakeMatchMedia(true);
+        const { wrapper } = await mountCamera();
+        expect(isImmersive(wrapper)).toBe(true);
+        // No theme of its own: light or dark like every other screen
+        expect(tracker(wrapper).attributes('data-theme')).toBeUndefined();
+        expect(wrapper.get('.camera-stub').attributes('data-landscape')).toBe('true');
+      });
+
+      it('keeps the normal layout upright', async () => {
+        const { wrapper } = await mountCamera();
+        expect(isImmersive(wrapper)).toBe(false);
+        expect(tracker(wrapper).attributes('data-theme')).toBeUndefined();
+        expect(wrapper.get('.camera-stub').attributes('data-landscape')).toBe('false');
+      });
+
+      it.each([0, 1])('keeps the normal layout sideways in the other modes (pill %i)', async (pill) => {
+        fakeMatchMedia(true);
+        const { wrapper } = await mountCamera();
+        await wrapper.findAll('.mode-pill')[pill].trigger('click');
+        expect(isImmersive(wrapper)).toBe(false);
+      });
+
+      it('follows the phone as it turns, keeping the capture mounted', async () => {
+        const media = fakeMatchMedia(false);
+        const { wrapper } = await mountCamera();
+        media.set(true);
+        await flushPromises();
+        expect(isImmersive(wrapper)).toBe(true);
+        media.set(false);
+        await flushPromises();
+        expect(isImmersive(wrapper)).toBe(false);
+        expect([cameraStub.mounts, cameraStub.unmounts]).toEqual([1, 0]);
+      });
+
+      it('keeps the mode pills where the upright bar would show them', async () => {
+        fakeMatchMedia(true);
+        const { wrapper } = await mountCamera();
+        expect(wrapper.find('.mode-toggle').exists()).toBe(true);
+        await wrapper.get('.stub-busy').trigger('click');
+        expect(wrapper.find('.mode-toggle').exists()).toBe(true);
+        await wrapper.get('.stub-capturing').trigger('click');
+        expect(wrapper.find('.mode-toggle').exists()).toBe(false);
+      });
+
+      it('shows the suggested number on the left, for the eye only', async () => {
+        const media = fakeMatchMedia(true);
+        const { wrapper } = await mountCamera();
+        await suggest(wrapper);
+        const left = wrapper.get('.camera-result-preview');
+        expect(left.attributes('aria-hidden')).toBe('true');
+        expect(left.text()).toContain('24');
+        // The card keeps the read-out number, the focus target, with the rest of the card.
+        expect(wrapper.get('.camera-result .result').text()).toContain('24');
+        expect(wrapper.get('.camera-result').find('.btn-save').exists()).toBe(true);
+        media.set(false);
+        await flushPromises();
+        expect(wrapper.find('.camera-result-preview').exists()).toBe(false);
+      });
+
+      it('asks before the back button leaves a running capture', async () => {
+        fakeMatchMedia(true);
+        const { wrapper } = await mountCamera({ from: petPage });
+        await wrapper.get('.stub-capturing').trigger('click');
+        await wrapper.get('.back-btn').trigger('click');
+        await flushPromises();
+        expect(dialog()?.querySelector('.message')?.textContent).toBe(en.tracker.leaveConfirm);
+        expect(router.currentRoute.value.name).toBe('tracker');
+        clickInDialog('.btn-cancel');
+        await flushPromises();
+        expect(isImmersive(wrapper)).toBe(true);
+      });
+
+      it('never touches the system bars on the website', async () => {
+        const media = fakeMatchMedia(true);
+        const { wrapper } = await mountCamera();
+        media.set(false);
+        await flushPromises();
+        wrapper.unmount();
+        await flushPromises();
+        expect(barCalls()).toEqual([0, 0]);
+      });
+
+      describe('system bars in the app', () => {
+        beforeEach(() => {
+          platform.native = true;
+        });
+
+        it('hides them on entering the full screen and shows them on turning back', async () => {
+          const media = fakeMatchMedia(false);
+          await mountCamera();
+          expect(barCalls()).toEqual([0, 0]);
+          media.set(true);
+          await flushPromises();
+          expect(barCalls()).toEqual([1, 0]);
+          media.set(false);
+          await flushPromises();
+          expect(barCalls()).toEqual([1, 1]);
+        });
+
+        it('shows them when another mode leaves the full screen', async () => {
+          fakeMatchMedia(true);
+          const { wrapper } = await mountCamera();
+          expect(barCalls()).toEqual([1, 0]);
+          await wrapper.findAll('.mode-pill')[0].trigger('click');
+          await flushPromises();
+          expect(barCalls()).toEqual([1, 1]);
+        });
+
+        it('shows them when the tracker closes in full screen', async () => {
+          fakeMatchMedia(true);
+          const { wrapper } = await mountCamera();
+          wrapper.unmount();
+          await flushPromises();
+          expect(barCalls()).toEqual([1, 1]);
+        });
+
+        it('leaves them alone when the tracker closes upright', async () => {
+          const { wrapper } = await mountCamera();
+          wrapper.unmount();
+          await flushPromises();
+          expect(barCalls()).toEqual([0, 0]);
+        });
+
+        it('warns when the bars cannot be hidden, and keeps the full screen', async () => {
+          const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+          const failure = new Error('no window');
+          immersiveMode.enter.mockRejectedValueOnce(failure);
+          fakeMatchMedia(true);
+          const { wrapper } = await mountCamera();
+          expect(warn).toHaveBeenCalledExactlyOnceWith('Hiding the system bars failed', failure);
+          expect(isImmersive(wrapper)).toBe(true);
+        });
+
+        it('warns when the bars cannot be shown again', async () => {
+          const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+          const failure = new Error('no window');
+          immersiveMode.exit.mockRejectedValueOnce(failure);
+          const media = fakeMatchMedia(true);
+          const { wrapper } = await mountCamera();
+          media.set(false);
+          await flushPromises();
+          expect(warn).toHaveBeenCalledExactlyOnceWith('Showing the system bars failed', failure);
+          expect(isImmersive(wrapper)).toBe(false);
+        });
+      });
+    });
   });
 
   it('counts taps for 30 seconds and shows breaths per minute', async () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { Pet, Reading } from '../types';
+import { readingSource } from '../utils/measurement';
 import { getRateStatus } from '../utils/rateStatus';
 import { useI18n } from 'vue-i18n';
 
@@ -73,9 +74,14 @@ function formatDate(iso: string) {
                   <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
                 </svg>
               </span>
-              <span v-if="reading.source === 'manual'" class="meta-tag manual" role="img" :aria-label="$t('readingList.manuallyEntered')">
+              <span v-if="readingSource(reading) === 'manual'" class="meta-tag manual" role="img" :aria-label="$t('readingList.manuallyEntered')">
                 <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13" aria-hidden="true">
                   <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+              </span>
+              <span v-if="readingSource(reading) === 'camera'" class="meta-tag camera" role="img" :aria-label="$t('readingList.cameraMeasured')">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13" aria-hidden="true">
+                  <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM9 2 7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3.17L15 2H9zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
                 </svg>
               </span>
             </div>
@@ -193,6 +199,13 @@ function formatDate(iso: string) {
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
+}
+
+/* Neutral with the primary tint: amber is the Elevated badge's colour */
+.meta-tag.camera {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
 }
 
 .reading-right {

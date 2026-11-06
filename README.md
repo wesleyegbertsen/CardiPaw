@@ -8,6 +8,7 @@
 - [Features](#features)
   - [Multiple Pets](#multiple-pets)
   - [Guided Tracking](#guided-tracking)
+  - [Camera counting (experimental)](#camera-counting-experimental)
   - [Readings](#readings)
   - [Charts](#charts)
   - [Home Screen Sparkline](#home-screen-sparkline)
@@ -55,6 +56,16 @@ Add as many pets as you need, each with a name, species, photo, and date of birt
 
 The built-in tracker walks you through a 15-, 30- or 60-second measurement (30 by default, remembered per pet). Tap the button each time your pet takes a breath, and CardiPaw calculates the rate automatically. The screen stays on while you count, where your browser or phone allows it.
 
+### Camera counting (experimental)
+
+Turn on **Camera breath counting** in **Settings → Experimental** and the tracker gets a third mode, **Camera**. Prop the phone up so the camera sees your pet's chest or belly, frame it in the box, and CardiPaw watches the rise and fall for 30 seconds (60 when the reading sits close to a status threshold, or when 30 seconds weren't enough) and suggests a count. The count is a suggestion for you to check against your pet: nothing is saved until you confirm it, and you can measure again or discard it. If you tap along while it watches, you can save your own count instead, as an ordinary guided reading. When the camera can't give a count (the phone moved, too little light or detail, no steady breathing movement) it says why and offers counting by tapping.
+
+Camera readings carry a camera tag in the readings list, the reading view, share links and PDF reports, and they are left out of [trend alerts](#trend-alerts) while the feature is experimental.
+
+Limits: it is tuned for cats and small dogs at rest, counting 9 to 90 breaths per minute (large dogs often breathe more slowly than that); the phone must be propped up, not held; the room should be lit; and a fan, a TV or a stroking hand in the picture confuses it. It has been validated on synthetic scenes so far, which is why it is off by default and labelled experimental.
+
+Privacy: the video is analysed on the phone, frame by frame, and never recorded, stored or sent anywhere. The camera is released as soon as the count ends, is interrupted or you leave the screen. In the Android app, Android asks for the camera permission the first time you allow it.
+
 ### Readings
 
 Every measurement is saved with a timestamp and labelled as **Normal** (≤ 30), **Elevated** (31-35), or **High** (> 35). The readings list loads incrementally so it stays fast even with hundreds of entries.
@@ -82,7 +93,7 @@ CardiPaw keeps an eye on the trend for you. When a pet's resting breathing rate 
 - on **at least 2 of the last 3 days**, the rate was **20% and 4 breaths/min or more** above the pet's usual rate, or
 - on **at least 2 of the last 3 days**, the rate was above the pet's Normal ceiling (see [Status Thresholds](#status-thresholds), or the pet's own ceiling when one is set).
 
-Each day counts once, using the median (middle value) of that day's readings, so measuring again on the same day doesn't count twice. The usual rate is the median of the day values over the 28 days before the last 3, and it needs readings on at least 7 of those 28 days; the Normal-ceiling rule works without it.
+Each day counts once, using the median (middle value) of that day's readings, so measuring again on the same day doesn't count twice. The usual rate is the median of the day values over the 28 days before the last 3, and it needs readings on at least 7 of those 28 days; the Normal-ceiling rule works without it. Readings counted with the camera (experimental, see [Camera counting](#camera-counting-experimental)) are left out of both windows.
 
 The alert goes away on its own once readings settle. With too few readings nothing is shown, so no alert doesn't always mean all is well. Mixing sleeping and resting readings can also make the rate look higher, because the rate is usually lower during sleep. The badge's details in the app explain all of this too.
 
@@ -274,6 +285,8 @@ Whichever you use, check the signing certificate of a new APK (see **Checking an
 - Reminders use the phone's default notification sound and vibrate (as far as its sound mode allows). Earlier versions used a "Measuring reminders" category that never vibrated; the update replaces it with a new one of the same name, so changes you made to the old one in Android's notification settings (turning it off, a custom sound, vibration turned on by hand) are reset once. Reminders from the old version that are still showing, or already due, when CardiPaw is first opened after the update are cleared once.
 - Besides CardiPaw's "Measuring reminders", Android's notification settings for the app also list a "Default" channel; it comes with the notifications plugin.
 
+**Camera:** the app also declares the `CAMERA` permission, used only by the opt-in [camera counting](#camera-counting-experimental); Android asks you the first time you allow it, and the image is analysed on the phone and never stored or sent. The camera is declared optional, so phones without one can still install the app. If CardiPaw is ever listed on Google Play, its data-safety form would say: camera permission declared, no data collected, no data shared.
+
 ## Releases & Versioning
 
 CardiPaw follows [Semantic Versioning](https://semver.org/). The version is shown at the bottom of the About section on the Settings page and links to its release notes.
@@ -317,6 +330,8 @@ npm run build
 ```
 
 CI runs all of these, plus `npm audit --omit=dev --audit-level=high`, on every PR and every push to `main`, and the Release workflow runs them again before it deploys. Tests live next to the code they cover as `*.test.ts` (`*.test.mjs` for the Node scripts in `scripts/`) and use [Vitest](https://vitest.dev/); IndexedDB is provided by [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) and components are mounted with [Vue Test Utils](https://test-utils.vuejs.org/). Tests run in [happy-dom](https://github.com/capricorn86/happy-dom), except the pure-logic files listed in the `node` project in `vitest.config.ts`, which run in plain Node.
+
+Research prototypes live in `research/` (currently the camera-based breath counting exploration for [#130](https://github.com/wesleyegbertsen/CardiPaw/issues/130), see [`research/camera-breath/README.md`](research/camera-breath/README.md)). CI type-checks, lints and tests them like `scripts/`. The pure signal modules the app's experimental camera counting uses live in `src/camera/`; `research/` keeps the ffmpeg reader, the sweep and the scoring, which are never bundled.
 
 A Prettier config is included for new code (`npm run format:check`, `npm run format`). The existing code has not been reformatted yet, so CI does not enforce it.
 

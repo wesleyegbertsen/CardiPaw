@@ -146,3 +146,8 @@ dist-native
 *.jks
 *.keystore
 keystore.properties
+
+# Camera-breath research (#130): recordings, sidecars and sweep output are never committed.
+# (`out` is already matched by the Next.js line above; listed here so the intent is explicit.)
+research/camera-breath/clips/
+research/camera-breath/out/

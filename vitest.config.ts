@@ -13,12 +13,14 @@ process.env.TZ = 'UTC';
 // docblock: DOMPurify needs jsdom.
 const NODE_TESTS = [
   'scripts/**/*.test.mjs',
+  'research/**/*.test.ts',
+  'src/camera/{signal,estimate,motion,motion.scene,synth,capture}.test.ts',
   'src/composables/{useAudioBeep,useHaptics}.test.ts',
   'src/i18n/locales.test.ts',
   'src/native/csp.test.ts',
   'src/services/{db,githubRelease}.test.ts',
   'src/stores/stores.test.ts',
-  'src/test/androidResources.test.ts',
+  'src/test/{androidResources,permissionsPolicy}.test.ts',
   'src/utils/{age,chartWindow,date,measurement,pdfText,petInitial,rateStatus,reminderFormat,reminderSchedule,shareCodec,trend,version}.test.ts',
 ];
 

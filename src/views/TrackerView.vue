@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, useId } from 'vue';
+import { ref, computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, useId, watch } from 'vue';
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 import { returnTo } from '../router/returnTo';
 import { usePetsStore } from '../stores/pets';
@@ -9,6 +9,11 @@ import { useHaptics } from '../composables/useHaptics';
 import { useTrackerPrefs } from '../composables/useTrackerPrefs';
 import { useWakeLock } from '../composables/useWakeLock';
 import { useOnboarding } from '../composables/useOnboarding';
+import { isCameraSupported, useCameraOptIn } from '../composables/useCameraOptIn';
+import { useLandscapeTouch } from '../composables/useLandscapeTouch';
+import { ImmersiveMode } from '../native/immersiveMode';
+import { isNative } from '../utils/platform';
+import type { CameraResult } from '../composables/useCameraBreath';
 import { LazyRichTextEditor as RichTextEditor, preloadRichTextEditor } from '../components/LazyRichTextEditor';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import OnboardingModal from '../components/OnboardingModal.vue';
@@ -16,6 +21,10 @@ import RestStateToggle from '../components/RestStateToggle.vue';
 import SlideToggle from '../components/SlideToggle.vue';
 import { getRateStatus, isValidRate } from '../utils/rateStatus';
 import { MEASUREMENT_DURATIONS, breathsPerMinute, type MeasurementSeconds } from '../utils/measurement';
+import type { Reading } from '../types';
+
+// Lazy: the camera's signal code stays out of the main chunk until the Camera pill is tapped.
+const CameraCapture = defineAsyncComponent(() => import('../components/CameraCapture.vue'));
 
 const route = useRoute();
 const router = useRouter();
@@ -29,12 +38,20 @@ const wakeLock = useWakeLock();
 const petId = route.params.id as string;
 const pet = computed(() => petsStore.getPetById(petId));
 const { soundEnabled, vibrationEnabled, durationSeconds } = useTrackerPrefs(petId);
-const { hasSeenOnboarding, markSeen } = useOnboarding();
+const { hasSeenOnboarding, markSeen, hasSeenCameraOnboarding, markCameraSeen } = useOnboarding();
 const showOnboarding = ref(!hasSeenOnboarding.value);
+// Which steps the modal shows: the camera's in camera mode, the tap steps otherwise.
+const onboardingVariant = ref<'tap' | 'camera'>('tap');
+
+function openOnboarding() {
+  onboardingVariant.value = mode.value === 'camera' ? 'camera' : 'tap';
+  showOnboarding.value = true;
+}
 
 function closeOnboarding() {
   showOnboarding.value = false;
-  markSeen();
+  if (onboardingVariant.value === 'camera') markCameraSeen();
+  else markSeen();
   // When onboarding opened by itself on mount there is no focus to restore;
   // start keyboard users on the heart instead of <body>.
   nextTick(() => {
@@ -43,9 +60,28 @@ function closeOnboarding() {
 }
 
 type Phase = 'idle' | 'running' | 'done';
-type Mode = 'guided' | 'manual';
+type Mode = 'guided' | 'manual' | 'camera';
 const phase = ref<Phase>('idle');
 const mode = ref<Mode>('guided');
+// Experimental: the Camera pill needs the Settings opt-in and getUserMedia.
+const { enabled: cameraEnabled } = useCameraOptIn();
+const modes = computed<Mode[]>(() =>
+  cameraEnabled.value && isCameraSupported() ? ['guided', 'manual', 'camera'] : ['guided', 'manual'],
+);
+// The camera's suggestion; saved only when the owner confirms it.
+const cameraResult = ref<CameraResult | null>(null);
+// Measure again remounts the capture with the camera opening by itself.
+const cameraReopen = ref(false);
+// Placing or capturing: the mode bar would cover the preview.
+const cameraBusy = ref(false);
+// Capturing only: a running count the leave guard asks about.
+const cameraCapturing = ref(false);
+// A phone propped sideways to film the pet: the camera mode fills the screen, the preview on
+// the left and the steps on the right, over the app header and the bottom nav.
+const landscapeTouch = useLandscapeTouch();
+const immersive = computed(() => mode.value === 'camera' && landscapeTouch.value);
+const saveChoice = ref<'camera' | 'taps'>('camera');
+const saveChoiceLabelId = useId();
 // Length of the current measurement: the pet's chosen length, fixed when it starts.
 const runSeconds = ref<MeasurementSeconds>(durationSeconds.value);
 const timeLeft = ref<number>(durationSeconds.value);
@@ -76,7 +112,35 @@ function switchMode(next: Mode) {
   notes.value = '';
   manualRate.value = 0;
   saveError.value = false;
+  cameraResult.value = null;
+  cameraReopen.value = false;
+  cameraBusy.value = false;
+  cameraCapturing.value = false;
+  saveChoice.value = 'camera';
+  // The camera steps open by themselves the first time, like the tap steps on the first visit.
+  if (next === 'camera' && !hasSeenCameraOnboarding.value) openOnboarding();
 }
+
+// Like closeOnboarding: start keyboard and screen-reader users on the heart, not on <body>.
+function tapInstead() {
+  switchMode('guided');
+  nextTick(() => heartRef.value?.focus());
+}
+
+function measureAgain() {
+  cameraResult.value = null;
+  cameraReopen.value = true;
+  saveError.value = false;
+  saveChoice.value = 'camera';
+}
+
+// Like the guided done state: park focus on the suggestion so it is read out.
+// Not while the leave dialog is open: focus stays in it, and Cancel moves it here.
+watch(cameraResult, (r) => {
+  if (r) nextTick(() => {
+    if (!answerLeave.value) resultRef.value?.focus();
+  });
+});
 
 const resultRate = computed(() => breathsPerMinute(clickCount.value, runSeconds.value));
 
@@ -155,21 +219,40 @@ function triggerPulse() {
   setTimeout(() => { isPulsing.value = false; }, 180);
 }
 
+type MeasuredFields = Pick<Reading, 'rate' | 'clickCount' | 'source' | 'durationSeconds'>;
+
+// What the reading records about how it was measured; null in camera mode without a suggestion.
+function measuredFields(): MeasuredFields | null {
+  switch (mode.value) {
+    case 'manual':
+      return { rate: manualRate.value, clickCount: 0, source: 'manual', durationSeconds: undefined };
+    case 'camera': {
+      const cam = cameraResult.value;
+      if (!cam) return null;
+      // A tapped count saved from the camera screen is an ordinary guided reading over the camera's window.
+      if (cam.taps !== null && saveChoice.value === 'taps') {
+        return { rate: breathsPerMinute(cam.taps, cam.seconds), clickCount: cam.taps, source: undefined, durationSeconds: cam.seconds };
+      }
+      return { rate: cam.rate, clickCount: 0, source: 'camera', durationSeconds: cam.seconds };
+    }
+    case 'guided':
+      return { rate: resultRate.value, clickCount: clickCount.value, source: undefined, durationSeconds: runSeconds.value };
+  }
+}
+
 async function saveReading() {
   if (saving.value || (mode.value === 'manual' && !manualValid.value)) return;
   saving.value = true;
   saveError.value = false;
   try {
-    const isManual = mode.value === 'manual';
+    const measured = measuredFields();
+    if (!measured) return;
     await readingsStore.addReading({
       petId,
       date: new Date().toISOString(),
-      rate: isManual ? manualRate.value : resultRate.value,
-      clickCount: isManual ? 0 : clickCount.value,
+      ...measured,
       restState: restState.value,
       notes: notes.value || undefined,
-      source: isManual ? 'manual' : undefined,
-      durationSeconds: isManual ? undefined : runSeconds.value,
     });
     // The user confirmed leaving while this saved: stay wherever they went, also when
     // that page is still opening and this view is not gone yet.
@@ -205,13 +288,14 @@ function leaveForPet() {
   returnTo(router, { name: 'pet', params: { id: petId } });
 }
 
-// What leaving would throw away: a count running or finished but not saved, or a manual
-// entry with anything filled in (v-model.number gives '' for a cleared rate).
-const hasUnsaved = computed(() =>
-  isManualMode.value
-    ? !!manualRate.value || notes.value !== '' || restState.value !== undefined
-    : phase.value !== 'idle',
-);
+// What leaving would throw away: a count running or finished but not saved, a manual
+// entry with anything filled in (v-model.number gives '' for a cleared rate), or a camera
+// capture running or its suggestion not confirmed (placing or an abstain loses nothing).
+const hasUnsaved = computed(() => {
+  if (isManualMode.value) return !!manualRate.value || notes.value !== '' || restState.value !== undefined;
+  if (mode.value === 'camera') return cameraCapturing.value || cameraResult.value !== null;
+  return phase.value !== 'idle';
+});
 
 // The leave dialog's Discard sits over the heart on small screens: after a stray back
 // swipe mid-count, the next breath tap would land on it and throw the count away.
@@ -247,7 +331,8 @@ function stayOnTracker() {
   // The dialog hands focus back to where it was; if the count ended behind it, that was
   // the heart, which is gone. Park it on the result, as the end of a count does.
   nextTick(() => {
-    if (phase.value !== 'done' || document.activeElement !== document.body) return;
+    const ended = phase.value === 'done' || cameraResult.value !== null;
+    if (!ended || document.activeElement !== document.body) return;
     resultRef.value?.focus();
   });
 }
@@ -267,6 +352,20 @@ function reset() {
   saveError.value = false;
   nextTick(() => heartRef.value?.focus());
 }
+
+// In the app the system bars go too. Not requestFullscreen on the website: it needs a tap,
+// and turning the phone is not one; covering the app's own chrome is the full screen there.
+let barsHidden = false;
+async function hideSystemBars(hide: boolean) {
+  if (!isNative() || hide === barsHidden) return;
+  barsHidden = hide;
+  try {
+    await (hide ? ImmersiveMode.enter() : ImmersiveMode.exit());
+  } catch (e) {
+    console.warn(hide ? 'Hiding the system bars failed' : 'Showing the system bars failed', e);
+  }
+}
+watch(immersive, (on) => void hideSystemBars(on), { immediate: true });
 
 let unmounted = false;
 
@@ -291,12 +390,13 @@ onMounted(async () => {
 
 onUnmounted(() => {
   unmounted = true;
+  void hideSystemBars(false);
   if (intervalId.value !== null) clearInterval(intervalId.value);
 });
 </script>
 
 <template>
-  <div class="tracker" :class="`phase-${phase}`">
+  <div class="tracker" :class="[`phase-${phase}`, { immersive }]">
     <header class="tracker-header">
       <button class="back-btn" @click="goBack" :aria-label="$t('common.back')">
         <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
@@ -304,10 +404,10 @@ onUnmounted(() => {
         </svg>
       </button>
       <span class="pet-name-label">{{ pet?.name }}</span>
-      <button class="help-btn" @click="showOnboarding = true" :aria-label="$t('onboarding.howItWorks')">?</button>
+      <button class="help-btn" @click="openOnboarding" :aria-label="$t('onboarding.howItWorks')">?</button>
     </header>
 
-    <OnboardingModal v-if="showOnboarding" @close="closeOnboarding" />
+    <OnboardingModal v-if="showOnboarding" :variant="onboardingVariant" @close="closeOnboarding" />
 
     <ConfirmDialog
       v-if="answerLeave"
@@ -323,11 +423,21 @@ onUnmounted(() => {
     <!-- Needs the pet: its thresholds rate a manual entry and saving files the reading under it. -->
     <div v-else-if="pet" class="tracker-main">
     <!-- Mode toggle: absolutely positioned so it overlays the body without affecting its height -->
-    <div v-if="phase === 'idle'" class="mode-toggle-bar">
+    <div v-if="phase === 'idle' && !cameraCapturing && !cameraResult" class="mode-toggle-bar">
       <div class="mode-toggle" role="group" :aria-label="$t('tracker.modeLabel')">
-        <div class="mode-toggle-indicator" :class="{ 'is-manual': isManualMode }" aria-hidden="true"></div>
-        <button class="mode-pill" :class="{ active: !isManualMode }" :aria-pressed="!isManualMode" @click="switchMode('guided')">{{ $t('tracker.guided') }}</button>
-        <button class="mode-pill" :class="{ active: isManualMode }" :aria-pressed="isManualMode" @click="switchMode('manual')">{{ $t('tracker.manual') }}</button>
+        <div
+          class="mode-toggle-indicator"
+          :style="{ '--count': modes.length, '--index': modes.indexOf(mode) }"
+          aria-hidden="true"
+        ></div>
+        <button
+          v-for="m in modes"
+          :key="m"
+          class="mode-pill"
+          :class="{ active: mode === m }"
+          :aria-pressed="mode === m"
+          @click="switchMode(m)"
+        >{{ $t('tracker.' + m) }}</button>
       </div>
     </div>
 
@@ -366,6 +476,79 @@ onUnmounted(() => {
         </button>
         <button class="btn-discard" @click="discard">{{ $t('common.discard') }}</button>
       </div>
+    </div>
+
+    <!-- Camera (experimental): the capture, then its suggestion as a card the owner confirms -->
+    <div v-else-if="mode === 'camera'" class="tracker-body done-body camera-body" :class="{ 'with-bar': !cameraCapturing && !cameraResult, live: cameraBusy && !cameraResult }">
+      <CameraCapture
+        v-if="!cameraResult"
+        :pet="pet"
+        :auto-open="cameraReopen"
+        :landscape="immersive"
+        :hold="showOnboarding"
+        @result="cameraResult = $event"
+        @tap-instead="tapInstead"
+        @busy="cameraBusy = $event"
+        @capturing="cameraCapturing = $event"
+      />
+      <template v-else>
+        <!-- Sideways the number takes the camera's place; the card keeps the read-out copy -->
+        <div v-if="immersive" class="camera-result-preview" aria-hidden="true">
+          <div class="result-number">{{ cameraResult.rate }}</div>
+          <div class="result-label">{{ $t('common.breathsPerMin') }}</div>
+        </div>
+        <!-- Upright it gives way (display: contents) and the card is one column -->
+        <div class="camera-result">
+          <span class="experimental-chip">{{ $t('camera.experimental') }}</span>
+          <p class="result-title">{{ $t('camera.resultTitle') }}</p>
+          <div ref="resultRef" class="result" tabindex="-1" aria-live="polite" aria-atomic="true">
+            <div class="result-number">{{ cameraResult.rate }}</div>
+            <div class="result-label">{{ $t('common.breathsPerMin') }}</div>
+          </div>
+          <span class="rate-badge" :class="getRateStatus(cameraResult.rate, pet).cssClass">
+            {{ $t('status.' + getRateStatus(cameraResult.rate, pet).cssClass) }}
+          </span>
+          <p class="result-note">
+            {{ $t('camera.resultNote', { seconds: cameraResult.seconds, lo: cameraResult.interval[0], hi: cameraResult.interval[1] }) }}
+          </p>
+          <div v-if="cameraResult.taps !== null" class="save-choice" role="group" :aria-labelledby="saveChoiceLabelId">
+            <span :id="saveChoiceLabelId" class="toggle-label">
+              {{ $t('camera.yourCount', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}
+            </span>
+            <div class="length-toggle">
+              <button
+                type="button"
+                :aria-pressed="saveChoice === 'camera'"
+                class="length-pill"
+                :class="{ active: saveChoice === 'camera' }"
+                @click="saveChoice = 'camera'"
+              >{{ $t('camera.saveCamera') }}</button>
+              <button
+                type="button"
+                :aria-pressed="saveChoice === 'taps'"
+                class="length-pill"
+                :class="{ active: saveChoice === 'taps' }"
+                @click="saveChoice = 'taps'"
+              >{{ $t('camera.saveTaps', { n: breathsPerMinute(cameraResult.taps, cameraResult.seconds) }) }}</button>
+            </div>
+          </div>
+
+          <RestStateToggle v-model="restState" />
+
+          <div class="notes-wrapper">
+            <RichTextEditor v-model="notes" :label="$t('reading.notesLabel')" />
+          </div>
+
+          <div class="done-actions">
+            <p v-if="saveError" class="save-error" role="alert">{{ $t('tracker.saveError') }}</p>
+            <button class="btn-save" @click="saveReading" :disabled="saving">
+              {{ saving ? $t('common.saving') : $t('camera.confirm') }}
+            </button>
+            <button class="btn-retry" @click="measureAgain">{{ $t('camera.measureAgain') }}</button>
+            <button class="btn-discard" @click="discard">{{ $t('common.discard') }}</button>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- Guided: idle and running share one body so the heart button (and keyboard focus on it) persists -->
@@ -867,20 +1050,18 @@ onUnmounted(() => {
   gap: 0;
 }
 
+/* Sized and placed by the pill count and the active index (set inline), for any number of pills */
 .mode-toggle-indicator {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: calc(50% - 3px);
+  width: calc((100% - 6px) / var(--count));
   height: calc(100% - 6px);
   background: var(--color-primary);
   border-radius: var(--radius-full);
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(calc(var(--index) * 100%));
   pointer-events: none;
-}
-
-.mode-toggle-indicator.is-manual {
-  transform: translateX(100%);
 }
 
 .mode-pill {
@@ -906,6 +1087,60 @@ onUnmounted(() => {
 .manual-body {
   padding-top: 88px; /* bar height + breathing room — centers content in remaining space */
   overflow-y: auto;
+}
+
+/* Camera body: the bar is gone while placing/capturing, so the preview gets the top of the screen */
+.camera-body {
+  overflow-y: auto;
+}
+
+.camera-body.with-bar {
+  padding-top: 88px;
+}
+
+/* The live preview (placing and capturing) is the tallest step: 12 px under the bar (64 px) or
+   the header and above the nav, so it fits a 720 px tall phone. Centred like the other modes
+   while it fits; `safe` starts it from the top once it does not, instead of cutting the top off */
+.camera-body.live {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.camera-body.live {
+  justify-content: safe center;
+}
+
+.camera-body.live.with-bar {
+  padding-top: 76px;
+}
+
+.result-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.save-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+/* The length selector's bordered track, but the labels are longer than "30 s": on a
+   narrow phone a pill may take two lines rather than push the track off the card. */
+.save-choice .length-toggle {
+  max-width: 100%;
+}
+.save-choice .length-pill {
+  flex: 0 1 auto;
+  min-width: 0;
+  height: auto;
+  min-height: 30px;
+  padding: 4px 14px;
+  white-space: normal;
+  line-height: 1.3;
+  text-align: center;
 }
 
 /* Manual entry form */
@@ -964,5 +1199,135 @@ onUnmounted(() => {
 .rate-badge.danger {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
+}
+
+.camera-result {
+  display: contents;
+}
+
+/*
+ * Sideways in camera mode: a layer over the app header, the bottom nav (100) and the update
+ * notice (450), under the dialogs (500 and up) so the leave prompt and the help still show.
+ * Two columns: the 4:3 preview as tall as the screen allows (at most 60% of its width), and
+ * the header, the mode pills and the steps beside it. The tracker's wrappers give way so
+ * their parts land in the grid; CameraCapture puts its regions in the preview and panel areas.
+ */
+.tracker.immersive {
+  --immersive-pad: 8px;
+  --preview-width: min(
+    calc((100vh - var(--safe-top) - var(--safe-bottom) - 2 * var(--immersive-pad)) * 4 / 3),
+    60vw
+  );
+  --preview-width: min(
+    calc((100dvh - var(--safe-top) - var(--safe-bottom) - 2 * var(--immersive-pad)) * 4 / 3),
+    60vw
+  );
+  position: fixed;
+  inset: 0;
+  z-index: 480;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--preview-width) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    'preview header'
+    'preview modes'
+    'preview panel';
+  column-gap: 16px;
+  padding: calc(var(--safe-top) + var(--immersive-pad)) calc(var(--safe-right) + 12px)
+    calc(var(--safe-bottom) + var(--immersive-pad)) calc(var(--safe-left) + 12px);
+}
+
+.immersive .tracker-main,
+.immersive .camera-body {
+  display: contents;
+}
+
+.immersive .tracker-header {
+  grid-area: header;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.immersive .back-btn,
+.immersive .help-btn {
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+}
+
+.immersive .pet-name-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.immersive .mode-toggle-bar {
+  grid-area: modes;
+  position: static;
+  padding: 4px 0 8px;
+  background: none;
+  border: 0;
+}
+
+
+.immersive .camera-result-preview {
+  grid-area: preview;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.immersive .camera-result-preview .result-number {
+  font-size: 96px;
+}
+
+.immersive .camera-result {
+  grid-area: panel;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 0 8px;
+}
+
+/* Centred while it fits, from the top once it scrolls */
+.immersive .camera-result::before,
+.immersive .camera-result::after {
+  content: '';
+  margin: auto 0;
+}
+
+/* The number is on the left; the card's copy stays for the read-out and the focus */
+.immersive .camera-result .result {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.immersive .camera-result .notes-wrapper,
+.immersive .camera-result .done-actions {
+  max-width: none;
+}
+
+.immersive .save-choice .length-pill,
+.immersive :deep(.rest-btn) {
+  min-height: 44px;
 }
 </style>

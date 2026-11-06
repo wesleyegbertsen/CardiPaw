@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { blockStorage } from '../test/blockStorage';
 
 const STORAGE_KEY = 'cardipaw-onboarding-seen';
+const CAMERA_KEY = 'cardipaw-camera-onboarding-seen';
 
 // The flag is read once, when the module is first imported.
 async function load() {
@@ -30,6 +31,25 @@ describe('useOnboarding', () => {
     first.markSeen();
     expect(second.hasSeenOnboarding.value).toBe(true);
     expect(localStorage.getItem(STORAGE_KEY)).toBe('1');
+  });
+
+  it('keeps a separate flag for the camera steps', async () => {
+    localStorage.setItem(STORAGE_KEY, '1');
+    const useOnboarding = await load();
+    const first = useOnboarding();
+    const second = useOnboarding();
+    expect(first.hasSeenOnboarding.value).toBe(true);
+    expect(first.hasSeenCameraOnboarding.value).toBe(false);
+    first.markCameraSeen();
+    expect(second.hasSeenCameraOnboarding.value).toBe(true);
+    expect(localStorage.getItem(CAMERA_KEY)).toBe('1');
+  });
+
+  it('reads the saved camera flag', async () => {
+    localStorage.setItem(CAMERA_KEY, '1');
+    const { hasSeenOnboarding, hasSeenCameraOnboarding } = (await load())();
+    expect(hasSeenCameraOnboarding.value).toBe(true);
+    expect(hasSeenOnboarding.value).toBe(false);
   });
 
   it('loads and marks seen for this session when site data is blocked', async () => {

@@ -21,8 +21,8 @@ export interface Reading {
   clickCount: number; // taps during a guided measurement; 0 for manual entries
   restState?: 'resting' | 'sleeping';
   notes?: string;
-  source?: 'manual'; // absent = guided measurement
-  // Guided only: how long it ran. Absent on guided readings saved before it was selectable (30 s).
+  source?: 'manual' | 'camera'; // absent = guided measurement
+  // Guided and camera: how long it ran. Absent on guided readings saved before it was selectable (30 s).
   durationSeconds?: MeasurementSeconds;
 }
 
