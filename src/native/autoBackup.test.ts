@@ -47,13 +47,25 @@ describe('installAutoBackup', () => {
     await vi.waitFor(() => expect(backupIfDue).toHaveBeenCalledOnce());
   });
 
-  it('backs up after data changes, when due on resume, and flushes on pause', () => {
+  it('checks the folder again before a backup that is due on resume', async () => {
+    mockNative();
+    installAutoBackup();
+    await vi.waitFor(() => expect(backupIfDue).toHaveBeenCalledOnce());
+    vi.mocked(probeFolder).mockClear();
+    vi.mocked(backupIfDue).mockClear();
+    const probe = deferred<void>();
+    vi.mocked(probeFolder).mockReturnValueOnce(probe.promise);
+    listener('resume')();
+    expect(probeFolder).toHaveBeenCalledOnce();
+    expect(backupIfDue).not.toHaveBeenCalled();
+    probe.resolve();
+    await vi.waitFor(() => expect(backupIfDue).toHaveBeenCalledOnce());
+  });
+
+  it('backs up after data changes and flushes on pause', () => {
     mockNative();
     installAutoBackup();
     expect(onDataChanged).toHaveBeenCalledWith(noteDataChanged);
-    vi.mocked(backupIfDue).mockClear();
-    listener('resume')();
-    expect(backupIfDue).toHaveBeenCalledOnce();
     listener('pause')();
     expect(flushPendingBackup).toHaveBeenCalledOnce();
   });
