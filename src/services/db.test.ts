@@ -292,6 +292,38 @@ describe('exportAllData / importAllData', () => {
     expect(await other.getAllNotes()).toEqual(exported.notes);
   });
 
+  it('exports one snapshot: a write from another tab lands before or after all of it', async () => {
+    await db.savePet(pet('a'));
+    await db.saveReading(reading('r1', 'a'));
+    // A second connection, as another tab of the website has.
+    const otherTab = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open('cardipaw');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const proto = Object.getPrototypeOf(otherTab) as IDBDatabase;
+    const transaction = proto.transaction;
+    let injected = false;
+    vi.spyOn(proto, 'transaction').mockImplementation(function (
+      this: IDBDatabase,
+      ...args: Parameters<IDBDatabase['transaction']>
+    ) {
+      const tx = transaction.apply(this, args);
+      // Right after the export starts reading, the other tab deletes the pet with its reading.
+      if (!injected && this !== otherTab) {
+        injected = true;
+        const write = transaction.call(otherTab, ['pets', 'readings', 'notes'], 'readwrite');
+        write.objectStore('pets').delete('a');
+        write.objectStore('readings').delete('r1');
+      }
+      return tx;
+    });
+    const exported = await db.exportAllData();
+    otherTab.close();
+    // Before the fix: the pet without its reading.
+    expect(exported.readings).toHaveLength(exported.pets.length);
+  });
+
   describe('rolls back and keeps existing data when a record cannot be stored', () => {
     const existing = async () => {
       await db.savePet(pet('old'));

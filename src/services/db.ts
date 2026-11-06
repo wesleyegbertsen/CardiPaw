@@ -132,15 +132,17 @@ export async function deletePetCascade(id: string): Promise<void> {
   }
 }
 
+/** One read-only transaction over all three stores: a write can't land between them. */
 export async function exportAllData(): Promise<ExportPayload> {
-  const [pets, readings, notes] = await Promise.all([getAllPets(), getAllReadings(), getAllNotes()]);
-  return {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    pets,
-    readings,
-    notes,
-  };
+  const db = await getDb();
+  const tx = db.transaction(['pets', 'readings', 'notes'], 'readonly');
+  const [pets, readings, notes] = await Promise.all([
+    tx.objectStore('pets').getAll(),
+    tx.objectStore('readings').getAll(),
+    tx.objectStore('notes').getAll(),
+    tx.done,
+  ]);
+  return { version: 1, exportedAt: new Date().toISOString(), pets, readings, notes };
 }
 
 export async function closeAndDeleteDatabase(): Promise<void> {
