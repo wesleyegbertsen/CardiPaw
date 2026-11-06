@@ -475,5 +475,12 @@
     "summaryBlocked": "Rappels en pause : notifications désactivées",
     "applyError": "Vos paramètres ont été enregistrés, mais les rappels n'ont pas pu être programmés. Veuillez réessayer.",
     "save": "Enregistrer"
+  },
+  "widget": {
+    "todayAt": "Mesuré aujourd'hui à {time}",
+    "petMissing": "Cet animal a été supprimé. Appuyez pour en choisir un autre.",
+    "more": "+{n} autre | +{n} autres",
+    "a11yReading": "{name} : {rate} respirations par minute, {status}. {age}.",
+    "a11yNoReadings": "{name} : {age}."
   }
 }

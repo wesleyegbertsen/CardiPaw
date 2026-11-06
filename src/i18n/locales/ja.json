@@ -475,5 +475,12 @@
     "summaryBlocked": "リマインダー停止中：通知がオフです",
     "applyError": "設定は保存されましたが、リマインダーを設定できませんでした。もう一度お試しください。",
     "save": "保存"
+  },
+  "widget": {
+    "todayAt": "本日{time}に測定",
+    "petMissing": "このペットは削除されました。タップして別のペットを選んでください。",
+    "more": "ほか{n}匹",
+    "a11yReading": "{name}：1分あたり{rate}回、{status}。{age}。",
+    "a11yNoReadings": "{name}：{age}。"
   }
 }

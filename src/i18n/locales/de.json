@@ -475,5 +475,12 @@
     "summaryBlocked": "Erinnerungen pausiert: Benachrichtigungen sind aus",
     "applyError": "Deine Einstellungen wurden gespeichert, aber die Erinnerungen konnten nicht geplant werden. Bitte versuche es erneut.",
     "save": "Speichern"
+  },
+  "widget": {
+    "todayAt": "Heute um {time} gemessen",
+    "petMissing": "Dieses Tier wurde entfernt. Tippe, um ein anderes zu wählen.",
+    "more": "+{n} weiteres | +{n} weitere",
+    "a11yReading": "{name}: {rate} Atemzüge pro Minute, {status}. {age}.",
+    "a11yNoReadings": "{name}: {age}."
   }
 }
