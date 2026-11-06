@@ -108,7 +108,7 @@ jobs:
     name: Sign and verify APK
     needs: build
     runs-on: ubuntu-latest
-    # Holds the signing secrets; restricted to main (see README, "Release signing").
+    # Holds the signing secrets; restricted to main (see docs/releasing.md, "Release signing").
     environment: android-signing
     outputs:
       cert-sha256: ${{ steps.verify.outputs.cert-sha256 }}

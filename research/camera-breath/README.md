@@ -2,8 +2,9 @@
 
 Prototype for estimating a pet's breathing rate from a propped-phone video, exploring
 [#130](https://github.com/wesleyegbertsen/CardiPaw/issues/130). The signal chain lives in `src/camera/`
-and is used by the app's experimental camera counting (opt-in, see the main README); this
-folder keeps the CLI, the sweep and the scoring.
+and is used by the app's experimental camera counting (opt-in, see
+[docs/features.md](../../docs/features.md#camera-counting-experimental)); this folder keeps the
+CLI, the sweep and the scoring.
 
 ## 1. What this is
 
