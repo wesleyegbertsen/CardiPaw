@@ -1,6 +1,6 @@
 # Contributing to CardiPaw
 
-Thanks for helping! Bugs and ideas go in [issues](https://github.com/wesleyegbertsen/CardiPaw/issues). For code, open a PR against `main` and fill in the [PR template](.github/pull_request_template.md): a summary, release notes, the changes and how you verified them.
+Thanks for helping! Bugs and ideas go in [issues](https://github.com/wesleyegbertsen/CardiPaw/issues); security problems don't: see [SECURITY.md](SECURITY.md). For code, open a PR against `main` and fill in the [PR template](.github/pull_request_template.md): a summary, release notes, the changes and how you verified them.
 
 When a PR changes how a feature works, update its section in [docs/features.md](docs/features.md) or [docs/android.md](docs/android.md), and its README bullet if it has one, in the same PR.
 
