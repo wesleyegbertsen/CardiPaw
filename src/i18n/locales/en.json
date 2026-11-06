@@ -475,5 +475,9 @@
     "summaryBlocked": "Reminders paused: notifications are off",
     "applyError": "Your settings were saved, but the reminders couldn't be scheduled. Please try again.",
     "save": "Save"
+  },
+  "shortcuts": {
+    "longLabel": "Measure {name}",
+    "petDeleted": "This pet was deleted"
   }
 }

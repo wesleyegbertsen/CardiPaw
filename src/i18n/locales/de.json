@@ -475,5 +475,9 @@
     "summaryBlocked": "Erinnerungen pausiert: Benachrichtigungen sind aus",
     "applyError": "Deine Einstellungen wurden gespeichert, aber die Erinnerungen konnten nicht geplant werden. Bitte versuche es erneut.",
     "save": "Speichern"
+  },
+  "shortcuts": {
+    "longLabel": "{name} messen",
+    "petDeleted": "Dieses Tier wurde gelöscht"
   }
 }

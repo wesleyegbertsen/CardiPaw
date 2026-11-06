@@ -4,6 +4,7 @@ import { router } from './router';
 import { installBackButton } from './native/backButton';
 import { cleanUpOldExports } from './native/exportCleanup';
 import { installReminders } from './native/reminders';
+import { installShortcuts } from './native/shortcuts';
 import { installUpdateCheck } from './native/updateCheck';
 import { i18n } from './i18n';
 
@@ -14,6 +15,11 @@ vi.mock('./native/reminders', () => ({
   installReminders: vi.fn(),
   syncReminders: vi.fn(async () => {}),
 }));
+// syncShortcuts too: the stores import it.
+vi.mock('./native/shortcuts', () => ({
+  installShortcuts: vi.fn(),
+  syncShortcuts: vi.fn(async () => {}),
+}));
 vi.mock('./native/updateCheck', () => ({ installUpdateCheck: vi.fn() }));
 
 // main.ts mounts the app as an import side effect, which runs once per file:
@@ -22,7 +28,7 @@ let app: App | undefined;
 // Auto-unmount only tracks wrappers from mount(); main.ts uses createApp.
 afterEach(() => app?.unmount());
 
-it('mounts the app on #app with pinia, the router, i18n, the back button, export cleanup, reminders and the update check', async () => {
+it('mounts the app on #app with pinia, the router, i18n, the back button, export cleanup, reminders, launcher shortcuts and the update check', async () => {
   document.body.innerHTML = '<div id="app"></div>';
   await import('./main');
 
@@ -35,6 +41,7 @@ it('mounts the app on #app with pinia, the router, i18n, the back button, export
   expect(installBackButton).toHaveBeenCalledWith(router);
   expect(cleanUpOldExports).toHaveBeenCalledOnce();
   expect(installReminders).toHaveBeenCalledWith(router, i18n);
+  expect(installShortcuts).toHaveBeenCalledWith(router, i18n);
   expect(installUpdateCheck).toHaveBeenCalledOnce();
 
   // The home screen loads the (empty) pets store and renders in English.

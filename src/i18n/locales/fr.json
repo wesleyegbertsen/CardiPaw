@@ -475,5 +475,9 @@
     "summaryBlocked": "Rappels en pause : notifications désactivées",
     "applyError": "Vos paramètres ont été enregistrés, mais les rappels n'ont pas pu être programmés. Veuillez réessayer.",
     "save": "Enregistrer"
+  },
+  "shortcuts": {
+    "longLabel": "Mesurer {name}",
+    "petDeleted": "Cet animal a été supprimé"
   }
 }
