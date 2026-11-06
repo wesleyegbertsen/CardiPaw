@@ -52,6 +52,7 @@ These defaults are based on general veterinary guidance. In a pet's profile you 
 - **Share links**: a read-only report packed into the link itself. Nothing is uploaded.
 - **Pet notes** for medication changes, vet visits and anything else worth keeping.
 - **Reminders** to measure, at a time and on the weekdays you choose (Android app).
+- **Home screen widgets** (Android app): one pet's or every pet's latest rate, its status and when it was measured, at a glance.
 - **Export and import** of your pets, readings and notes as a JSON file, for backup or moving devices.
 - **Languages:** English, Dutch, German, French and Japanese.
 

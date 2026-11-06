@@ -4,17 +4,20 @@ How to fix a label or add a language. For an overview see the [README](../README
 
 Set up the project first, as described in [Development](../CONTRIBUTING.md#development): run `npm ci` once, then `npm run dev` to see your changes in the browser.
 
-All translations live in `src/i18n/locales/`. Each file is a flat-ish JSON object keyed by feature area. English (`en.json`) is the source of truth — every other locale must have the exact same set of keys.
+The app's translations live in `src/i18n/locales/`. Each file is a flat-ish JSON object keyed by feature area. English (`en.json`) is the source of truth — every other locale must have the exact same set of keys.
+
+The Android app's home screen widgets also have a few labels in `android/app/src/main/res/values-<code>/strings.xml` (Android shows them before the app has run).
 
 ## Fixing a label in an existing language
 
 1. Open `src/i18n/locales/<code>.json` (e.g. `nl.json` for Dutch).
 2. Find the key — the structure mirrors `en.json`, so search for the English text to locate the right key.
 3. Edit the value and save. The dev server picks up the change instantly.
+4. For a widget label, edit `android/app/src/main/res/values-<code>/strings.xml` (`values/` is English).
 
 ## Adding a new language
 
-Four small steps:
+Five small steps:
 
 ### 1. Create the locale file
 
@@ -78,7 +81,11 @@ const FLAGS: Record<Locale, string> = {
 
 Keep these as named imports: a namespace import (`import * as ...`) with a dynamic lookup bundles every flag in the package (~265).
 
-### 4. Verify key parity
+### 4. Add the Android widget labels
+
+Copy the strings in `android/app/src/main/res/values/strings.xml` that have no `translatable="false"` into a new `android/app/src/main/res/values-<code>/strings.xml`, inside `<resources>`, and translate them. Write an apostrophe as `\'` (Android's string escaping). A test fails while any of them is missing.
+
+### 5. Verify key parity
 
 Run the included script to confirm your file has exactly the same keys as `en.json`:
 

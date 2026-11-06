@@ -42,6 +42,22 @@ Tap the bell on a pet's page to be reminded to measure that pet, at a time and o
 - Reminders use the phone's default notification sound and vibrate (as far as its sound mode allows). Earlier versions used a "Measuring reminders" category that never vibrated; the update replaces it with a new one of the same name, so changes you made to the old one in Android's notification settings (turning it off, a custom sound, vibration turned on by hand) are reset once. Reminders from the old version that are still showing, or already due, when CardiPaw is first opened after the update are cleared once.
 - Besides CardiPaw's "Measuring reminders", Android's notification settings for the app also list a "Default" channel; it comes with the notifications plugin.
 
+## Home screen widgets
+
+CardiPaw has two home screen widgets. Add one the way your launcher adds widgets (usually a long press on the home screen, then Widgets, then CardiPaw):
+
+- **One pet** shows a pet's latest breathing rate, its Normal, Elevated or High label, and when it was measured. When you add it, CardiPaw asks which pet to show. On Android 12 and later you can pick another pet by long-pressing the widget and choosing to reconfigure it.
+- **All pets** lists each pet's latest rate, label and age, as many as fit; make it taller to see more. A "+N more" line opens the app.
+
+On a day the app shows a [trend alert](features.md#trend-alerts) for a pet, its widget shows the same badge. A measurement older than 3 days is shown in the warning colour, as in the app. Tapping a pet opens its page in the app.
+
+- The widgets show what the app last sent them. They update within seconds of a change in the app (a new or edited reading, a pet's settings, an import), at midnight, and when the phone's clock, time zone or language changes.
+- **After installing or updating the app, open it once.** Until then the widgets say "Open CardiPaw once to show your pets here."
+- If you delete a pet, its widget says so; tap it to pick another pet.
+- The widgets use the app's language, and follow the **system** dark mode, not the in-app theme setting (the launcher draws them).
+- A widget shows your pet's name and breathing rate to anyone who sees your home screen. They're home screen widgets only, never on the lock screen.
+- "Clear storage" in Android's app settings leaves the widgets showing their last drawing until the next redraw; then they ask you to open the app.
+
 ## Camera
 
 The app also declares the `CAMERA` permission, used only by the opt-in [camera counting](features.md#camera-counting-experimental); Android asks you the first time you allow it. How the video is handled is described there. The camera is declared optional, so phones without one can still install the app. If CardiPaw is ever listed on Google Play, its data-safety form would say: camera permission declared, no data collected, no data shared.
