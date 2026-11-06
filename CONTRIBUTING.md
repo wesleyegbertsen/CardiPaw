@@ -22,6 +22,17 @@ CI runs all of these, plus `npm audit --omit=dev --audit-level=high`, on every P
 
 Research prototypes live in `research/` (currently the camera-based breath counting exploration for [#130](https://github.com/wesleyegbertsen/CardiPaw/issues/130), see [`research/camera-breath/README.md`](research/camera-breath/README.md)). CI type-checks, lints and tests them like `scripts/`. The pure signal modules the app's experimental camera counting uses live in `src/camera/`; `research/` keeps the ffmpeg reader, the sweep and the scoring, which are never bundled.
 
+Other scripts:
+
+```bash
+npm run preview             # serve the production build in dist/ (run npm run build first)
+npm run seed                # write demo pets, readings and notes to public/seed-data.json
+npm run generate-pwa-assets # regenerate the PWA icons in public/ from public/favicon.svg
+```
+
+- **seed** writes 5 pets with about 200 readings over the last months and 8 notes. The values are random, but Milo always ends on a rising trend (**Trending up**) and Ollie stays above the default Normal ceiling (**Above normal**). Load it with the dev server: **Settings → Developer → Load seed data**, which replaces all data in that browser. The file is gitignored and left out of the Docker build context, but Vite copies everything in `public/` into `dist/`: delete it before you deploy a local build.
+- **generate-pwa-assets** writes `pwa-*.png`, `maskable-icon-512x512.png`, `apple-touch-icon-180x180.png` and `favicon.ico` (settings in [`pwa-assets.config.ts`](pwa-assets.config.ts)). It only prints the `<head>` links and the manifest's icons; `index.html` and the manifest in `vite.config.ts` are kept by hand and already match. It rewrites the files with slightly different bytes even when `favicon.svg` hasn't changed, so commit its output only after changing the icon (and run `npm run generate-android-assets` too).
+
 A Prettier config is included for new code (`npm run format:check`, `npm run format`). The existing code has not been reformatted yet, so CI does not enforce it.
 
 ## PR titles
