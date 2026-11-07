@@ -188,7 +188,8 @@ final class WidgetUpdater {
         views.removeAllViews(R.id.rows);
         for (int i = 0; i < petRows; i++) {
             WidgetSnapshot.Pet pet = s.pets.get(i);
-            // The data URIs already keep the taps apart; the request code is unique as well.
+            // The data URI (the pet) keeps the PendingIntents apart, not the request code: it can
+            // match another widget's. Two taps for the same pet may share one, and open the same.
             PendingIntent tap = WidgetIntents.openPet(ctx, widgetId * 100 + i, pet.id);
             views.addView(R.id.rows, pet(ctx, s, pet, R.layout.widget_all_pets_row, tap));
         }
