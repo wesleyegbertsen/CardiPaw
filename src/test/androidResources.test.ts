@@ -408,6 +408,9 @@ describe('Android resources', () => {
     for (const [name, info] of providers) {
       const receiver = manifestComponent('receiver', name);
       expect(receiver, name).toMatch(/\bandroid:exported="true"/);
+      // Only the system's widget service may send to it: no other app can trigger a redraw or
+      // an onDeleted that forgets a widget's pet.
+      expect(receiver, name).toMatch(/\bandroid:permission="android\.permission\.BIND_APPWIDGET"/);
       expect(receiver, name).toContain(
         '<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />',
       );
