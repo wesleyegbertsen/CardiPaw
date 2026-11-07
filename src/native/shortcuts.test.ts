@@ -160,6 +160,22 @@ describe('shortcuts', () => {
     expect(LS.setShortcuts.mock.calls[1]).toEqual(LS.setShortcuts.mock.calls[0]);
   });
 
+  it('sends a payload again after a failed sync of another one', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockNative();
+    install();
+    await mod.syncShortcuts();
+    const first = published();
+    // The plugin can reject after it already applied part of the new payload.
+    LS.setShortcuts.mockRejectedValueOnce(new Error('Rate-limited'));
+    await db.savePet(makePet({ id: 'a', name: 'Bob' }));
+    await mod.syncShortcuts();
+    await db.savePet(makePet({ id: 'a', name: 'Bo' }));
+    await mod.syncShortcuts();
+    expect(LS.setShortcuts).toHaveBeenCalledTimes(3);
+    expect(published()).toEqual(first);
+  });
+
   it('logs and resolves when the plugin rejects', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const failure = new Error('Rate-limited');

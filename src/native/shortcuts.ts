@@ -47,6 +47,9 @@ async function sync(): Promise<void> {
   };
   const key = JSON.stringify(payload);
   if (key === published) return;
+  // The plugin can reject after applying part of the payload: the shortcuts may then match
+  // neither, so the payload last accepted must not skip a later one.
+  published = null;
   await LauncherShortcuts.setShortcuts(payload);
   // Only after success: a failed or rate-limited sync runs again on the next resume.
   published = key;
