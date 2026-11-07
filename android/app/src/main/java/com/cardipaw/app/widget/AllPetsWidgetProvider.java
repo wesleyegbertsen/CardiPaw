@@ -19,4 +19,13 @@ public class AllPetsWidgetProvider extends AppWidgetProvider {
         // Resized: a different number of rows fits.
         WidgetUpdater.updateAllPets(ctx, mgr, id);
     }
+
+    @Override
+    public void onDisabled(Context ctx) {
+        // The last all-pets widget is gone: only single-pet widgets still need the midnight redraw.
+        // Their count alone, in case this kind's last id is still listed during the broadcast.
+        if (!WidgetUpdater.needsMidnight(WidgetUpdater.count(ctx, PetWidgetProvider.class), 0)) {
+            WidgetUpdater.cancelMidnight(ctx);
+        }
+    }
 }

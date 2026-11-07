@@ -24,4 +24,13 @@ public class PetWidgetProvider extends AppWidgetProvider {
     public void onDeleted(Context ctx, int[] ids) {
         WidgetStore.forget(ctx, ids);
     }
+
+    @Override
+    public void onDisabled(Context ctx) {
+        // The last single-pet widget is gone: only all-pets widgets still need the midnight redraw.
+        // Their count alone, in case this kind's last id is still listed during the broadcast.
+        if (!WidgetUpdater.needsMidnight(0, WidgetUpdater.count(ctx, AllPetsWidgetProvider.class))) {
+            WidgetUpdater.cancelMidnight(ctx);
+        }
+    }
 }

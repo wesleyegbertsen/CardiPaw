@@ -33,9 +33,22 @@ final class WidgetUpdater {
 
     static void updateAll(Context ctx) {
         AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
-        for (int id : mgr.getAppWidgetIds(new ComponentName(ctx, PetWidgetProvider.class))) updatePet(ctx, mgr, id);
-        for (int id : mgr.getAppWidgetIds(new ComponentName(ctx, AllPetsWidgetProvider.class))) updateAllPets(ctx, mgr, id);
-        scheduleMidnight(ctx);
+        int[] petIds = mgr.getAppWidgetIds(new ComponentName(ctx, PetWidgetProvider.class));
+        int[] allPetsIds = mgr.getAppWidgetIds(new ComponentName(ctx, AllPetsWidgetProvider.class));
+        for (int id : petIds) updatePet(ctx, mgr, id);
+        for (int id : allPetsIds) updateAllPets(ctx, mgr, id);
+        if (needsMidnight(petIds.length, allPetsIds.length)) scheduleMidnight(ctx);
+        else cancelMidnight(ctx);
+    }
+
+    /** The midnight redraw is only needed while a widget is on the home screen. */
+    static boolean needsMidnight(int petWidgets, int allPetsWidgets) {
+        return petWidgets + allPetsWidgets > 0;
+    }
+
+    /** How many widgets of one kind are placed. */
+    static int count(Context ctx, Class<?> provider) {
+        return AppWidgetManager.getInstance(ctx).getAppWidgetIds(new ComponentName(ctx, provider)).length;
     }
 
     /** Android strings in the app's language (from the snapshot) when there is one. */
@@ -172,10 +185,19 @@ final class WidgetUpdater {
     /** A non-wakeup alarm at the next local midnight: "today" becomes "yesterday" when the screen is next seen. */
     static void scheduleMidnight(Context ctx) {
         AlarmManager am = ctx.getSystemService(AlarmManager.class);
-        Intent i = new Intent(ctx, WidgetRefreshReceiver.class).setAction(WidgetRefreshReceiver.ACTION_MIDNIGHT);
-        PendingIntent pi = PendingIntent.getBroadcast(ctx, 0, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         long at = WidgetAge.nextMidnight(System.currentTimeMillis(), TimeZone.getDefault());
         // RTC (not _WAKEUP) and inexact: no SCHEDULE_EXACT_ALARM (the manifest removes it).
-        am.setWindow(AlarmManager.RTC, at, 10 * 60_000L, pi);
+        am.setWindow(AlarmManager.RTC, at, 10 * 60_000L, midnightIntent(ctx));
+    }
+
+    /** No widget is left: stop the midnight alarm. */
+    static void cancelMidnight(Context ctx) {
+        ctx.getSystemService(AlarmManager.class).cancel(midnightIntent(ctx));
+    }
+
+    /** The same one for scheduling and cancelling: AlarmManager.cancel matches it by filterEquals. */
+    private static PendingIntent midnightIntent(Context ctx) {
+        Intent i = new Intent(ctx, WidgetRefreshReceiver.class).setAction(WidgetRefreshReceiver.ACTION_MIDNIGHT);
+        return PendingIntent.getBroadcast(ctx, 0, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
     }
 }

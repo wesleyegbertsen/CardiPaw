@@ -487,6 +487,17 @@ describe('Android resources', () => {
     }
   });
 
+  it('stops the midnight alarm when the last widget is removed', () => {
+    // Without this a phone with no widget left still wakes the app every midnight.
+    for (const provider of ['PetWidgetProvider', 'AllPetsWidgetProvider']) {
+      const java = readFileSync(join(WIDGET_JAVA, `${provider}.java`), 'utf8');
+      expect(java, provider).toMatch(/public void onDisabled\(Context ctx\)[\s\S]*?cancelMidnight\(/);
+    }
+    const updater = readFileSync(join(WIDGET_JAVA, 'WidgetUpdater.java'), 'utf8');
+    const updateAll = updater.match(/static void updateAll\([\s\S]*?\n {4}\}/)?.[0];
+    expect(updateAll).toMatch(/needsMidnight\([\s\S]*cancelMidnight\(ctx\)/);
+  });
+
   it('sets no widget colour from code', () => {
     // A colour set on RemoteViews stays until the next redraw: it wouldn't follow a dark mode
     // switch. The layouts' @color references (values-night) do.
