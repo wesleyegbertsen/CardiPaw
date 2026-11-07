@@ -51,12 +51,13 @@ CardiPaw has two home screen widgets. Add one the way your launcher adds widgets
 
 On a day the app shows a [trend alert](features.md#trend-alerts) for a pet, its widget shows the same badge. A measurement older than 3 days is shown in the warning colour, as in the app. Tapping a pet opens its page in the app.
 
-- The widgets show what the app last sent them. They update within seconds of a change in the app (a new or edited reading, a pet's settings, an import), at midnight, and when the phone's clock, time zone or language changes.
+- The widgets show what the app last sent them. They update within seconds of a change in the app (a new or edited reading, a pet's settings, an import), at midnight, and when the phone's clock or time zone changes. After you change the phone's language, open the app once to update the widgets' language.
 - **After installing or updating the app, open it once.** Until then the widgets say "Open CardiPaw once to show your pets here."
 - If you delete a pet, its widget says so; tap it to pick another pet.
 - The widgets use the app's language, and follow the **system** dark mode, not the in-app theme setting (the launcher draws them).
 - A widget shows your pet's name and breathing rate to anyone who sees your home screen. They're home screen widgets only, never on the lock screen.
-- "Clear storage" in Android's app settings leaves the widgets showing their last drawing until the next redraw; then they ask you to open the app.
+- After "Clear storage" in Android's app settings, the widgets keep showing the old reading until their next redraw (within about 12 hours) or until you open the app.
+- Debug builds (local ones and the CI's debug APKs) log every call from the app to its Android code to logcat, including what the widgets are sent (pet names and rates). Release builds don't.
 
 ## Camera
 
