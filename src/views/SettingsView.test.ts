@@ -793,7 +793,13 @@ describe('SettingsView', () => {
       expect(privacy).not.toContain('Automatic backups (Android app).');
       // The new p4 is true on the website too.
       expect(privacy).toContain('No data sharing.');
-      expect(privacy).toContain('in the Android app, a backup folder that you sync');
+      expect(privacy).toContain(
+        'in the Android app, a backup folder that you sync or let other apps read.',
+      );
+      // Deleting the app doesn't delete backup files outside it (p7).
+      expect(privacy).toContain(
+        'permanently remove everything, except automatic backup files in a folder you picked in the Android app.',
+      );
     });
 
     it('are off until turned on, and check the folder when Settings opens', async () => {
