@@ -1,6 +1,8 @@
 package com.cardipaw.app.widget;
 
 import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProviderInfo;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -32,6 +34,16 @@ public class WidgetConfigureActivity extends AppCompatActivity {
             finish();
             return;
         }
+        // Exported (the launcher starts it): any app could pass another widget's id.
+        AppWidgetManager mgr = AppWidgetManager.getInstance(this);
+        AppWidgetProviderInfo info = mgr.getAppWidgetInfo(widgetId);
+        if (info == null || !new ComponentName(this, PetWidgetProvider.class).equals(info.provider)) {
+            finish();
+            return;
+        }
+        // "Choose a pet" (its tap opens this picker) instead of the blank initial layout, in case
+        // the launcher adds the widget while this is dismissed.
+        WidgetUpdater.updatePet(this, mgr, widgetId);
         WidgetSnapshot s = WidgetStore.readSnapshot(this);
         Context text = WidgetUpdater.localized(this, s);
         setContentView(R.layout.activity_widget_configure);

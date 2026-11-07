@@ -436,6 +436,24 @@ describe('Android resources', () => {
     ).toContain('public class WidgetConfigureActivity ');
   });
 
+  it("configures only CardiPaw's own single-pet widgets, and draws the widget before the picker", () => {
+    // The activity is exported: another app could hand it any widget id. And until a pet is
+    // picked, the launcher shows the blank initial layout without the explicit draw.
+    const java = readFileSync(join(WIDGET_JAVA, 'WidgetConfigureActivity.java'), 'utf8');
+    const onCreate = java.match(/protected void onCreate\([\s\S]*?\n {4}\}/)?.[0] ?? '';
+    const at = (s: string) => onCreate.indexOf(s);
+    const content = at('setContentView(');
+    expect(content).toBeGreaterThan(-1);
+    for (const step of [
+      'getAppWidgetInfo(widgetId)',
+      'new ComponentName(this, PetWidgetProvider.class).equals(info.provider)',
+      'WidgetUpdater.updatePet(this, ',
+    ]) {
+      expect(at(step), step).toBeGreaterThan(-1);
+      expect(at(step), step).toBeLessThan(content);
+    }
+  });
+
   it('puts the widgets on the home screen only (not the lock screen)', () => {
     // The pet's name and rate are visible on a widget: never on the lock screen.
     const infos = files.filter((f) => /^xml\/widget_\w+_info\.xml$/.test(f));
