@@ -14,8 +14,10 @@ import android.util.SizeF;
 import android.view.View;
 import android.widget.RemoteViews;
 import com.cardipaw.app.R;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
@@ -176,11 +178,37 @@ final class WidgetUpdater {
             mgr.updateAppWidget(widgetId, message(ctx, s.strings.noPets, home));
             return;
         }
-        // MAX_HEIGHT is the portrait height on most launchers, MIN_HEIGHT the landscape one: the
-        // smaller, so no row is clipped in either (portrait may show a gap below the rows).
         Bundle o = mgr.getAppWidgetOptions(widgetId);
-        int heightDp = WidgetRows.heightDp(
-            o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0), o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0));
+        List<SizeF> sizes = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? reportedSizes(o) : Collections.<SizeF>emptyList();
+        RemoteViews views;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !sizes.isEmpty()) {
+            // API 31+: one per size the launcher reports (portrait, landscape), each with the rows
+            // that fit it; the launcher shows the one for the current size.
+            Map<SizeF, RemoteViews> bySize = new HashMap<>();
+            for (SizeF size : sizes) {
+                if (!bySize.containsKey(size)) bySize.put(size, allPets(ctx, s, widgetId, (int) size.getHeight(), home));
+            }
+            views = new RemoteViews(bySize);
+        } else {
+            boolean portrait = ctx.getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE;
+            int heightDp = WidgetRows.heightDp(
+                o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0),
+                o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0),
+                portrait);
+            views = allPets(ctx, s, widgetId, heightDp, home);
+        }
+        mgr.updateAppWidget(widgetId, views);
+    }
+
+    /** OPTION_APPWIDGET_SIZES (API 31+): the widget's size in each orientation; empty if not reported. */
+    @SuppressWarnings("deprecation") // getParcelableArrayList(String, Class) is API 33+
+    private static List<SizeF> reportedSizes(Bundle options) {
+        List<SizeF> sizes = options.getParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES);
+        return sizes == null ? Collections.<SizeF>emptyList() : sizes;
+    }
+
+    /** The pet rows that fit heightDp, then "+N more" for the rest. */
+    private static RemoteViews allPets(Context ctx, WidgetSnapshot s, int widgetId, int heightDp, PendingIntent home) {
         // Rows grow with the system font size (wrap_content, minHeight 52dp).
         float fontScale = ctx.getResources().getConfiguration().fontScale;
         int petRows = WidgetRows.petRows(heightDp, s.pets.size(), fontScale);
@@ -199,7 +227,7 @@ final class WidgetUpdater {
             more.setOnClickPendingIntent(R.id.widget_root, home);
             views.addView(R.id.rows, more);
         }
-        mgr.updateAppWidget(widgetId, views);
+        return views;
     }
 
     /** A non-wakeup alarm at the next local midnight: "today" becomes "yesterday" when the screen is next seen. */

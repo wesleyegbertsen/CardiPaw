@@ -54,13 +54,22 @@ public class WidgetRowsTest {
     }
 
     @Test
-    public void heightIsTheSmallerReportedOne() {
-        // Portrait (MAX) and landscape (MIN): sized for the smaller, rows never clip in either.
-        assertEquals(110, WidgetRows.heightDp(110, 230));
-        assertEquals(110, WidgetRows.heightDp(230, 110));
-        // A launcher that reports only one, or none.
-        assertEquals(230, WidgetRows.heightDp(0, 230));
-        assertEquals(230, WidgetRows.heightDp(230, 0));
-        assertEquals(WidgetRows.DEFAULT_HEIGHT_DP, WidgetRows.heightDp(0, 0));
+    public void heightIsTheCurrentOrientationsOne() {
+        // A Pixel launcher's 3x2: 210dp in portrait (MAX), 108dp in landscape (MIN). The smaller
+        // in portrait showed one pet and "+7 more" above an empty half.
+        assertEquals(210, WidgetRows.heightDp(108, 210, true));
+        assertEquals(108, WidgetRows.heightDp(108, 210, false));
+        // (194 - 48) / 52 = 2 pets in portrait, where 108dp had room for 1.
+        assertEquals(2, WidgetRows.petRows(WidgetRows.heightDp(108, 210, true), 8, 1f));
+        assertEquals(1, WidgetRows.petRows(WidgetRows.heightDp(108, 210, false), 8, 1f));
+    }
+
+    @Test
+    public void heightWithOneOrNoReportedSize() {
+        assertEquals(230, WidgetRows.heightDp(0, 230, true));
+        assertEquals(230, WidgetRows.heightDp(0, 230, false));
+        assertEquals(230, WidgetRows.heightDp(230, 0, true));
+        assertEquals(230, WidgetRows.heightDp(230, 0, false));
+        assertEquals(WidgetRows.DEFAULT_HEIGHT_DP, WidgetRows.heightDp(0, 0, true));
     }
 }

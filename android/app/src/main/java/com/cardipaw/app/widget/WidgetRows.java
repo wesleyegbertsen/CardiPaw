@@ -25,9 +25,14 @@ final class WidgetRows {
         return Math.max(1, Math.min(pets, (room - MORE_DP) / row));
     }
 
-    /** The smaller of the reported heights (0: not reported), so rows fit in portrait and landscape. */
-    static int heightDp(int minHeightDp, int maxHeightDp) {
-        if (minHeightDp > 0 && maxHeightDp > 0) return Math.min(minHeightDp, maxHeightDp);
+    /**
+     * Before API 31, the height in the current orientation (0: not reported): by the documented
+     * convention MAX_HEIGHT is the portrait height and MIN_HEIGHT the landscape one. API 31+ gets
+     * each orientation's exact size (OPTION_APPWIDGET_SIZES) instead.
+     */
+    static int heightDp(int minHeightDp, int maxHeightDp, boolean portrait) {
+        int preferred = portrait ? maxHeightDp : minHeightDp;
+        if (preferred > 0) return preferred;
         if (minHeightDp > 0) return minHeightDp;
         if (maxHeightDp > 0) return maxHeightDp;
         return DEFAULT_HEIGHT_DP;
