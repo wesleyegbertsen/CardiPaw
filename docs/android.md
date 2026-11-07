@@ -46,7 +46,7 @@ Tap the bell on a pet's page to be reminded to measure that pet, at a time and o
 
 Long-press the CardiPaw icon to see a shortcut for each of your first four pets; tapping one opens that pet's measuring screen. Drag one onto the home screen to keep it there. Shortcuts need Android 7.1 or newer.
 
-- They are in the order the home screen shows after the app starts: a pet you just added is listed last on the home screen until then, but may already have another place among the shortcuts.
+- They follow the order of the pets on the home screen. A pet you just added shows last on the home screen until you next open CardiPaw, so until then its shortcut may be in a different place.
 - Their labels follow the app's language. A new name or photo also updates a shortcut on the home screen, for every pet, not only the first four.
 - Each shows the pet's photo, or the CardiPaw icon when it has none or an imported photo is very large.
 - During a breath count, a shortcut to another pet asks before it leaves the count, like any other way out of the measuring screen.
