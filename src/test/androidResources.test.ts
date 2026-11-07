@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { parseWidgetUrl, WIDGET_URL_SCHEME } from '../utils/widgetUrl';
 
 // jsdom (a devDependency) has no type declarations installed; its XML mode throws on
 // malformed XML.
@@ -52,16 +53,51 @@ function styleItems(name: string): { parent: string | undefined; items: Record<s
   return { parent: style[1], items: Object.fromEntries(items.map(([, k, v]) => [k, v.trim()])) };
 }
 
-function cssBackground(selector: string): string {
+/** A --color-<name> custom property's hex value in one global.css block. */
+function cssVar(selector: string, name: string): string {
   const css = readFileSync(join(ROOT, 'src/assets/styles/global.css'), 'utf8');
   const start = css.indexOf(`${selector} {`);
   if (start === -1) throw new Error(`global.css: no "${selector} {" block`);
   // Only this block, so a value from a later block can't stand in for a missing one.
   const block = css.slice(start, css.indexOf('}', start));
-  const color = block.match(/--color-bg:\s*(#[0-9a-fA-F]{6})/);
-  if (!color) throw new Error(`global.css: no --color-bg in the ${selector} block`);
+  const color = block.match(new RegExp(`--color-${name}:\\s*(#[0-9a-fA-F]{6})`));
+  if (!color) throw new Error(`global.css: no --color-${name} in the ${selector} block`);
   return color[1].toLowerCase();
 }
+
+/** WCAG 2 contrast ratio of two #rrggbb colours. */
+function contrast(a: string, b: string): number {
+  const luminance = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5]
+      .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** A component's whole block in the manifest, e.g. <receiver android:name=".x">...</receiver>. */
+function manifestComponent(tag: string, name: string): string {
+  const block = xmlWithoutComments(MANIFEST).match(
+    new RegExp(`<${tag}\\b[^>]*\\bandroid:name="${name.replace(/\./g, '\\.')}"[\\s\\S]*?</${tag}>`),
+  )?.[0];
+  if (!block) throw new Error(`AndroidManifest.xml: no <${tag}> ${name}`);
+  return block;
+}
+
+/** The <string> names in one values folder, with whether each is translatable. */
+function strings(folder: string): Map<string, boolean> {
+  const xml = xmlWithoutComments(join(RES, folder, 'strings.xml'));
+  return new Map(
+    [...xml.matchAll(/<string\s+name="([^"]+)"([^>]*)>/g)].map(([, name, rest]) => [
+      name,
+      !/\btranslatable="false"/.test(rest),
+    ]),
+  );
+}
+
+const WIDGET_JAVA = join(ROOT, 'android/app/src/main/java/com/cardipaw/app/widget');
 
 function colorResource(folder: string, name: string): string | undefined {
   const xml = readFileSync(join(RES, folder, 'colors.xml'), 'utf8');
@@ -221,6 +257,55 @@ describe('Android resources', () => {
     expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
   });
 
+  it('registers the home widget plugin under the name the web code calls', () => {
+    const java = join(ROOT, 'android/app/src/main/java/com/cardipaw/app');
+    const plugin = readFileSync(join(java, 'widget/HomeWidgetPlugin.java'), 'utf8');
+    const ts = readFileSync(join(ROOT, 'src/native/homeWidget.ts'), 'utf8');
+    const javaName = plugin.match(/@CapacitorPlugin\(name = "([^"]+)"\)/)?.[1];
+    expect(javaName).toBe('HomeWidget');
+    expect(ts.match(/registerPlugin<\w+>\('([^']+)'\)/)?.[1]).toBe(javaName);
+    const activity = readFileSync(join(java, 'MainActivity.java'), 'utf8');
+    const register = activity.indexOf('registerPlugin(HomeWidgetPlugin.class);');
+    expect(register).toBeGreaterThan(-1);
+    expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
+  });
+
+  it('forgets a handled widget tap before the bridge is created', () => {
+    // The bridge reads the intent in super.onCreate: cleared after it, a recreated activity
+    // (process death, Recents) opens the old tap's pet again.
+    const activity = readFileSync(
+      join(ROOT, 'android/app/src/main/java/com/cardipaw/app/MainActivity.java'),
+      'utf8',
+    );
+    const forget = activity.indexOf('forgetHandledWidgetTap(savedInstanceState);');
+    expect(forget).toBeGreaterThan(-1);
+    expect(forget).toBeLessThan(activity.indexOf('super.onCreate('));
+    // The scheme it checks is the one the web code parses.
+    const ts = readFileSync(join(ROOT, 'src/utils/widgetUrl.ts'), 'utf8');
+    const scheme = ts.match(/WIDGET_URL_SCHEME = '([^']+)'/)?.[1];
+    expect(scheme).toBe('cardipaw-widget');
+    expect(activity.match(/"([^"]+)"\.equals\(scheme\)/)?.[1]).toBe(scheme);
+    // And the one the widgets' taps use.
+    const intents = readFileSync(join(WIDGET_JAVA, 'WidgetIntents.java'), 'utf8');
+    expect(intents.match(/SCHEME = "([^"]+)"/)?.[1]).toBe(scheme);
+  });
+
+  it("builds the widgets' tap URLs the way the web code parses them", () => {
+    // A different authority in Java ("pets") would send every tap home.
+    const intents = readFileSync(join(WIDGET_JAVA, 'WidgetIntents.java'), 'utf8');
+    const authority = (method: string) =>
+      intents.match(
+        new RegExp(`static PendingIntent ${method}\\([\\s\\S]*?\\.authority\\("([^"]+)"\\)`),
+      )?.[1];
+    expect(parseWidgetUrl(`${WIDGET_URL_SCHEME}://${authority('openPet')}/p1`)).toEqual({
+      kind: 'pet',
+      petId: 'p1',
+    });
+    expect(parseWidgetUrl(`${WIDGET_URL_SCHEME}://${authority('openHome')}`)).toEqual({
+      kind: 'home',
+    });
+  });
+
   it('declares INTERNET (the update check) and CAMERA (camera counting), never REQUEST_INSTALL_PACKAGES', () => {
     // A tools:node="remove" entry takes a plugin's permission out; it declares nothing.
     const permissions = [
@@ -286,9 +371,273 @@ describe('Android resources', () => {
   });
 
   it('uses the web app background colours, light and dark', () => {
-    expect(colorResource('values', 'app_background')).toBe(cssBackground(':root'));
+    expect(colorResource('values', 'app_background')).toBe(cssVar(':root', 'bg'));
     expect(colorResource('values-night', 'app_background')).toBe(
-      cssBackground('[data-theme="dark"]'),
+      cssVar('[data-theme="dark"]', 'bg'),
     );
+  });
+
+  it('uses the app colours for the widget surface and the warning and danger text', () => {
+    const pairs = [
+      ['widget_surface', 'surface'],
+      ['widget_text', 'text'],
+      ['widget_warning_text', 'warning-text'],
+      ['widget_danger_text', 'danger-text'],
+    ];
+    for (const [resource, token] of pairs) {
+      expect(colorResource('values', resource), resource).toBe(cssVar(':root', token));
+      expect(colorResource('values-night', resource), resource).toBe(
+        cssVar('[data-theme="dark"]', token),
+      );
+    }
+  });
+
+  it('gives every widget text colour at least 4.5:1 on its background, light and dark', () => {
+    // The badges carry the status as text, so their text must be readable, not just coloured.
+    const pairs = [
+      ['widget_text', 'widget_surface'],
+      ['widget_text_muted', 'widget_surface'],
+      ['widget_stale', 'widget_surface'],
+      ['widget_avatar_text', 'widget_avatar_bg'],
+      ['widget_normal_text', 'widget_normal_bg'],
+      ['widget_warning_text', 'widget_warning_bg'],
+      ['widget_danger_text', 'widget_danger_bg'],
+    ];
+    const low = ['values', 'values-night'].flatMap((folder) =>
+      pairs
+        .map(([text, bg]) => {
+          const [fg, back] = [colorResource(folder, text), colorResource(folder, bg)];
+          if (!fg || !back) return `${folder}: ${text} or ${bg} missing`;
+          const ratio = contrast(fg, back);
+          return ratio < 4.5 ? `${folder}: ${text} on ${bg} is ${ratio.toFixed(2)}:1` : undefined;
+        })
+        .filter(Boolean),
+    );
+    expect(low).toEqual([]);
+  });
+
+  it("gives the pet picker's button CardiPaw's colour, at least 4.5:1 on the dialog, light and dark", () => {
+    // Without it the button is AppCompat's teal. The dialog backgrounds are AppCompat's
+    // background_floating_material_light / _dark.
+    const accent = styleItems('AppTheme.WidgetConfigure').items.colorAccent;
+    const name = accent?.match(/^@color\/(\w+)$/)?.[1];
+    expect(name, accent).toBeDefined();
+    const dialogs = [
+      ['values', '#ffffff'],
+      ['values-night', '#424242'],
+    ];
+    for (const [folder, background] of dialogs) {
+      const color = colorResource(folder, name!);
+      expect(color, folder).toBeDefined();
+      expect(contrast(color!, background), folder).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('declares each widget provider exported for APPWIDGET_UPDATE, with its provider info', () => {
+    // Not exported or without the action, the launcher never lists the widget.
+    const providers = [
+      ['.widget.PetWidgetProvider', 'widget_pet_info'],
+      ['.widget.AllPetsWidgetProvider', 'widget_all_pets_info'],
+    ];
+    for (const [name, info] of providers) {
+      const receiver = manifestComponent('receiver', name);
+      expect(receiver, name).toMatch(/\bandroid:exported="true"/);
+      // Only the system's widget service may send to it: no other app can trigger a redraw or
+      // an onDeleted that forgets a widget's pet.
+      expect(receiver, name).toMatch(/\bandroid:permission="android\.permission\.BIND_APPWIDGET"/);
+      expect(receiver, name).toContain(
+        '<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />',
+      );
+      expect(receiver, name).toMatch(
+        new RegExp(
+          `android:name="android\\.appwidget\\.provider"\\s+android:resource="@xml/${info}"`,
+        ),
+      );
+      expect(files).toContain(`xml/${info}.xml`);
+    }
+  });
+
+  it('opens the pet picker from APPWIDGET_CONFIGURE, and the provider info names it', () => {
+    const activity = manifestComponent('activity', '.widget.WidgetConfigureActivity');
+    expect(activity).toMatch(/\bandroid:exported="true"/);
+    expect(activity).toContain(
+      '<action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />',
+    );
+    // The launcher starts android:configure by its full class name.
+    const info = xmlWithoutComments(join(RES, 'xml/widget_pet_info.xml'));
+    expect(info.match(/\bandroid:configure="([^"]+)"/)?.[1]).toBe(
+      'com.cardipaw.app.widget.WidgetConfigureActivity',
+    );
+    expect(
+      readFileSync(join(WIDGET_JAVA, 'WidgetConfigureActivity.java'), 'utf8'),
+    ).toContain('public class WidgetConfigureActivity ');
+  });
+
+  it("configures only CardiPaw's own single-pet widgets, and draws the widget before the picker", () => {
+    // The activity is exported: another app could hand it any widget id. And until a pet is
+    // picked, the launcher shows the blank initial layout without the explicit draw.
+    const java = readFileSync(join(WIDGET_JAVA, 'WidgetConfigureActivity.java'), 'utf8');
+    const onCreate = java.match(/protected void onCreate\([\s\S]*?\n {4}\}/)?.[0] ?? '';
+    const at = (s: string) => onCreate.indexOf(s);
+    const content = at('setContentView(');
+    expect(content).toBeGreaterThan(-1);
+    for (const step of [
+      'getAppWidgetInfo(widgetId)',
+      'new ComponentName(this, PetWidgetProvider.class).equals(info.provider)',
+      'WidgetUpdater.updatePet(this, ',
+    ]) {
+      expect(at(step), step).toBeGreaterThan(-1);
+      expect(at(step), step).toBeLessThan(content);
+    }
+  });
+
+  it('puts the widgets on the home screen only (not the lock screen)', () => {
+    // The pet's name and rate are visible on a widget: never on the lock screen.
+    const infos = files.filter((f) => /^xml\/widget_\w+_info\.xml$/.test(f));
+    expect([...infos].sort()).toEqual(['xml/widget_all_pets_info.xml', 'xml/widget_pet_info.xml']);
+    const categories = infos.map(
+      (f) => [f, xmlWithoutComments(join(RES, f)).match(/\bandroid:widgetCategory="([^"]+)"/)?.[1]],
+    );
+    expect(categories).toEqual(infos.map((f) => [f, 'home_screen']));
+  });
+
+  it('refreshes the widgets every 12 hours as a safety net, not hourly', () => {
+    // The midnight alarm and the clock/time zone broadcasts keep the age right; the period only
+    // bounds how stale a widget gets if the alarm was cancelled. Each refresh wakes the app.
+    const periods = ['xml/widget_pet_info.xml', 'xml/widget_all_pets_info.xml'].map((f) => [
+      f,
+      xmlWithoutComments(join(RES, f)).match(/\bandroid:updatePeriodMillis="(\d+)"/)?.[1],
+    ]);
+    expect(periods).toEqual([
+      ['xml/widget_pet_info.xml', String(12 * 60 * 60 * 1000)],
+      ['xml/widget_all_pets_info.xml', String(12 * 60 * 60 * 1000)],
+    ]);
+  });
+
+  it('redraws on clock, time zone and language changes, never DATE_CHANGED', () => {
+    // DATE_CHANGED isn't exempt from Android 8's implicit broadcast limits: it would silently
+    // never arrive (the midnight alarm covers it).
+    const receiver = manifestComponent('receiver', '.widget.WidgetRefreshReceiver');
+    expect(receiver).toMatch(/\bandroid:exported="true"/);
+    expect([...receiver.matchAll(/<action android:name="([^"]+)"/g)].map(([, a]) => a)).toEqual([
+      'android.intent.action.TIME_SET',
+      'android.intent.action.TIMEZONE_CHANGED',
+      'android.intent.action.LOCALE_CHANGED',
+    ]);
+  });
+
+  it('has every Android string in every app locale, and no extra', () => {
+    // A string the launcher shows (a widget's label) in English only would fail lint's
+    // MissingTranslation; one only in values-<code> is never used.
+    const index = readFileSync(join(ROOT, 'src/i18n/index.ts'), 'utf8');
+    const codes = [
+      ...(index.match(/SUPPORTED_LOCALES = \[([^\]]+)\]/)?.[1] ?? '').matchAll(/'([^']+)'/g),
+    ].map(([, code]) => code);
+    expect(codes).toContain('en');
+    const base = strings('values');
+    const translatable = [...base].filter(([, t]) => t).map(([name]) => name);
+    expect(translatable.length).toBeGreaterThan(0);
+    for (const code of codes.filter((c) => c !== 'en')) {
+      const local = strings(`values-${code}`);
+      expect([...local.keys()].sort(), code).toEqual([...translatable].sort());
+      expect([...local].filter(([, t]) => !t), code).toEqual([]);
+    }
+  });
+
+  it('gives each pet layout every view the code sets', () => {
+    // RemoteViews applies setViewVisibility to a missing id as an error: "Can't load widget".
+    const ids = ['widget_root', 'initial', 'name', 'rate', 'badge_normal', 'badge_warning'];
+    ids.push('badge_danger', 'trend', 'age', 'age_stale');
+    for (const layout of ['widget_pet', 'widget_pet_small', 'widget_all_pets_row']) {
+      const xml = xmlWithoutComments(join(RES, `layout/${layout}.xml`));
+      const defined = [...xml.matchAll(/android:id="@\+id\/(\w+)"/g)].map(([, id]) => id);
+      expect(defined.sort(), layout).toEqual([...ids].sort());
+    }
+  });
+
+  it('stops the midnight alarm when the last widget is removed', () => {
+    // Without this a phone with no widget left still wakes the app every midnight.
+    for (const provider of ['PetWidgetProvider', 'AllPetsWidgetProvider']) {
+      const java = readFileSync(join(WIDGET_JAVA, `${provider}.java`), 'utf8');
+      expect(java, provider).toMatch(
+        /public void onDisabled\(Context ctx\)[\s\S]*?cancelMidnight\(/,
+      );
+    }
+    const updater = readFileSync(join(WIDGET_JAVA, 'WidgetUpdater.java'), 'utf8');
+    const updateAll = updater.match(/static void updateAll\([\s\S]*?\n {4}\}/)?.[0];
+    expect(updateAll).toMatch(/needsMidnight\([\s\S]*cancelMidnight\(ctx\)/);
+  });
+
+  it('sizes the all-pets rows as WidgetRows counts them', () => {
+    // A row taller than WidgetRows assumes is clipped at the widget's bottom edge.
+    const rows = readFileSync(join(WIDGET_JAVA, 'WidgetRows.java'), 'utf8');
+    const constant = (name: string) => rows.match(new RegExp(`\\b${name} = (\\d+)`))?.[1];
+    const root = (layout: string) =>
+      xmlWithoutComments(join(RES, `layout/${layout}.xml`)).match(/<\w+\s[^>]*>/)?.[0] ?? '';
+    const row = root('widget_all_pets_row');
+    // Grows with the system font size; WidgetRows scales its budget the same way.
+    expect(row).toMatch(/android:layout_height="wrap_content"/);
+    expect(row.match(/android:minHeight="(\d+)dp"/)?.[1]).toBe(constant('ROW_DP'));
+    expect(root('widget_all_pets_more').match(/android:layout_height="(\d+)dp"/)?.[1]).toBe(
+      constant('MORE_DP'),
+    );
+    expect(constant('MORE_DP')).toBe('48');
+  });
+
+  it('keeps the age readable next to a long status or trend badge', () => {
+    // One line: the age comes before the trend and takes no weight, so it is measured first.
+    for (const layout of ['widget_pet_small', 'widget_all_pets_row']) {
+      const xml = xmlWithoutComments(join(RES, `layout/${layout}.xml`));
+      for (const age of ['age', 'age_stale']) {
+        const view = xml.match(new RegExp(`android:id="@\\+id/${age}"[^>]*>`))?.[0] ?? '';
+        expect(view, `${layout} ${age}`).toMatch(/android:layout_width="wrap_content"/);
+        expect(view, `${layout} ${age}`).not.toMatch(/layout_weight/);
+        expect(xml.indexOf(`@+id/${age}"`), layout).toBeLessThan(xml.indexOf('@+id/trend"'));
+      }
+    }
+    // The medium layout: the age on its own line, after the badges' row has closed.
+    const medium = xmlWithoutComments(join(RES, 'layout/widget_pet.xml'));
+    const between = medium.slice(medium.indexOf('@+id/trend"'), medium.indexOf('@+id/age"'));
+    expect(between).toContain('</LinearLayout>');
+    // The trend badge is cut rather than pushed off the edge.
+    for (const layout of ['widget_pet', 'widget_pet_small', 'widget_all_pets_row']) {
+      const xml = xmlWithoutComments(join(RES, `layout/${layout}.xml`));
+      const trend = xml.match(/android:id="@\+id\/trend"[^>]*>/)?.[0];
+      expect(trend, layout).toMatch(/android:ellipsize="end"/);
+    }
+  });
+
+  it("gives the pet's name its own line in the single-pet widget", () => {
+    // On a 2x1 the rate next to it left the name 15px: "..". The rate goes with the badges.
+    const xml = xmlWithoutComments(join(RES, 'layout/widget_pet.xml'));
+    const between = xml.slice(xml.indexOf('@+id/name"'), xml.indexOf('@+id/rate"'));
+    expect(between).toContain('</LinearLayout>');
+    // And the short rate ("28/min"), as WidgetUpdater shows it, in the picker's preview.
+    const java = readFileSync(join(WIDGET_JAVA, 'WidgetUpdater.java'), 'utf8');
+    expect(java).toMatch(/setTextViewText\(R\.id\.rate, WidgetText\.fill\(str\.rate, "rate"/);
+    const values = readFileSync(join(RES, 'values/strings.xml'), 'utf8');
+    expect(values).toContain('<string name="widget_preview_rate">24/min</string>');
+  });
+
+  it('keeps the avatar letter inside its circle with large text', () => {
+    for (const layout of ['widget_pet', 'widget_pet_small', 'widget_all_pets_row']) {
+      const xml = xmlWithoutComments(join(RES, `layout/${layout}.xml`));
+      const initial = xml.match(/android:id="@\+id\/initial"[^>]*>/)?.[0];
+      expect(initial, layout).toMatch(/android:includeFontPadding="false"/);
+    }
+  });
+
+  it('sets no widget colour from code', () => {
+    // A colour set on RemoteViews stays until the next redraw: it wouldn't follow a dark mode
+    // switch. The layouts' @color references (values-night) do.
+    const used = readdirSync(WIDGET_JAVA).flatMap((file) =>
+      [
+        ...readFileSync(join(WIDGET_JAVA, file), 'utf8').matchAll(
+          /setTextColor\(|getColor\(|"setBackgroundColor"/g,
+        ),
+      ].map(([match]) => `${file}: ${match}`),
+    );
+    expect(readdirSync(WIDGET_JAVA)).toContain('WidgetUpdater.java');
+    expect(used).toEqual([]);
   });
 });

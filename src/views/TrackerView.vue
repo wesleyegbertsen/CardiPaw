@@ -320,9 +320,9 @@ function confirmLeave(): boolean | Promise<boolean> {
   });
   return pendingLeave;
 }
-// Back gestures, browser back, the bottom nav and reminder taps. Another pet's tracker is
-// the same route, so vue-router runs update guards for it, not leave guards, while App's
-// keyed RouterView still remounts this view and would drop the count.
+// Back gestures, browser back, the bottom nav, and reminder and widget taps. Another pet's
+// tracker is the same route, so vue-router runs update guards for it, not leave guards, while
+// App's keyed RouterView still remounts this view and would drop the count.
 onBeforeRouteLeave(confirmLeave);
 onBeforeRouteUpdate(confirmLeave);
 

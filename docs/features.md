@@ -69,6 +69,10 @@ Each pet has a general-purpose **Notes** tab where you can write anything that d
 
 Reminders to measure a pet, at a time and on the weekdays you choose, are part of the [Android app](android.md). How they work: [Reminders](android.md#reminders).
 
+## Android home screen widgets
+
+Home screen widgets that show each pet's latest breathing rate, its status and when it was measured are part of the [Android app](android.md). How they work: [Home screen widgets](android.md#home-screen-widgets).
+
 ## Data export & import
 
 Export all pets, readings and notes as a JSON file for backup or transfer. Import a previously exported file to restore your data.

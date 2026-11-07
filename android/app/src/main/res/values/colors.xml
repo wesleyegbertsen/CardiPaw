@@ -2,4 +2,21 @@
 <resources>
     <!-- The page background: the color-bg custom property in src/assets/styles/global.css (:root). -->
     <color name="app_background">#faf9f7</color>
+
+    <!-- Home screen widgets, from the global.css :root tokens (values-night has the dark ones).
+         Every text colour is at least 4.5:1 on its background (androidResources.test.ts checks
+         it), so the badge and stale texts use the darker warning/danger text tokens. -->
+    <color name="widget_surface">#ffffff</color>
+    <color name="widget_text">#1a1a1a</color>
+    <color name="widget_text_muted">#6b7280</color>
+    <color name="widget_avatar_bg">#f8d7df</color>
+    <!-- Darker than color-primary-dark (#c0405e, 3.8:1 on the avatar): the 15sp initial needs 4.5:1. -->
+    <color name="widget_avatar_text">#a8344f</color>
+    <color name="widget_normal_bg">#dcfce7</color>
+    <color name="widget_normal_text">#166534</color>
+    <color name="widget_warning_bg">#fef3c7</color>
+    <color name="widget_warning_text">#92400e</color>
+    <color name="widget_danger_bg">#fee2e2</color>
+    <color name="widget_danger_text">#b91c1c</color>
+    <color name="widget_stale">#92400e</color>
 </resources>

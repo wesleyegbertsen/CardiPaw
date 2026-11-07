@@ -67,6 +67,10 @@ jobs:
       - name: Build the app's web files and copy them into android/
         run: npm run build:android
 
+      - name: Run the Android unit tests
+        working-directory: android
+        run: ./gradlew testDebugUnitTest --no-daemon
+
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon

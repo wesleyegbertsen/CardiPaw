@@ -2,4 +2,19 @@
 <resources>
     <!-- The dark page background: the color-bg custom property under [data-theme="dark"] in global.css. -->
     <color name="app_background">#111113</color>
+
+    <!-- Home screen widgets: the global.css [data-theme="dark"] tokens. The widgets follow the
+         system dark mode (a launcher can't know the app's own theme setting). -->
+    <color name="widget_surface">#1c1c1f</color>
+    <color name="widget_text">#f0f0f0</color>
+    <color name="widget_text_muted">#9ca3af</color>
+    <color name="widget_avatar_bg">#3d1424</color>
+    <color name="widget_avatar_text">#f8d7df</color>
+    <color name="widget_normal_bg">#052e16</color>
+    <color name="widget_normal_text">#86efac</color>
+    <color name="widget_warning_bg">#1a120a</color>
+    <color name="widget_warning_text">#fbbf24</color>
+    <color name="widget_danger_bg">#2d0a0a</color>
+    <color name="widget_danger_text">#fca5a5</color>
+    <color name="widget_stale">#fbbf24</color>
 </resources>
