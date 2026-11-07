@@ -2,7 +2,7 @@
   "v": 1,
   "locale": "en",
   "strings": {
-    "bpm": "breaths/min",
+    "rate": "{rate}/min",
     "status": {
       "normal": "Normal",
       "warning": "Elevated",

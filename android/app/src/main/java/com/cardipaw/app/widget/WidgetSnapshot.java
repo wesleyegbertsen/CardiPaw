@@ -39,14 +39,14 @@ public final class WidgetSnapshot {
     }
 
     public static final class Strings {
-        public final String bpm, today, todayAt, yesterday, noReadings, noPets, petMissing;
+        public final String rate, today, todayAt, yesterday, noReadings, noPets, petMissing;
         public final String a11yReading, a11yNoReadings, a11yTrend;
         public final Map<String, String> status;
         public final Map<String, String> trend;
         public final Plural daysAgo, weeksAgo, more;
 
         Strings(JSONObject o) throws JSONException {
-            bpm = o.getString("bpm");
+            rate = o.getString("rate");
             today = o.getString("today");
             todayAt = o.getString("todayAt");
             yesterday = o.getString("yesterday");

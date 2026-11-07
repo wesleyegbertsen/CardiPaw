@@ -477,6 +477,7 @@
     "save": "Opslaan"
   },
   "widget": {
+    "rate": "{rate}/min",
     "todayAt": "Vandaag gemeten om {time}",
     "petMissing": "Dit huisdier is verwijderd. Tik om een ander te kiezen.",
     "more": "+{n} meer | +{n} meer",

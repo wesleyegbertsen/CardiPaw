@@ -477,6 +477,7 @@
     "save": "Save"
   },
   "widget": {
+    "rate": "{rate}/min",
     "todayAt": "Measured today at {time}",
     "petMissing": "This pet was removed. Tap to choose another.",
     "more": "+{n} more | +{n} more",

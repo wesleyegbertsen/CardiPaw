@@ -477,6 +477,7 @@
     "save": "Enregistrer"
   },
   "widget": {
+    "rate": "{rate}/min",
     "todayAt": "Mesuré aujourd'hui à {time}",
     "petMissing": "Cet animal a été supprimé. Appuyez pour en choisir un autre.",
     "more": "+{n} autre | +{n} autres",

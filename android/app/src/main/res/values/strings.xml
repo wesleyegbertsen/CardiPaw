@@ -18,7 +18,7 @@
     <string name="widget_open_app_first">Open CardiPaw once to show your pets here.</string>
     <string name="widget_no_pets">Add a pet in CardiPaw first.</string>
     <string name="widget_open_app">Open CardiPaw</string>
-    <string name="widget_preview_rate">24 breaths/min</string>
+    <string name="widget_preview_rate">24/min</string>
     <string name="widget_preview_status">Normal</string>
     <string name="widget_preview_age">Measured today</string>
     <!-- The widget picker's preview: every real draw replaces these. -->

@@ -21,7 +21,8 @@ export interface WidgetPlural {
 }
 
 export interface WidgetStrings {
-  bpm: string;
+  /** The short rate ("28/min"), with a literal {rate}: room for the pet's name on a 2x1. */
+  rate: string;
   status: Record<WidgetStatus, string>;
   trend: Record<WidgetAlert, string>;
   today: string;
@@ -76,7 +77,7 @@ function plural(t: Translate, key: string): WidgetPlural {
 export function buildWidgetStrings(t: Translate): WidgetStrings {
   const text = (key: string) => t(key, {}, 1);
   return {
-    bpm: text('common.breathsPerMin'),
+    rate: literal(t, 'widget.rate', ['rate']),
     status: {
       normal: text('status.normal'),
       warning: text('status.warning'),

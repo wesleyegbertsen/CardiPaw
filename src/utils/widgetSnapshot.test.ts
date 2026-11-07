@@ -218,9 +218,17 @@ describe('buildWidgetStrings', () => {
   it.each(LOCALES)('%s: keeps every other placeholder for Java', (locale) => {
     const s = buildWidgetStrings(translator(locale).t);
     expect(s.todayAt).toContain('{time}');
+    expect(s.rate).toContain('{rate}');
     for (const p of ['{name}', '{rate}', '{status}', '{age}']) expect(s.a11yReading).toContain(p);
     for (const p of ['{name}', '{age}']) expect(s.a11yNoReadings).toContain(p);
     expect(s.a11yTrend).toContain('{trend}');
+  });
+
+  it("gives the widgets a short rate, which leaves the pet's name room", () => {
+    // The unit after the number, or not, as each language writes it (Java fills {rate}).
+    const rate = (locale: keyof typeof messages) => buildWidgetStrings(translator(locale).t).rate;
+    expect(rate('en')).toBe('{rate}/min');
+    expect(rate('ja')).toBe('{rate}回/分');
   });
 
   it("ends TalkBack's trend sentence in each language's own way", () => {

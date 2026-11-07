@@ -20,6 +20,17 @@ public class WidgetUpdaterTest {
     }
 
     @Test
+    public void threeLinesOnA2x1UpToLargeText() {
+        // A Pixel launcher's 2x1 is 179x99dp in portrait. Its three lines fit at 1x and 1.3x;
+        // at 2x they would be cut, so the two-line layout shows.
+        assertTrue(WidgetUpdater.petMediumHeightDp(1f) <= 99);
+        assertTrue(WidgetUpdater.petMediumHeightDp(1.3f) <= 99);
+        assertTrue(WidgetUpdater.petMediumHeightDp(2f) > 100);
+        // Smaller text keeps the 1x room.
+        assertEquals(WidgetUpdater.petMediumHeightDp(1f), WidgetUpdater.petMediumHeightDp(0.85f));
+    }
+
+    @Test
     public void alertIsTheOneForTodayInTheDevicesTimeZone() throws Exception {
         // pet-4's alerts: 2026-11-06 and 2026-11-07.
         WidgetSnapshot s = WidgetSnapshot.parse(WidgetSnapshotTest.fixture());

@@ -607,6 +607,26 @@ describe('Android resources', () => {
     }
   });
 
+  it("gives the pet's name its own line in the single-pet widget", () => {
+    // On a 2x1 the rate next to it left the name 15px: "..". The rate goes with the badges.
+    const xml = xmlWithoutComments(join(RES, 'layout/widget_pet.xml'));
+    const between = xml.slice(xml.indexOf('@+id/name"'), xml.indexOf('@+id/rate"'));
+    expect(between).toContain('</LinearLayout>');
+    // And the short rate ("28/min"), as WidgetUpdater shows it, in the picker's preview.
+    const java = readFileSync(join(WIDGET_JAVA, 'WidgetUpdater.java'), 'utf8');
+    expect(java).toMatch(/setTextViewText\(R\.id\.rate, WidgetText\.fill\(str\.rate, "rate"/);
+    const values = readFileSync(join(RES, 'values/strings.xml'), 'utf8');
+    expect(values).toContain('<string name="widget_preview_rate">24/min</string>');
+  });
+
+  it('keeps the avatar letter inside its circle with large text', () => {
+    for (const layout of ['widget_pet', 'widget_pet_small', 'widget_all_pets_row']) {
+      const xml = xmlWithoutComments(join(RES, `layout/${layout}.xml`));
+      const initial = xml.match(/android:id="@\+id\/initial"[^>]*>/)?.[0];
+      expect(initial, layout).toMatch(/android:includeFontPadding="false"/);
+    }
+  });
+
   it('sets no widget colour from code', () => {
     // A colour set on RemoteViews stays until the next redraw: it wouldn't follow a dark mode
     // switch. The layouts' @color references (values-night) do.

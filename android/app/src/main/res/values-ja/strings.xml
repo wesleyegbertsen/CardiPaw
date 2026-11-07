@@ -9,7 +9,7 @@
     <string name="widget_open_app_first">ここにペットを表示するには、CardiPawを一度開いてください。</string>
     <string name="widget_no_pets">先にCardiPawでペットを追加してください。</string>
     <string name="widget_open_app">CardiPawを開く</string>
-    <string name="widget_preview_rate">24 回/分</string>
+    <string name="widget_preview_rate">24回/分</string>
     <string name="widget_preview_status">正常</string>
     <string name="widget_preview_age">本日測定</string>
 </resources>

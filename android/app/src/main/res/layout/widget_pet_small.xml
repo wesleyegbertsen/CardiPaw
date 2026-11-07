@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The single-pet widget below 180x100dp (one cell high).
+<!-- The single-pet widget below WidgetUpdater.petMediumHeightDp: one cell high, or a 2x1 with
+     very large text. Two lines, so a 28dp avatar.
      WidgetUpdater.pet() sets every id below; widget_all_pets_row.xml has the same ids. Only
      RemoteViews-safe views (LinearLayout, FrameLayout, TextView). Colours come from colors.xml
      (values-night for dark mode), never from code. -->
@@ -19,13 +20,15 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
+        <!-- No font padding: the letter stays inside the circle with large text. -->
         <TextView
             android:id="@+id/initial"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:background="@drawable/widget_avatar"
             android:gravity="center"
             android:importantForAccessibility="no"
+            android:includeFontPadding="false"
             android:textColor="@color/widget_avatar_text"
             android:textSize="15sp"
             android:textStyle="bold" />
@@ -55,7 +58,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="2dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 

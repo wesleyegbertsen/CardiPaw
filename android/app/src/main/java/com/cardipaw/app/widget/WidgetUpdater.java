@@ -74,20 +74,39 @@ final class WidgetUpdater {
             views = message(ctx, text, WidgetIntents.configure(ctx, widgetId));
         } else {
             PendingIntent tap = WidgetIntents.openPet(ctx, widgetId, pet.id);
+            // The three-line layout needs more height with larger text. A font size change redraws
+            // the widget on a Pixel launcher: it sends the sizes again (onAppWidgetOptionsChanged).
+            int mediumDp = petMediumHeightDp(ctx.getResources().getConfiguration().fontScale);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 // The launcher picks the largest layout that fits the widget's current size.
                 Map<SizeF, RemoteViews> sizes = new HashMap<>();
                 sizes.put(new SizeF(110, 40), pet(ctx, s, pet, R.layout.widget_pet_small, tap));
-                sizes.put(new SizeF(180, 100), pet(ctx, s, pet, R.layout.widget_pet, tap));
+                sizes.put(new SizeF(180, mediumDp), pet(ctx, s, pet, R.layout.widget_pet, tap));
                 views = new RemoteViews(sizes);
             } else {
-                // MAX_HEIGHT: the portrait height on most launchers; MIN when a launcher reports none.
                 Bundle o = mgr.getAppWidgetOptions(widgetId);
-                int h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0));
-                views = pet(ctx, s, pet, h >= 100 ? R.layout.widget_pet : R.layout.widget_pet_small, tap);
+                int min = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0);
+                int max = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0);
+                boolean portrait = ctx.getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE;
+                // No height reported: the two-line layout, which fits the widget's minimum size.
+                int h = min == 0 && max == 0 ? 0 : WidgetRows.heightDp(min, max, portrait);
+                views = pet(ctx, s, pet, h >= mediumDp ? R.layout.widget_pet : R.layout.widget_pet_small, tap);
             }
         }
         mgr.updateAppWidget(widgetId, views);
+    }
+
+    /** widget_pet.xml's padding and margins, its avatar, its name line, and its other two lines at 1x. */
+    private static final int MEDIUM_FIXED_DP = 18, AVATAR_DP = 32, NAME_LINE_DP = 20, LINES_DP = 36;
+
+    /**
+     * The height widget_pet.xml (three lines) needs at a font scale; a lower widget gets
+     * widget_pet_small.xml (two). Line heights measured on a Pixel at 1x; text grows at most linearly
+     * with the scale (Android 14+ grows large text less), so this errs on the high side.
+     */
+    static int petMediumHeightDp(float fontScale) {
+        float scale = Math.max(1f, fontScale);
+        return (int) Math.ceil(MEDIUM_FIXED_DP + Math.max(AVATAR_DP, NAME_LINE_DP * scale) + LINES_DP * scale);
     }
 
     /** No pet to show: none was ever picked ("Choose a pet"), or the picked one was deleted. */
@@ -136,7 +155,7 @@ final class WidgetUpdater {
             stale = WidgetAge.isStale(l.takenAt, now, tz);
             String status = str.status.get(l.status);
             v.setViewVisibility(R.id.rate, View.VISIBLE);
-            v.setTextViewText(R.id.rate, l.rate + " " + str.bpm);
+            v.setTextViewText(R.id.rate, WidgetText.fill(str.rate, "rate", Integer.toString(l.rate)));
             int shown = BADGES[WidgetSnapshot.STATUSES.indexOf(l.status)];
             for (int id : BADGES) {
                 v.setViewVisibility(id, id == shown ? View.VISIBLE : View.GONE);

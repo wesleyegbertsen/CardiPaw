@@ -477,6 +477,7 @@
     "save": "Speichern"
   },
   "widget": {
+    "rate": "{rate}/Min",
     "todayAt": "Heute um {time} gemessen",
     "petMissing": "Dieses Tier wurde entfernt. Tippe, um ein anderes zu wählen.",
     "more": "+{n} weiteres | +{n} weitere",

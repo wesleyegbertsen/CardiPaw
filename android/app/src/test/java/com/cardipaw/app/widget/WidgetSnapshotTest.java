@@ -49,6 +49,7 @@ public class WidgetSnapshotTest {
         assertEquals("Elevated", s.strings.status.get("warning"));
         assertEquals("Trending up", s.strings.trend.get("rising"));
         assertEquals("Measured today at {time}", s.strings.todayAt);
+        assertEquals("28/min", WidgetText.fill(s.strings.rate, "rate", "28"));
         assertEquals(" {trend}.", s.strings.a11yTrend);
         assertEquals("+3 more", s.strings.more.format(3));
         assertEquals("Measured 1 day ago", s.strings.daysAgo.format(1));
