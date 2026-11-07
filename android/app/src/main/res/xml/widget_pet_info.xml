@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The single-pet widget. Home screen only: the pet's name and rate never show on the lock
-     screen. updatePeriodMillis is a safety net after a force-stop cancels the midnight alarm
-     (Android floors it at 30 minutes); a reconfigurable widget picks its pet again on API 31+. -->
+     screen. The midnight alarm and the clock and time zone broadcasts keep the age right;
+     updatePeriodMillis (12 hours) only bounds how stale the widget gets in case the alarm was
+     cancelled. A reconfigurable widget picks its pet again on API 31+. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:configure="com.cardipaw.app.widget.WidgetConfigureActivity"
     android:description="@string/widget_pet_description"
@@ -14,6 +15,6 @@
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="2"
     android:targetCellHeight="1"
-    android:updatePeriodMillis="3600000"
+    android:updatePeriodMillis="43200000"
     android:widgetCategory="home_screen"
     android:widgetFeatures="reconfigurable" />

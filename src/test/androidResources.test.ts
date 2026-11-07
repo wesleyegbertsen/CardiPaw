@@ -446,6 +446,19 @@ describe('Android resources', () => {
     expect(categories).toEqual(infos.map((f) => [f, 'home_screen']));
   });
 
+  it('refreshes the widgets every 12 hours as a safety net, not hourly', () => {
+    // The midnight alarm and the clock/time zone broadcasts keep the age right; the period only
+    // bounds how stale a widget gets if the alarm was cancelled. Each refresh wakes the app.
+    const periods = ['xml/widget_pet_info.xml', 'xml/widget_all_pets_info.xml'].map((f) => [
+      f,
+      xmlWithoutComments(join(RES, f)).match(/\bandroid:updatePeriodMillis="(\d+)"/)?.[1],
+    ]);
+    expect(periods).toEqual([
+      ['xml/widget_pet_info.xml', String(12 * 60 * 60 * 1000)],
+      ['xml/widget_all_pets_info.xml', String(12 * 60 * 60 * 1000)],
+    ]);
+  });
+
   it('redraws on clock, time zone and language changes, never DATE_CHANGED', () => {
     // DATE_CHANGED isn't exempt from Android 8's implicit broadcast limits: it would silently
     // never arrive (the midnight alarm covers it).

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The all-pets widget: no pet to pick, so no configure activity. Home screen only, like the
-     single-pet widget. Rows that don't fit become "+N more" (WidgetRows). -->
+     single-pet widget. Rows that don't fit become "+N more" (WidgetRows). updatePeriodMillis
+     (12 hours) is the same safety net as in widget_pet_info.xml. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_all_description"
     android:initialLayout="@layout/widget_message"
@@ -12,5 +13,5 @@
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="3"
     android:targetCellHeight="2"
-    android:updatePeriodMillis="3600000"
+    android:updatePeriodMillis="43200000"
     android:widgetCategory="home_screen" />
