@@ -50,8 +50,11 @@ public class BackupFolderPlugin extends Plugin {
             startActivityForResult(call, intent, "pickResult");
         } catch (ActivityNotFoundException e) {
             call.reject("No folder picker", "UNAVAILABLE");
+            // startActivityForResult saved the call before launching; pickResult never runs.
+            call.release(getBridge());
         } catch (Exception e) {
             fail(call, e);
+            call.release(getBridge());
         }
     }
 
@@ -66,9 +69,17 @@ public class BackupFolderPlugin extends Plugin {
                 return;
             }
             resolver().takePersistableUriPermission(tree, GRANT);
+            String name;
+            try {
+                name = folderName(tree);
+            } catch (Exception e) {
+                // The web code never learns this folder, so nothing would ever release its grant.
+                try { resolver().releasePersistableUriPermission(tree, GRANT); } catch (Exception ignored) { }
+                throw e;
+            }
             JSObject ret = new JSObject();
             ret.put("uri", tree.toString());
-            ret.put("name", folderName(tree));
+            ret.put("name", name);
             call.resolve(ret);
         } catch (Exception e) {
             fail(call, e);
@@ -109,17 +120,12 @@ public class BackupFolderPlugin extends Plugin {
             String name = backupName(call);
             byte[] bytes = required(call, "text").getBytes(StandardCharsets.UTF_8);
             folderName(tree); // the grant outlives a deleted folder: check the folder itself
-            Uri doc = findChild(tree, name);
-            if (doc == null) doc = create(tree, name);
-            write(doc, bytes);
-            Long size = sizeOf(doc);
-            if (size != null && size != bytes.length) {
-                // A provider that ignored "t" kept old bytes past the end: start the file over.
-                DocumentsContract.deleteDocument(resolver(), doc);
-                doc = create(tree, name);
-                write(doc, bytes);
-                size = sizeOf(doc);
-                if (size != null && size != bytes.length) throw new IOException("Size mismatch");
+            try {
+                writeInto(tree, name, bytes);
+            } catch (FileNotFoundException | IllegalArgumentException e) {
+                // The folder is there, so this is the file failing, not a missing folder. The cause
+                // is kept: isNoSpace looks through it.
+                throw new IOException("Writing the file failed", e);
             }
             call.resolve();
         } catch (Exception e) {
@@ -132,7 +138,7 @@ public class BackupFolderPlugin extends Plugin {
         try {
             Uri tree = tree(call);
             JSArray names = new JSArray();
-            try (Cursor c = children(tree, Document.COLUMN_DISPLAY_NAME)) {
+            try (Cursor c = children(tree)) {
                 while (c.moveToNext()) {
                     String name = c.getString(0);
                     if (name != null && BACKUP_NAME.matcher(name).matches()) names.put(name);
@@ -181,6 +187,22 @@ public class BackupFolderPlugin extends Plugin {
         throw new SecurityException("No write grant");
     }
 
+    private void writeInto(Uri tree, String name, byte[] bytes) throws IOException {
+        Uri doc = findChild(tree, name);
+        if (doc == null) doc = create(tree, name);
+        write(doc, bytes);
+        Long size = sizeOf(doc);
+        // Only a larger file means old bytes are left: a provider that ignored "t" kept them past
+        // the end. A smaller size is stale metadata, which some providers report for a while.
+        if (size != null && size > bytes.length) {
+            DocumentsContract.deleteDocument(resolver(), doc);
+            doc = create(tree, name);
+            write(doc, bytes);
+            size = sizeOf(doc);
+            if (size != null && size > bytes.length) throw new IOException("Size mismatch");
+        }
+    }
+
     private static String backupName(PluginCall call) {
         String name = call.getString("name");
         if (name == null || !BACKUP_NAME.matcher(name).matches()) throw new InvalidName();
@@ -202,17 +224,17 @@ public class BackupFolderPlugin extends Plugin {
         }
     }
 
-    /** Cursor over the folder's children; column 0 is `column`, column 1 the document id. */
-    private Cursor children(Uri tree, String column) throws FileNotFoundException {
+    /** Cursor over the folder's children; column 0 is the display name, column 1 the document id. */
+    private Cursor children(Uri tree) throws FileNotFoundException {
         Uri uri = DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree));
-        Cursor c = resolver().query(uri, new String[] { column, Document.COLUMN_DOCUMENT_ID }, null, null, null);
+        Cursor c = resolver().query(uri, new String[] { Document.COLUMN_DISPLAY_NAME, Document.COLUMN_DOCUMENT_ID }, null, null, null);
         if (c == null) throw new FileNotFoundException("Folder missing");
         return c;
     }
 
     /** Exact-name match; providers ignore selection args, so the filter is here. */
     private Uri findChild(Uri tree, String name) throws FileNotFoundException {
-        try (Cursor c = children(tree, Document.COLUMN_DISPLAY_NAME)) {
+        try (Cursor c = children(tree)) {
             while (c.moveToNext()) {
                 if (name.equals(c.getString(0))) return DocumentsContract.buildDocumentUriUsingTree(tree, c.getString(1));
             }

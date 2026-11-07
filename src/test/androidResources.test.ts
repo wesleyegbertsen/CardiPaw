@@ -244,6 +244,36 @@ describe('Android resources', () => {
     expect(literal?.replace(/\\\\/g, '\\')).toBe(BACKUP_FILE_PATTERN.source);
   });
 
+  it("the backup folder plugin rejects with every code the web code tells apart", () => {
+    const plugin = readFileSync(
+      join(ROOT, 'android/app/src/main/java/com/cardipaw/app/BackupFolderPlugin.java'),
+      'utf8',
+    );
+    const javaCodes = new Set(
+      [...plugin.matchAll(/code = "([A-Z_]+)"|reject\("[^"]*", "([A-Z_]+)"\)/g)].map((m) => m[1] ?? m[2]),
+    );
+    expect([...javaCodes]).toEqual(
+      expect.arrayContaining([
+        'PERMISSION_REVOKED',
+        'FOLDER_MISSING',
+        'STORAGE_FULL',
+        'WRITE_FAILED',
+        'INVALID_NAME',
+        'CANCELLED',
+        'UNAVAILABLE',
+      ]),
+    );
+    // The codes failureOf switches on, and the picker's CANCELLED in useAutoBackup.
+    const failureOf = readFileSync(join(ROOT, 'src/native/backupFolder.ts'), 'utf8');
+    const autoBackup = readFileSync(join(ROOT, 'src/composables/useAutoBackup.ts'), 'utf8');
+    const tsCodes = [
+      ...[...failureOf.matchAll(/case '([A-Z_]+)':/g)].map((m) => m[1]),
+      ...[...autoBackup.matchAll(/errorCode\(e\) === '([A-Z_]+)'/g)].map((m) => m[1]),
+    ];
+    expect(tsCodes).toEqual(['PERMISSION_REVOKED', 'FOLDER_MISSING', 'STORAGE_FULL', 'CANCELLED']);
+    for (const code of tsCodes) expect(javaCodes).toContain(code);
+  });
+
   it('keeps allowBackup="false": the owner\'s backups are the export and the folder they pick', () => {
     expect(xmlWithoutComments(MANIFEST)).toContain('android:allowBackup="false"');
   });
