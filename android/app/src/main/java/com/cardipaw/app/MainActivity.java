@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
         // App-local plugins are registered before super.onCreate creates the bridge.
         registerPlugin(NotificationSettingsPlugin.class);
         registerPlugin(ImmersiveModePlugin.class);
+        registerPlugin(BackupFolderPlugin.class);
         super.onCreate(savedInstanceState);
         // AppCompat gave the window the launch theme's background in super.onCreate, before
         // BridgeActivity switched to AppTheme.NoActionBar, so the window gets it here.

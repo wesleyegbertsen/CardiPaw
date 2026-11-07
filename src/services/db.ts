@@ -46,6 +46,27 @@ function getDb(): Promise<IDBPDatabase<CardiPawDB>> {
   return dbPromise;
 }
 
+const changeListeners = new Set<() => void>();
+
+/**
+ * Calls `listener` after every write that committed (saves, deletes, an import). Returns a
+ * function that unsubscribes. A throwing listener is logged and never fails the write.
+ */
+export function onDataChanged(listener: () => void): () => void {
+  changeListeners.add(listener);
+  return () => changeListeners.delete(listener);
+}
+
+function changed(): void {
+  for (const listener of changeListeners) {
+    try {
+      listener();
+    } catch (e) {
+      console.error('A data change listener failed', e);
+    }
+  }
+}
+
 export async function getAllPets(): Promise<Pet[]> {
   const db = await getDb();
   return db.getAll('pets');
@@ -59,6 +80,7 @@ export async function getPet(id: string): Promise<Pet | undefined> {
 export async function savePet(pet: Pet): Promise<void> {
   const db = await getDb();
   await db.put('pets', pet);
+  changed();
 }
 
 export async function getReadingsForPet(petId: string): Promise<Reading[]> {
@@ -74,11 +96,13 @@ export async function getAllReadings(): Promise<Reading[]> {
 export async function saveReading(reading: Reading): Promise<void> {
   const db = await getDb();
   await db.put('readings', reading);
+  changed();
 }
 
 export async function deleteReading(id: string): Promise<void> {
   const db = await getDb();
   await db.delete('readings', id);
+  changed();
 }
 
 export async function getNotesForPet(petId: string): Promise<Note[]> {
@@ -94,11 +118,13 @@ export async function getAllNotes(): Promise<Note[]> {
 export async function saveNote(note: Note): Promise<void> {
   const db = await getDb();
   await db.put('notes', note);
+  changed();
 }
 
 export async function deleteNote(id: string): Promise<void> {
   const db = await getDb();
   await db.delete('notes', id);
+  changed();
 }
 
 type PetDataTx = IDBPTransaction<CardiPawDB, ('pets' | 'readings' | 'notes')[], 'readwrite'>;
@@ -130,17 +156,20 @@ export async function deletePetCascade(id: string): Promise<void> {
     await done.catch(() => {});
     throw e;
   }
+  changed();
 }
 
+/** One read-only transaction over all three stores: a write can't land between them. */
 export async function exportAllData(): Promise<ExportPayload> {
-  const [pets, readings, notes] = await Promise.all([getAllPets(), getAllReadings(), getAllNotes()]);
-  return {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    pets,
-    readings,
-    notes,
-  };
+  const db = await getDb();
+  const tx = db.transaction(['pets', 'readings', 'notes'], 'readonly');
+  const [pets, readings, notes] = await Promise.all([
+    tx.objectStore('pets').getAll(),
+    tx.objectStore('readings').getAll(),
+    tx.objectStore('notes').getAll(),
+    tx.done,
+  ]);
+  return { version: 1, exportedAt: new Date().toISOString(), pets, readings, notes };
 }
 
 export async function closeAndDeleteDatabase(): Promise<void> {
@@ -180,4 +209,5 @@ export async function importAllData(payload: ExportPayload): Promise<void> {
     await done.catch(() => {});
     throw e;
   }
+  changed();
 }

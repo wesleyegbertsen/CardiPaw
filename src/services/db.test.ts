@@ -292,6 +292,38 @@ describe('exportAllData / importAllData', () => {
     expect(await other.getAllNotes()).toEqual(exported.notes);
   });
 
+  it('exports one snapshot: a write from another tab lands before or after all of it', async () => {
+    await db.savePet(pet('a'));
+    await db.saveReading(reading('r1', 'a'));
+    // A second connection, as another tab of the website has.
+    const otherTab = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open('cardipaw');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const proto = Object.getPrototypeOf(otherTab) as IDBDatabase;
+    const transaction = proto.transaction;
+    let injected = false;
+    vi.spyOn(proto, 'transaction').mockImplementation(function (
+      this: IDBDatabase,
+      ...args: Parameters<IDBDatabase['transaction']>
+    ) {
+      const tx = transaction.apply(this, args);
+      // Right after the export starts reading, the other tab deletes the pet with its reading.
+      if (!injected && this !== otherTab) {
+        injected = true;
+        const write = transaction.call(otherTab, ['pets', 'readings', 'notes'], 'readwrite');
+        write.objectStore('pets').delete('a');
+        write.objectStore('readings').delete('r1');
+      }
+      return tx;
+    });
+    const exported = await db.exportAllData();
+    otherTab.close();
+    // Before the fix: the pet without its reading.
+    expect(exported.readings).toHaveLength(exported.pets.length);
+  });
+
   describe('rolls back and keeps existing data when a record cannot be stored', () => {
     const existing = async () => {
       await db.savePet(pet('old'));
@@ -349,6 +381,152 @@ describe('exportAllData / importAllData', () => {
       ).rejects.toThrow();
       await expectExistingKept();
     });
+  });
+});
+
+describe('onDataChanged', () => {
+  let db: DbModule;
+  beforeEach(async () => {
+    db = await freshDb();
+  });
+
+  const empty: ExportPayload = { version: 1, exportedAt: '', pets: [], readings: [], notes: [] };
+  const counts = async (m: DbModule) => {
+    const data = await m.exportAllData();
+    return [data.pets.length, data.readings.length, data.notes.length];
+  };
+
+  it.each<{
+    writer: string;
+    setup?: (m: DbModule) => Promise<void>;
+    write: (m: DbModule) => Promise<void>;
+    read: (m: DbModule) => Promise<unknown>;
+    expected: unknown;
+  }>([
+    {
+      writer: 'savePet',
+      write: (m) => m.savePet(pet('a')),
+      read: (m) => m.getPet('a'),
+      expected: pet('a'),
+    },
+    {
+      writer: 'saveReading',
+      write: (m) => m.saveReading(reading('r1', 'a')),
+      read: (m) => m.getAllReadings(),
+      expected: [reading('r1', 'a')],
+    },
+    {
+      writer: 'deleteReading',
+      setup: (m) => m.saveReading(reading('r1', 'a')),
+      write: (m) => m.deleteReading('r1'),
+      read: (m) => m.getAllReadings(),
+      expected: [],
+    },
+    {
+      writer: 'saveNote',
+      write: (m) => m.saveNote(note('n1', 'a')),
+      read: (m) => m.getAllNotes(),
+      expected: [note('n1', 'a')],
+    },
+    {
+      writer: 'deleteNote',
+      setup: (m) => m.saveNote(note('n1', 'a')),
+      write: (m) => m.deleteNote('n1'),
+      read: (m) => m.getAllNotes(),
+      expected: [],
+    },
+    {
+      writer: 'deletePetCascade',
+      setup: async (m) => {
+        await m.savePet(pet('a'));
+        await m.saveReading(reading('r1', 'a'));
+        await m.saveNote(note('n1', 'a'));
+      },
+      write: (m) => m.deletePetCascade('a'),
+      read: counts,
+      expected: [0, 0, 0],
+    },
+    {
+      writer: 'importAllData',
+      setup: (m) => m.savePet(pet('old')),
+      write: (m) => m.importAllData({ ...empty, pets: [pet('b')], readings: [reading('r1', 'b')] }),
+      read: counts,
+      expected: [1, 1, 0],
+    },
+  ])('notifies after $writer has committed', async ({ setup, write, read, expected }) => {
+    await setup?.(db);
+    let committed = false;
+    const transaction = IDBDatabase.prototype.transaction;
+    vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementation(function (
+      this: IDBDatabase,
+      ...args: Parameters<IDBDatabase['transaction']>
+    ) {
+      const tx = transaction.apply(this, args);
+      if (args[1] === 'readwrite') tx.addEventListener('complete', () => (committed = true));
+      return tx;
+    });
+    const seen: { committed: boolean; data: Promise<unknown> }[] = [];
+    db.onDataChanged(() => seen.push({ committed, data: read(db) }));
+
+    await write(db);
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0].committed).toBe(true);
+    // A read started inside the listener already sees the write.
+    expect(await seen[0].data).toEqual(expected);
+  });
+
+  it('does not notify when an import fails and rolls back', async () => {
+    const listener = vi.fn();
+    db.onDataChanged(listener);
+    const { id: _id, ...noId } = pet('a');
+
+    await expect(db.importAllData({ ...empty, pets: [noId as Pet] })).rejects.toThrow();
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('does not notify when deleting a pet fails and rolls back', async () => {
+    await db.savePet(pet('a'));
+    await db.saveNote(note('n1', 'a'));
+    const listener = vi.fn();
+    db.onDataChanged(listener);
+    failDeletesIn('notes');
+
+    await expect(db.deletePetCascade('a')).rejects.toMatchObject({ name: 'UnknownError' });
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(await db.getPet('a')).toEqual(pet('a'));
+  });
+
+  it('stops notifying a listener that unsubscribed, and keeps notifying the others', async () => {
+    const gone = vi.fn();
+    const staying = vi.fn();
+    const unsubscribe = db.onDataChanged(gone);
+    db.onDataChanged(staying);
+
+    await db.savePet(pet('a'));
+    unsubscribe();
+    await db.savePet(pet('b'));
+
+    expect(gone).toHaveBeenCalledOnce();
+    expect(staying).toHaveBeenCalledTimes(2);
+  });
+
+  it('logs a listener that throws, still calls the others, and the write still resolves', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failure = new Error('listener broke');
+    db.onDataChanged(() => {
+      throw failure;
+    });
+    const after = vi.fn();
+    db.onDataChanged(after);
+
+    await expect(db.savePet(pet('a'))).resolves.toBeUndefined();
+
+    expect(consoleError).toHaveBeenCalledWith('A data change listener failed', failure);
+    expect(after).toHaveBeenCalledOnce();
+    expect(await db.getPet('a')).toEqual(pet('a'));
   });
 });
 

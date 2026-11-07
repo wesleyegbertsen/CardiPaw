@@ -1,12 +1,14 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import type { App } from 'vue';
 import { router } from './router';
+import { installAutoBackup } from './native/autoBackup';
 import { installBackButton } from './native/backButton';
 import { cleanUpOldExports } from './native/exportCleanup';
 import { installReminders } from './native/reminders';
 import { installUpdateCheck } from './native/updateCheck';
 import { i18n } from './i18n';
 
+vi.mock('./native/autoBackup', () => ({ installAutoBackup: vi.fn() }));
 vi.mock('./native/backButton', () => ({ installBackButton: vi.fn() }));
 vi.mock('./native/exportCleanup', () => ({ cleanUpOldExports: vi.fn() }));
 // syncReminders too: the stores import it.
@@ -22,7 +24,7 @@ let app: App | undefined;
 // Auto-unmount only tracks wrappers from mount(); main.ts uses createApp.
 afterEach(() => app?.unmount());
 
-it('mounts the app on #app with pinia, the router, i18n, the back button, export cleanup, reminders and the update check', async () => {
+it('mounts the app on #app with pinia, the router, i18n, the back button, export cleanup, reminders, the update check and automatic backups', async () => {
   document.body.innerHTML = '<div id="app"></div>';
   await import('./main');
 
@@ -36,6 +38,7 @@ it('mounts the app on #app with pinia, the router, i18n, the back button, export
   expect(cleanUpOldExports).toHaveBeenCalledOnce();
   expect(installReminders).toHaveBeenCalledWith(router, i18n);
   expect(installUpdateCheck).toHaveBeenCalledOnce();
+  expect(installAutoBackup).toHaveBeenCalledOnce();
 
   // The home screen loads the (empty) pets store and renders in English.
   await vi.waitFor(() =>

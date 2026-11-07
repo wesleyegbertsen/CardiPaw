@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Android 11 and lower (API < 31): back up nothing, matching allowBackup="false" and
-    data_extraction_rules.xml. The in-app export (Settings > Export data) is the only backup.
+    data_extraction_rules.xml. The owner's own backups are the in-app export (Settings > Export
+    data) and the opt-in automatic backups to a folder they pick (Settings > Automatic backups).
 -->
 <full-backup-content>
     <exclude domain="root" />
