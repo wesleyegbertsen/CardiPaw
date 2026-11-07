@@ -244,13 +244,15 @@ describe('Android resources', () => {
     expect(literal?.replace(/\\\\/g, '\\')).toBe(BACKUP_FILE_PATTERN.source);
   });
 
-  it("the backup folder plugin rejects with every code the web code tells apart", () => {
+  it('the backup folder plugin rejects with every code the web code tells apart', () => {
     const plugin = readFileSync(
       join(ROOT, 'android/app/src/main/java/com/cardipaw/app/BackupFolderPlugin.java'),
       'utf8',
     );
     const javaCodes = new Set(
-      [...plugin.matchAll(/code = "([A-Z_]+)"|reject\("[^"]*", "([A-Z_]+)"\)/g)].map((m) => m[1] ?? m[2]),
+      [...plugin.matchAll(/code = "([A-Z_]+)"|reject\("[^"]*", "([A-Z_]+)"\)/g)].map(
+        (m) => m[1] ?? m[2],
+      ),
     );
     expect([...javaCodes]).toEqual(
       expect.arrayContaining([

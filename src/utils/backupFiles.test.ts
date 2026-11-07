@@ -75,4 +75,10 @@ describe('filesToPrune', () => {
     ];
     expect(filesToPrune(mixed, 3, name('2026-11-05'))).toEqual([]);
   });
+
+  it('counts a name listed twice once, so it never pushes another backup out', () => {
+    const listed = [name('2026-11-01'), name('2026-11-01'), name('2026-11-02'), name('2026-11-03')];
+    expect(filesToPrune(listed, 3, name('2026-11-03'))).toEqual([]);
+    expect(filesToPrune(listed, 2, name('2026-11-03'))).toEqual([name('2026-11-01')]);
+  });
 });

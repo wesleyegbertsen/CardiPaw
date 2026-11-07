@@ -182,6 +182,23 @@ describe('useAutoBackup', () => {
     expect(plugin.deleteFile).not.toHaveBeenCalled();
   });
 
+  it('with no pets clears a change saved before, so it is not retried at every start', async () => {
+    turnedOn();
+    storeState({ dirty: true });
+    const { backup } = await load();
+    expect(await backup.backUpNow()).toBe('nothing');
+    expect(savedState().dirty).toBe(false);
+  });
+
+  it('with no pets records nothing when backups were turned off during the run', async () => {
+    turnedOn();
+    const { backup } = await load();
+    const run = backup.backUpNow();
+    await backup.turnOff();
+    await run;
+    expect(savedState()).toEqual({});
+  });
+
   it('a failed write prunes nothing and shows until dismissed; a new kind shows again', async () => {
     turnedOn();
     const { db, plugin, backup } = await load();
@@ -202,6 +219,21 @@ describe('useAutoBackup', () => {
     expect(await backup.backUpNow()).toBe('saved');
     expect(backup.failure.value).toBeNull();
     expect(backup.lastSuccess.value).toEqual(expect.any(Number));
+  });
+
+  it('a dismissed failure shows again after a different one came in between', async () => {
+    turnedOn();
+    const { db, plugin, backup } = await load();
+    await db.savePet(makePet());
+    plugin.writeFile.mockRejectedValueOnce(rejectWith('FOLDER_MISSING'));
+    await backup.backUpNow();
+    backup.dismissNotice();
+    plugin.writeFile.mockRejectedValueOnce(rejectWith('PERMISSION_REVOKED'));
+    await backup.backUpNow();
+    plugin.writeFile.mockRejectedValueOnce(rejectWith('FOLDER_MISSING'));
+    await backup.backUpNow();
+    expect(backup.failure.value).toBe('missing');
+    expect(backup.showNotice.value).toBe(true);
   });
 
   it('prunes to keep after a success', async () => {
@@ -346,6 +378,19 @@ describe('useAutoBackup', () => {
       expect(reloaded.backup.failure.value).toBe('revoked');
       expect(reloaded.backup.showNotice.value).toBe(true);
     });
+  });
+
+  it('a damaged "dirty" is not a change: nothing is written when today\'s file exists', async () => {
+    turnedOn();
+    const first = await load();
+    await first.db.savePet(makePet());
+    killApp(); // inside the debounce window
+    storeState({ lastFile: TODAY, dirty: 'yes' });
+
+    const next = await load();
+    await next.backupIfDue();
+    await settleIndexedDb();
+    expect(next.plugin.writeFile).not.toHaveBeenCalled();
   });
 
   describe('turnOn', () => {
@@ -537,9 +582,16 @@ describe('useAutoBackup', () => {
 
     it('writes nothing when no change is waiting', async () => {
       turnedOn();
-      const { plugin, flushPendingBackup } = await load();
+      const { db, plugin, flushPendingBackup } = await load();
+      await db.savePet(makePet());
+      await vi.advanceTimersByTimeAsync(10_000);
+      // The debounced backup ran to the end.
+      await vi.waitFor(() => expect(plugin.listFiles).toHaveBeenCalledOnce());
+      expect(plugin.writeFile).toHaveBeenCalledOnce();
+      plugin.writeFile.mockClear();
       flushPendingBackup();
       await vi.advanceTimersByTimeAsync(10_000);
+      await settleIndexedDb();
       expect(plugin.writeFile).not.toHaveBeenCalled();
     });
   });
