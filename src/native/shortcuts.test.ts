@@ -69,6 +69,12 @@ describe('shortcuts', () => {
     expect(App.addListener).not.toHaveBeenCalled();
   });
 
+  it('syncs once installed', async () => {
+    mockNative();
+    install();
+    await vi.waitFor(() => expect(LS.setShortcuts).toHaveBeenCalledOnce());
+  });
+
   it("publishes every pet in stored order with labels in the app's language", async () => {
     mockNative();
     install();
@@ -149,6 +155,27 @@ describe('shortcuts', () => {
     expect(LS.setShortcuts).toHaveBeenCalledOnce();
   });
 
+  it('sends a renamed pet again', async () => {
+    mockNative();
+    install();
+    await mod.syncShortcuts();
+    await db.savePet(makePet({ id: 'a', name: 'Bobby' }));
+    await mod.syncShortcuts();
+    expect(LS.setShortcuts).toHaveBeenCalledTimes(2);
+    expect(published().pets[0]).toMatchObject({ shortLabel: 'Bobby', longLabel: 'Measure Bobby' });
+  });
+
+  it('sends a new photo again', async () => {
+    const newPhoto = 'data:image/png;base64,BBBB';
+    mockNative();
+    install();
+    await mod.syncShortcuts();
+    await db.savePet(makePet({ id: 'b', name: 'Mochi', photo: newPhoto }));
+    await mod.syncShortcuts();
+    expect(LS.setShortcuts).toHaveBeenCalledTimes(2);
+    expect(published().pets[1].photo).toBe(newPhoto);
+  });
+
   it('tries again on the next sync after the plugin failed', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     LS.setShortcuts.mockRejectedValueOnce(new Error('Rate-limited'));
@@ -213,6 +240,8 @@ describe('shortcuts', () => {
   });
 
   it('runs one sync at a time: a pet deleted during a sync is gone in the next', async () => {
+    // The db module shortcuts.ts imported after vi.resetModules, not the one imported above.
+    const getAllPets = vi.spyOn(await import('../services/db'), 'getAllPets');
     mockNative();
     install();
     // The sync installShortcuts started, held inside the plugin call.
@@ -221,11 +250,11 @@ describe('shortcuts', () => {
     await vi.waitFor(() => expect(LS.setShortcuts).toHaveBeenCalledOnce());
     await db.deletePetCascade('a');
     const second = mod.syncShortcuts();
-    // Give a second sync that didn't wait time to read the pets and call the plugin.
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(LS.setShortcuts).toHaveBeenCalledOnce();
+    // A second sync that didn't wait would have read the pets synchronously.
+    expect(getAllPets).toHaveBeenCalledOnce();
     held.resolve();
     await second;
+    expect(getAllPets).toHaveBeenCalledTimes(2);
     expect(LS.setShortcuts).toHaveBeenCalledTimes(2);
     expect(published().pets.map((p) => p.id)).toEqual(['b']);
   });

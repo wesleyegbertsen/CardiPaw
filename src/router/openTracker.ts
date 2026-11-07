@@ -1,7 +1,7 @@
 import type { Router } from 'vue-router';
 
 /** A pet id from outside the app (a notification, a launcher shortcut): a non-empty string. */
-export function isPetId(value: unknown): value is string {
+function isPetId(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0;
 }
 

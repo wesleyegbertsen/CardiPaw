@@ -10,9 +10,8 @@ vi.mock('@capacitor/core', async (importOriginal) => ({
 describe('LauncherShortcuts', () => {
   it('is the app-local plugin that MainActivity registers', async () => {
     // Imported here: restoreMocks clears the calls made before each test.
-    const { LauncherShortcuts } = await import('./launcherShortcuts');
+    await import('./launcherShortcuts');
     // The Java side's @CapacitorPlugin name; androidResources.test.ts checks the two match.
     expect(registerPlugin).toHaveBeenCalledExactlyOnceWith('LauncherShortcuts');
-    expect(LauncherShortcuts.setShortcuts).toEqual(expect.any(Function));
   });
 });
