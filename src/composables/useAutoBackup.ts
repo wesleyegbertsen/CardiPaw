@@ -238,9 +238,14 @@ async function pick(): Promise<PickedFolder | 'cancelled' | 'unavailable'> {
   }
 }
 
-function release(uri: string): Promise<void> {
-  return BackupFolder.releaseFolder({ uri }).catch((e) =>
-    console.warn('Releasing the backup folder failed', errorCode(e)),
+/** False when Android kept the grant. */
+function release(uri: string): Promise<boolean> {
+  return BackupFolder.releaseFolder({ uri }).then(
+    () => true,
+    (e) => {
+      console.warn('Releasing the backup folder failed', errorCode(e));
+      return false;
+    },
   );
 }
 
@@ -252,10 +257,13 @@ const showNotice = computed(() => {
 export function useAutoBackup() {
   /** Asks for a folder; stays off when the picker is closed. */
   async function turnOn(): Promise<'on' | 'cancelled' | 'unavailable'> {
+    // Left by a turnOff whose release failed.
+    const old = config.value.folderUri;
     const picked = await pick();
     if (typeof picked === 'string') return picked;
     saveConfig({ ...config.value, enabled: true, folderUri: picked.uri, folderName: picked.name });
     save({});
+    if (old && old !== picked.uri) void release(old);
     void backupSoon();
     return 'on';
   }
@@ -273,23 +281,34 @@ export function useAutoBackup() {
     return 'changed';
   }
 
-  /** Keeps every file already written; only gives up access to the folder. */
+  /**
+   * Keeps every file already written; only gives up access to the folder. The folder stays saved
+   * until its grant is released: if that fails, turnOn releases it when another folder is picked.
+   */
   async function turnOff(): Promise<void> {
     const uri = config.value.folderUri;
     clearTimeout(timer);
     timer = undefined;
-    saveConfig({ enabled: false, frequency: config.value.frequency, keep: config.value.keep });
+    const off = () => ({
+      enabled: false,
+      frequency: config.value.frequency,
+      keep: config.value.keep,
+    });
+    saveConfig({ ...off(), ...(uri !== undefined && { folderUri: uri }) });
     save({});
-    if (uri) await release(uri);
+    if (uri === undefined || !(await release(uri))) return;
+    // Unless backups were turned on again in the meantime.
+    if (!config.value.enabled && config.value.folderUri === uri) saveConfig(off());
   }
 
   function setFrequency(frequency: BackupFrequency) {
+    if (frequency === config.value.frequency) return;
     saveConfig({ ...config.value, frequency });
     if (config.value.enabled) void backupSoon();
   }
 
   function setKeep(keep: number) {
-    saveConfig({ ...config.value, keep });
+    if (keep !== config.value.keep) saveConfig({ ...config.value, keep });
   }
 
   function dismissNotice() {

@@ -386,6 +386,23 @@ describe('useAutoBackup', () => {
         }),
       );
     });
+
+    it('releases a folder an earlier turnOff could not release', async () => {
+      turnedOn({ enabled: false });
+      const { plugin, backup } = await load();
+      plugin.pickFolder.mockResolvedValueOnce({ uri: OTHER_URI, name: 'Other' });
+      expect(await backup.turnOn()).toBe('on');
+      expect(plugin.releaseFolder).toHaveBeenCalledWith({ uri: URI });
+      expect(savedConfig()).toMatchObject({ enabled: true, folderUri: OTHER_URI });
+    });
+
+    it('picking the folder an earlier turnOff could not release keeps its grant', async () => {
+      turnedOn({ enabled: false });
+      const { plugin, backup } = await load();
+      plugin.pickFolder.mockResolvedValueOnce({ uri: URI, name: 'Backups' });
+      expect(await backup.turnOn()).toBe('on');
+      expect(plugin.releaseFolder).not.toHaveBeenCalled();
+    });
   });
 
   describe('changeFolder', () => {
@@ -432,6 +449,38 @@ describe('useAutoBackup', () => {
       expect(savedConfig()).toEqual({ enabled: false, frequency: 'weekly', keep: 3 });
       expect(savedState()).toEqual({});
       expect(backup.showNotice.value).toBe(false);
+    });
+
+    it('keeps the folder saved when releasing it fails, so turning on again releases it', async () => {
+      turnedOn();
+      const { plugin, backup } = await load();
+      plugin.releaseFolder.mockRejectedValueOnce(rejectWith('FAILED'));
+      await backup.turnOff();
+      expect(plugin.releaseFolder).toHaveBeenCalledWith({ uri: URI });
+      expect(savedConfig()).toEqual({
+        enabled: false,
+        folderUri: URI,
+        frequency: 'daily',
+        keep: 7,
+      });
+      expect(backup.config.value.enabled).toBe(false);
+      plugin.pickFolder.mockResolvedValueOnce({ uri: OTHER_URI, name: 'Other' });
+      await backup.turnOn();
+      expect(plugin.releaseFolder).toHaveBeenCalledTimes(2);
+      expect(plugin.releaseFolder).toHaveBeenLastCalledWith({ uri: URI });
+    });
+
+    it('a folder picked while the release is still running stays on', async () => {
+      turnedOn();
+      const { plugin, backup } = await load();
+      const released = deferred<void>();
+      plugin.releaseFolder.mockImplementationOnce(() => released.promise);
+      const off = backup.turnOff();
+      plugin.pickFolder.mockResolvedValueOnce({ uri: OTHER_URI, name: 'Other' });
+      await backup.turnOn();
+      released.resolve();
+      await off;
+      expect(savedConfig()).toMatchObject({ enabled: true, folderUri: OTHER_URI });
     });
 
     it('a change still waiting for its debounce is never written', async () => {
@@ -604,6 +653,22 @@ describe('useAutoBackup', () => {
           expect.objectContaining({ name: 'cardipaw-backup-2026-11-02.json' }),
         ),
       );
+    });
+
+    it('choosing the schedule or count already set writes nothing', async () => {
+      // Saving the config would drop the unknown field: the stored text shows whether it was saved.
+      turnedOn({ unknown: 1 });
+      const stored = localStorage.getItem('cardipaw-auto-backup');
+      const { db, plugin, backup } = await load();
+      await db.savePet(makePet());
+      await backup.backUpNow();
+      plugin.writeFile.mockClear();
+      backup.setFrequency('daily');
+      backup.setKeep(7);
+      await vi.advanceTimersByTimeAsync(10_000);
+      await settleIndexedDb();
+      expect(plugin.writeFile).not.toHaveBeenCalled();
+      expect(localStorage.getItem('cardipaw-auto-backup')).toBe(stored);
     });
 
     it('a new schedule while off is saved without a backup', async () => {
