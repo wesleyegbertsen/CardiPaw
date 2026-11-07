@@ -18,6 +18,7 @@ const NODE_TESTS = [
   'src/composables/{useAudioBeep,useHaptics}.test.ts',
   'src/i18n/locales.test.ts',
   'src/native/csp.test.ts',
+  'src/router/openTracker.test.ts',
   'src/services/{db,githubRelease}.test.ts',
   'src/stores/stores.test.ts',
   'src/test/{androidResources,permissionsPolicy}.test.ts',

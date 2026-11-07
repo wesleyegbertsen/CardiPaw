@@ -52,6 +52,7 @@ These defaults are based on general veterinary guidance. In a pet's profile you 
 - **Share links**: a read-only report packed into the link itself. Nothing is uploaded.
 - **Pet notes** for medication changes, vet visits and anything else worth keeping.
 - **Reminders** to measure, at a time and on the weekdays you choose (Android app).
+- **Shortcuts**: long-press the app icon to start measuring one of your pets (Android app).
 - **Export and import** of your pets, readings and notes as a JSON file, for backup or moving devices.
 - **Languages:** English, Dutch, German, French and Japanese.
 
@@ -59,13 +60,13 @@ Every feature in detail: [docs/features.md](docs/features.md).
 
 ## Privacy
 
-Your pets, readings and notes are stored locally on your device and are never sent to any server. A share link carries your pet's name, species and date of birth (and its own Normal and Elevated ceilings, if you set them), along with the readings from the months you pick, inside the link itself (in the URL fragment, which browsers never send to a server), so anyone you send it to can see them. [Camera counting](docs/features.md#camera-counting-experimental) and the Android app's [update check](docs/android.md#updating) are off until you turn them on.
+Your pets, readings and notes are stored locally on your device and are never sent to any server. A share link carries your pet's name, species and date of birth (and its own Normal and Elevated ceilings, if you set them), along with the readings from the months you pick, inside the link itself (in the URL fragment, which browsers never send to a server), so anyone you send it to can see them. In the Android app, Android gives your pets' names and photos to your home screen app (the launcher) to show the app's [shortcuts](docs/android.md#shortcuts). [Camera counting](docs/features.md#camera-counting-experimental) and the Android app's [update check](docs/android.md#updating) are off until you turn them on.
 
 ## Android
 
 Every [release](https://github.com/wesleyegbertsen/CardiPaw/releases) includes the Android app as `cardipaw-X.Y.Z.apk`. CardiPaw is not on Google Play yet. Download the APK on your phone, open it, and allow installing unknown apps when Android asks. To update, install a newer APK over the installed app. Don't uninstall it first: uninstalling deletes all of the app's data.
 
-Installing, updating, checking an APK's signing certificate, reminders and permissions: [docs/android.md](docs/android.md).
+Installing, updating, checking an APK's signing certificate, reminders, shortcuts and permissions: [docs/android.md](docs/android.md).
 
 ## Docker
 

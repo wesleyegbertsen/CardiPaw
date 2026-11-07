@@ -69,6 +69,10 @@ Each pet has a general-purpose **Notes** tab where you can write anything that d
 
 Reminders to measure a pet, at a time and on the weekdays you choose, are part of the [Android app](android.md). How they work: [Reminders](android.md#reminders).
 
+## Shortcuts
+
+Long-press shortcuts that start measuring a pet are part of the [Android app](android.md). How they work: [Shortcuts](android.md#shortcuts).
+
 ## Data export & import
 
 Export all pets, readings and notes as a JSON file for backup or transfer. Import a previously exported file to restore your data.

@@ -10,8 +10,9 @@ import { mockNative } from '../test/native';
 import { loadReminderSettings, saveReminderSetting } from '../utils/reminderSettings';
 
 vi.mock('../services/nativeFile', () => ({ cleanUpExports: vi.fn(async () => {}) }));
-// mockNative() would send syncReminders to the plugin; src/stores/reminderHooks.test.ts covers the calls.
+// mockNative() would send syncReminders and syncShortcuts to the plugins; src/stores/{reminderHooks,shortcutHooks}.test.ts cover the calls.
 vi.mock('../native/reminders', () => ({ syncReminders: vi.fn(async () => {}) }));
+vi.mock('../native/shortcuts', () => ({ syncShortcuts: vi.fn(async () => {}) }));
 
 const PREFS_KEY = 'cardipaw-tracker-prefs';
 const pet2Reading = makeReading({ id: 'r2', petId: 'pet-2' });

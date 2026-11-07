@@ -302,6 +302,7 @@
       "p4": "<strong>No data sharing.</strong> Because your data never leaves your device, it is never shared with or accessible by anyone else.",
       "p5": "<strong>Update check (Android app).</strong> If you turn on \"Check automatically\" in Settings under Updates, the app asks api.github.com about once a day, and whenever you tap \"Check now\", whether a newer version exists. GitHub then sees your IP address and the information the app's browser engine sends with every request, such as its user agent (which includes the Android version and device model) and language. No pet data is sent. It stays off unless you turn it on.",
       "p6": "<strong>Reminders stay on your phone.</strong> In the Android app, reminders are scheduled on this phone; nothing about them is sent anywhere. Their settings stay on this device and aren't included in exports.",
+      "p7": "<strong>Shortcuts (Android app).</strong> Long-pressing the CardiPaw icon shows a shortcut for each of the first four pets on CardiPaw's home screen, and you can add them to your home screen. To show them, Android gives your pets' names and photos to your home screen app (the launcher); CardiPaw itself sends nothing anywhere. When you delete a pet, its shortcut on your home screen is greyed out and shows the CardiPaw icon instead of the pet's name and photo.",
       "cameraTitle": "Camera (experimental).",
       "cameraBody": "If you turn on camera breath counting, the camera image is analysed on your device while you measure. No video or picture is recorded, stored or sent anywhere, and the camera is released as soon as the measurement ends."
     },
@@ -475,5 +476,10 @@
     "summaryBlocked": "Reminders paused: notifications are off",
     "applyError": "Your settings were saved, but the reminders couldn't be scheduled. Please try again.",
     "save": "Save"
+  },
+  "shortcuts": {
+    "longLabel": "Measure {name}",
+    "petDeleted": "This pet was deleted",
+    "deletedLabel": "Deleted pet"
   }
 }

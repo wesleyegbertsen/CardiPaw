@@ -466,6 +466,7 @@ describe('reminders', () => {
     tap(undefined);
     tap({});
     tap({ petId: 42 });
+    tap({ petId: '' });
     expect(push).toHaveBeenCalledOnce();
   });
 

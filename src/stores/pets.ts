@@ -4,6 +4,7 @@ import type { Pet } from '../types';
 import * as db from '../services/db';
 import { forgetPetData } from './petData';
 import { syncReminders } from '../native/reminders';
+import { syncShortcuts } from '../native/shortcuts';
 import { v4 as generateId } from 'uuid';
 
 export const usePetsStore = defineStore('pets', () => {
@@ -54,6 +55,8 @@ export const usePetsStore = defineStore('pets', () => {
     };
     await db.savePet(pet);
     pets.value.push(pet);
+    // Never rejects.
+    void syncShortcuts();
     return pet;
   }
 
@@ -66,6 +69,8 @@ export const usePetsStore = defineStore('pets', () => {
     if (index !== -1) pets.value[index] = updated;
     // Scheduled reminders carry the name in their text.
     if (updated.name !== existing.name) void syncReminders(id);
+    // The shortcuts show the name and photo. Never rejects.
+    if (updated.name !== existing.name || updated.photo !== existing.photo) void syncShortcuts();
   }
 
   async function removePet(id: string) {

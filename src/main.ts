@@ -6,6 +6,7 @@ import App from './App.vue';
 import { installBackButton } from './native/backButton';
 import { cleanUpOldExports } from './native/exportCleanup';
 import { installReminders } from './native/reminders';
+import { installShortcuts } from './native/shortcuts';
 import { installUpdateCheck } from './native/updateCheck';
 import './assets/styles/global.css';
 
@@ -15,6 +16,7 @@ app.use(router);
 installBackButton(router);
 cleanUpOldExports();
 installReminders(router, i18n);
+installShortcuts(router, i18n);
 installUpdateCheck();
 app.use(i18n);
 app.mount('#app');

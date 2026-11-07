@@ -71,6 +71,10 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
 
+      - name: Run Android unit tests
+        working-directory: android
+        run: ./gradlew testDebugUnitTest --no-daemon
+
       # package.json says 0.0.0 outside releases: versionCode is floored at 1 (Android rejects 0).
       - name: Check version
         run: |
