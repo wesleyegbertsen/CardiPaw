@@ -91,32 +91,32 @@
             style="@style/WidgetBadge"
             android:layout_marginStart="6dp"
             android:background="@drawable/widget_badge_warning"
+            android:ellipsize="end"
             android:textColor="@color/widget_warning_text"
             android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/age"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/widget_text_muted"
-            android:textSize="13sp"
-            android:text="@string/widget_preview_age" />
-
-        <!-- The age after 3 days, in the warning colour (useLastMeasured's isStale). -->
-        <TextView
-            android:id="@+id/age_stale"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/widget_stale"
-            android:textSize="13sp"
-            android:visibility="gone" />
     </LinearLayout>
+
+    <!-- The age on its own line: a long status or trend badge can't squeeze it. -->
+    <TextView
+        android:id="@+id/age"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_muted"
+        android:textSize="13sp"
+        android:text="@string/widget_preview_age" />
+
+    <!-- The age after 3 days, in the warning colour (useLastMeasured's isStale). -->
+    <TextView
+        android:id="@+id/age_stale"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/widget_stale"
+        android:textSize="13sp"
+        android:visibility="gone" />
 </LinearLayout>

@@ -532,6 +532,45 @@ describe('Android resources', () => {
     expect(updateAll).toMatch(/needsMidnight\([\s\S]*cancelMidnight\(ctx\)/);
   });
 
+  it('sizes the all-pets rows as WidgetRows counts them', () => {
+    // A row taller than WidgetRows assumes is clipped at the widget's bottom edge.
+    const rows = readFileSync(join(WIDGET_JAVA, 'WidgetRows.java'), 'utf8');
+    const constant = (name: string) => rows.match(new RegExp(`\\b${name} = (\\d+)`))?.[1];
+    const root = (layout: string) =>
+      xmlWithoutComments(join(RES, `layout/${layout}.xml`)).match(/<\w+\s[^>]*>/)?.[0] ?? '';
+    const row = root('widget_all_pets_row');
+    // Grows with the system font size; WidgetRows scales its budget the same way.
+    expect(row).toMatch(/android:layout_height="wrap_content"/);
+    expect(row.match(/android:minHeight="(\d+)dp"/)?.[1]).toBe(constant('ROW_DP'));
+    expect(root('widget_all_pets_more').match(/android:layout_height="(\d+)dp"/)?.[1]).toBe(
+      constant('MORE_DP'),
+    );
+    expect(constant('MORE_DP')).toBe('48');
+  });
+
+  it('keeps the age readable next to a long status or trend badge', () => {
+    // One line: the age comes before the trend and takes no weight, so it is measured first.
+    for (const layout of ['widget_pet_small', 'widget_all_pets_row']) {
+      const xml = xmlWithoutComments(join(RES, `layout/${layout}.xml`));
+      for (const age of ['age', 'age_stale']) {
+        const view = xml.match(new RegExp(`android:id="@\\+id/${age}"[^>]*>`))?.[0] ?? '';
+        expect(view, `${layout} ${age}`).toMatch(/android:layout_width="wrap_content"/);
+        expect(view, `${layout} ${age}`).not.toMatch(/layout_weight/);
+        expect(xml.indexOf(`@+id/${age}"`), layout).toBeLessThan(xml.indexOf('@+id/trend"'));
+      }
+    }
+    // The medium layout: the age on its own line, after the badges' row has closed.
+    const medium = xmlWithoutComments(join(RES, 'layout/widget_pet.xml'));
+    const between = medium.slice(medium.indexOf('@+id/trend"'), medium.indexOf('@+id/age"'));
+    expect(between).toContain('</LinearLayout>');
+    // The trend badge is cut rather than pushed off the edge.
+    for (const layout of ['widget_pet', 'widget_pet_small', 'widget_all_pets_row']) {
+      const xml = xmlWithoutComments(join(RES, `layout/${layout}.xml`));
+      const trend = xml.match(/android:id="@\+id\/trend"[^>]*>/)?.[0];
+      expect(trend, layout).toMatch(/android:ellipsize="end"/);
+    }
+  });
+
   it('sets no widget colour from code', () => {
     // A colour set on RemoteViews stays until the next redraw: it wouldn't follow a dark mode
     // switch. The layouts' @color references (values-night) do.

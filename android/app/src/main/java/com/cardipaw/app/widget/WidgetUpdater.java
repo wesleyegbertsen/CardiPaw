@@ -161,10 +161,14 @@ final class WidgetUpdater {
             mgr.updateAppWidget(widgetId, message(ctx, s.strings.noPets, home));
             return;
         }
-        // MAX_HEIGHT: the portrait height on most launchers; MIN when a launcher reports none.
+        // MAX_HEIGHT is the portrait height on most launchers, MIN_HEIGHT the landscape one: the
+        // smaller, so no row is clipped in either (portrait may show a gap below the rows).
         Bundle o = mgr.getAppWidgetOptions(widgetId);
-        int heightDp = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110));
-        int petRows = WidgetRows.petRows(heightDp, s.pets.size());
+        int heightDp = WidgetRows.heightDp(
+            o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0), o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0));
+        // Rows grow with the system font size (wrap_content, minHeight 52dp).
+        float fontScale = ctx.getResources().getConfiguration().fontScale;
+        int petRows = WidgetRows.petRows(heightDp, s.pets.size(), fontScale);
         RemoteViews views = new RemoteViews(ctx.getPackageName(), R.layout.widget_all_pets);
         views.removeAllViews(R.id.rows);
         for (int i = 0; i < petRows; i++) {

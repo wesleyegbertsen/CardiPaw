@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One pet in the all-pets widget (WidgetRows.ROW_DP high), and in its picker preview.
+<!-- One pet in the all-pets widget (at least WidgetRows.ROW_DP high, taller with large text),
+     and in its picker preview.
      WidgetUpdater.pet() sets every id below; widget_pet.xml and widget_pet_small.xml have the
      same ids. Only RemoteViews-safe views (LinearLayout, FrameLayout, TextView). Colours come
      from colors.xml (values-night for dark mode), never from code. A smaller avatar than the
@@ -7,7 +8,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
-    android:layout_height="52dp"
+    android:layout_height="wrap_content"
+    android:minHeight="52dp"
     android:gravity="center_vertical"
     android:orientation="vertical"
     android:paddingStart="4dp"
@@ -85,19 +87,10 @@
             android:visibility="gone" />
 
         <TextView
-            android:id="@+id/trend"
-            style="@style/WidgetBadge"
-            android:layout_marginStart="6dp"
-            android:background="@drawable/widget_badge_warning"
-            android:textColor="@color/widget_warning_text"
-            android:visibility="gone" />
-
-        <TextView
             android:id="@+id/age"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"
             android:textColor="@color/widget_text_muted"
@@ -107,14 +100,24 @@
         <!-- The age after 3 days, in the warning colour (useLastMeasured's isStale). -->
         <TextView
             android:id="@+id/age_stale"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"
             android:textColor="@color/widget_stale"
             android:textSize="13sp"
+            android:visibility="gone" />
+
+        <!-- After the age, which is measured first: a long trend badge is cut, never the age.
+             The trend stays in the content description. -->
+        <TextView
+            android:id="@+id/trend"
+            style="@style/WidgetBadge"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/widget_badge_warning"
+            android:ellipsize="end"
+            android:textColor="@color/widget_warning_text"
             android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>
