@@ -46,5 +46,9 @@
     </style>
 
     <!-- The widget's pet picker: a dialog over the home screen, following the system dark mode. -->
-    <style name="AppTheme.WidgetConfigure" parent="Theme.AppCompat.DayNight.Dialog" />
+    <style name="AppTheme.WidgetConfigure" parent="Theme.AppCompat.DayNight.Dialog">
+        <!-- The button in CardiPaw's pink, not AppCompat's teal: the avatar's text colour (and its
+             values-night variant) is at least 4.5:1 on the light and the dark dialog. -->
+        <item name="colorAccent">@color/widget_avatar_text</item>
+    </style>
 </resources>

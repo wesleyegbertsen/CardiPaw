@@ -40,7 +40,7 @@ public final class WidgetSnapshot {
 
     public static final class Strings {
         public final String bpm, today, todayAt, yesterday, noReadings, noPets, petMissing;
-        public final String a11yReading, a11yNoReadings;
+        public final String a11yReading, a11yNoReadings, a11yTrend;
         public final Map<String, String> status;
         public final Map<String, String> trend;
         public final Plural daysAgo, weeksAgo, more;
@@ -55,6 +55,7 @@ public final class WidgetSnapshot {
             petMissing = o.getString("petMissing");
             a11yReading = o.getString("a11yReading");
             a11yNoReadings = o.getString("a11yNoReadings");
+            a11yTrend = o.getString("a11yTrend");
             status = stringMap(o.getJSONObject("status"), STATUSES);
             trend = stringMap(o.getJSONObject("trend"), ALERTS);
             daysAgo = new Plural(o.getJSONObject("daysAgo"));

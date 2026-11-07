@@ -38,6 +38,8 @@ export interface WidgetStrings {
   a11yReading: string;
   /** With literal {name} and {age}. */
   a11yNoReadings: string;
+  /** Appended to a11yReading on an alert day, with a literal {trend} (its own space or none). */
+  a11yTrend: string;
 }
 
 export interface WidgetPet {
@@ -92,6 +94,7 @@ export function buildWidgetStrings(t: Translate): WidgetStrings {
     more: plural(t, 'widget.more'),
     a11yReading: literal(t, 'widget.a11yReading', ['name', 'rate', 'status', 'age']),
     a11yNoReadings: literal(t, 'widget.a11yNoReadings', ['name', 'age']),
+    a11yTrend: literal(t, 'widget.a11yTrend', ['trend']),
   };
 }
 

@@ -189,6 +189,15 @@ describe('buildWidgetStrings', () => {
     expect(s.todayAt).toContain('{time}');
     for (const p of ['{name}', '{rate}', '{status}', '{age}']) expect(s.a11yReading).toContain(p);
     for (const p of ['{name}', '{age}']) expect(s.a11yNoReadings).toContain(p);
+    expect(s.a11yTrend).toContain('{trend}');
+  });
+
+  it("ends TalkBack's trend sentence in each language's own way", () => {
+    // Java appends it to the reading's description as is.
+    const trend = (locale: keyof typeof messages) =>
+      buildWidgetStrings(translator(locale).t).a11yTrend;
+    expect(trend('en')).toBe(' {trend}.');
+    expect(trend('ja')).toBe('{trend}。');
   });
 });
 

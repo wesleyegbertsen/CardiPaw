@@ -399,6 +399,23 @@ describe('Android resources', () => {
     expect(low).toEqual([]);
   });
 
+  it("gives the pet picker's button CardiPaw's colour, at least 4.5:1 on the dialog, light and dark", () => {
+    // Without it the button is AppCompat's teal. The dialog backgrounds are AppCompat's
+    // background_floating_material_light / _dark.
+    const accent = styleItems('AppTheme.WidgetConfigure').items.colorAccent;
+    const name = accent?.match(/^@color\/(\w+)$/)?.[1];
+    expect(name, accent).toBeDefined();
+    const dialogs = [
+      ['values', '#ffffff'],
+      ['values-night', '#424242'],
+    ];
+    for (const [folder, background] of dialogs) {
+      const color = colorResource(folder, name!);
+      expect(color, folder).toBeDefined();
+      expect(contrast(color!, background), folder).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   it('declares each widget provider exported for APPWIDGET_UPDATE, with its provider info', () => {
     // Not exported or without the action, the launcher never lists the widget.
     const providers = [

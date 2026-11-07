@@ -142,11 +142,16 @@ final class WidgetUpdater {
         v.setViewVisibility(R.id.trend, alert == null ? View.GONE : View.VISIBLE);
         if (alert != null) {
             v.setTextViewText(R.id.trend, str.trend.get(alert));
-            description += " " + str.trend.get(alert) + ".";
+            description += trendSentence(str, alert);
         }
         v.setContentDescription(R.id.widget_root, description);
         v.setOnClickPendingIntent(R.id.widget_root, tap);
         return v;
+    }
+
+    /** TalkBack's trend sentence after the reading, in the app's language (Japanese has no space). */
+    static String trendSentence(WidgetSnapshot.Strings str, String alert) {
+        return WidgetText.fill(str.a11yTrend, "trend", str.trend.get(alert));
     }
 
     /** The all-pets widget: a row per pet that fits, then "+N more" (opens the app's home). */
