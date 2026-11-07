@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { parseWidgetUrl, WIDGET_URL_SCHEME } from '../utils/widgetUrl';
 
 // jsdom (a devDependency) has no type declarations installed; its XML mode throws on
 // malformed XML.
@@ -283,10 +284,26 @@ describe('Android resources', () => {
     const ts = readFileSync(join(ROOT, 'src/utils/widgetUrl.ts'), 'utf8');
     const scheme = ts.match(/WIDGET_URL_SCHEME = '([^']+)'/)?.[1];
     expect(scheme).toBe('cardipaw-widget');
-    expect(activity.match(/"([^"]+)"\.equals\(data\.getScheme\(\)\)/)?.[1]).toBe(scheme);
+    expect(activity.match(/"([^"]+)"\.equals\(scheme\)/)?.[1]).toBe(scheme);
     // And the one the widgets' taps use.
     const intents = readFileSync(join(WIDGET_JAVA, 'WidgetIntents.java'), 'utf8');
     expect(intents.match(/SCHEME = "([^"]+)"/)?.[1]).toBe(scheme);
+  });
+
+  it("builds the widgets' tap URLs the way the web code parses them", () => {
+    // A different authority in Java ("pets") would send every tap home.
+    const intents = readFileSync(join(WIDGET_JAVA, 'WidgetIntents.java'), 'utf8');
+    const authority = (method: string) =>
+      intents.match(
+        new RegExp(`static PendingIntent ${method}\\([\\s\\S]*?\\.authority\\("([^"]+)"\\)`),
+      )?.[1];
+    expect(parseWidgetUrl(`${WIDGET_URL_SCHEME}://${authority('openPet')}/p1`)).toEqual({
+      kind: 'pet',
+      petId: 'p1',
+    });
+    expect(parseWidgetUrl(`${WIDGET_URL_SCHEME}://${authority('openHome')}`)).toEqual({
+      kind: 'home',
+    });
   });
 
   it('declares INTERNET (the update check) and CAMERA (camera counting), never REQUEST_INSTALL_PACKAGES', () => {
@@ -542,7 +559,9 @@ describe('Android resources', () => {
     // Without this a phone with no widget left still wakes the app every midnight.
     for (const provider of ['PetWidgetProvider', 'AllPetsWidgetProvider']) {
       const java = readFileSync(join(WIDGET_JAVA, `${provider}.java`), 'utf8');
-      expect(java, provider).toMatch(/public void onDisabled\(Context ctx\)[\s\S]*?cancelMidnight\(/);
+      expect(java, provider).toMatch(
+        /public void onDisabled\(Context ctx\)[\s\S]*?cancelMidnight\(/,
+      );
     }
     const updater = readFileSync(join(WIDGET_JAVA, 'WidgetUpdater.java'), 'utf8');
     const updateAll = updater.match(/static void updateAll\([\s\S]*?\n {4}\}/)?.[0];

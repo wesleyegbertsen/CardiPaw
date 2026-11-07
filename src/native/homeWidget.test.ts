@@ -12,6 +12,8 @@ import { mockNative } from '../test/native';
 import { deferred } from '../test/deferred';
 import { usePetsStore } from '../stores/pets';
 import { useReadingsStore } from '../stores/readings';
+import { trendReadings } from '../test/trendReadings';
+import { localDayKey } from '../utils/date';
 import type { WidgetSnapshot } from '../utils/widgetSnapshot';
 
 const { setSnapshot } = vi.hoisted(() => ({
@@ -120,6 +122,18 @@ describe('syncHomeWidget', () => {
     await sentWhen((s) => expect(s.pets.map((p) => p.id)).toEqual(['p2']));
   });
 
+  it("keys the trend alerts by today's date", async () => {
+    // Rising today: the snapshot is built for now, not some other day.
+    await db.importAllData({
+      version: 1,
+      exportedAt: '',
+      pets: [makePet({ id: 'pet-1', name: 'Mochi' })],
+      readings: trendReadings(new Date(), 20, [28, 28, 28]),
+      notes: [],
+    });
+    await sentWhen((s) => expect(s.pets[0].alerts[localDayKey(new Date())]).toBe('rising'));
+  });
+
   it('syncs on resume', async () => {
     onResume();
     await vi.waitFor(() => expect(setSnapshot).toHaveBeenCalledOnce());
@@ -187,6 +201,13 @@ describe('a widget tap', () => {
   it('opens the pet', async () => {
     openUrl({ url: 'cardipaw-widget://pet/p1' });
     await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/pets/p1'));
+  });
+
+  it("opens another pet from one pet's page", async () => {
+    await db.savePet(makePet({ id: 'p2', name: 'Bo' }));
+    await router.push('/pets/p1');
+    openUrl({ url: 'cardipaw-widget://pet/p2' });
+    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/pets/p2'));
   });
 
   it('goes home for a pet that no longer exists', async () => {

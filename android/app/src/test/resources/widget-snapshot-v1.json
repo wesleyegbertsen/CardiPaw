@@ -77,6 +77,17 @@
         "2026-11-06": "rising",
         "2026-11-07": "rising"
       }
+    },
+    {
+      "id": "pet-5",
+      "name": "Coco",
+      "initial": "C",
+      "latest": {
+        "rate": 20,
+        "status": "normal",
+        "takenAt": 1793966400000
+      },
+      "alerts": {}
     }
   ]
 }

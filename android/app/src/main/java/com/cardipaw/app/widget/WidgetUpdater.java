@@ -68,7 +68,7 @@ final class WidgetUpdater {
             views = message(ctx, ctx.getString(R.string.widget_open_app_first), WidgetIntents.openHome(ctx, widgetId));
         } else if (pet == null) {
             // Never picked (the picker was dismissed on a launcher that adds anyway) or deleted.
-            String text = petId == null ? localized(ctx, s).getString(R.string.widget_configure_title) : s.strings.petMissing;
+            String text = missingPetMessage(petId, localized(ctx, s).getString(R.string.widget_configure_title), s.strings.petMissing);
             views = message(ctx, text, WidgetIntents.configure(ctx, widgetId));
         } else {
             PendingIntent tap = WidgetIntents.openPet(ctx, widgetId, pet.id);
@@ -86,6 +86,16 @@ final class WidgetUpdater {
             }
         }
         mgr.updateAppWidget(widgetId, views);
+    }
+
+    /** No pet to show: none was ever picked ("Choose a pet"), or the picked one was deleted. */
+    static String missingPetMessage(String petId, String chooseTitle, String petMissing) {
+        return petId == null ? chooseTitle : petMissing;
+    }
+
+    /** The pet's trend alert for today in the device's time zone, or null. */
+    static String alertFor(WidgetSnapshot.Pet pet, long now, TimeZone tz) {
+        return pet.alerts.get(WidgetAge.dayKey(now, tz));
     }
 
     static RemoteViews message(Context ctx, String text, PendingIntent tap) {
@@ -138,7 +148,7 @@ final class WidgetUpdater {
         v.setTextViewText(R.id.age_stale, age);
         v.setViewVisibility(R.id.age, stale ? View.GONE : View.VISIBLE);
         v.setViewVisibility(R.id.age_stale, stale ? View.VISIBLE : View.GONE);
-        String alert = pet.alerts.get(WidgetAge.dayKey(now, tz));
+        String alert = alertFor(pet, now, tz);
         v.setViewVisibility(R.id.trend, alert == null ? View.GONE : View.VISIBLE);
         if (alert != null) {
             v.setTextViewText(R.id.trend, str.trend.get(alert));

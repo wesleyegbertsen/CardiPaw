@@ -28,7 +28,7 @@ public class WidgetSnapshotTest {
     public void readsWhatTheWebAppBuilds() throws Exception {
         WidgetSnapshot s = WidgetSnapshot.parse(fixture());
         assertEquals("en", s.locale);
-        assertEquals(4, s.pets.size());
+        assertEquals(5, s.pets.size());
         WidgetSnapshot.Pet milo = s.find("pet-1");
         assertEquals("Milo", milo.name);
         assertEquals("M", milo.initial);
@@ -43,6 +43,9 @@ public class WidgetSnapshotTest {
         alerts.put("2026-11-06", "rising");
         alerts.put("2026-11-07", "rising");
         assertEquals(alerts, s.find("pet-4").alerts);
+        // Steady with a full baseline: a reading, and no alert on any day.
+        assertEquals(20, s.find("pet-5").latest.rate);
+        assertEquals(0, s.find("pet-5").alerts.size());
         assertEquals("Elevated", s.strings.status.get("warning"));
         assertEquals("Trending up", s.strings.trend.get("rising"));
         assertEquals("Measured today at {time}", s.strings.todayAt);

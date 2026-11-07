@@ -120,6 +120,37 @@ describe('buildWidgetSnapshot', () => {
     expect(snapshot.pets[0].alerts).toEqual({ '2026-11-06': 'rising', '2026-11-07': 'rising' });
   });
 
+  it('carries no alert for a steady pet with a full baseline', () => {
+    // computeTrend says "steady" here, not "insufficient": only rising and aboveCeiling count.
+    const today = new Date(2026, 10, 6, 15);
+    const snapshot = buildWidgetSnapshot({
+      pets: [makePet()],
+      readings: trendReadings(today, 20, [20, 20, 20]),
+      now: today,
+      locale: 'en',
+      t,
+    });
+    expect(snapshot.pets[0].alerts).toEqual({});
+  });
+
+  it('picks the newest reading whatever order they come in', () => {
+    const readings = [
+      makeReading({ id: 'b', date: '2026-11-05T08:00:00.000Z', rate: 22 }),
+      makeReading({ id: 'c', date: '2026-11-06T07:00:00.000Z', rate: 26 }),
+      makeReading({ id: 'a', date: '2026-11-04T08:00:00.000Z', rate: 20 }),
+    ];
+    expect(build([makePet()], readings).pets[0].latest?.rate).toBe(26);
+  });
+
+  it('rounds the rate to the nearest whole breath', () => {
+    const readings = [makeReading({ date: '2026-11-06T08:00:00.000Z', rate: 30.6 })];
+    expect(build([makePet()], readings).pets[0].latest?.rate).toBe(31);
+  });
+
+  it("takes the initial from the name's first letter, past any leading space", () => {
+    expect(build([makePet({ name: ' milo' })]).pets[0].initial).toBe('M');
+  });
+
   it('counts camera readings as the latest reading but not for alerts', () => {
     const today = new Date(2026, 10, 6, 15);
     const readings = trendReadings(today, 20, [28, 28, 28]).map((r) => ({
@@ -213,18 +244,22 @@ describe('the Android contract fixture', () => {
         makePet({ id: 'pet-2', name: 'Luna', normalCeiling: 25 }),
         makePet({ id: 'pet-3', name: 'Ziggy' }),
         makePet({ id: 'pet-4', name: 'Bella' }),
+        makePet({ id: 'pet-5', name: 'Coco' }),
       ],
       readings: [
         makeReading({ id: 'r1', petId: 'pet-1', date: '2026-11-06T08:12:00.000Z', rate: 24 }),
         makeReading({ id: 'r2', petId: 'pet-2', date: '2026-11-01T08:00:00.000Z', rate: 31 }),
         // Rising, so the fixture holds an alerts entry.
         ...trendReadings(NOW, 20, [28, 28, 28], 'pet-4'),
+        // Steady with a full baseline: no alerts, though computeTrend has a result.
+        ...trendReadings(NOW, 20, [20, 20, 20], 'pet-5'),
       ],
       now: NOW,
       locale: 'en',
       t,
     });
     expect(snapshot.pets[3].alerts).not.toEqual({});
+    expect(snapshot.pets[4].alerts).toEqual({});
     if (process.env.WRITE_WIDGET_FIXTURE) {
       writeFileSync(FIXTURE, `${JSON.stringify(snapshot, null, 2)}\n`);
     }

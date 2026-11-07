@@ -59,6 +59,12 @@ public class WidgetAgeTest {
     }
 
     @Test
+    public void weeksRoundDown() {
+        // 13 days is still "1 week", as in the app (useLastMeasured floors it).
+        assertEquals("Last measured 1 week ago", label("2026-11-07T12:00:00+01:00", "2026-11-20T12:00:00+01:00"));
+    }
+
+    @Test
     public void aDstChangeDoesNotShiftTheDay() {
         // Europe/Amsterdam left summer time on 2026-10-25, a 25-hour day: 24.5 hours apart, same day.
         assertEquals(0, WidgetAge.daysBetween(at("2026-10-25T00:30:00+02:00"), at("2026-10-25T23:59:00+01:00"), AMS));

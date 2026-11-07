@@ -3,13 +3,15 @@
 
 export const WIDGET_URL_SCHEME = 'cardipaw-widget';
 const MAX_ID_LENGTH = 200;
+// The scheme is letters and a hyphen: nothing in it to escape for a RegExp.
+const PET_URL = new RegExp(`^${WIDGET_URL_SCHEME}://pet/([^/?#]+)$`);
 
 export type WidgetTarget = { kind: 'pet'; petId: string } | { kind: 'home' };
 
 /** The widget tap's target, or null for any other URL. */
 export function parseWidgetUrl(url: string): WidgetTarget | null {
   if (url === `${WIDGET_URL_SCHEME}://home`) return { kind: 'home' };
-  const match = /^cardipaw-widget:\/\/pet\/([^/?#]+)$/.exec(url);
+  const match = PET_URL.exec(url);
   if (!match) return null;
   let petId: string;
   try {

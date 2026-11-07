@@ -399,7 +399,7 @@ describe('onDataChanged', () => {
     ['deleteReading', (db) => db.deleteReading('r1')],
     ['deletePetCascade', (db) => db.deletePetCascade('a')],
     ['importAllData', (db) => db.importAllData(backup)],
-  ])('tells listeners once, after %s has committed', async (_name, write) => {
+  ])('tells listeners once after %s, and a read then sees the write', async (_name, write) => {
     const state = async () => {
       const [pets, readings] = await Promise.all([db.getAllPets(), db.getAllReadings()]);
       return [...pets.map((p) => p.id), ...readings.map((r) => `${r.id}:${r.rate}`)];

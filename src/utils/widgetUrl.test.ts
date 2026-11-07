@@ -32,6 +32,7 @@ describe('parseWidgetUrl', () => {
 
   it.each([
     ['an app URL', 'https://localhost/#/pets/x'],
+    ['another scheme', 'other://pet/p1'],
     ['a path below the pet', 'cardipaw-widget://pet/a/b'],
     ['a query', 'cardipaw-widget://pet/a?x=1'],
     ['a fragment', 'cardipaw-widget://pet/a#f'],

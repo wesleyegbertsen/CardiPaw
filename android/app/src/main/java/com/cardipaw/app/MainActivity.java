@@ -31,11 +31,15 @@ public class MainActivity extends BridgeActivity {
     private void forgetHandledWidgetTap(Bundle savedInstanceState) {
         Intent intent = getIntent();
         Uri data = intent.getData();
-        boolean again = savedInstanceState != null
-            || (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0;
-        if (again && data != null && "cardipaw-widget".equals(data.getScheme())) {
+        if (shouldForgetTap(savedInstanceState != null, intent.getFlags(), data == null ? null : data.getScheme())) {
             setIntent(new Intent(intent).setData(null));
         }
+    }
+
+    /** A widget tap's intent seen again: the activity was recreated, or reopened from Recents (pure: JUnit). */
+    static boolean shouldForgetTap(boolean restored, int flags, String scheme) {
+        boolean again = restored || (flags & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0;
+        return again && "cardipaw-widget".equals(scheme);
     }
 
     @Override
