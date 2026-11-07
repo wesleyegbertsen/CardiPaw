@@ -18,14 +18,18 @@ public class MainActivity extends BridgeActivity {
         // A shortcut in it was already handled when Android restores the activity (after the
         // process was stopped: from Recents or the app icon) or reopens it from Recents (after a
         // force stop; only then is the history flag set).
-        if (savedInstanceState != null
-                || (getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) {
+        if (shouldForgetShortcut(savedInstanceState != null, getIntent().getFlags())) {
             LauncherShortcutsPlugin.forgetShortcut(getIntent());
         }
         super.onCreate(savedInstanceState);
         // AppCompat gave the window the launch theme's background in super.onCreate, before
         // BridgeActivity switched to AppTheme.NoActionBar, so the window gets it here.
         applyBackground();
+    }
+
+    /** restored: Android restored the activity's saved state. flags: its intent's flags. */
+    static boolean shouldForgetShortcut(boolean restored, int flags) {
+        return restored || (flags & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0;
     }
 
     @Override

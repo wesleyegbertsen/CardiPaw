@@ -22,8 +22,8 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,8 +41,6 @@ public class LauncherShortcutsPlugin extends Plugin {
     static final String ACTION_MEASURE_PET = "com.cardipaw.app.action.MEASURE_PET";
     static final String EXTRA_PET_ID = "com.cardipaw.app.extra.PET_ID";
     private static final String TAG = "LauncherShortcuts";
-    // Our shortcuts only, so other kinds can be added later.
-    private static final String ID_PREFIX = "measure:";
     // Android allows 15 on API 37; four keep the long-press menu short.
     private static final int MAX_DYNAMIC = 4;
     // 108dp at xxxhdpi: the adaptive icon's full canvas.
@@ -97,40 +95,35 @@ public class LauncherShortcutsPlugin extends Plugin {
                 call.reject("pets, disabledMessage and deletedLabel are required", "INVALID");
                 return;
             }
-            // Keeps the app's order.
-            Map<String, JSONObject> byId = new LinkedHashMap<>();
+            List<String> petIds = new ArrayList<>();
+            Map<String, JSONObject> byId = new HashMap<>();
             for (int i = 0; i < pets.length(); i++) {
                 JSONObject pet = pets.getJSONObject(i);
-                byId.put(ID_PREFIX + pet.getString("id"), pet);
+                petIds.add(pet.getString("id"));
+                byId.put(ShortcutPlan.shortcutId(pet.getString("id")), pet);
+            }
+            Set<String> pinned = new HashSet<>();
+            Set<String> disabled = new HashSet<>();
+            for (ShortcutInfoCompat pin : ShortcutManagerCompat.getShortcuts(ctx, ShortcutManagerCompat.FLAG_MATCH_PINNED)) {
+                pinned.add(pin.getId());
+                if (!pin.isEnabled()) disabled.add(pin.getId());
             }
             int max = Math.min(MAX_DYNAMIC, ShortcutManagerCompat.getMaxShortcutCountPerActivity(ctx));
+            ShortcutPlan plan = ShortcutPlan.plan(petIds, pinned, disabled, max);
             List<ShortcutInfoCompat> top = new ArrayList<>();
-            Set<String> topIds = new HashSet<>();
-            for (Map.Entry<String, JSONObject> e : byId.entrySet()) {
-                if (top.size() == max) break;
-                top.add(build(ctx, e.getKey(), e.getValue(), top.size()));
-                topIds.add(e.getKey());
+            for (Map.Entry<String, Integer> e : plan.dynamic.entrySet()) {
+                top.add(build(ctx, e.getKey(), byId.get(e.getKey()), e.getValue()));
             }
             List<ShortcutInfoCompat> toUpdate = new ArrayList<>();
             List<ShortcutInfoCompat> toEnable = new ArrayList<>();
-            List<String> toDisable = new ArrayList<>();
-            for (ShortcutInfoCompat pin : ShortcutManagerCompat.getShortcuts(ctx, ShortcutManagerCompat.FLAG_MATCH_PINNED)) {
-                String id = pin.getId();
-                // A top pet's pin: setDynamicShortcuts below updates it, and enables it again.
-                if (!id.startsWith(ID_PREFIX) || topIds.contains(id)) continue;
-                JSONObject pet = byId.get(id);
-                if (pet == null) {
-                    // Android keeps a disabled pin's label and icon: the pet's name and photo
-                    // would stay on the home screen. Updating a disabled pin keeps it disabled.
-                    toUpdate.add(build(ctx, id, deletedLabel, deletedLabel, null, 0));
-                    toDisable.add(id);
-                    continue;
-                }
-                ShortcutInfoCompat info = build(ctx, id, pet, 0);
+            for (String id : plan.update) {
+                ShortcutInfoCompat info = build(ctx, id, byId.get(id), 0);
                 toUpdate.add(info);
-                // A pet an import brought back.
-                if (!pin.isEnabled()) toEnable.add(info);
+                if (plan.enable.contains(id)) toEnable.add(info);
             }
+            // Android keeps a disabled pin's label and icon: the pet's name and photo would stay
+            // on the home screen. Updating a disabled pin keeps it disabled.
+            for (String id : plan.blank) toUpdate.add(build(ctx, id, deletedLabel, deletedLabel, null, 0));
             // false: rate-limited (only in the background). JS tries again on the next resume.
             if (!ShortcutManagerCompat.setDynamicShortcuts(ctx, top)) {
                 call.reject("Rate-limited", "RATE_LIMITED");
@@ -143,7 +136,7 @@ public class LauncherShortcutsPlugin extends Plugin {
             }
             // On every sync: updating and disabling again replace the label and the message, so they
             // follow the app's language.
-            if (!toDisable.isEmpty()) ShortcutManagerCompat.disableShortcuts(ctx, toDisable, disabledMessage);
+            if (!plan.blank.isEmpty()) ShortcutManagerCompat.disableShortcuts(ctx, plan.blank, disabledMessage);
             call.resolve();
         } catch (JSONException | RuntimeException e) {
             // RuntimeException: e.g. IllegalStateException while the phone's user is still locked.
@@ -168,7 +161,7 @@ public class LauncherShortcutsPlugin extends Plugin {
     ) {
         Intent intent = new Intent(ACTION_MEASURE_PET)
             .setClass(ctx, MainActivity.class)
-            .putExtra(EXTRA_PET_ID, id.substring(ID_PREFIX.length()));
+            .putExtra(EXTRA_PET_ID, id.substring(ShortcutPlan.ID_PREFIX.length()));
         return new ShortcutInfoCompat.Builder(ctx, id)
             .setShortLabel(shortLabel)
             .setLongLabel(longLabel)

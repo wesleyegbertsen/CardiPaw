@@ -65,7 +65,7 @@ The launcher icon, and the icon on the launch screen, come from `public/favicon.
 
 After changing the icon or the launch screen, check them on a device: the icon under round, squircle and themed (Android 13+) masks, and the launch screen in light and dark mode with no white flash before the page appears.
 
-CI builds a debug APK on every PR and attaches it to the run as the `cardipaw-debug-apk` artifact, so you can install it without Android Studio. The same job also builds a release APK, signs it with a throwaway key and verifies it, so every PR tests the release signing (see [Release signing](docs/releasing.md#release-signing)).
+CI builds a debug APK on every PR and attaches it to the run as the `cardipaw-debug-apk` artifact, so you can install it without Android Studio. The same job also builds a release APK, signs it with a throwaway key and verifies it, so every PR tests the release signing (see [Release signing](docs/releasing.md#release-signing)). It also runs the JUnit tests in `android/app/src/test/` (`cd android && ./gradlew testDebugUnitTest`, after `npm run build:android`). They run on the plain JVM, where Android's methods only throw, so they cover code that calls no Android API, such as `ShortcutPlan`.
 
 - **The app's data is separate from cardipaw.com.** The app serves itself from `https://localhost`, so its IndexedDB and settings belong to that origin. To move data between the website and the app, use Export on one and Import on the other.
 - **Never change `androidScheme` or `hostname` in `capacitor.config.ts`.** They define that origin: after a change, the app starts with no data for every user who installed an earlier version.
