@@ -280,6 +280,7 @@
     "backingUp": "Wird gesichert…",
     "backupDone": "✓ Gesichert",
     "backupNothing": "Noch nichts zu sichern: Füge zuerst ein Tier hinzu.",
+    "backupFailed": "Backup fehlgeschlagen",
     "backupErrorRevoked": "CardiPaw kann nicht mehr in den Backup-Ordner schreiben. Wähle den Ordner erneut aus.",
     "backupErrorMissing": "Der Backup-Ordner wurde nicht gefunden. Vielleicht wurde er gelöscht oder umbenannt, oder er liegt auf einer SD-Karte oder einem USB-Stick, die entfernt wurden.",
     "backupErrorFull": "Das letzte Backup ist fehlgeschlagen: Der Speicher ist voll.",

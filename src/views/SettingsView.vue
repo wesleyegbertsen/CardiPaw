@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as db from '../services/db';
 import { BackupError, downloadBackup, importBackup, parseBackup, type ValidatedBackup } from '../services/backup';
@@ -55,10 +55,10 @@ const keepLabelId = useId();
 const picking = ref(false);
 const pickerUnavailable = ref(false);
 const backingUp = ref(false);
-const backupNowFailed = ref(false);
 const backupResult = ref<RunOutcome | null>(null);
 const backupResultPaused = ref(false);
 let backupPauseTimer: ReturnType<typeof setTimeout> | undefined;
+const changeFolderButton = ref<HTMLButtonElement | null>(null);
 
 // The folder may have been deleted, or access lost, since the last backup: show it now.
 onMounted(() => {
@@ -84,10 +84,16 @@ const lastBackupText = computed(() =>
         }).format(lastSuccess.value),
       }),
 );
+// Back up now's answer. A failure says only that: the warning above says why.
 const backupResultText = computed(() => {
   if (backupResultPaused.value || backingUp.value) return '';
   if (backupResult.value === 'saved') return t('settings.backupDone');
+  if (backupResult.value === 'failed') return t('settings.backupFailed');
   return backupResult.value === 'nothing' ? t('settings.backupNothing') : '';
+});
+// A later automatic backup that failed makes "Backed up" untrue.
+watch(backupFailure, (failure) => {
+  if (failure) backupResult.value = null;
 });
 
 async function withPicker<T>(pick: () => Promise<T>): Promise<T> {
@@ -102,7 +108,6 @@ async function withPicker<T>(pick: () => Promise<T>): Promise<T> {
 
 async function onBackupToggle(on: boolean) {
   backupResult.value = null;
-  backupNowFailed.value = false;
   if (!on) {
     pickerUnavailable.value = false;
     await turnOff();
@@ -112,12 +117,18 @@ async function onBackupToggle(on: boolean) {
 }
 
 async function onChangeFolder() {
-  if ((await withPicker(changeFolder)) === 'unavailable') pickerUnavailable.value = true;
+  backupResult.value = null;
+  const outcome = await withPicker(changeFolder);
+  if (outcome === 'unavailable') pickerUnavailable.value = true;
+  if (outcome === 'changed') {
+    // "Choose folder again" is gone with the warning: keep focus in the section.
+    await nextTick();
+    changeFolderButton.value?.focus();
+  }
 }
 
 async function onBackUpNow() {
   backingUp.value = true;
-  backupNowFailed.value = false;
   let outcome: RunOutcome;
   try {
     outcome = await backUpNow();
@@ -133,7 +144,6 @@ async function onBackUpNow() {
     }, 100);
   }
   backupResult.value = outcome;
-  backupNowFailed.value = outcome === 'failed';
 }
 
 const lastCheckedText = computed(() =>
@@ -436,8 +446,13 @@ function cancelImport() {
 
           <template v-if="backupConfig.enabled">
             <div class="action-card">
-              <div class="action-desc">{{ $t('settings.backupFolder', { name: backupConfig.folderName ?? '' }) }}</div>
-              <button class="action-btn" :disabled="picking" @click="onChangeFolder">
+              <div class="action-desc backup-folder">{{ $t('settings.backupFolder', { name: backupConfig.folderName ?? '' }) }}</div>
+              <button
+                ref="changeFolderButton"
+                class="action-btn"
+                :disabled="picking"
+                @click="onChangeFolder"
+              >
                 {{ $t('settings.backupChangeFolder') }}
               </button>
             </div>
@@ -496,7 +511,6 @@ function cancelImport() {
           </template>
         </div>
         <p v-if="pickerUnavailable" class="error-msg" role="alert">{{ $t('settings.backupPickerUnavailable') }}</p>
-        <p v-if="backupNowFailed" class="error-msg" role="alert">{{ backupWarningText }}</p>
       </section>
 
       <section class="section about-section">
@@ -859,10 +873,16 @@ function cancelImport() {
   cursor: not-allowed;
 }
 
-/* The label above its choices: five Keep buttons don't fit beside it on a phone. */
+/* The label above its choices: the Keep buttons don't fit beside it on a phone. */
 .backup-option {
   flex-direction: column;
   align-items: stretch;
+}
+
+/* A long folder name wraps instead of pushing Change folder off a narrow screen. */
+.backup-folder {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .segmented {

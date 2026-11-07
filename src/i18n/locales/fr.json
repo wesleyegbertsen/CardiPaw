@@ -280,6 +280,7 @@
     "backingUp": "Sauvegarde…",
     "backupDone": "✓ Sauvegardé",
     "backupNothing": "Rien à sauvegarder pour l'instant : ajoutez d'abord un animal.",
+    "backupFailed": "La sauvegarde a échoué",
     "backupErrorRevoked": "CardiPaw ne peut plus écrire dans le dossier de sauvegarde. Choisissez de nouveau le dossier.",
     "backupErrorMissing": "Le dossier de sauvegarde est introuvable. Il a peut-être été supprimé ou renommé, ou il se trouve sur une carte SD ou une clé USB qui a été retirée.",
     "backupErrorFull": "La dernière sauvegarde a échoué : le stockage est plein.",

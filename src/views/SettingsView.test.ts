@@ -908,7 +908,7 @@ describe('SettingsView', () => {
       expect(result()).toBe('Nothing to back up yet: add a pet first.');
     });
 
-    it('Back up now shows why it failed', async () => {
+    it('Back up now says it failed, and the warning says why, once', async () => {
       const { section, backUpButton, result, alerts } = await mountBackups();
       backups.backUpNow.mockImplementationOnce(async () => {
         backups.failure.value = 'full';
@@ -916,16 +916,59 @@ describe('SettingsView', () => {
       });
       await backUpButton().trigger('click');
       await flushPromises();
-      expect(alerts()).toEqual(['The last backup failed: the storage is full.']);
-      expect(result()).toBe('');
+      expect(result()).toBe('Backup failed');
       expect(section.get('.backup-warning').text()).toBe(
         'The last backup failed: the storage is full.',
       );
-      // A run that turned out fine clears the alert.
+      expect(section.text().split('the storage is full').length - 1).toBe(1);
+      expect(alerts()).toEqual([]);
+      // A run that turned out fine replaces it (after the re-announce pause).
       backups.failure.value = null;
       await backUpButton().trigger('click');
+      await vi.waitFor(() => expect(result()).toBe('✓ Backed up'));
+    });
+
+    it('choosing the folder again after a failed Back up now leaves no empty message behind', async () => {
+      const { section, backUpButton, result } = await mountBackups();
+      backups.backUpNow.mockImplementationOnce(async () => {
+        backups.failure.value = 'missing';
+        return 'failed';
+      });
+      await backUpButton().trigger('click');
       await flushPromises();
-      expect(alerts()).toEqual([]);
+      backups.changeFolder.mockImplementationOnce(async () => {
+        backups.failure.value = null;
+        return 'changed';
+      });
+      await button(section.get('.backup-warning'), 'Choose folder again')!.trigger('click');
+      await flushPromises();
+      expect(section.findAll('.error-msg')).toEqual([]);
+      expect(result()).toBe('');
+    });
+
+    it('a failure after Back up now replaces its "Backed up"', async () => {
+      const { backUpButton, result } = await mountBackups();
+      await backUpButton().trigger('click');
+      await flushPromises();
+      expect(result()).toBe('✓ Backed up');
+      backups.failure.value = 'missing';
+      await flushPromises();
+      expect(result()).toBe('');
+    });
+
+    it('focus moves to Change folder once the folder is chosen again', async () => {
+      backups.failure.value = 'missing';
+      const { section } = await mountBackups();
+      backups.changeFolder.mockImplementationOnce(async () => {
+        backups.failure.value = null;
+        return 'changed';
+      });
+      const chooseAgain = button(section.get('.backup-warning'), 'Choose folder again')!;
+      (chooseAgain.element as HTMLButtonElement).focus();
+      await chooseAgain.trigger('click');
+      await flushPromises();
+      expect(section.find('.backup-warning').exists()).toBe(false);
+      expect(document.activeElement).toBe(button(section, 'Change folder')!.element);
     });
 
     it.each([

@@ -280,6 +280,7 @@
     "backingUp": "Backing up…",
     "backupDone": "✓ Backed up",
     "backupNothing": "Nothing to back up yet: add a pet first.",
+    "backupFailed": "Backup failed",
     "backupErrorRevoked": "CardiPaw can no longer write to the backup folder. Choose the folder again.",
     "backupErrorMissing": "The backup folder can't be found. It may have been deleted or renamed, or be on an SD card or USB stick that was removed.",
     "backupErrorFull": "The last backup failed: the storage is full.",

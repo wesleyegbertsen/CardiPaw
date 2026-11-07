@@ -280,6 +280,7 @@
     "backingUp": "Back-up maken…",
     "backupDone": "✓ Back-up gemaakt",
     "backupNothing": "Er is nog niets om een back-up van te maken: voeg eerst een huisdier toe.",
+    "backupFailed": "Back-up mislukt",
     "backupErrorRevoked": "CardiPaw kan niet meer naar de back-upmap schrijven. Kies de map opnieuw.",
     "backupErrorMissing": "De back-upmap is niet gevonden. Misschien is hij verwijderd of hernoemd, of staat hij op een SD-kaart of USB-stick die eruit is gehaald.",
     "backupErrorFull": "De laatste back-up is mislukt: de opslag is vol.",
