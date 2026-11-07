@@ -9,8 +9,15 @@ export interface ShortcutPet {
 }
 
 interface LauncherShortcutsPlugin {
-  /** Every pet in home order: the first four become the long-press shortcuts; pins of pets that are gone are disabled. */
-  setShortcuts(options: { pets: ShortcutPet[]; disabledMessage: string }): Promise<void>;
+  /**
+   * Every pet in home order: the first four become the long-press shortcuts. Pins of pets that
+   * are gone get deletedLabel and the app icon, and are disabled with disabledMessage.
+   */
+  setShortcuts(options: {
+    pets: ShortcutPet[];
+    disabledMessage: string;
+    deletedLabel: string;
+  }): Promise<void>;
   /** A shortcut was tapped; petId comes from an intent, so the listener checks it. */
   addListener(
     event: 'shortcutOpened',

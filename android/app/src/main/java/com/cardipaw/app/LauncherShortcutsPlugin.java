@@ -78,9 +78,10 @@ public class LauncherShortcutsPlugin extends Plugin {
     }
 
     /**
-     * {pets: [{id, shortLabel, longLabel, photo}], disabledMessage}: every pet in the app's
-     * order. The first four become the long-press shortcuts; pins of other pets are updated,
-     * pins of pets that are gone are disabled, and pins of pets that came back are enabled.
+     * {pets: [{id, shortLabel, longLabel, photo}], disabledMessage, deletedLabel}: every pet in
+     * the app's order. The first four become the long-press shortcuts; pins of other pets are
+     * updated, pins of pets that came back are enabled, and pins of pets that are gone get
+     * deletedLabel and the app icon, then are disabled.
      */
     // No usage reporting (see the class comment): the shortcuts keep the home screen's order.
     @SuppressLint("ReportShortcutUsage")
@@ -90,8 +91,10 @@ public class LauncherShortcutsPlugin extends Plugin {
         try {
             JSArray pets = call.getArray("pets");
             String disabledMessage = call.getString("disabledMessage");
-            if (pets == null || disabledMessage == null || disabledMessage.isEmpty()) {
-                call.reject("pets and disabledMessage are required", "INVALID");
+            String deletedLabel = call.getString("deletedLabel");
+            if (pets == null || disabledMessage == null || disabledMessage.isEmpty()
+                    || deletedLabel == null || deletedLabel.isEmpty()) {
+                call.reject("pets, disabledMessage and deletedLabel are required", "INVALID");
                 return;
             }
             // Keeps the app's order.
@@ -117,6 +120,9 @@ public class LauncherShortcutsPlugin extends Plugin {
                 if (!id.startsWith(ID_PREFIX) || topIds.contains(id)) continue;
                 JSONObject pet = byId.get(id);
                 if (pet == null) {
+                    // Android keeps a disabled pin's label and icon: the pet's name and photo
+                    // would stay on the home screen. Updating a disabled pin keeps it disabled.
+                    toUpdate.add(build(ctx, id, deletedLabel, deletedLabel, null, 0));
                     toDisable.add(id);
                     continue;
                 }
@@ -135,7 +141,8 @@ public class LauncherShortcutsPlugin extends Plugin {
                 call.reject("Rate-limited", "RATE_LIMITED");
                 return;
             }
-            // On every sync: disabling again replaces the message, so it follows the app's language.
+            // On every sync: updating and disabling again replace the label and the message, so they
+            // follow the app's language.
             if (!toDisable.isEmpty()) ShortcutManagerCompat.disableShortcuts(ctx, toDisable, disabledMessage);
             call.resolve();
         } catch (JSONException | RuntimeException e) {
@@ -145,14 +152,26 @@ public class LauncherShortcutsPlugin extends Plugin {
     }
 
     private ShortcutInfoCompat build(Context ctx, String id, JSONObject pet, int rank) throws JSONException {
+        // isNull, not optString: Android's optString turns a JSON null into the text "null".
+        String photo = pet.isNull("photo") ? null : pet.getString("photo");
+        return build(ctx, id, pet.getString("shortLabel"), pet.getString("longLabel"), photo, rank);
+    }
+
+    /** photo: a data URL, or null for the app icon. */
+    private ShortcutInfoCompat build(
+        Context ctx,
+        String id,
+        String shortLabel,
+        String longLabel,
+        @Nullable String photo,
+        int rank
+    ) {
         Intent intent = new Intent(ACTION_MEASURE_PET)
             .setClass(ctx, MainActivity.class)
             .putExtra(EXTRA_PET_ID, id.substring(ID_PREFIX.length()));
-        // isNull, not optString: Android's optString turns a JSON null into the text "null".
-        String photo = pet.isNull("photo") ? null : pet.getString("photo");
         return new ShortcutInfoCompat.Builder(ctx, id)
-            .setShortLabel(pet.getString("shortLabel"))
-            .setLongLabel(pet.getString("longLabel"))
+            .setShortLabel(shortLabel)
+            .setLongLabel(longLabel)
             .setIcon(icon(ctx, photo))
             .setIntent(intent)
             .setRank(rank)

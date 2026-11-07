@@ -302,7 +302,7 @@
       "p4": "<strong>Aucun partage de données.</strong> Comme vos données ne quittent jamais votre appareil, elles ne sont jamais partagées avec ni accessibles par quiconque d'autre.",
       "p5": "<strong>Recherche de mises à jour (application Android).</strong> Si vous activez « Vérifier automatiquement » dans Paramètres, sous Mises à jour, l'application demande à api.github.com, environ une fois par jour et chaque fois que vous appuyez sur « Vérifier maintenant », si une version plus récente existe. GitHub voit alors votre adresse IP et les informations que le moteur de navigateur de l'application envoie avec chaque requête, comme son agent utilisateur (qui comprend la version d'Android et le modèle de l'appareil) et la langue. Aucune donnée sur vos animaux n'est envoyée. Cette option reste désactivée tant que vous ne l'activez pas.",
       "p6": "<strong>Les rappels restent sur votre téléphone.</strong> Dans l'application Android, les rappels sont programmés sur ce téléphone ; rien les concernant n'est envoyé nulle part. Leurs paramètres restent sur cet appareil et ne sont pas inclus dans les exports.",
-      "p7": "<strong>Raccourcis (application Android).</strong> Un appui long sur l'icône de CardiPaw affiche un raccourci pour chacun de vos quatre premiers animaux, et vous pouvez les ajouter à votre écran d'accueil. Pour les afficher, Android transmet les noms et les photos de vos animaux à votre application d'écran d'accueil (le lanceur) ; l'application elle-même n'envoie rien nulle part. Sur l'écran d'accueil, le raccourci d'un animal supprimé garde son nom jusqu'à ce que vous le retiriez.",
+      "p7": "<strong>Raccourcis (application Android).</strong> Un appui long sur l'icône de CardiPaw affiche un raccourci pour chacun des quatre premiers animaux de l'écran d'accueil de CardiPaw, et vous pouvez les ajouter à votre écran d'accueil. Pour les afficher, Android transmet les noms et les photos de vos animaux à votre application d'écran d'accueil (le lanceur) ; l'application elle-même n'envoie rien nulle part. Lorsque vous supprimez un animal, son raccourci sur votre écran d'accueil est grisé et affiche l'icône de CardiPaw au lieu du nom et de la photo de l'animal.",
       "cameraTitle": "Caméra (expérimental).",
       "cameraBody": "Si vous activez le comptage des respirations par la caméra, l'image de la caméra est analysée sur votre appareil pendant la mesure. Aucune vidéo ni photo n'est enregistrée, conservée ou envoyée où que ce soit, et la caméra est libérée dès que la mesure se termine."
     },
@@ -479,6 +479,7 @@
   },
   "shortcuts": {
     "longLabel": "Mesurer {name}",
-    "petDeleted": "Cet animal a été supprimé"
+    "petDeleted": "Cet animal a été supprimé",
+    "deletedLabel": "Animal supprimé"
   }
 }

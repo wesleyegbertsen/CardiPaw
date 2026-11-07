@@ -50,7 +50,7 @@ Long-press the CardiPaw icon to see a shortcut for each of your first four pets;
 - Their labels follow the app's language. A new name or photo also updates a shortcut on the home screen, for every pet, not only the first four.
 - Each shows the pet's photo, or the CardiPaw icon when it has none or an imported photo is very large.
 - During a breath count, a shortcut to another pet asks before it leaves the count, like any other way out of the measuring screen.
-- A deleted pet's shortcut on the home screen is greyed out and no longer opens CardiPaw; Android shows a message such as "Shortcut isn't available". It keeps the pet's name until you remove it. If an import brings the pet back, it works again.
+- A deleted pet's shortcut on the home screen is greyed out and shows the CardiPaw icon and "Deleted pet" instead of the pet's name and photo, until you remove it. It no longer opens CardiPaw; tapping it shows Android's own message such as "Shortcut isn't available". If an import brings the pet back, it gets the pet's name and photo back and works again.
 - To show them, Android gives your pets' names and photos to your home screen app (the launcher). CardiPaw uses no Google shortcut integration and doesn't report which shortcuts you use.
 
 ## Camera

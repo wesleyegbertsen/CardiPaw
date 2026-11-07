@@ -79,6 +79,7 @@ describe('shortcuts', () => {
         { id: 'b', shortLabel: 'Mochi', longLabel: 'Measure Mochi', photo: PHOTO },
       ],
       disabledMessage: 'This pet was deleted',
+      deletedLabel: 'Deleted pet',
     });
   });
 
@@ -112,9 +113,12 @@ describe('shortcuts', () => {
     mockNative();
     install();
     await mod.syncShortcuts();
-    const { disabledMessage } = published();
+    const { disabledMessage, deletedLabel } = published();
     expect(disabledMessage).toBe('This pet was deleted');
     expect(disabledMessage).not.toMatch(/Mochi|Bo/);
+    // The pin's label once the pet is gone: it replaces the pet's name.
+    expect(deletedLabel).toBe('Deleted pet');
+    expect(deletedLabel).not.toMatch(/Mochi|Bo/);
   });
 
   it('relabels the shortcuts in the new language', async () => {
@@ -128,6 +132,7 @@ describe('shortcuts', () => {
       await vi.waitFor(() => expect(LS.setShortcuts).toHaveBeenCalledTimes(2));
       expect(published().pets[1].longLabel).toBe('Mochi meten');
       expect(published().disabledMessage).toBe('Dit huisdier is verwijderd');
+      expect(published().deletedLabel).toBe('Verwijderd huisdier');
     } finally {
       // Later tests expect English; let the sync this starts finish here.
       setLocale('en');

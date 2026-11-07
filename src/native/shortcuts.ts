@@ -42,6 +42,8 @@ async function sync(): Promise<void> {
   const payload = {
     pets: pets.map((p) => toShortcutPet(t, p)),
     disabledMessage: t('shortcuts.petDeleted'),
+    // A deleted pet's pin gets this label and the app icon, so its name and photo don't stay.
+    deletedLabel: t('shortcuts.deletedLabel'),
   };
   const key = JSON.stringify(payload);
   if (key === published) return;
