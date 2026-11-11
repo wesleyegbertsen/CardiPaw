@@ -475,5 +475,14 @@
     "summaryBlocked": "Reminders paused: notifications are off",
     "applyError": "Your settings were saved, but the reminders couldn't be scheduled. Please try again.",
     "save": "Save"
+  },
+  "widget": {
+    "rate": "{rate}/min",
+    "todayAt": "Measured today at {time}",
+    "petMissing": "This pet was removed. Tap to choose another.",
+    "more": "+{n} more | +{n} more",
+    "a11yReading": "{name}: {rate} breaths per minute, {status}. {age}.",
+    "a11yNoReadings": "{name}: {age}.",
+    "a11yTrend": " {trend}."
   }
 }

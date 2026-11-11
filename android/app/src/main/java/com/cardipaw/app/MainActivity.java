@@ -1,8 +1,11 @@
 package com.cardipaw.app;
 
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import com.cardipaw.app.widget.HomeWidgetPlugin;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -12,10 +15,31 @@ public class MainActivity extends BridgeActivity {
         // App-local plugins are registered before super.onCreate creates the bridge.
         registerPlugin(NotificationSettingsPlugin.class);
         registerPlugin(ImmersiveModePlugin.class);
+        registerPlugin(HomeWidgetPlugin.class);
+        forgetHandledWidgetTap(savedInstanceState);
         super.onCreate(savedInstanceState);
         // AppCompat gave the window the launch theme's background in super.onCreate, before
         // BridgeActivity switched to AppTheme.NoActionBar, so the window gets it here.
         applyBackground();
+    }
+
+    /**
+     * Android recreates the activity after process death (and reopens it from Recents) with the
+     * intent that first started it. A widget tap in it was handled then: without this, the bridge
+     * reports it again and the app opens that pet instead of where the user left it.
+     */
+    private void forgetHandledWidgetTap(Bundle savedInstanceState) {
+        Intent intent = getIntent();
+        Uri data = intent.getData();
+        if (shouldForgetTap(savedInstanceState != null, intent.getFlags(), data == null ? null : data.getScheme())) {
+            setIntent(new Intent(intent).setData(null));
+        }
+    }
+
+    /** A widget tap's intent seen again: the activity was recreated, or reopened from Recents (pure: JUnit). */
+    static boolean shouldForgetTap(boolean restored, int flags, String scheme) {
+        boolean again = restored || (flags & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0;
+        return again && "cardipaw-widget".equals(scheme);
     }
 
     @Override

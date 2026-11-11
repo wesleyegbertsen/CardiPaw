@@ -1,4 +1,5 @@
 import { IDBFactory } from 'fake-indexeddb';
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExportPayload, Note, Pet, Reading } from '../types';
 import { failDeletesIn } from '../test/failDeletes';
@@ -373,5 +374,142 @@ describe('closeAndDeleteDatabase', () => {
     expect(await db.getAllReadings()).toEqual([]);
     await db.savePet(pet('b'));
     expect(await db.getAllPets()).toEqual([pet('b')]);
+  });
+});
+
+describe('onDataChanged', () => {
+  let db: DbModule;
+  beforeEach(async () => {
+    db = await freshDb();
+    await db.savePet(pet('a'));
+    await db.saveReading(reading('r1', 'a'));
+  });
+
+  const backup: ExportPayload = {
+    version: 1,
+    exportedAt: '2026-03-20T10:00:00.000Z',
+    pets: [pet('b')],
+    readings: [reading('r2', 'b')],
+    notes: [],
+  };
+
+  it.each<[string, (db: DbModule) => Promise<void>]>([
+    ['savePet', (db) => db.savePet(pet('c'))],
+    ['saveReading', (db) => db.saveReading(reading('r3', 'a', 30))],
+    ['deleteReading', (db) => db.deleteReading('r1')],
+    ['deletePetCascade', (db) => db.deletePetCascade('a')],
+    ['importAllData', (db) => db.importAllData(backup)],
+  ])('tells listeners once after %s, and a read then sees the write', async (_name, write) => {
+    const state = async () => {
+      const [pets, readings] = await Promise.all([db.getAllPets(), db.getAllReadings()]);
+      return [...pets.map((p) => p.id), ...readings.map((r) => `${r.id}:${r.rate}`)];
+    };
+    const seen: Promise<string[]>[] = [];
+    // Read in the listener: what it sees must already include the write.
+    db.onDataChanged(() => seen.push(state()));
+    const before = await state();
+
+    const done = write(db);
+    expect(seen).toHaveLength(0);
+    await done;
+
+    expect(seen).toHaveLength(1);
+    const after = await state();
+    expect(after).not.toEqual(before);
+    expect(await seen[0]).toEqual(after);
+  });
+
+  it('does not tell listeners when a cascade delete fails', async () => {
+    const listener = vi.fn();
+    db.onDataChanged(listener);
+    failDeletesIn('readings');
+
+    await expect(db.deletePetCascade('a')).rejects.toThrow();
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('does not tell listeners when an import fails', async () => {
+    const listener = vi.fn();
+    db.onDataChanged(listener);
+    const { id: _id, ...noId } = reading('r9', 'b');
+
+    await expect(db.importAllData({ ...backup, readings: [noId as Reading] })).rejects.toThrow();
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('does not tell listeners about notes', async () => {
+    const listener = vi.fn();
+    db.onDataChanged(listener);
+
+    await db.saveNote(note('n1', 'a'));
+    await db.deleteNote('n1');
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('keeps telling the others when one throws', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failure = new Error('boom');
+    const second = vi.fn();
+    db.onDataChanged(() => {
+      throw failure;
+    });
+    db.onDataChanged(second);
+
+    await db.savePet(pet('c'));
+
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(error).toHaveBeenCalledWith('A data change listener failed', failure);
+  });
+
+  it('stops telling a listener after it unsubscribes', async () => {
+    const listener = vi.fn();
+    const stop = db.onDataChanged(listener);
+    await db.savePet(pet('c'));
+    stop();
+
+    await db.savePet(pet('d'));
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells listeners once after the database is deleted in dev mode', async () => {
+    vi.stubEnv('DEV', true);
+    db = await freshDb();
+    const listener = vi.fn();
+    db.onDataChanged(listener);
+
+    await db.closeAndDeleteDatabase();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('is told by every exported function that writes pets or readings', () => {
+    // A cheap guard for future writes: a new save/delete/import… must notify, or be listed here.
+    const source = readFileSync(new URL('./db.ts', import.meta.url), 'utf8');
+    const writers = [...source.matchAll(/export async function (\w+)/g)]
+      .map(([, name]) => name)
+      .filter((name) => /^(save|delete|import|close|update|put|clear)/.test(name));
+    const notesOnly = ['saveNote', 'deleteNote'];
+    const silent = writers.filter((name) => {
+      const start = source.indexOf(`export async function ${name}(`);
+      const end = source.indexOf('\nexport ', start + 1);
+      return !source.slice(start, end === -1 ? undefined : end).includes('notifyDataChanged()');
+    });
+
+    expect(silent).toEqual(notesOnly);
+    // So a broken regex can't make this pass on an empty list.
+    expect(writers).toEqual(
+      expect.arrayContaining([
+        'savePet',
+        'saveReading',
+        'deleteReading',
+        'deletePetCascade',
+        'importAllData',
+        'closeAndDeleteDatabase',
+      ]),
+    );
   });
 });

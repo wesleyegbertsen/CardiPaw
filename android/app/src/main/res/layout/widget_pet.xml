@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The single-pet widget from WidgetUpdater.petMediumHeightDp (a 2x1 on most phones), and its
+     preview in the widget picker (the preview strings). Three lines: the name on its own, so a
+     long name isn't squeezed by the rate; the rate with the badges; the age.
+     WidgetUpdater.pet() sets every id below; widget_all_pets_row.xml has the same ids. Only
+     RemoteViews-safe views (LinearLayout, FrameLayout, TextView). Colours come from colors.xml
+     (values-night for dark mode), never from code. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:paddingStart="10dp"
+    android:paddingTop="6dp"
+    android:paddingEnd="10dp"
+    android:paddingBottom="6dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- No font padding: the letter stays inside the circle with large text. -->
+        <TextView
+            android:id="@+id/initial"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/widget_avatar"
+            android:gravity="center"
+            android:importantForAccessibility="no"
+            android:includeFontPadding="false"
+            android:textColor="@color/widget_avatar_text"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:text="@string/widget_preview_initial" />
+
+        <TextView
+            android:id="@+id/name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_text"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:text="@string/widget_preview_name" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/rate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:maxLines="1"
+            android:textColor="@color/widget_text"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:text="@string/widget_preview_rate" />
+
+        <!-- The status as text, not colour only. One view per status: the shown one is picked. -->
+        <TextView
+            android:id="@+id/badge_normal"
+            style="@style/WidgetBadge"
+            android:background="@drawable/widget_badge_normal"
+            android:textColor="@color/widget_normal_text"
+            android:text="@string/widget_preview_status" />
+
+        <TextView
+            android:id="@+id/badge_warning"
+            style="@style/WidgetBadge"
+            android:background="@drawable/widget_badge_warning"
+            android:textColor="@color/widget_warning_text"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/badge_danger"
+            style="@style/WidgetBadge"
+            android:background="@drawable/widget_badge_danger"
+            android:textColor="@color/widget_danger_text"
+            android:visibility="gone" />
+
+        <!-- Last on the line: a long trend badge is cut, never the rate or the status. The trend
+             stays in the content description. -->
+        <TextView
+            android:id="@+id/trend"
+            style="@style/WidgetBadge"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/widget_badge_warning"
+            android:ellipsize="end"
+            android:textColor="@color/widget_warning_text"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- The age on its own line: a long status or trend badge can't squeeze it. 12sp, so
+         "Measured today at 12:59 PM" fits a 2x1 in every app language. -->
+    <TextView
+        android:id="@+id/age"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_muted"
+        android:textSize="12sp"
+        android:text="@string/widget_preview_age" />
+
+    <!-- The age after 3 days, in the warning colour (useLastMeasured's isStale). -->
+    <TextView
+        android:id="@+id/age_stale"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/widget_stale"
+        android:textSize="12sp"
+        android:visibility="gone" />
+</LinearLayout>

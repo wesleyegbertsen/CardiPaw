@@ -24,6 +24,28 @@ const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<CardiPawDB>> | null = null;
 
+// Told after every committed change to pets or readings (the home screen widget redraws).
+// Notes don't fire: nothing outside the app shows them.
+const dataListeners = new Set<() => void>();
+
+/** Calls listener after each committed write to pets or readings. Returns a function that stops it. */
+export function onDataChanged(listener: () => void): () => void {
+  dataListeners.add(listener);
+  return () => {
+    dataListeners.delete(listener);
+  };
+}
+
+function notifyDataChanged(): void {
+  for (const listener of dataListeners) {
+    try {
+      listener();
+    } catch (e) {
+      console.error('A data change listener failed', e);
+    }
+  }
+}
+
 function getDb(): Promise<IDBPDatabase<CardiPawDB>> {
   if (!dbPromise) {
     dbPromise = openDB<CardiPawDB>(DB_NAME, DB_VERSION, {
@@ -59,6 +81,7 @@ export async function getPet(id: string): Promise<Pet | undefined> {
 export async function savePet(pet: Pet): Promise<void> {
   const db = await getDb();
   await db.put('pets', pet);
+  notifyDataChanged();
 }
 
 export async function getReadingsForPet(petId: string): Promise<Reading[]> {
@@ -74,11 +97,13 @@ export async function getAllReadings(): Promise<Reading[]> {
 export async function saveReading(reading: Reading): Promise<void> {
   const db = await getDb();
   await db.put('readings', reading);
+  notifyDataChanged();
 }
 
 export async function deleteReading(id: string): Promise<void> {
   const db = await getDb();
   await db.delete('readings', id);
+  notifyDataChanged();
 }
 
 export async function getNotesForPet(petId: string): Promise<Note[]> {
@@ -123,6 +148,7 @@ export async function deletePetCascade(id: string): Promise<void> {
     await deleteByPetId(tx, 'readings', id);
     await deleteByPetId(tx, 'notes', id);
     await done;
+    notifyDataChanged();
   } catch (e) {
     // A delete() that throws synchronously does not abort the transaction, so
     // the deletes already made would commit. Abort to roll them back.
@@ -156,6 +182,7 @@ export async function closeAndDeleteDatabase(): Promise<void> {
     req.onerror = () => reject(req.error);
     req.onblocked = () => resolve(); // proceed anyway; page reload cleans up
   });
+  notifyDataChanged();
 }
 
 export async function importAllData(payload: ExportPayload): Promise<void> {
@@ -172,6 +199,7 @@ export async function importAllData(payload: ExportPayload): Promise<void> {
     for (const n of payload.notes) requests.push(tx.objectStore('notes').put(n));
     await Promise.all(requests);
     await done;
+    notifyDataChanged();
   } catch (e) {
     // Roll back the clears so existing data stays untouched. Requests already
     // queued now reject with AbortError; mark them handled.
