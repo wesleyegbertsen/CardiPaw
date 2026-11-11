@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef, useId, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as db from '../services/db';
 import { BackupError, downloadBackup, importBackup, parseBackup, type ValidatedBackup } from '../services/backup';
@@ -7,6 +7,9 @@ import ConfirmDialog from '../components/ConfirmDialog.vue';
 import InfoModal from '../components/InfoModal.vue';
 import SlideToggle from '../components/SlideToggle.vue';
 import { useUpdateCheck, type CheckOutcome } from '../composables/useUpdateCheck';
+import { probeFolder, useAutoBackup, type RunOutcome } from '../composables/useAutoBackup';
+import type { BackupFailure } from '../native/backupFolder';
+import { KEEP_CHOICES } from '../utils/backupFiles';
 import { isCameraSupported, useCameraOptIn } from '../composables/useCameraOptIn';
 import { isNative } from '../utils/platform';
 import { formatVersion, LATEST_RELEASE_URL, releaseTagUrl, releaseVersion } from '../utils/version';
@@ -31,6 +34,117 @@ const cameraLabelId = useId();
 const cameraDescId = useId();
 
 const { t, locale } = useI18n();
+
+// App only: automatic backups to a folder the owner picks (useAutoBackup.ts).
+const {
+  config: backupConfig,
+  lastSuccess,
+  failure: backupFailure,
+  turnOn,
+  changeFolder,
+  turnOff,
+  setFrequency,
+  setKeep,
+  backUpNow,
+} = useAutoBackup();
+const backupLabelId = useId();
+const backupDescId = useId();
+const scheduleLabelId = useId();
+const keepLabelId = useId();
+// While Android's folder picker is open, the switch and the folder buttons wait for it.
+const picking = ref(false);
+const pickerUnavailable = ref(false);
+const backingUp = ref(false);
+const backupResult = ref<RunOutcome | null>(null);
+const backupResultPaused = ref(false);
+let backupPauseTimer: ReturnType<typeof setTimeout> | undefined;
+const changeFolderButton = ref<HTMLButtonElement | null>(null);
+
+// The folder may have been deleted, or access lost, since the last backup: show it now.
+onMounted(() => {
+  if (native) void probeFolder();
+});
+
+const BACKUP_WARNINGS: Record<BackupFailure, string> = {
+  revoked: 'settings.backupErrorRevoked',
+  missing: 'settings.backupErrorMissing',
+  full: 'settings.backupErrorFull',
+  failed: 'settings.backupErrorFailed',
+};
+const backupWarningText = computed(() =>
+  backupFailure.value ? t(BACKUP_WARNINGS[backupFailure.value]) : '',
+);
+const lastBackupText = computed(() =>
+  lastSuccess.value === null
+    ? t('settings.neverBackedUp')
+    : t('settings.lastBackup', {
+        date: new Intl.DateTimeFormat(locale.value, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(lastSuccess.value),
+      }),
+);
+// Back up now's answer. A failure says only that: the warning above says why.
+const backupResultText = computed(() => {
+  if (backupResultPaused.value || backingUp.value) return '';
+  if (backupResult.value === 'saved') return t('settings.backupDone');
+  if (backupResult.value === 'failed') return t('settings.backupFailed');
+  return backupResult.value === 'nothing' ? t('settings.backupNothing') : '';
+});
+// A later automatic backup that failed makes "Backed up" untrue.
+watch(backupFailure, (failure) => {
+  if (failure) backupResult.value = null;
+});
+
+async function withPicker<T>(pick: () => Promise<T>): Promise<T> {
+  picking.value = true;
+  pickerUnavailable.value = false;
+  try {
+    return await pick();
+  } finally {
+    picking.value = false;
+  }
+}
+
+async function onBackupToggle(on: boolean) {
+  backupResult.value = null;
+  if (!on) {
+    pickerUnavailable.value = false;
+    await turnOff();
+    return;
+  }
+  if ((await withPicker(turnOn)) === 'unavailable') pickerUnavailable.value = true;
+}
+
+async function onChangeFolder() {
+  backupResult.value = null;
+  const outcome = await withPicker(changeFolder);
+  if (outcome === 'unavailable') pickerUnavailable.value = true;
+  if (outcome === 'changed') {
+    // "Choose folder again" is gone with the warning: keep focus in the section.
+    await nextTick();
+    changeFolderButton.value?.focus();
+  }
+}
+
+async function onBackUpNow() {
+  backingUp.value = true;
+  let outcome: RunOutcome;
+  try {
+    outcome = await backUpNow();
+  } finally {
+    backingUp.value = false;
+  }
+  // Like onCheckNow: the same answer twice is announced twice
+  if (backupResult.value) {
+    backupResultPaused.value = true;
+    clearTimeout(backupPauseTimer);
+    backupPauseTimer = setTimeout(() => {
+      backupResultPaused.value = false;
+    }, 100);
+  }
+  backupResult.value = outcome;
+}
 
 const lastCheckedText = computed(() =>
   lastChecked.value === null
@@ -110,6 +224,7 @@ onBeforeUnmount(() => {
   clearTimeout(importTimer);
   clearTimeout(statusPauseTimer);
   clearTimeout(checkPauseTimer);
+  clearTimeout(backupPauseTimer);
 });
 
 // Screen readers skip a live region whose text comes back unchanged within one update,
@@ -308,6 +423,94 @@ function cancelImport() {
 
         <p v-if="exportError" class="error-msg" role="alert">{{ $t('settings.exportError') }}</p>
         <p v-if="importError" class="error-msg" role="alert">{{ importError }}</p>
+      </section>
+
+      <!-- After Data: SettingsView.test.ts finds the export and import buttons and the status by position. -->
+      <section v-if="native" id="backups" class="section">
+        <h2 class="section-title">{{ $t('settings.backupsSection') }}</h2>
+        <p class="section-desc">{{ $t('settings.backupsDesc') }}</p>
+        <div class="action-cards">
+          <div class="action-card">
+            <div>
+              <div :id="backupLabelId" class="action-name">{{ $t('settings.autoBackupName') }}</div>
+              <div :id="backupDescId" class="action-desc">{{ $t('settings.autoBackupDesc') }}</div>
+            </div>
+            <SlideToggle
+              :model-value="backupConfig.enabled"
+              :labelledby="backupLabelId"
+              :describedby="backupDescId"
+              :disabled="picking"
+              @update:model-value="onBackupToggle"
+            />
+          </div>
+
+          <template v-if="backupConfig.enabled">
+            <div class="action-card">
+              <div class="action-desc backup-folder">{{ $t('settings.backupFolder', { name: backupConfig.folderName ?? '' }) }}</div>
+              <button
+                ref="changeFolderButton"
+                class="action-btn"
+                :disabled="picking"
+                @click="onChangeFolder"
+              >
+                {{ $t('settings.backupChangeFolder') }}
+              </button>
+            </div>
+
+            <div v-if="backupFailure" class="backup-warning" role="status">
+              <p>{{ backupWarningText }}</p>
+              <button
+                v-if="backupFailure === 'revoked' || backupFailure === 'missing'"
+                class="action-btn"
+                :disabled="picking"
+                @click="onChangeFolder"
+              >{{ $t('settings.backupChooseAgain') }}</button>
+            </div>
+
+            <div class="action-card backup-option">
+              <div :id="scheduleLabelId" class="action-name">{{ $t('settings.backupScheduleName') }}</div>
+              <div class="segmented" role="group" :aria-labelledby="scheduleLabelId">
+                <button
+                  :class="{ active: backupConfig.frequency === 'daily' }"
+                  :aria-pressed="backupConfig.frequency === 'daily'"
+                  @click="setFrequency('daily')"
+                >{{ $t('settings.backupDaily') }}</button>
+                <button
+                  :class="{ active: backupConfig.frequency === 'weekly' }"
+                  :aria-pressed="backupConfig.frequency === 'weekly'"
+                  @click="setFrequency('weekly')"
+                >{{ $t('settings.backupWeekly') }}</button>
+              </div>
+            </div>
+
+            <div class="action-card backup-option">
+              <div>
+                <div :id="keepLabelId" class="action-name">{{ $t('settings.backupKeepName') }}</div>
+                <div class="action-desc">{{ $t('settings.backupKeepDesc') }}</div>
+              </div>
+              <div class="segmented" role="group" :aria-labelledby="keepLabelId">
+                <button
+                  v-for="n in KEEP_CHOICES"
+                  :key="n"
+                  :class="{ active: backupConfig.keep === n }"
+                  :aria-pressed="backupConfig.keep === n"
+                  @click="setKeep(n)"
+                >{{ n }}</button>
+              </div>
+            </div>
+
+            <div class="action-card">
+              <div>
+                <div class="action-desc">{{ lastBackupText }}</div>
+                <p class="action-desc" role="status">{{ backupResultText }}</p>
+              </div>
+              <button class="action-btn" :disabled="backingUp" @click="onBackUpNow">
+                {{ backingUp ? $t('settings.backingUp') : $t('settings.backupNow') }}
+              </button>
+            </div>
+          </template>
+        </div>
+        <p v-if="pickerUnavailable" class="error-msg" role="alert">{{ $t('settings.backupPickerUnavailable') }}</p>
       </section>
 
       <section class="section about-section">
@@ -522,6 +725,7 @@ function cancelImport() {
       <p v-html="$t('settings.privacy.p4')" />
       <p v-if="native" v-html="$t('settings.privacy.p5')" />
       <p v-if="native" v-html="$t('settings.privacy.p6')" />
+      <p v-if="native" v-html="$t('settings.privacy.p7')" />
       <p><strong>{{ $t('settings.privacy.cameraTitle') }}</strong> {{ $t('settings.privacy.cameraBody') }}</p>
     </InfoModal>
 
@@ -667,6 +871,63 @@ function cancelImport() {
 .action-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* The label above its choices: the Keep buttons don't fit beside it on a phone. */
+.backup-option {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* A long folder name wraps instead of pushing Change folder off a narrow screen. */
+.backup-folder {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.segmented {
+  display: flex;
+  background: var(--color-bg);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  gap: 2px;
+}
+
+.segmented button {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+/* Shown by colour, weight and shadow here, and by aria-pressed to screen readers. */
+.segmented button.active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.segmented button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.backup-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-warning-text);
+  background: var(--color-warning-bg);
+  border-radius: var(--radius-md);
 }
 
 .error-msg {

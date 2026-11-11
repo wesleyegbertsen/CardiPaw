@@ -3,8 +3,10 @@ import { computed, onMounted } from 'vue';
 import { RouterView, RouterLink, useRoute } from 'vue-router';
 import { usePetsStore } from './stores/pets';
 import { useThemeStore } from './stores/theme';
+import BackupNotice from './components/BackupNotice.vue';
 import UpdateBanner from './components/UpdateBanner.vue';
 import UpdateNotice from './components/UpdateNotice.vue';
+import { useAutoBackup } from './composables/useAutoBackup';
 
 const petsStore = usePetsStore();
 const themeStore = useThemeStore();
@@ -12,6 +14,12 @@ const route = useRoute();
 
 // Shared snapshots render as a standalone page without the app navigation
 const isShareView = computed(() => route.name === 'share');
+
+const { showNotice: backupFailing } = useAutoBackup();
+// Settings shows the warning itself; shared pages are standalone.
+const showBackupNotice = computed(
+  () => backupFailing.value && !isShareView.value && route.name !== 'settings',
+);
 
 themeStore.init();
 
@@ -23,7 +31,9 @@ onMounted(() => {
 <template>
   <div class="app-layout">
     <UpdateBanner />
-    <UpdateNotice v-if="!isShareView" />
+    <BackupNotice v-if="showBackupNotice" />
+    <!-- Both sit in the same spot: the backup failure goes first, the update notice comes back after. -->
+    <UpdateNotice v-if="!isShareView && !showBackupNotice" />
     <main class="app-main" :class="{ 'no-nav': isShareView }">
       <RouterView :key="route.path" />
     </main>

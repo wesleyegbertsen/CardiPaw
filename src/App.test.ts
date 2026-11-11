@@ -20,10 +20,22 @@ vi.mock('./composables/useUpdateCheck', async () => {
   return { useUpdateCheck: () => updates };
 });
 
+// Likewise for automatic backups (useAutoBackup.test.ts): here only whether BackupNotice shows.
+const backups = vi.hoisted(() => ({
+  showNotice: undefined as unknown as { value: boolean },
+  dismissNotice: vi.fn(),
+}));
+vi.mock('./composables/useAutoBackup', async () => {
+  const { ref } = await import('vue');
+  backups.showNotice = ref(false);
+  return { useAutoBackup: () => backups };
+});
+
 describe('App', () => {
   beforeEach(() => {
     updates.available.value = null;
     updates.showNotice.value = false;
+    backups.showNotice.value = false;
   });
 
   it('marks the current nav item active and hides the nav on shared pages', async () => {
@@ -52,6 +64,51 @@ describe('App', () => {
     await router.push('/share');
     await settle();
     expect(document.body.querySelector('.update-notice')).toBeNull();
+  });
+
+  describe('backup notice', () => {
+    const backupNotice = () => document.body.querySelector('.backup-notice');
+
+    it('shows a failing backup anywhere but Settings, which shows it itself, and shared pages', async () => {
+      backups.showNotice.value = true;
+      const { router } = await mountView(App, '/');
+      expect(backupNotice()?.textContent).toContain("Automatic backup isn't working.");
+
+      await router.push('/settings');
+      await settle();
+      expect(backupNotice()).toBeNull();
+
+      await router.push('/share');
+      await settle();
+      expect(backupNotice()).toBeNull();
+
+      await router.push('/');
+      await settle();
+      expect(backupNotice()).not.toBeNull();
+    });
+
+    it('takes the place of the update notice, which comes back once it is gone', async () => {
+      updates.available.value = [1, 3, 0];
+      updates.showNotice.value = true;
+      backups.showNotice.value = true;
+      await mountView(App, '/');
+      expect(backupNotice()).not.toBeNull();
+      expect(document.body.querySelector('.update-notice')).toBeNull();
+
+      backups.showNotice.value = false;
+      await settle();
+      expect(backupNotice()).toBeNull();
+      expect(document.body.querySelector('.update-notice')).not.toBeNull();
+    });
+
+    it('lets the update notice show on Settings, where the backup warning is inline', async () => {
+      updates.available.value = [1, 3, 0];
+      updates.showNotice.value = true;
+      backups.showNotice.value = true;
+      await mountView(App, '/settings');
+      expect(backupNotice()).toBeNull();
+      expect(document.body.querySelector('.update-notice')).not.toBeNull();
+    });
   });
 
   describe('route views', () => {

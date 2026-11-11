@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { BACKUP_FILE_PATTERN } from '../utils/backupFiles';
 
 // jsdom (a devDependency) has no type declarations installed; its XML mode throws on
 // malformed XML.
@@ -219,6 +220,64 @@ describe('Android resources', () => {
     const register = activity.indexOf('registerPlugin(ImmersiveModePlugin.class);');
     expect(register).toBeGreaterThan(-1);
     expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
+  });
+
+  it('registers the backup folder plugin under the name the web code calls, before super.onCreate', () => {
+    const java = join(ROOT, 'android/app/src/main/java/com/cardipaw/app');
+    const plugin = readFileSync(join(java, 'BackupFolderPlugin.java'), 'utf8');
+    const ts = readFileSync(join(ROOT, 'src/native/backupFolder.ts'), 'utf8');
+    const javaName = plugin.match(/@CapacitorPlugin\(name = "([^"]+)"\)/)?.[1];
+    expect(javaName).toBe('BackupFolder');
+    expect(ts.match(/registerPlugin<\w+>\('([^']+)'\)/)?.[1]).toBe(javaName);
+    const activity = readFileSync(join(java, 'MainActivity.java'), 'utf8');
+    const register = activity.indexOf('registerPlugin(BackupFolderPlugin.class);');
+    expect(register).toBeGreaterThan(-1);
+    expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
+  });
+
+  it("the plugin's backup-name pattern equals BACKUP_FILE_PATTERN", () => {
+    // The plugin only writes, lists and deletes names that match; the web code prunes by its own.
+    const java = join(ROOT, 'android/app/src/main/java/com/cardipaw/app/BackupFolderPlugin.java');
+    const literal = readFileSync(java, 'utf8').match(/BACKUP_NAME = Pattern\.compile\("((?:[^"\\]|\\.)*)"\)/)?.[1];
+    expect(literal).toBeDefined();
+    // Java string escapes: "\\d" in the source is the regex \d.
+    expect(literal?.replace(/\\\\/g, '\\')).toBe(BACKUP_FILE_PATTERN.source);
+  });
+
+  it('the backup folder plugin rejects with every code the web code tells apart', () => {
+    const plugin = readFileSync(
+      join(ROOT, 'android/app/src/main/java/com/cardipaw/app/BackupFolderPlugin.java'),
+      'utf8',
+    );
+    const javaCodes = new Set(
+      [...plugin.matchAll(/code = "([A-Z_]+)"|reject\("[^"]*", "([A-Z_]+)"\)/g)].map(
+        (m) => m[1] ?? m[2],
+      ),
+    );
+    expect([...javaCodes]).toEqual(
+      expect.arrayContaining([
+        'PERMISSION_REVOKED',
+        'FOLDER_MISSING',
+        'STORAGE_FULL',
+        'WRITE_FAILED',
+        'INVALID_NAME',
+        'CANCELLED',
+        'UNAVAILABLE',
+      ]),
+    );
+    // The codes failureOf switches on, and the picker's CANCELLED in useAutoBackup.
+    const failureOf = readFileSync(join(ROOT, 'src/native/backupFolder.ts'), 'utf8');
+    const autoBackup = readFileSync(join(ROOT, 'src/composables/useAutoBackup.ts'), 'utf8');
+    const tsCodes = [
+      ...[...failureOf.matchAll(/case '([A-Z_]+)':/g)].map((m) => m[1]),
+      ...[...autoBackup.matchAll(/errorCode\(e\) === '([A-Z_]+)'/g)].map((m) => m[1]),
+    ];
+    expect(tsCodes).toEqual(['PERMISSION_REVOKED', 'FOLDER_MISSING', 'STORAGE_FULL', 'CANCELLED']);
+    for (const code of tsCodes) expect(javaCodes).toContain(code);
+  });
+
+  it('keeps allowBackup="false": the owner\'s backups are the export and the folder they pick', () => {
+    expect(xmlWithoutComments(MANIFEST)).toContain('android:allowBackup="false"');
   });
 
   it('declares INTERNET (the update check) and CAMERA (camera counting), never REQUEST_INSTALL_PACKAGES', () => {
