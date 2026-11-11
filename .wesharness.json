@@ -1,0 +1,31 @@
+{
+  "profile": "node",
+  "checks": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "when": ["src/**", "package.json", "tsconfig*.json", "vite.config.ts", "vitest.config.ts", "eslint.config.js", "capacitor.config.ts"]
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "when": ["src/**", "package.json", "tsconfig*.json", "vite.config.ts", "vitest.config.ts", "eslint.config.js", "capacitor.config.ts"]
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "when": ["src/**", "package.json", "tsconfig*.json", "vite.config.ts", "vitest.config.ts", "eslint.config.js", "capacitor.config.ts"]
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "when": ["src/**", "package.json", "tsconfig*.json", "vite.config.ts", "vitest.config.ts", "eslint.config.js", "capacitor.config.ts"]
+    },
+    {
+      "name": "android",
+      "command": "npm run build:android && cd android && gradlew assembleDebug --no-daemon",
+      "when": ["android/**", "capacitor.config.ts", "package.json", "src/**"]
+    }
+  ],
+  "baseBranch": "origin/main"
+}
