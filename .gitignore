@@ -151,3 +151,14 @@ keystore.properties
 # (`out` is already matched by the Next.js line above; listed here so the intent is explicit.)
 research/camera-breath/clips/
 research/camera-breath/out/
+
+# wesharness per-run working state (gate verdicts and review lens files)
+docs/verdicts/
+docs/reviews/
+
+# Archify receipts (absolute local paths) and scratch folder
+*.finalize.json
+*.finalize-summary.json
+*.browser-check.json
+*.delivery.json
+.archify/

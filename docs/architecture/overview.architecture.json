@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "CardiPaw runtime architecture",
+    "output": "docs/architecture/overview.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/wesleyegbertsen/CardiPaw.git",
+      "provider": "github",
+      "revision": "44db416163e968fcff9f4cd487753fb5a89bfca7"
+    }
+  },
+  "components": [
+    { "id": "host", "type": "cloud", "label": "Static host", "sublabel": "nginx image / rsync deploy", "pos": [230, 40], "size": [150, 60], "tag": "web only",
+      "sources": [{ "path": "Dockerfile", "line": 11, "end_line": 17 }, { "path": "nginx.conf", "line": 12, "end_line": 16 }, { "path": ".github/workflows/deploy.yml", "line": 52, "end_line": 54 }] },
+    { "id": "owner", "type": "external", "label": "Pet owner", "sublabel": "browser or Android app", "pos": [40, 200], "size": [130, 60] },
+    { "id": "ui", "type": "frontend", "label": "Vue views + router", "sublabel": "hash routes, lazy chunks", "pos": [230, 200], "size": [150, 60],
+      "sources": [{ "path": "src/main.ts", "line": 12, "end_line": 20 }, { "path": "src/router/index.ts", "line": 35, "end_line": 50 }] },
+    { "id": "stores", "type": "backend", "label": "Pinia stores", "sublabel": "pets, readings, notes", "pos": [440, 200], "size": [130, 60],
+      "sources": [{ "path": "src/stores/pets.ts", "line": 54, "end_line": 72 }, { "path": "src/stores/readings.ts", "line": 27, "end_line": 29 }, { "path": "src/stores/notes.ts", "line": 31, "end_line": 33 }] },
+    { "id": "db", "type": "database", "label": "IndexedDB", "sublabel": "cardipaw v2 on this device", "pos": [650, 200], "size": [130, 60],
+      "sources": [{ "path": "src/services/db.ts", "line": 22, "end_line": 47 }, { "path": "src/services/db.ts", "line": 117, "end_line": 133 }] },
+    { "id": "camera", "type": "backend", "label": "Camera breath count", "sublabel": "getUserMedia, on-device", "pos": [230, 360], "size": [150, 60], "tag": "experimental",
+      "sources": [{ "path": "src/composables/useCameraBreath.ts", "line": 173, "end_line": 177 }, { "path": "src/camera/estimate.ts", "line": 1, "end_line": 4 }] },
+    { "id": "reports", "type": "backend", "label": "Share link + PDF", "sublabel": "jsPDF, deflate in URL", "pos": [440, 360], "size": [130, 60],
+      "sources": [{ "path": "src/utils/shareCodec.ts", "line": 4, "end_line": 6 }, { "path": "src/composables/usePdfExport.ts", "line": 166, "end_line": 166 }, { "path": "src/composables/usePdfExport.ts", "line": 439, "end_line": 449 }] },
+    { "id": "backup", "type": "backend", "label": "Backup import/export", "sublabel": "validated JSON", "pos": [650, 360], "size": [130, 60],
+      "sources": [{ "path": "src/services/backup.ts", "line": 1, "end_line": 8 }] },
+    { "id": "nativefile", "type": "backend", "label": "Native file share", "sublabel": "cache folder + Share", "pos": [440, 520], "size": [130, 60], "tag": "Android only",
+      "sources": [{ "path": "src/services/nativeFile.ts", "line": 5, "end_line": 8 }, { "path": "src/services/nativeFile.ts", "line": 35, "end_line": 45 }] },
+    { "id": "sharesheet", "type": "external", "label": "Android share sheet", "sublabel": "Files, Drive, email", "pos": [230, 520], "size": [150, 60] },
+    { "id": "reminders", "type": "backend", "label": "Reminder scheduler", "sublabel": "LocalNotifications", "pos": [860, 200], "size": [140, 60], "tag": "Android only",
+      "sources": [{ "path": "src/native/reminders.ts", "line": 54, "end_line": 54 }, { "path": "src/native/reminders.ts", "line": 98, "end_line": 98 }, { "path": "src/native/reminders.ts", "line": 121, "end_line": 121 }] },
+    { "id": "notifications", "type": "external", "label": "Android notifications", "sublabel": "reminders-v2 channel", "pos": [860, 360], "size": [140, 60] },
+    { "id": "updatecheck", "type": "backend", "label": "Update check", "sublabel": "opt-in, about daily", "pos": [1070, 200], "size": [130, 60], "tag": "Android only",
+      "sources": [{ "path": "src/native/updateCheck.ts", "line": 9, "end_line": 13 }, { "path": "src/composables/useUpdateCheck.ts", "line": 124, "end_line": 124 }, { "path": "src/services/githubRelease.ts", "line": 10, "end_line": 22 }] },
+    { "id": "github", "type": "external", "label": "GitHub Releases API", "sublabel": "releases/latest", "pos": [1070, 360], "size": [130, 60] }
+  ],
+  "boundaries": [],
+  "connections": [
+    { "id": "host-serves-ui", "from": "host", "to": "ui", "label": "bundle + service worker", "variant": "dashed" },
+    { "id": "owner-to-ui", "from": "owner", "to": "ui", "label": "taps, forms", "variant": "emphasis" },
+    { "id": "ui-to-stores", "from": "ui", "to": "stores", "label": "actions" },
+    { "id": "stores-to-db", "from": "stores", "to": "db", "label": "read / write" },
+    { "id": "camera-to-ui", "from": "camera", "to": "ui", "label": "suggested count" },
+    { "id": "stores-to-reports", "from": "stores", "to": "reports", "label": "pet + readings" },
+    { "id": "backup-to-db", "from": "backup", "to": "db", "label": "export / import" },
+    { "id": "reports-to-nativefile", "from": "reports", "to": "nativefile", "label": "PDF" },
+    { "id": "backup-to-nativefile", "from": "backup", "to": "nativefile", "label": "backup JSON" },
+    { "id": "nativefile-to-sharesheet", "from": "nativefile", "to": "sharesheet", "label": "share" },
+    { "id": "reminders-reads-db", "from": "reminders", "to": "db", "label": "reads pets" },
+    { "id": "reminders-to-notifications", "from": "reminders", "to": "notifications", "label": "schedule / cancel" },
+    { "id": "updatecheck-to-github", "from": "updatecheck", "to": "github", "label": "GET latest", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Data stays on the device", "items": ["Pets, readings and notes live in IndexedDB only", "Share links carry the report in the URL fragment", "Camera video is analysed on-device"] },
+    { "dot": "cyan", "title": "Web and Android", "items": ["One Vue build; Android wraps it with Capacitor", "Boxes tagged Android only skip on the web (isNative)"] },
+    { "dot": "rose", "title": "Not shown", "items": ["i18n, theme, charts, trend and rate-status logic", "Deleting a pet also clears reminders and cached exports (petData.ts)"] }
+  ]
+}
