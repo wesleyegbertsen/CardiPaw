@@ -155,6 +155,8 @@ research/camera-breath/out/
 # wesharness per-run working state (gate verdicts and review lens files)
 docs/verdicts/
 docs/reviews/
+# Ticket plans and their as-is/to-be diagram snapshots (summarised in the PR instead)
+docs/plans/
 
 # Archify receipts (absolute local paths) and scratch folder
 *.finalize.json
