@@ -11,3 +11,14 @@ export const PDF_DOC_OPTIONS = {
   format: 'a4',
   compress: true,
 } as const;
+
+/** The chart canvas is drawn at this size and printed 182 mm wide on the page. */
+export const CHART_WIDTH_PX = 800;
+export const CHART_HEIGHT_PX = 280;
+
+/**
+ * Pixel ratio the chart is rendered at. Chart.js otherwise uses the screen's
+ * devicePixelRatio, so the same report got a bigger chart on a denser phone.
+ * 2 prints at about 223 dpi.
+ */
+export const CHART_PIXEL_RATIO = 2;

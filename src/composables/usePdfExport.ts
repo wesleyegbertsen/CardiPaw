@@ -16,7 +16,7 @@ import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
 import { localDayKey, localMonthKey } from '../utils/date';
 import { aggregateByDay, formatPdfAge, htmlToPlainText, type Translator } from '../utils/pdfText';
 import { currentLocale } from '../i18n';
-import { PDF_DOC_OPTIONS } from '../utils/pdfOptions';
+import { PDF_DOC_OPTIONS, CHART_WIDTH_PX, CHART_HEIGHT_PX, CHART_PIXEL_RATIO } from '../utils/pdfOptions';
 import { isNative } from '../utils/platform';
 import { shareFile, type ShareFileOutcome } from '../services/nativeFile';
 
@@ -54,8 +54,8 @@ function renderChartToDataUrl(
   yAxisTitle = 'Breaths / min',
 ): string {
   const canvas = document.createElement('canvas');
-  canvas.width = 800;
-  canvas.height = 280;
+  canvas.width = CHART_WIDTH_PX;
+  canvas.height = CHART_HEIGHT_PX;
 
   const labels = dailyAverages.map(r =>
     new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(new Date(r.date))
@@ -92,6 +92,7 @@ function renderChartToDataUrl(
     options: {
       animation: false,
       responsive: false,
+      devicePixelRatio: CHART_PIXEL_RATIO,
       plugins: {
         legend: { display: false },
       },
@@ -272,7 +273,7 @@ export function usePdfExport() {
         doc.text(monthLabel, ML + 3, curY + 6.5);
         curY += 11;
 
-        // Chart image (800×280 px → 182×63.7mm at A4 ratio)
+        // Chart image (CHART_WIDTH_PX × CHART_HEIGHT_PX at CHART_PIXEL_RATIO, drawn 182×64mm)
         doc.addImage(chartDataUrl, 'PNG', ML, curY, UW, 64);
         curY += 70; // +4mm gap before summary line
 

@@ -7,6 +7,7 @@ import { stubTimezone } from '../test/timezone';
 import type { Pet, Reading } from '../types';
 import { shareFile } from '../services/nativeFile';
 import { mockNative } from '../test/native';
+import { CHART_PIXEL_RATIO } from '../utils/pdfOptions';
 
 vi.mock('../services/nativeFile', () => ({ shareFile: vi.fn(async () => 'shared') }));
 
@@ -28,6 +29,7 @@ const h = vi.hoisted(() => {
     charts: [] as Array<{
       cfg: {
         data: { labels: string[]; datasets: Array<{ data: number[]; label: string }> };
+        options: { devicePixelRatio?: number; responsive?: boolean };
       };
       destroyed: boolean;
     }>,
@@ -378,6 +380,16 @@ describe('usePdfExport', () => {
       format: 'a4',
       compress: true,
     });
+  });
+
+  it('renders every chart at the same fixed pixel ratio, whatever the screen', async () => {
+    await generate(makePet(), readings, ['2024-02', '2024-03']);
+    expect(h.charts).toHaveLength(2);
+    expect(CHART_PIXEL_RATIO).toBeGreaterThan(0);
+    for (const c of h.charts) {
+      expect(c.cfg.options.devicePixelRatio).toBe(CHART_PIXEL_RATIO);
+      expect(c.cfg.options.responsive).toBe(false);
+    }
   });
 
   it('falls back to the default normal ceiling', async () => {
