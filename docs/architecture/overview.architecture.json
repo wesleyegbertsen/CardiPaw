@@ -8,7 +8,7 @@
     "repository": {
       "url": "https://github.com/wesleyegbertsen/CardiPaw.git",
       "provider": "github",
-      "revision": "44db416163e968fcff9f4cd487753fb5a89bfca7"
+      "revision": "24011158e4487b2e73c034940e7b7b2aeccaac72"
     }
   },
   "components": [
@@ -24,7 +24,7 @@
     { "id": "camera", "type": "backend", "label": "Camera breath count", "sublabel": "getUserMedia, on-device", "pos": [230, 360], "size": [150, 60], "tag": "experimental",
       "sources": [{ "path": "src/composables/useCameraBreath.ts", "line": 173, "end_line": 177 }, { "path": "src/camera/estimate.ts", "line": 1, "end_line": 4 }] },
     { "id": "reports", "type": "backend", "label": "Share link + PDF", "sublabel": "jsPDF, deflate in URL", "pos": [440, 360], "size": [130, 60],
-      "sources": [{ "path": "src/utils/shareCodec.ts", "line": 4, "end_line": 6 }, { "path": "src/composables/usePdfExport.ts", "line": 166, "end_line": 166 }, { "path": "src/composables/usePdfExport.ts", "line": 439, "end_line": 449 }] },
+      "sources": [{ "path": "src/utils/shareCodec.ts", "line": 4, "end_line": 6 }, { "path": "src/composables/usePdfExport.ts", "line": 192, "end_line": 192 }, { "path": "src/composables/usePdfExport.ts", "line": 440, "end_line": 451 }] },
     { "id": "backup", "type": "backend", "label": "Backup import/export", "sublabel": "validated JSON", "pos": [650, 360], "size": [130, 60],
       "sources": [{ "path": "src/services/backup.ts", "line": 1, "end_line": 8 }] },
     { "id": "nativefile", "type": "backend", "label": "Native file share", "sublabel": "cache folder + Share", "pos": [440, 520], "size": [130, 60], "tag": "Android only",
