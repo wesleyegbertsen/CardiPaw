@@ -1,6 +1,6 @@
 import { crc32, deflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { jsPDF } from 'jspdf';
+import { jsPDF, type jsPDFOptions } from 'jspdf';
 import {
   CHART_HEIGHT_PX,
   CHART_PIXEL_RATIO,
@@ -47,7 +47,7 @@ function chartLikePng(): string {
   return 'data:image/png;base64,' + png.toString('base64');
 }
 
-function pdfWithChart(options: ConstructorParameters<typeof jsPDF>[0]): string {
+function pdfWithChart(options: jsPDFOptions): string {
   const doc = new jsPDF(options);
   doc.addImage(chartLikePng(), 'PNG', 14, 30, 182, 64);
   return doc.output();
