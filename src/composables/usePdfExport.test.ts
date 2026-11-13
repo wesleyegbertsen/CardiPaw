@@ -23,6 +23,7 @@ const h = vi.hoisted(() => {
       events: DocEvent[];
       saved: string[];
       fonts: string[];
+      options?: unknown;
     }>,
     charts: [] as Array<{
       cfg: {
@@ -68,7 +69,7 @@ vi.mock('jspdf', () => {
     pages = 1;
     page = 1;
     fontSize = 16;
-    constructor() {
+    constructor(public options?: unknown) {
       h.docs.push(this);
     }
     text(value: string | string[]) {
@@ -367,6 +368,16 @@ describe('usePdfExport', () => {
       (e) => e.type === 'addImage' && e.data === 'data:image/png;base64,CANVAS',
     );
     expect(charts).toHaveLength(2);
+  });
+
+  it('builds an A4 portrait document with compression on', async () => {
+    await generate(makePet(), readings, ['2024-03']);
+    expect(h.docs[0].options).toEqual({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4',
+      compress: true,
+    });
   });
 
   it('falls back to the default normal ceiling', async () => {

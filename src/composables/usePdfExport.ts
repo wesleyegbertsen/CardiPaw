@@ -16,6 +16,7 @@ import { getRateStatus, DEFAULT_NORMAL_CEILING } from '../utils/rateStatus';
 import { localDayKey, localMonthKey } from '../utils/date';
 import { aggregateByDay, formatPdfAge, htmlToPlainText, type Translator } from '../utils/pdfText';
 import { currentLocale } from '../i18n';
+import { PDF_DOC_OPTIONS } from '../utils/pdfOptions';
 import { isNative } from '../utils/platform';
 import { shareFile, type ShareFileOutcome } from '../services/nativeFile';
 
@@ -187,7 +188,7 @@ export function usePdfExport() {
         svgPathToDataUrl(SLEEPING_SVG_PATH, '#d97706'),
       ]);
 
-      const doc = new jsPDF('p', 'mm', 'a4');
+      const doc = new jsPDF({ ...PDF_DOC_OPTIONS });
 
       const fontFamily = loc === 'ja' ? 'NotoSansJP' : 'helvetica';
       if (loc === 'ja') {
