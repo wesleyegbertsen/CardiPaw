@@ -23,7 +23,7 @@
     },
     {
       "name": "android",
-      "command": "npm run build:android && cd android && gradlew assembleDebug --no-daemon",
+      "command": "npm run build:android && cd android && .\\gradlew assembleDebug --no-daemon",
       "when": ["android/**", "capacitor.config.ts", "package.json", "src/**"]
     }
   ],
