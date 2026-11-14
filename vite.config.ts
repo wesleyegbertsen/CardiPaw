@@ -27,9 +27,12 @@ export default defineConfig(({ mode }) => {
         disable: native,
         registerType: 'prompt',
         workbox: {
-          // Hash routing doesn't need a navigation fallback — all Vue routes live under #.
-          // Without this, the SW intercepts e.g. /sitemap.xml and serves index.html instead.
-          navigateFallback: null,
+          // Hash routing needs a navigation fallback for one path only: /share (share links,
+          // /share#d=…), which the router rewrites to /#/share. Anything else must stay
+          // network-served: with a wider fallback the SW would answer e.g. /sitemap.xml
+          // with index.html.
+          navigateFallback: 'index.html',
+          navigateFallbackAllowlist: [/^\/share$/],
           runtimeCaching: [
             {
               // Cache Japanese fonts on first use (only fetched when locale is ja + PDF is generated).

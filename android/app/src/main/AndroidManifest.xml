@@ -25,6 +25,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Share links (https://cardipaw.com/share#d=…) open in the app. The path is exact on
+                 purpose: the router uses hash routing, so a filter on / would claim every
+                 cardipaw.com link. Verified through https://cardipaw.com/.well-known/assetlinks.json
+                 (release key only; debug builds need a manual approval, see CONTRIBUTING.md). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="cardipaw.com" android:path="/share" />
+            </intent-filter>
+
         </activity>
 
         <provider

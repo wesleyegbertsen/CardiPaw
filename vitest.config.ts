@@ -20,7 +20,7 @@ const NODE_TESTS = [
   'src/native/csp.test.ts',
   'src/services/{db,githubRelease}.test.ts',
   'src/stores/stores.test.ts',
-  'src/test/{androidResources,permissionsPolicy}.test.ts',
+  'src/test/{androidResources,appLinks,permissionsPolicy}.test.ts',
   'src/utils/{age,chartWindow,date,measurement,pdfOptions,pdfText,petInitial,rateStatus,reminderFormat,reminderSchedule,shareCodec,trend,version}.test.ts',
 ];
 

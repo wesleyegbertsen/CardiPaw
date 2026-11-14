@@ -1,18 +1,16 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Pet, Reading } from '../types';
 import { localMonthKey } from '../utils/date';
 import { buildSharePayload, encodeShare, ShareTooLargeError } from '../utils/shareCodec';
 import { Share } from '@capacitor/share';
 import { useModal } from '../composables/useModal';
-import { isNative, publicUrl } from '../utils/platform';
+import { isNative, publicShareUrl } from '../utils/platform';
 
 const props = defineProps<{ pet: Pet; readings: Reading[] }>();
 const emit = defineEmits<{ close: [] }>();
 
-const router = useRouter();
 const { locale, t } = useI18n();
 
 const dialogRef = ref<HTMLElement | null>(null);
@@ -81,8 +79,7 @@ watch(
       return;
     }
     if (token !== encodeToken) return; // a newer selection superseded this one
-    const href = router.resolve({ name: 'share', query: { d: encoded } }).href;
-    shareUrl.value = publicUrl(href);
+    shareUrl.value = publicShareUrl(encoded);
   },
   { immediate: true }
 );

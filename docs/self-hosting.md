@@ -24,4 +24,6 @@ services:
     restart: unless-stopped
 ```
 
+Behind your own web server instead of the image? Serve `index.html` at `/share` (share links are `/share#d=…`; the page moves itself to `/#/share`). The nginx.conf in the image shows how. Android only opens share links from cardipaw.com in the app, so this does not change which links the app claims.
+
 Every release is also published under its version, e.g. `wesleyegbertsen/cardipaw:1.4.2`, plus floating `:1.4` and `:1` tags. Pin one of those instead of `latest` if you want to control when you upgrade.

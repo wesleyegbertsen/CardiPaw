@@ -58,7 +58,8 @@ describe('ShareLinkModal', () => {
     await mountModal();
     const url = new URL(linkPreview().value);
     expect(url.pathname).toBe('/share');
-    const d = url.searchParams.get('d')!;
+    expect(url.search).toBe('');
+    const d = new URLSearchParams(url.hash.slice(1)).get('d')!;
     const payload = await codec.decodeShare(d);
     expect(payload.readings).toHaveLength(2);
     expect(linkPreview().getAttribute('aria-label')).toBe('Share');
@@ -69,7 +70,8 @@ describe('ShareLinkModal', () => {
     await mountModal();
     const url = new URL(linkPreview().value);
     expect(url.origin).toBe('https://cardipaw.com');
-    expect(url.searchParams.get('d')).toBeTruthy();
+    expect(url.pathname).toBe('/share');
+    expect(new URLSearchParams(url.hash.slice(1)).get('d')).toBeTruthy();
   });
 
   it('disables Copy while the new selection is being encoded', async () => {

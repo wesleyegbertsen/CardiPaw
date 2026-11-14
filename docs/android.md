@@ -26,6 +26,12 @@ Whichever you use, check the signing certificate of a new APK (see [Checking an 
 
 Every release's notes list the SHA-256 of the certificate the APK is signed with, and it is the same for every release. You can compare it with the output of `apksigner verify --print-certs cardipaw-X.Y.Z.apk` (Android SDK build-tools), or with an app such as AppVerifier. apksigner prints it in the same form as the release notes (lower-case hex without colons); other tools may show `AB:CD:…`, and case and colons don't matter. If it ever differs, don't install that APK.
 
+## Share links
+
+A share link that someone sends you (`https://cardipaw.com/share#d=…`) opens in the app when it is installed, and in the browser otherwise. Links the app and website made before this was added look like `https://cardipaw.com/#/share?d=…` and still open in the browser, where they work as before.
+
+If a link still opens in the browser, open Android Settings, Apps, CardiPaw, Open by default, and add cardipaw.com.
+
 ## Coming from a CI debug build
 
 Those APKs are signed with a different key, so Android won't install a release over them. Once: export your data in the debug app, uninstall it, install the release APK and import the file.
