@@ -302,6 +302,7 @@
       "p4": "<strong>Keine Datenweitergabe.</strong> Da deine Daten dein Gerät nie verlassen, werden sie niemals mit anderen geteilt oder für andere zugänglich gemacht.",
       "p5": "<strong>Update-Prüfung (Android-App).</strong> Wenn du in den Einstellungen unter „Updates“ die Option „Automatisch prüfen“ einschaltest, fragt die App etwa einmal am Tag und immer, wenn du auf „Jetzt prüfen“ tippst, bei api.github.com nach, ob es eine neuere Version gibt. GitHub sieht dabei deine IP-Adresse und die Informationen, die die Browser-Engine der App bei jeder Anfrage mitsendet, zum Beispiel den User-Agent (mit der Android-Version und dem Gerätemodell) und die Sprache. Es werden keine Tierdaten gesendet. Die Prüfung bleibt aus, solange du sie nicht einschaltest.",
       "p6": "<strong>Erinnerungen bleiben auf deinem Smartphone.</strong> In der Android-App werden Erinnerungen auf diesem Smartphone geplant; nichts davon wird irgendwohin gesendet. Die Einstellungen dafür bleiben auf diesem Gerät und sind nicht in Exporten enthalten.",
+      "p7": "<strong>Verknüpfungen (Android-App).</strong> Wenn du lange auf das CardiPaw-Symbol drückst, siehst du eine Verknüpfung für jedes der ersten vier Tiere auf der Startseite von CardiPaw, und du kannst sie zu deinem Startbildschirm hinzufügen. Damit sie angezeigt werden, gibt Android die Namen und Fotos deiner Tiere an deine Startbildschirm-App (den Launcher) weiter; CardiPaw selbst sendet nichts irgendwohin. Wenn du ein Tier löschst, wird seine Verknüpfung auf dem Startbildschirm ausgegraut und zeigt das CardiPaw-Symbol statt des Namens und Fotos des Tieres.",
       "cameraTitle": "Kamera (experimentell).",
       "cameraBody": "Wenn du die Atemzählung mit der Kamera einschaltest, wird das Kamerabild während der Messung auf deinem Gerät ausgewertet. Es wird kein Video und kein Bild aufgezeichnet, gespeichert oder irgendwohin gesendet, und die Kamera wird freigegeben, sobald die Messung endet."
     },
@@ -475,5 +476,10 @@
     "summaryBlocked": "Erinnerungen pausiert: Benachrichtigungen sind aus",
     "applyError": "Deine Einstellungen wurden gespeichert, aber die Erinnerungen konnten nicht geplant werden. Bitte versuche es erneut.",
     "save": "Speichern"
+  },
+  "shortcuts": {
+    "longLabel": "{name} messen",
+    "petDeleted": "Dieses Tier wurde gelöscht",
+    "deletedLabel": "Gelöschtes Tier"
   }
 }

@@ -1,6 +1,6 @@
 # Android app
 
-Installing and updating the Android app, checking an APK's signing certificate, reminders and permissions. For a quick overview see the [README](../README.md#android).
+Installing and updating the Android app, checking an APK's signing certificate, reminders, shortcuts and permissions. For a quick overview see the [README](../README.md#android).
 
 ## Installing
 
@@ -47,6 +47,17 @@ Tap the bell on a pet's page to be reminded to measure that pet, at a time and o
 - On a secured lock screen, Android shows that CardiPaw has a notification but hides its text.
 - Reminders use the phone's default notification sound and vibrate (as far as its sound mode allows). Earlier versions used a "Measuring reminders" category that never vibrated; the update replaces it with a new one of the same name, so changes you made to the old one in Android's notification settings (turning it off, a custom sound, vibration turned on by hand) are reset once. Reminders from the old version that are still showing, or already due, when CardiPaw is first opened after the update are cleared once.
 - Besides CardiPaw's "Measuring reminders", Android's notification settings for the app also list a "Default" channel; it comes with the notifications plugin.
+
+## Shortcuts
+
+Long-press the CardiPaw icon to see a shortcut for each of your first four pets; tapping one opens that pet's measuring screen. Drag one onto the home screen to keep it there. Shortcuts need Android 7.1 or newer.
+
+- They follow the order of the pets on CardiPaw's home screen. A pet you just added shows last there until you next open CardiPaw, so until then its shortcut may be in a different place.
+- Their labels follow the app's language. A new name or photo also updates a shortcut on the home screen, for every pet, not only the first four.
+- Each shows the pet's photo, or the CardiPaw icon when it has none or an imported photo is very large.
+- During a breath count, a shortcut to another pet asks before it leaves the count, like any other way out of the measuring screen.
+- A deleted pet's shortcut on the home screen is greyed out and shows the CardiPaw icon and "Deleted pet" instead of the pet's name and photo, until you remove it. It no longer opens CardiPaw; tapping it shows Android's own message such as "Shortcut isn't available". If an import brings the pet back, it gets the pet's name and photo back and works again.
+- To show them, Android gives your pets' names and photos to your home screen app (the launcher). CardiPaw uses no Google shortcut integration and doesn't report which shortcuts you use.
 
 ## Camera
 

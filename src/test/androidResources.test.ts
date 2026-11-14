@@ -221,6 +221,97 @@ describe('Android resources', () => {
     expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
   });
 
+  it('registers the launcher shortcuts plugin under the name the web code calls', () => {
+    const java = join(ROOT, 'android/app/src/main/java/com/cardipaw/app');
+    const plugin = readFileSync(join(java, 'LauncherShortcutsPlugin.java'), 'utf8');
+    const ts = readFileSync(join(ROOT, 'src/native/launcherShortcuts.ts'), 'utf8');
+    const javaName = plugin.match(/@CapacitorPlugin\(name = "([^"]+)"\)/)?.[1];
+    expect(javaName).toBe('LauncherShortcuts');
+    expect(ts.match(/registerPlugin<\w+>\('([^']+)'\)/)?.[1]).toBe(javaName);
+    const activity = readFileSync(join(java, 'MainActivity.java'), 'utf8');
+    const register = activity.indexOf('registerPlugin(LauncherShortcutsPlugin.class);');
+    expect(register).toBeGreaterThan(-1);
+    expect(register).toBeLessThan(activity.indexOf('super.onCreate('));
+  });
+
+  it('keeps launcher shortcuts away from Google and conversation surfaces', () => {
+    // Without comments: both files name what they must not use.
+    const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const gradle = readFileSync(join(ROOT, 'android/app/build.gradle'), 'utf8');
+    const plugin = readFileSync(
+      join(ROOT, 'android/app/src/main/java/com/cardipaw/app/LauncherShortcutsPlugin.java'),
+      'utf8',
+    );
+    // core-google-shortcuts sends every shortcut to Google (Assistant, search).
+    expect(code(gradle)).not.toContain('core-google-shortcuts');
+    // These publish shortcuts to sharing and conversation surfaces, or report their use.
+    expect(code(plugin)).not.toMatch(/pushDynamicShortcut|reportShortcutUsed|setLongLived/);
+  });
+
+  it('forgets a handled shortcut when the activity is restored or reopened from Recents', () => {
+    const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const activity = code(
+      readFileSync(join(ROOT, 'android/app/src/main/java/com/cardipaw/app/MainActivity.java'), 'utf8'),
+    );
+    // BridgeActivity hands the creating intent to the plugins in super.onCreate: a shortcut
+    // already handled would open its tracker again. Which launches forget it: MainActivityTest.
+    const superOnCreate = activity.indexOf('super.onCreate(');
+    for (const part of [
+      'forgetShortcut(getIntent())',
+      'shouldForgetShortcut(savedInstanceState != null, getIntent().getFlags())',
+    ]) {
+      const at = activity.indexOf(part);
+      expect(at, part).toBeGreaterThan(-1);
+      expect(at, part).toBeLessThan(superOnCreate);
+    }
+  });
+
+  it('names the shortcut event and the setShortcuts fields alike in Java and TypeScript', () => {
+    // A name that differs fails only at runtime, on a phone: the bridge passes JSON.
+    const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const plugin = code(
+      readFileSync(
+        join(ROOT, 'android/app/src/main/java/com/cardipaw/app/LauncherShortcutsPlugin.java'),
+        'utf8',
+      ),
+    );
+    const types = code(readFileSync(join(ROOT, 'src/native/launcherShortcuts.ts'), 'utf8'));
+    const sync = code(readFileSync(join(ROOT, 'src/native/shortcuts.ts'), 'utf8'));
+    const all = (s: string, re: RegExp) => [...new Set([...s.matchAll(re)].map(([, name]) => name))];
+    // A block's field names, e.g. `{ a: string; b?: unknown }`.
+    const fields = (s: string, re: RegExp) => {
+      const block = s.match(re)?.[1];
+      if (block === undefined) throw new Error(`launcherShortcuts.ts: no match for ${re}`);
+      return all(block, /(\w+)\??:/g);
+    };
+
+    expect(all(plugin, /notifyListeners\("([^"]+)"/g)).toEqual(['shortcutOpened']);
+    expect(all(types, /event: '([^']+)'/g)).toEqual(['shortcutOpened']);
+    expect(all(sync, /LauncherShortcuts\.addListener\('([^']+)'/g)).toEqual(['shortcutOpened']);
+
+    expect(all(plugin, /data\.put\("([^"]+)"/g)).toEqual(['petId']);
+    expect(fields(types, /listener: \(event: \{([^}]*)\}\)/)).toEqual(['petId']);
+
+    expect(all(plugin, /call\.get\w+\("([^"]+)"\)/g).sort()).toEqual(
+      fields(types, /setShortcuts\(options: \{([^}]*)\}\)/).sort(),
+    );
+    expect(all(plugin, /pet\.(?:getString|isNull)\("([^"]+)"\)/g).sort()).toEqual(
+      fields(types, /interface ShortcutPet \{([^}]*)\}/).sort(),
+    );
+    // The lists above aren't empty or partial.
+    expect(fields(types, /setShortcuts\(options: \{([^}]*)\}\)/).sort()).toEqual([
+      'deletedLabel',
+      'disabledMessage',
+      'pets',
+    ]);
+    expect(fields(types, /interface ShortcutPet \{([^}]*)\}/).sort()).toEqual([
+      'id',
+      'longLabel',
+      'photo',
+      'shortLabel',
+    ]);
+  });
+
   it('declares INTERNET (the update check) and CAMERA (camera counting), never REQUEST_INSTALL_PACKAGES', () => {
     // A tools:node="remove" entry takes a plugin's permission out; it declares nothing.
     const permissions = [

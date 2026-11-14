@@ -392,6 +392,7 @@ describe('SettingsView', () => {
     expect(dialog?.querySelector('.dialog-title')?.textContent).toBe('Privacy Policy');
     // Reminders exist only in the app.
     expect(dialog?.textContent).not.toContain('Reminders stay on your phone.');
+    expect(dialog?.textContent).not.toContain('Shortcuts (Android app).');
 
     clickInBody('.btn-ok');
     await flushPromises();
@@ -405,6 +406,15 @@ describe('SettingsView', () => {
     expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain(
       'Reminders stay on your phone.',
     );
+  });
+
+  it('explains launcher shortcuts in the privacy information in the app', async () => {
+    mockNative();
+    const { wrapper } = await mountView(SettingsView, '/settings');
+    await privacyButton(wrapper).trigger('click');
+    const text = document.body.querySelector('[role="dialog"]')?.textContent;
+    expect(text).toContain('Shortcuts (Android app).');
+    expect(text).toContain("your pets' names and photos");
   });
 
   describe('version', () => {
