@@ -28,7 +28,7 @@ Every release's notes list the SHA-256 of the certificate the APK is signed with
 
 ## Share links
 
-A share link that someone sends you (`https://cardipaw.com/share#d=…`) opens in the app when it is installed, and in the browser otherwise. Links the app and website made before this was added look like `https://cardipaw.com/#/share?d=…` and still open in the browser, where they work as before.
+A share link that someone sends you (`https://cardipaw.com/share/#d=…`) opens in the app when it is installed, and in the browser otherwise. Links the app and website made before this was added look like `https://cardipaw.com/#/share?d=…` and still open in the browser, where they work as before.
 
 If a link still opens in the browser, open Android Settings, Apps, CardiPaw, Open by default, and add cardipaw.com.
 

@@ -23,6 +23,13 @@ describe('router entry', () => {
     expect(router.currentRoute.value.query.d).toBe('abc');
   });
 
+  it('opens /share/#d= the same way (the page the website serves)', async () => {
+    const router = await loadRouterAt('/share/#d=abc');
+    expect(window.location.pathname).toBe('/');
+    expect(router.currentRoute.value.name).toBe('share');
+    expect(router.currentRoute.value.query.d).toBe('abc');
+  });
+
   it('leaves legacy #/share?d= links alone', async () => {
     const router = await loadRouterAt('/#/share?d=old');
     expect(router.currentRoute.value.name).toBe('share');

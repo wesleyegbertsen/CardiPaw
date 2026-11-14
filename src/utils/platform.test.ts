@@ -14,10 +14,10 @@ describe('platform', () => {
     expect(isNative()).toBe(false);
   });
   it('builds share links on the current origin on the website', () => {
-    expect(publicShareUrl('x')).toBe(`${window.location.origin}/share#d=x`);
+    expect(publicShareUrl('x')).toBe(`${window.location.origin}/share/#d=x`);
   });
   it('builds share links on cardipaw.com in the app', () => {
     mockNative();
-    expect(publicShareUrl('x')).toBe('https://cardipaw.com/share#d=x');
+    expect(publicShareUrl('x')).toBe('https://cardipaw.com/share/#d=x');
   });
 });

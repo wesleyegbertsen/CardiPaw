@@ -57,7 +57,7 @@ describe('ShareLinkModal', () => {
   it('builds a link to the share page that decodes back to the selection', async () => {
     await mountModal();
     const url = new URL(linkPreview().value);
-    expect(url.pathname).toBe('/share');
+    expect(url.pathname).toBe('/share/');
     expect(url.search).toBe('');
     const d = new URLSearchParams(url.hash.slice(1)).get('d')!;
     const payload = await codec.decodeShare(d);
@@ -70,7 +70,7 @@ describe('ShareLinkModal', () => {
     await mountModal();
     const url = new URL(linkPreview().value);
     expect(url.origin).toBe('https://cardipaw.com');
-    expect(url.pathname).toBe('/share');
+    expect(url.pathname).toBe('/share/');
     expect(new URLSearchParams(url.hash.slice(1)).get('d')).toBeTruthy();
   });
 

@@ -17,15 +17,15 @@ describe('share link App Link', () => {
   const filters = [...manifest.matchAll(/<intent-filter\b([^>]*)>([\s\S]*?)<\/intent-filter>/g)];
   const viewFilters = filters.filter(([, , body]) => body.includes('android.intent.action.VIEW'));
 
-  it('declares exactly one VIEW filter, verified, for https://cardipaw.com/share only', () => {
+  it('declares exactly one VIEW filter, verified, for https://cardipaw.com/share/ only', () => {
     expect(viewFilters).toHaveLength(1);
     const [, attrs, body] = viewFilters[0];
     expect(attrs).toContain('android:autoVerify="true"');
     expect(body).toContain('android.intent.category.DEFAULT');
     expect(body).toContain('android.intent.category.BROWSABLE');
     const data = [...body.matchAll(/<data\b([^>]*)\/>/g)].map(([, a]) => a.replace(/\s+/g, ' ').trim());
-    expect(data).toEqual(['android:scheme="https" android:host="cardipaw.com" android:path="/share"']);
-    // An exact path: the router uses hash routing, so a prefix or "/" would claim every link.
+    expect(data).toEqual(['android:scheme="https" android:host="cardipaw.com" android:path="/share/"']);
+    // An exact path (the trailing slash is the directory page the website serves): the router uses hash routing, so a prefix or "/" would claim every link.
     expect(body).not.toMatch(/pathPrefix|pathPattern|pathAdvancedPattern/);
   });
 

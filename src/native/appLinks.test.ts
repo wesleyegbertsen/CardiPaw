@@ -36,21 +36,21 @@ describe('installAppLinks', () => {
 
   it('opens the share view for a share link', async () => {
     const { router, open } = await setup();
-    await open('https://cardipaw.com/share#d=abc');
+    await open('https://cardipaw.com/share/#d=abc');
     expect(router.currentRoute.value.name).toBe('share');
     expect(router.currentRoute.value.query.d).toBe('abc');
   });
 
   it('replaces the payload when a second link arrives on the share view', async () => {
     const { router, open } = await setup();
-    await open('https://cardipaw.com/share#d=one');
-    await open('https://cardipaw.com/share#d=two');
+    await open('https://cardipaw.com/share/#d=one');
+    await open('https://cardipaw.com/share/#d=two');
     expect(router.currentRoute.value.query.d).toBe('two');
   });
 
   it.each([
     'https://cardipaw.com/',
-    'https://example.com/share#d=x',
+    'https://example.com/share/#d=x',
     'https://cardipaw.com/#/settings',
   ])('ignores %s', async (url) => {
     const { router, open } = await setup();

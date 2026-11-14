@@ -4,7 +4,7 @@ import { isNative, PUBLIC_ORIGIN } from '../utils/platform';
 import { shareRouteFromUrl } from '../utils/shareLink';
 
 /**
- * App only: a cardipaw.com/share link opened from another app (an Android App Link) shows
+ * App only: a cardipaw.com/share/ link opened from another app (an Android App Link) shows
  * the share view. Capacitor holds the event until a listener exists, so this covers a cold
  * start as well as an app that is already running. Anything that is not a share link is
  * ignored, and only the payload is taken from the URL, never a path.

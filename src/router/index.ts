@@ -48,7 +48,7 @@ export const routes = [
   { path: '/share', name: 'share', component: ShareView },
 ] satisfies RouteRecordRaw[];
 
-// A share link opened on the website is `/share#d=…`. The hash history uses the page's path as
+// A share link opened on the website is `/share/#d=…`. The hash history uses the page's path as
 // its base, so move the page to `/#/share?d=…` before the router starts.
 const entryHref = shareEntryHref(window.location);
 if (entryHref) window.history.replaceState(null, '', entryHref);
