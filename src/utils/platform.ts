@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { shareLinkUrl } from './shareLink';
 
 /** True inside the Android (Capacitor) app, false on the website. */
 export function isNative(): boolean {
@@ -8,7 +9,7 @@ export function isNative(): boolean {
 /** The public site: links that leave the app point here, not at the app's https://localhost. */
 export const PUBLIC_ORIGIN = 'https://cardipaw.com/';
 
-/** Absolute URL for an app href that other people open (share links). */
-export function publicUrl(href: string): string {
-  return new URL(href, isNative() ? PUBLIC_ORIGIN : window.location.href).href;
+/** The link other people open for an encoded share payload. */
+export function publicShareUrl(encoded: string): string {
+  return shareLinkUrl(encoded, isNative() ? PUBLIC_ORIGIN : window.location.origin);
 }

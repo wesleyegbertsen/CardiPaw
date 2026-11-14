@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNative, publicUrl } from './platform';
+import { isNative, publicShareUrl } from './platform';
 import { mockNative } from '../test/native';
 
 describe('platform', () => {
@@ -13,11 +13,11 @@ describe('platform', () => {
   it('restores after a test (restoreMocks)', () => {
     expect(isNative()).toBe(false);
   });
-  it('resolves share links against the current page on the website', () => {
-    expect(publicUrl('#/share?d=x')).toBe(new URL('#/share?d=x', window.location.href).href);
+  it('builds share links on the current origin on the website', () => {
+    expect(publicShareUrl('x')).toBe(`${window.location.origin}/share/#d=x`);
   });
-  it('resolves share links against cardipaw.com in the app', () => {
+  it('builds share links on cardipaw.com in the app', () => {
     mockNative();
-    expect(publicUrl('#/share?d=x')).toBe('https://cardipaw.com/#/share?d=x');
+    expect(publicShareUrl('x')).toBe('https://cardipaw.com/share/#d=x');
   });
 });

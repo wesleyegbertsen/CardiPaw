@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.cardipaw.app",
+      "sha256_cert_fingerprints": [
+        "D8:39:9F:F4:40:85:6C:B1:FE:74:AD:5A:2C:4B:69:A7:E2:D4:5C:25:8F:12:03:E2:E7:E5:72:21:D5:59:7E:E6"
+      ]
+    }
+  }
+]

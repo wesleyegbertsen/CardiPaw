@@ -5,6 +5,7 @@ import {
   type RouteRecordRaw,
 } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
+import { shareEntryHref } from '../utils/shareLink';
 
 // Home is the entry screen and stays in the main bundle; every other view is its own
 // chunk, loaded on first navigation (and precached by the service worker for offline use).
@@ -46,6 +47,11 @@ export const routes = [
   { path: '/settings', name: 'settings', component: SettingsView },
   { path: '/share', name: 'share', component: ShareView },
 ] satisfies RouteRecordRaw[];
+
+// A share link opened on the website is `/share/#d=…`. The hash history uses the page's path as
+// its base, so move the page to `/#/share?d=…` before the router starts.
+const entryHref = shareEntryHref(window.location);
+if (entryHref) window.history.replaceState(null, '', entryHref);
 
 export const router = createRouter({ history: createWebHashHistory(), routes });
 

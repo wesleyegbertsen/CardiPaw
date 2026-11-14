@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -22,14 +23,18 @@ export default defineConfig(({ mode }) => {
     plugins: [
       vue(),
       native && nativeIndexHtml(),
+      !native && shareEntryPage(),
       VitePWA({
         // The app ships its files in the APK; a service worker would only serve stale ones after an update.
         disable: native,
         registerType: 'prompt',
         workbox: {
-          // Hash routing doesn't need a navigation fallback — all Vue routes live under #.
-          // Without this, the SW intercepts e.g. /sitemap.xml and serves index.html instead.
-          navigateFallback: null,
+          // Hash routing needs a navigation fallback for one path only: /share/ (share links,
+          // /share/#d=…), which the router rewrites to /#/share. Anything else must stay
+          // network-served: with a wider fallback the SW would answer e.g. /sitemap.xml
+          // with index.html.
+          navigateFallback: 'index.html',
+          navigateFallbackAllowlist: [/^\/share\/?$/],
           runtimeCaching: [
             {
               // Cache Japanese fonts on first use (only fetched when locale is ja + PDF is generated).
@@ -83,6 +88,26 @@ function nativeIndexHtml(): Plugin {
       return html
         .replace(`content="${VIEWPORT}"`, `content="${VIEWPORT}, viewport-fit=cover"`)
         .replace(CHARSET, `${CHARSET}\n    ${csp}`)
+    },
+  }
+}
+
+/**
+ * Share links are `/share/#d=…`. Copy index.html to share/index.html so that URL is a real file
+ * on any static host: no rewrite rule is needed, and the deploy (rsync of dist/) carries it. The
+ * page's assets use absolute paths, so the copy loads as it is; the router moves it to /#/share.
+ */
+function shareEntryPage(): Plugin {
+  let outDir = 'dist'
+  return {
+    name: 'cardipaw-share-entry-page',
+    apply: 'build',
+    configResolved(config) {
+      outDir = config.build.outDir
+    },
+    writeBundle() {
+      mkdirSync(join(outDir, 'share'), { recursive: true })
+      copyFileSync(join(outDir, 'index.html'), join(outDir, 'share', 'index.html'))
     },
   }
 }

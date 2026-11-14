@@ -24,4 +24,6 @@ services:
     restart: unless-stopped
 ```
 
+Behind your own web server instead of the image? Serve the whole of `dist/`: share links are `/share/#d=…`, a copy of `index.html` at `share/index.html` that moves itself to `/#/share`, so no rewrite rules are needed. Android only opens share links from cardipaw.com in the app, so this does not change which links the app claims.
+
 Every release is also published under its version, e.g. `wesleyegbertsen/cardipaw:1.4.2`, plus floating `:1.4` and `:1` tags. Pin one of those instead of `latest` if you want to control when you upgrade.
